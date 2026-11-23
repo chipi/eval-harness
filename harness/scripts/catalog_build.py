@@ -288,7 +288,7 @@ def _label_of(by_ds: dict, ds: str, arm: str) -> str:
     return next((a["label"] for a in (by_ds.get(ds) or {}).get("arms", []) if a["arm"] == arm), arm)
 
 
-#: {arm: capture}: production's recorded arms (RFC-023), filled by collect(); arm_link badges them. A page rendered by a
+#: {arm: capture}: production's recorded arms (RFC-023), filled by build(); arm_link badges them. A page rendered by a
 #: Site reads its model's own (_recorded): a server renders on several threads, and two models can be alive at once.
 RECORDED: dict[str, str] = {}
 #: The judge scorers that have a page (scorers/<id>.html), set by `build`: where the catalog names one it links there.
@@ -892,8 +892,6 @@ def fmt(v) -> str:
 def collect(A: Adapter) -> dict:
     """{dataset: {"arms": [row], "refs": [ref], "items": n}}: what every page needs, read once."""
     by_ds = goal_views.by_dataset(A)
-    RECORDED.clear()
-    RECORDED.update({a["arm"]: a["recorded"] for v in by_ds.values() for a in v["arms"] if a["recorded"]})
     _versions(A, by_ds)
     # The dataset's own size, from the ADAPTER: the harness's DATASETS path is not where a
     # project with its own layout keeps them. An adapter that cannot say falls back to the
@@ -4882,6 +4880,8 @@ _TOP = {
     "inspect.html": "inspect",
 }
 _DATASET_PAGE = re.compile(r"d/(.+?)(?:~items-\d+)?\.html")
+#: The catalog's own folders: every page under them is one a group writes, so one the model does not render is not there.
+_FOLDERS = ("a/", "g/", "m/", "d/", "r/", "models/", "scorers/", "assets/")
 
 
 class Site:
@@ -4947,6 +4947,11 @@ class Site:
             if path.startswith(folder):
                 return group
         return None
+
+    def claims(self, path: str) -> bool:
+        """Whether `path` is the catalog's own (a top-level page, or under its folders): there, a page this model does not
+        render does not exist, whatever an older export left on disk; elsewhere it may be a project's own page."""
+        return path in _TOP or path.startswith(_FOLDERS) or self.owner(path) is not None
 
     def render(self, group: str, keep: bool = True) -> dict[str, str]:
         """{path: page} for every page `group` writes, rendered now; `keep`: kept for `page`."""
@@ -5075,6 +5080,8 @@ def build(A: Adapter, out: Path, sections: tuple = (), built: str | None = None)
     # A project's own builder may call arm_link or scorer_link after a build, outside a Site's render.
     SCORER_PAGES.clear()
     SCORER_PAGES.update(site.scorer_pages)
+    RECORDED.clear()
+    RECORDED.update(site.recorded)
     site.export(out)
     return site.counts()
 
@@ -5162,11 +5169,23 @@ def build_beside(A: Adapter, out: Path, sections: tuple = ()) -> dict:
 
 def body(**inputs: Any) -> int:
     """Build the catalog and write static pages to output directory."""
-    global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO, CARD
     from evaluation_harness.ops import legacy  # noqa: PLC0415
 
     args = legacy.namespace(inputs, "catalog")
     out = Path(args.out) if args.out else ROOT / ".build" / "catalog"
+    sections = configure(args)
+    counts = build_beside(load_catalog_adapter(args.adapter), out, sections)
+    print(f"catalog: {out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
+    _jsonout.values({"out": str(out), "counts": counts})
+    print("inspect: evh catalog-serve, then open the address it prints")
+    return 0
+
+
+def configure(args: Any) -> tuple:
+    """The deployment's options for every page, set for this process: `evh catalog`'s and `evh catalog-serve`'s flags
+    (--api, --brand, --head, --about, --repo, --mcp, --mcp-howto, --card, --link), checked; so a page the server renders
+    is the page the export writes (RFC-040). Returns the header's sections, (label, url) each."""
+    global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO, CARD
     for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
         if url and not url.startswith(("https://", "http://")):
             die(f"{flag} {url!r}: expected https://...", "bad-argument")
@@ -5203,8 +5222,4 @@ def body(**inputs: Any) -> int:
         sections.append((label, url))
     if sections and not any(u == "." for _, u in sections):
         sections.insert(0, ("Catalog", "."))
-    counts = build_beside(load_catalog_adapter(args.adapter), out, tuple(sections))
-    print(f"catalog: {out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
-    _jsonout.values({"out": str(out), "counts": counts})
-    print("inspect: evh catalog-serve, then open the address it prints")
-    return 0
+    return tuple(sections)

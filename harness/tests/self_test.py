@@ -1079,6 +1079,10 @@ def test_example_scorer_suites_pass() -> None:
             "resampled tests drawn at once in child processes: the same p's bit for bit, capped by a container's CPU quota",
         ),
         (
+            "test_stats_threads.py",
+            "the tests a page collects are its thread's own: a server rendering on two threads gets each one's p",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),

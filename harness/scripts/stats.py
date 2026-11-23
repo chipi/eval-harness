@@ -36,6 +36,7 @@ import random
 import statistics
 import subprocess
 import sys
+import threading
 from collections import OrderedDict
 from collections.abc import Callable
 from itertools import chain, compress
@@ -166,14 +167,14 @@ def sign_flip_p(
             _P.move_to_end(key)
             return _P[key]
         stored = _stored_p(key)
-        if stored is None and _COLLECT:
+        if stored is None and _collecting():
 
             def hold(v: float, key: tuple = key) -> None:
                 _store_p(key, v)
                 _P[key] = v
 
             job = {"kind": "sf", "d": [float(d).hex() for d in deltas], "n": permutations, "s": seed}
-            _COLLECT[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
+            _collecting()[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
             return 1.0  # a stand-in: prefetch() throws away what it collects with
         if stored is None:
             hits = _count_hits(deltas, abs(obs), _signs(len(deltas), permutations, seed))
@@ -703,7 +704,7 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
         return 0.5 * math.erfc(t_obs / math.sqrt(2))
     data = _bootstrap_data(totals, sizes, margin)
     algo = f"bootstrap-t-1:{draws}"
-    if _COLLECT and not _known(algo, data):
+    if _collecting() and not _known(algo, data):
         k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
         job = {
             "kind": "bt",
@@ -717,7 +718,7 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
             _keep(k, v)
             _remember(k, v)
 
-        _COLLECT[-1].append((k, g * draws, job, keep))
+        _collecting()[-1].append((k, g * draws, job, keep))
         return 1.0  # a stand-in: prefetch() throws away what it collects with
     return kept(algo, data, lambda: _bootstrap_draw(totals, sizes, margin, draws))
 
@@ -752,8 +753,20 @@ def _bootstrap_draw(totals: list, sizes: list, margin: float, draws: int) -> flo
 
 
 #: While prefetch() runs its calls: one list of the tests they would draw that are not yet kept, each (its key, its
-#: work in units x draws, its job for a child, how to keep its p).
-_COLLECT: list[list] = []
+#: work in units x draws, its job for a child, how to keep its p). Each thread's own: catalog-serve renders pages and
+#: answers its API on several threads at once, and a p asked for on one thread while another collected was the
+#: collector's stand-in, 1.0 (tests/test_stats_threads.py).
+_COLLECT = threading.local()
+
+
+def _collecting() -> list[list]:
+    """This thread's prefetch() stack: empty outside one."""
+    got = getattr(_COLLECT, "stack", None)
+    if got is None:
+        got = _COLLECT.stack = []
+    return got
+
+
 #: Below this much resampling (units x draws, summed) the tests are drawn here, one after another: a child process
 #: costs about a second to start and import, a 1,000-item bootstrap-t about 2 s, a sign-flip about 0.6 s.
 PARALLEL_FROM = 20_000_000
@@ -806,16 +819,16 @@ def prefetch(calls: Callable[[], Any]) -> int:
     returns is thrown away (each p in it a stand-in). Nothing is drawn in parallel below PARALLEL_FROM, with one test,
     or when a child fails: those are drawn as before, when asked. Returns how many were drawn in parallel.
     PLAN_0.8.0 S2: a 50-arm catalog at 1,000 items drew 47 bootstrap-t's and 96 sign-flips one after another."""
-    if _COLLECT:  # inside another prefetch: its calls are collected there
+    if _collecting():  # inside another prefetch: its calls are collected there
         calls()
         return 0
-    _COLLECT.append([])
+    _collecting().append([])
     try:
         calls()
     except (Exception, SystemExit):  # noqa: BLE001 - a look ahead with stand-in p's never stops its caller:
         pass  # what it collected is drawn, and the real run that follows meets the same error, if it is one
     finally:
-        cases = list({c[0]: c for c in _COLLECT.pop()}.values())
+        cases = list({c[0]: c for c in _collecting().pop()}.values())
     if len(cases) < 2 or sum(c[1] for c in cases) < PARALLEL_FROM:
         return 0
     got = _in_children([c[2] for c in cases], [c[1] for c in cases])
@@ -1019,7 +1032,7 @@ def compare(
     base = arms.get(baseline) or {}
     # The pairs' sign-flips drawn at once in child processes first, the same p's; only when one of them resamples
     # (with clusters a pair's units can be fewer than its items, so any pair above EXACT_UP_TO items counts).
-    if not _COLLECT and any(
+    if not _collecting() and any(
         (k := len(set(s) & set(base))) > EXACT_UP_TO and (clusters is not None or k < LARGE_SAMPLE)
         for a, s in arms.items()
         if a != baseline

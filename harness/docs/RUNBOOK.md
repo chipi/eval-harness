@@ -1527,7 +1527,7 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 
 ```bash
 evh catalog                                             # build static pages into .build/catalog/
-evh catalog-serve [--port N]                           # the catalog and inspector on 127.0.0.1, a port of the project's own
+evh catalog-serve [--port N] [--brand NAME]            # the catalog and inspector on 127.0.0.1, a port of the project's own; takes evh catalog's page options
 evh catalog-serve --public catalog.example.com --publish outputs --client-header X-Real-IP  # public deployment
 evh dataset-profile --dataset-id my_v1 [--with-text]   # what is inside a dataset, for its page (text: committed items only)
 evh dataset-items my_v1 [--item ID]       # the same in the terminal

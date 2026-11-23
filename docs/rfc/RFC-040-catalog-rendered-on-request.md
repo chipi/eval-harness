@@ -190,12 +190,19 @@ what makes a served page the exported file. `render_goals` lost its goal pages t
   none of its own.
 - The decisions memo (step 4) is `goal_views.decisions_kept`, held by a Site while it renders: a group's decision made
   once per state, keyed on everything `group_decision` is given, each caller getting its own deep copy.
-- The server (`catalog_serve.py`): one current Site, prepared on the first page after a change (one at a time; a
-  generation counter keeps a model prepared across a change from being kept) and dropped on the next change or a new
-  day. `fresh_check`, `data_changed` and a server job's end drop it (`renew`) where they started a `catalog` job; the
-  home page, the goals page and each goal's page are rendered ahead in a thread (step 6). A path the Site does not
-  render falls through to the folder, so a page a project's builder wrote there is still served. The server needs no
-  catalog built first; health says `catalog: {mode: "on request", state: idle|failed, built_at, prepared, failed}`.
+- The server (`catalog_serve.py`): one current Site and the change it was prepared after (`site_gen`). A request is
+  answered by a model at least as new as the data was when the request came: the kept one, the one another request
+  was preparing meanwhile, or one it prepares (one at a time, so a burst of requests after a change prepares one model,
+  not one each). `fresh_check`, `data_changed` and a server job's end count a change (`renew`) where they started a
+  `catalog` job; a new day counts as one. The home page, the goals page and each goal's page are rendered ahead in a
+  thread once the data has been still for a second (step 6): a run writing for minutes does not have them rendered
+  for each write. A path the Site claims (a top-level page, a page's folder) and does not render answers 404; any
+  other path falls through to the folder, so a file a project's builder wrote there is still served. HEAD is answered
+  as GET without the body, and the address without its last slash redirects to it. The server takes `evh catalog`'s
+  page options (`--brand`, `--api`, `--about`, …) through the same `configure` the build uses. It needs no catalog
+  built first; health says `catalog: {mode: "on request", state: idle|failed, built_at, prepared, failed}`.
+- `stats` collected a page's tests on a module-wide stack: on a server, a page rendered on another thread could take
+  a stand-in p of 1.0. The stack is per thread (`test_stats_threads.py`, failing before the fix).
 
 **Measured (this repository, files store, p-values cached, 2026-11-23).**
 
@@ -210,17 +217,23 @@ what makes a served page the exported file. `render_goals` lost its goal pages t
 
 **Tests.** `test_catalog_render.py` (tests 1, 2 and 4 in a tutorial project, both stores, 13 checks),
 `test_catalog_render_real.py` (this repository: all 1,906 pages rendered on their own in a shuffled order equal the
-export, each one's group the one its path names), `test_catalog_fresh.py` rewritten for test 3 (33 checks, both
+export, each one's group the one its path names), `test_catalog_fresh.py` rewritten for test 3 (39 checks, both
 stores: a write on the next page, no `catalog` job in any of it, many reads during writes each one whole page of one
-state, a failed render answering 500 and recovering).
+state, a burst of requests after a change preparing one model, a failed render answering 500 and recovering, a page
+gone under new data answering 404, HEAD, the address without its slash, `--brand` on a served page),
+`test_stats_threads.py` (two threads collecting tests at once each get their own p).
 
 ## Not covered
 
 - Pages are rendered one at a time per process: a request waits behind another's render, at most a goal page (1.25 s
   here). Not measured under concurrent load beyond the fresh test's six readers.
 - The day in the cache's key is the server's local date, as `date.today()` is in the models page.
-- The deployment (`--public`) is unchanged: it serves the export from nginx. The server's pages use its default options
-  (`--api`, `--brand`, …): the rebuild job it replaces passed none either.
+- The deployment (`--public`) is unchanged: it serves the export from nginx. The homelab's compose file
+  (`infra/fleet-evals/docker-compose.yml`) also builds a static catalog for nginx; the server's page options are for a
+  live server there, which is not set up.
+- A review found that `goal_views._KEPT`, the decisions memo, could be read by one thread while another Site's render
+  dropped it. It did not reproduce (renders take `_RENDER_LOCK`, and the memo is per thread); a check is kept as a
+  guard, and the race is not claimed fixed.
 - `catalog_charts.py` was read only through the profile; the charts are not memoized.
 - The measurements are from one repository on one machine; the per-page times on a project with more goals or rounds
   are not known.

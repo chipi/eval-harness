@@ -697,27 +697,21 @@ FRESH_EVERY_S = 0.25
 FRESH_POLL_S = 0.2
 _ENDED = ("succeeded", "failed", "cancelled", "lost")
 #: What the server knows of the data under its pages. `on` only for a server that has pages of its own (not --public:
-#: its pages and data are a deployment's copy, which the deploy rebuilds); `seen` is the data's state last looked at,
-#: `jobs` the writes of this server's jobs still running (their end looks at the data once: a long run would otherwise
-#: renew the pages' model with every file it writes), `deferred` that a look found a change while one ran.
-FRESH: dict[str, Any] = {
-    "on": False,
-    "seen": None,
-    "looked": 0.0,
-    "jobs": set(),
-    "deferred": False,
-}
+#: its pages and data are a deployment's copy, which the deploy rebuilds); `seen` is the data's state last looked at.
+FRESH: dict[str, Any] = {"on": False, "seen": None, "looked": 0.0}
 _FRESH_LOCK = threading.Lock()
-#: The catalog's pages, rendered when asked for from one model of the data (RFC-040, catalog_build.Site): `site` that
-#: model, None until a page asks for one or after the data changed; `gen` counts the changes, so a model prepared across
-#: one answers the request that prepared it and is never kept; `day` the day it was prepared (a model's "stale" mark is
-#: against today); `prepared` how many were; `failed` the last failure to prepare or render, until a page renders.
-SITE: dict[str, Any] = {"site": None, "gen": 0, "day": "", "prepared": 0, "failed": None}
+#: The catalog's pages, rendered when asked for from one model of the data (RFC-040, catalog_build.Site). `gen` counts
+#: the changes the server has seen; `site` is the newest model and `site_gen` the change it was prepared after, so a
+#: request is answered by a model prepared from the data as it was when the request came, or later: a write is on the
+#: next page, and the requests that wait for one model get that one, not one each. `day`: the day it was prepared (a
+#: model's "stale" mark is against today); `prepared` how many were; `failed` the last failure, until a page renders.
+SITE: dict[str, Any] = {"site": None, "site_gen": -1, "gen": 0, "day": "", "prepared": 0, "failed": None}
 _SITE_LOCK = threading.Lock()  # SITE's fields
-_PREPARE_LOCK = (
-    threading.Lock()
-)  # one model prepared at a time: a burst of requests after a change waits for one
+_PREPARE_LOCK = threading.Lock()  # one model prepared at a time
 _WARM = threading.Event()
+#: After a change, the pages are rendered ahead once the data has been still this long: a run in another terminal
+#: writes for minutes, and rendering ahead for each of its writes renders pages nobody reads.
+WARM_QUIET_S = 1.0
 
 
 def data_state(first: bool = False) -> tuple[tuple, int]:
@@ -776,82 +770,78 @@ def _wait_job(job_id: str) -> dict:
         time.sleep(FRESH_POLL_S)
 
 
-def _site_failed(exc: BaseException) -> None:
-    why = f"{type(exc).__name__}: {exc}"
-    with _SITE_LOCK:
-        SITE["failed"] = {"at": _common.now(), "why": why}
-    say(f"catalog: a page could not be rendered: {why}", err=True)
-
-
 def current_site():
-    """The model the pages are rendered from: the one kept, or one prepared now from the data as it is (one at a time:
-    a request that waited for another's gets that one). Raises what preparing it raised."""
+    """A model of the data at least as new as it was when this was called: the one kept, the one another request was
+    preparing meanwhile, or one prepared now (one at a time). Raises what preparing it raised."""
     from datetime import date  # noqa: PLC0415
 
     from evaluation_harness import catalog_build  # noqa: PLC0415
 
     day = date.today().isoformat()
+
+    def kept(asked: int):
+        s = SITE["site"]
+        return s if s is not None and SITE["site_gen"] >= asked and SITE["day"] == day else None
+
     with _SITE_LOCK:
-        if SITE["site"] is not None and SITE["day"] == day:
-            return SITE["site"]
+        asked = SITE["gen"]
+        if (got := kept(asked)) is not None:
+            return got
     with _PREPARE_LOCK:
         with _SITE_LOCK:
-            if SITE["site"] is not None and SITE["day"] == day:
-                return SITE["site"]
+            if (got := kept(asked)) is not None:
+                return got
             gen = SITE["gen"]
-        try:
-            site = catalog_build.prepare(A, once=False)  # the server's adapter holds its scores itself
-        except Exception as exc:
-            _site_failed(exc)
-            raise
+        site = catalog_build.prepare(A, once=False)  # the server's adapter holds its scores itself
         with _SITE_LOCK:
             SITE["prepared"] += 1
-            if SITE["gen"] == gen:
-                SITE.update(site=site, day=day)
+            if gen >= SITE["site_gen"]:
+                SITE.update(site=site, site_gen=gen, day=day)
         return site
 
 
-def site_page(rel: str) -> str | None:
-    """The catalog's page at `rel`, rendered now if it has not been for this state of the data; None for none."""
+def site_page(rel: str) -> tuple[Any, str | None]:
+    """(the model, the catalog's page at `rel` rendered from it, None for none). A failure is said, in the log and on
+    health, and raised."""
     try:
-        got = current_site().page(rel)
+        site = current_site()
+        got = site.page(rel)
     except Exception as exc:
-        _site_failed(exc)
+        why = f"{type(exc).__name__}: {exc}"
+        with _SITE_LOCK:
+            SITE["failed"] = {"at": _common.now(), "why": why}
+        say(f"catalog: {rel} could not be rendered: {why}", err=True)
         raise
-    with _SITE_LOCK:
-        SITE["failed"] = None
-    return got
+    if got is not None:
+        with _SITE_LOCK:
+            SITE["failed"] = None
+    return site, got
 
 
 def renew(why: str) -> None:
-    """The data changed: the pages are rendered from it from now on, and the slowest of them again in the background."""
+    """The data changed: the next page is rendered from it, and the slowest pages again in the background."""
     with _SITE_LOCK:
         SITE["gen"] += 1
-        SITE["site"] = None
     say(f"catalog: {why}: the pages are rendered from the data as it is now")
-    warm_pages()
-
-
-def warm_pages() -> None:
-    """Prepare the model and render the pages that take longest (the home page, the goals and each goal's page, 0.3-2 s
-    each) in the background, so the first person to open one does not wait: a request that comes first renders it
-    itself. A change while it runs starts it again on the new model."""
-    if not getattr(warm_pages, "started", False):
-        warm_pages.started = True  # type: ignore[attr-defined]
-        threading.Thread(target=_pages_warmer, daemon=True).start()
     _WARM.set()
 
 
 def _pages_warmer() -> None:
+    """Prepare the model and render the pages that take longest (the home page, the goals and each goal's page, 0.3-2 s
+    each) once the data is still, so the first person to open one does not wait; a request that comes first renders it
+    itself. A change while it runs starts it again."""
     from evaluation_harness import catalog_build  # noqa: PLC0415
 
     while True:
         _WARM.wait()
-        _WARM.clear()
+        while True:
+            _WARM.clear()
+            if not _WARM.wait(WARM_QUIET_S):
+                break
         try:
             site = current_site()
             for path in ("index.html", "goals.html", *(catalog_build.goal_page(g) for g in site.goals)):
-                if _WARM.is_set() or SITE["site"] is not site:
+                if _WARM.is_set():
                     break
                 site.page(path)
         except Exception as exc:  # noqa: BLE001 -- said; a request renders what it asks for and says the same
@@ -860,8 +850,8 @@ def _pages_warmer() -> None:
 
 def fresh_check(force: bool = False, why: str = "") -> bool:
     """Look at the data's state and, when it is not the one last seen, refresh what the server read and render the pages
-    from it. Called before every request, at most every FRESH_EVERY_S; `force`: now, whatever the last look. While a job
-    of this server writes, a change refreshes and waits for the job's end (`jobs`). True when the data had changed."""
+    from it. Called before every request, at most every FRESH_EVERY_S; `force`: now, whatever the last look. True when
+    the data had changed."""
     if not FRESH["on"] or not _FRESH_LOCK.acquire(blocking=force):
         return False
     try:
@@ -870,14 +860,10 @@ def fresh_check(force: bool = False, why: str = "") -> bool:
             return False
         FRESH["looked"] = now
         state, _newest = data_state()
-        if state == FRESH["seen"] and not (force and FRESH["deferred"]):
+        if state == FRESH["seen"]:
             return False
         FRESH["seen"] = state
         refresh()
-        if FRESH["jobs"] and not force:
-            FRESH["deferred"] = True
-            return True
-        FRESH["deferred"] = False
         renew(why or "the data changed")
         return True
     finally:
@@ -891,22 +877,20 @@ def data_changed(why: str) -> None:
         return
     with _FRESH_LOCK:
         FRESH["seen"] = data_state()[0]  # after the write: a later change differs from it
-        FRESH["deferred"] = False
         refresh()
         renew(why)
 
 
 def watch_write_job(job: dict) -> None:
-    """A job this server started: when it ends, look at the data once and render the pages from it if it wrote."""
+    """A job this server started: when it ends, look at the data at once (the looks before requests see its writes as
+    they come; this one does not wait for the next request)."""
 
     name = job["operation"]
     if not FRESH["on"]:
         return
-    FRESH["jobs"].add(job["id"])
 
     def end() -> None:
         _wait_job(job["id"])
-        FRESH["jobs"].discard(job["id"])
         try:
             fresh_check(force=True, why=f"job {job['id']} ({name}) ended")
         except Exception as exc:  # noqa: BLE001 -- the look failed; the next read looks again
@@ -931,7 +915,8 @@ def start_fresh() -> None:
     the data as it is, so nothing waits for a build, not even the first. The slowest are rendered ahead."""
     FRESH.update(on=True, looked=time.monotonic())
     FRESH["seen"] = data_state(first=True)[0]
-    warm_pages()
+    threading.Thread(target=_pages_warmer, daemon=True).start()
+    _WARM.set()
 
 
 #: A deployment's hooks (--hooks), or None. The harness calls them and knows nothing of what they
@@ -1092,7 +1077,8 @@ class Handler(SimpleHTTPRequestHandler):
                 )
 
     def _refuse(self) -> bool:
-        if urlparse(self.path).path in ("", "/") and self.prefixes:
+        # The server's root, and the catalog's address without its slash, open the catalog.
+        if self.prefixes and urlparse(self.path).path in ("", "/", self.prefixes[0].rstrip("/")):
             self.send_response(302)
             self.send_header("Location", self.prefixes[0])
             self.end_headers()
@@ -1545,7 +1531,7 @@ class Handler(SimpleHTTPRequestHandler):
         """Handle HEAD requests with access checks. A public server has no file to serve (its pages are nginx's)."""
         if LIMITS["hosts"]:
             self.send_error(404)
-        elif not self._refuse():
+        elif not self._refuse() and not self._from_site(urlparse(self.path).path, head=True):
             super().do_HEAD()
 
     def do_GET(self):
@@ -1630,10 +1616,11 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _from_site(self, url_path: str) -> bool:
+    def _from_site(self, url_path: str, head: bool = False) -> bool:
         """A page of the catalog, rendered from the data as it is (RFC-040): under the catalog's address, on a server
-        that has pages of its own. False for anything else, and for a path the catalog does not render (a page a
-        project's builder wrote beside them is then read from the folder, as it always was)."""
+        that has pages of its own; `head`: its headers only. A page the catalog's own (Site.claims) that the data does
+        not have is 404, whatever an older export left on disk. False for anything else: a page a project's builder wrote
+        beside them is then read from the folder, as it always was."""
         prefix = self.prefixes[0] if self.prefixes else ""
         if not FRESH["on"] or not prefix or not url_path.startswith(prefix):
             return False
@@ -1646,21 +1633,25 @@ class Handler(SimpleHTTPRequestHandler):
         if kind is None:
             return False
         try:
-            text = site_page(rel)
+            site, text = site_page(rel)
         except Exception as exc:  # noqa: BLE001 -- said in the log and on health (site_page); the next request tries again
             self._json(
                 500, {"error": f"the page could not be rendered: {type(exc).__name__}: {exc}"}, cache=False
             )
             return True
         if text is None:
-            return False
+            if not site.claims(rel):
+                return False
+            self.send_error(404)
+            return True
         data = text.encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", kind)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
-        self.wfile.write(data)
+        if not head:
+            self.wfile.write(data)
         return True
 
     def _from_store(self, url_path: str) -> bool:
@@ -1793,9 +1784,35 @@ def main() -> int:
         metavar="CATALOG_DIR",
         help="answer every comparison this built catalog links to, in the background",
     )
+    # The pages' own options, as `evh catalog` takes them (RFC-040): the server renders the pages it would write.
+    pages = ap.add_argument_group("the pages (as evh catalog takes them)")
+    pages.add_argument("--brand", default="eval catalog", help="the name beside the logo")
+    pages.add_argument(
+        "--api", default="/api/", help="where the inspector's API answers, for pages served under a path"
+    )
+    pages.add_argument("--head", metavar="FILE", help="HTML added to every page's <head> (none by default)")
+    pages.add_argument("--about", metavar="FILE", help="HTML shown on the overview, under its description")
+    pages.add_argument(
+        "--repo", metavar="URL", help="where the project's files can be read: a project path links there"
+    )
+    pages.add_argument(
+        "--mcp", metavar="URL", help="the deployment's MCP server, named in every page's footer"
+    )
+    pages.add_argument("--mcp-howto", metavar="URL", help="--mcp: where to read how to connect an agent")
+    pages.add_argument("--card", metavar="URL", help="the image a shared link's card shows (1200x630)")
+    pages.add_argument(
+        "--link",
+        action="append",
+        default=[],
+        metavar="LABEL=URL",
+        help="a part of the publication, for the header",
+    )
     args = ap.parse_args()
     if args.public and args.behind_proxy:
         die("--public and --behind-proxy are two deployments: one at a time", "bad-argument")
+    from evaluation_harness import catalog_build  # noqa: PLC0415
+
+    catalog_build.SECTIONS = catalog_build.configure(args)
     if args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 

@@ -417,7 +417,8 @@ catalog:
 catalog-serve:  # renders its pages on request (RFC-040): nothing to build first
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
 
-# The whole thing on 127.0.0.1, to try it: the catalog and the run inspector over this project's data. STORE=sqlite
+# The whole thing on 127.0.0.1, to try it: the catalog (rendered on request, RFC-040) and the run inspector over this
+# project's data. STORE=sqlite
 # serves a SQLite copy of data/ (.build/serve-sqlite/data/project.sqlite, made once by data-migrate; FRESH=1 makes it
 # again), so trying it never touches the tracked files.
 SERVE_COPY := .build/serve-sqlite
@@ -426,10 +427,8 @@ ifeq ($(STORE),sqlite)
 	@if [ -n "$(FRESH)" ] || [ ! -f $(SERVE_COPY)/data/project.sqlite ]; then \
 	  rm -rf $(SERVE_COPY) && mkdir -p $(SERVE_COPY) && cp -r data $(SERVE_COPY)/data && \
 	  EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/cli.py data-migrate --to sqlite; fi
-	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/cli.py catalog --out $(SERVE_COPY)/catalog
 	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_serve.py --build-dir $(SERVE_COPY)/catalog $(ARGS)
 else
-	$(PYTHON) scripts/cli.py catalog
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
 endif
 

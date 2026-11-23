@@ -48,6 +48,7 @@ KIT = HERE.parent / "tutorial"
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
+from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
 from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: E402
@@ -274,6 +275,61 @@ try:
     check("after them, the last write shows", shows(port, titles[-1]))
     check("no `catalog` job ran", catalog_jobs() == [], catalog_jobs())
 
+    # ── a burst of reads after one write: one model, not one per reader ─────────────────────────────────────────────
+    time.sleep(2.5)  # the background rendering of the last change is done
+    patch_title(port, "Burst after")
+    before = health(port)["catalog"]["prepared"]
+    burst: list[tuple[int, str]] = []
+    pages = ["goals.html", "index.html", "arms.html", "datasets.html", cb.goal_page(GOAL), "metrics.html"] * 2
+    readers = [threading.Thread(target=lambda p=p: burst.append(page(port, p))) for p in pages]
+    for t in readers:
+        t.start()
+    for t in readers:
+        t.join(timeout=120)
+    made = health(port)["catalog"]["prepared"] - before
+    check(
+        f"{len(pages)} reads at once after one write: all answered from one new model ({made} prepared)",
+        made == 1 and len(burst) == len(pages) and all(st == 200 for st, _b in burst)
+        and shows(port, "Burst after"),
+        (made, [st for st, _b in burst]),
+    )  # fmt: skip
+
+    # ── the catalog's own folders: a page the data no longer has is gone ──────────────────────────────────────────
+    for rel in ("g/removed_goal.html", "a/old-arm.html", "d/gone_v1.html", "goals-old.html"):
+        (build_dir / rel).parent.mkdir(parents=True, exist_ok=True)
+        (build_dir / rel).write_text("<html>an old export</html>")
+    gone = {rel: page(port, rel)[0] for rel in ("g/removed_goal.html", "a/old-arm.html", "d/gone_v1.html")}
+    check(
+        "a file an old export left under the catalog's own folders is not served: 404, the data has no such page",
+        set(gone.values()) == {404},
+        gone,
+    )
+    st, extra = page(port, "goals-old.html")
+    check(
+        "a page beside them that the catalog does not render (a project's own builder's) is still served",
+        st == 200 and "an old export" in extra,
+        st,
+    )
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}{cs.Handler.prefixes[0]}goals.html",
+        method="HEAD",
+        headers={"Host": f"127.0.0.1:{port}"},
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310 - the test's own server  # nosec B310
+        head = (r.status, int(r.headers["Content-Length"] or 0), r.read())
+    check(
+        "HEAD on a page: 200, its length, no body",
+        head[0] == 200 and head[1] > 1000 and head[2] == b"",
+        head[:2],
+    )
+    bare = cs.Handler.prefixes[0].rstrip("/")
+    st, body = call(port, "GET", bare, api=False)
+    check(
+        "the catalog's address without its slash opens its home page",
+        st == 200 and "<html" in body.lower(),
+        st,
+    )
+
     # ── a render that fails ─────────────────────────────────────────────────────────────────────────────────────────
     del lines[:]
     real_goals = cs.A.goals
@@ -343,7 +399,7 @@ try:
     port2 = free_port()
     with open(log_file, "w") as logf:
         srv = subprocess.Popen(
-            [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port2)],
+            [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port2), "--brand", "Fresh brand"],
             cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
         )  # fmt: skip
         try:
@@ -359,6 +415,11 @@ try:
             check(
                 "a real server: health has the catalog's mode",
                 health(port2)["catalog"]["mode"] == "on request",
+            )
+            check(
+                "catalog-serve takes evh catalog's page options: --brand is on its pages",
+                shows(port2, "Fresh brand", "index.html", prefix=pre),
+                page(port2, "index.html", pre)[1][:300],
             )
             r = evh("goal-set", GOAL, "--set", "title=Fresh seven")
             # past the look interval (FRESH_EVERY_S): a read sooner is answered from the last look
