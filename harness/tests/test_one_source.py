@@ -432,6 +432,11 @@ ALLOWED: dict[tuple[str, str, str], str] = {
         "v14_goals",
     ): "V14 checks what a goal declares against what the runs record, so it reads the declaration",
     (
+        "F1/declared-direction-read",
+        "model/goals.py",
+        "direction_warning",
+    ): "warns that a goal's own declared word is not a direction (V14, goal-new, goal-set); it decides no direction",
+    (
         "F1/declared-directions-read",
         "_adapter.py",
         "metric_directions",
