@@ -26,6 +26,7 @@ import statistics
 import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
+from typing import Any
 
 from evaluation_harness import _common, _outputs
 from evaluation_harness._common import is_descriptive, lower_is_better
@@ -303,6 +304,26 @@ def goal_datasets(goal: dict) -> list[str]:
     ]
 
 
+#: What `direction_source` names for a measure nothing speaks for: no goal, no run, no name in the name table. It is read
+#: as higher-is-better (a result never moves for it) and `assumed_note` says so wherever a ranking rests on it.
+ASSUMED = "the default (nothing declares it)"
+
+
+def assumed_note(metric: str, source: str) -> str | None:
+    """The one line that says a direction is the bare default (`direction_source` named `ASSUMED`), None for any other
+    source: declare the measure in a goal (`direction:`) or the adapter (`METRIC_DIRECTIONS`) to settle it."""
+    if source != ASSUMED:
+        return None
+    return f"{metric}: no goal or adapter says which way is better; read as higher-is-better (declare it)"
+
+
+def note_assumed(metric: str, **ask: Any) -> None:
+    """Print `assumed_note` for `metric` as a reader's NOTE line when `direction(metric, **ask)` is the bare default.
+    `ask` is what the reader asked `direction` with, so the line is true of the direction it used."""
+    if line := assumed_note(metric, direction_source(metric, **ask)[1]):
+        print(f"  NOTE: {line}")
+
+
 def direction_source(
     metric: str,
     *,
@@ -311,7 +332,8 @@ def direction_source(
     goals: dict | None = None,
     kinds: dict[str, str] | None = None,
 ) -> tuple[str, str]:
-    """`direction`, and what decided it: "goal <id>", "the runs' directions", "the runs' kinds" or "the name table"."""
+    """`direction`, and what decided it: "goal <id>", "the runs' directions", "the runs' kinds", "the name table" (a name
+    it knows: cost, speed, tokens, an error rate, a descriptive key) or `ASSUMED` (higher, for a measure nothing says)."""
     runs = list(runs)
     if dataset is None:
         shared = {str(m["dataset_id"]) for _d, m in runs if m.get("dataset_id")}
@@ -336,7 +358,9 @@ def direction_source(
     kind = (kinds or {}).get(metric) or ("descriptive" if "descriptive" in seen else next(iter(seen), None))
     if kind == "descriptive" or (kind is None and is_descriptive(metric)):
         return "neutral", "the runs' kinds" if kind else "the name table"
-    return ("lower" if lower_is_better(metric) else "higher"), "the name table"
+    if lower_is_better(metric):
+        return "lower", "the name table"
+    return "higher", ASSUMED
 
 
 def direction(
@@ -351,12 +375,14 @@ def direction(
 
       1. a goal that declares it, as its primary measure or as an axis with a direction: for a question about
          `dataset`, a goal listing it first, then the goals the runs name (a goal on another dataset says nothing
-         about this one); for a question with no dataset, then any goal (V14 fails two that disagree on one dataset);
+         about this one); for a question with no dataset, then any goal (V14 fails two that disagree on one dataset).
+         The listing goal wins over a goal the runs name because a goal that names the dataset speaks for it, while a
+         run's `goal` only says what the run was made for, and the run may be on a dataset that goal does not decide;
       2. what the runs record: the adapter's directions (`metric_directions`, `import-run --asc`), then the kinds
          they declare (`metric_kinds`; `kinds` overrides them, for the adapter's declaration as it is today): a
          descriptive kind is neutral;
-      3. the name table (`_common`): cost, speed, tokens and error rates are lower, the descriptive keys neutral, the
-         rest higher.
+      3. the name table (`_common`): cost, speed, tokens and error rates are lower, the descriptive keys neutral; the
+         rest, which nothing declares, is higher (`ASSUMED`, which the readers that rank on it say, `assumed_note`).
 
     A declared direction beats neutral: a project that says which way a count goes has said it is not neutral.
     `dataset` is the dataset asked about; left out, it is the one the runs share. `goals` is {goal_id: goal}, read

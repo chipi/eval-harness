@@ -165,7 +165,7 @@ def rule() -> None:
     check(
         "rule: direction_source says what decided",
         _runs.direction_source("m", dataset="d1", goals=other) == ("lower", "goal a")
-        and _runs.direction_source("m", dataset="d2", goals=other) == ("higher", "the name table")
+        and _runs.direction_source("m", dataset="d2", goals=other) == ("higher", _runs.ASSUMED)
         and _runs.direction_source("m", runs=run(metric_directions={"m": "lower"}), goals={})
         == ("lower", "the runs' directions"),
     )
