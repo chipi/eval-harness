@@ -314,6 +314,7 @@ def decide(
     )
     # Every axis against the leader, paired per item; Holm across the eligible arms on quality.
     family = max(len(eligible) - 1, 1)
+    shared_of: dict = {}  # arm -> (items it shares with the leader, the clusters they make) on the quality axis
     for ax in axes:
         # Quality decides the contenders, so only the eligible arms are its family; every other axis is
         # shown for every arm.
@@ -325,6 +326,8 @@ def decide(
             series, leader, higher_is_better=ax["direction"] == "higher", family=family, clusters=clusters
         )
         for r in cmp.get("rows") or []:
+            if ax is quality:
+                shared_of[r["arm"]] = (r["n"], r.get("clusters"))
             note = "" if ax["name"] != "speed" or one_machine else "different machines: not compared"
             rows[r["arm"]][ax["name"]]["vs_leader"] = {
                 "delta": r.get("delta"),
@@ -336,8 +339,17 @@ def decide(
     for x in [
         x for x in eligible if (rows[x]["quality"].get("vs_leader") or {}).get("verdict") == "untestable"
     ]:
-        out.setdefault(x, []).append("shares fewer than 2 items with the leader")
-        why.append(f"{arms[x]['label']} is out: shares fewer than 2 items with the leader.")
+        # Untestable is two things: too few shared items, or (tested by a cluster) too few clusters among them; say which.
+        shared_n, groups = shared_of.get(x, (0, None))
+        if clusters is not None and groups is not None and shared_n >= 2:
+            reason = (
+                f"shares {shared_n} items with the leader, in {groups} {cluster_by} cluster{'s' if groups != 1 else ''}: "
+                "the clustered test needs at least 2"
+            )
+        else:
+            reason = "shares fewer than 2 items with the leader"
+        out.setdefault(x, []).append(reason)
+        why.append(f"{arms[x]['label']} is out: {reason}.")
         eligible.remove(x)
     # WHO IS A CONTENDER is the strategy's call (STRATEGIES); the tie-break then picks.
     strategy = strategy_of(goal)

@@ -3187,7 +3187,14 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                                 ),
                                 # the baseline's id in a flag breaks after its underscores: whole, it set the column's width
                                 e(
-                                    as_named("; ".join(r["flags"] + dec["out"].get(r["arm"], []))) or "—"
+                                    as_named(
+                                        "; ".join(
+                                            r["flags"]
+                                            + dec["out"].get(r["arm"], [])
+                                            + (["failed every item"] if r.get("failed_every_item") else [])
+                                        )
+                                    )
+                                    or "—"
                                 ).replace("_", "_<wbr>"),
                                 link,
                             ],

@@ -70,7 +70,7 @@ from evaluation_harness._runs import (  # noqa: E402
     say_agreement,
     warn_on_ambiguous_runs,
 )
-from evaluation_harness.stats import LARGE_SAMPLE, clustered, fmt_p, p_method, sign_flip_p  # noqa: E402
+from evaluation_harness.stats import LARGE_SAMPLE, clustered, fmt_p, min_attainable_p, p_method, sign_flip_p  # noqa: E402
 from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E402
 
 
@@ -614,6 +614,15 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
                 else "    (uncorrected: valid only if this pair was named before the table was read)"
             )
         )
+    # What these many items can show at all: when the smallest p they can reach is above the level, no result is
+    # significant here, whatever the data say (3 items: 0.25).
+    min_p = min_attainable_p(n_units)
+    level = thresh if args.family > 1 else 0.05
+    if min_p > level:
+        print(
+            f"    smallest p         {fmt_p(min_p)}: {n_units} {'clusters' if args.cluster else 'items'} cannot reach {level:.4g}, "
+            "so a verdict of not significant says nothing about the arms"
+        )
     if hyp:
         agrees = _hypothesis.agreement(hyp["direction"], obs, lower, p <= thresh)
         shown = {"better": "better than", "worse": "worse than", "no-worse": "no worse than"}[
@@ -671,6 +680,7 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
             "wins": wins,
             "ties": ties,
             "p": p,
+            "min_p": min_p,
             "method": method,
             "permutations": args.permutations if method == "sampled" else None,
             "seed": args.seed,
