@@ -389,6 +389,13 @@ def today() -> date:
     return datetime.now(timezone.utc).date()
 
 
+def goal_required_from() -> str | None:
+    """The date (`required_from` of data/goals/policy.yaml) from which every run names a goal, when today is on or after
+    it; None while goals are optional. The writers refuse at write time what validate V14 fails for it later."""
+    since = str(goal_policy().get("required_from") or "")
+    return since if since and today().isoformat() >= since else None
+
+
 def sha256(path: Path) -> str:
     """Return the SHA-256 digest of a file's contents."""
     from evaluation_harness import _store  # noqa: PLC0415
@@ -622,6 +629,19 @@ def dataset_id_ok(dataset_id: str) -> str:
     if not DATASET_ID.fullmatch(dataset_id or "") or ".." in dataset_id:
         die(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')", "bad-argument")
     return dataset_id
+
+
+def plain_id_ok(value: str, option: str) -> str:
+    """The id a writer is given for `option` (a run, a system, a reference's name), or SystemExit when it is not a plain
+    name: an id with a path, a space or a letter outside ASCII in it would be a folder of its own, and the arm ids that
+    join `<label>/<dataset>/<system>` could not be split back (RFC-041 F7)."""
+    if not DATASET_ID.fullmatch(value or "") or ".." in value:
+        die(
+            f"{option} {str(value)[:60]!r}: an id is a plain name (ASCII letters, digits, '.', '_', '-'), "
+            "not a path, a space or unicode",
+            "bad-argument",
+        )
+    return value
 
 
 def load_dataset(dataset_id: str) -> dict[str, Any]:

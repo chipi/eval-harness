@@ -157,11 +157,18 @@ def history(goal: str) -> dict[str, Any]:
     return {"goal": goal, "saves": GOAL.history(goal)}
 
 
+def _with_warnings(saved: dict[str, Any]) -> dict[str, Any]:
+    """A save's answer with what the saved goal asks of its runs that they cannot give (`model.goals.warnings`)."""
+    from evaluation_harness.model.goals import warnings  # noqa: PLC0415
+
+    return {**saved, "warnings": warnings(saved["record"])}
+
+
 def new(goal: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the goal from its fields (dotted keys), checked; an id that is taken is refused."""
     from evaluation_harness.model.goals import GOAL  # noqa: PLC0415
 
-    return GOAL.make(goal, {"goal_id": goal}, list(set.items()), by)
+    return _with_warnings(GOAL.make(goal, {"goal_id": goal}, list(set.items()), by))
 
 
 def change(
@@ -170,7 +177,7 @@ def change(
     """Set and remove the goal's fields (dotted keys), checked; its comments kept."""
     from evaluation_harness.model.goals import GOAL  # noqa: PLC0415
 
-    return GOAL.patch(goal, list((set or {}).items()), list(unset or []), by)
+    return _with_warnings(GOAL.patch(goal, list((set or {}).items()), list(unset or []), by))
 
 
 def say_list(r: dict[str, Any]) -> str:
@@ -232,4 +239,5 @@ def say_history(r: dict[str, Any]) -> str:
 
 def say_saved(r: dict[str, Any]) -> str:
     """A save's answer as text: saved, or unchanged."""
-    return f"{r['id']}: {'saved' if r['changed'] else 'unchanged (nothing to save)'}"
+    head = f"{r['id']}: {'saved' if r['changed'] else 'unchanged (nothing to save)'}"
+    return "\n".join([head, *(f"  WARNING: {w}" for w in r.get("warnings") or [])])

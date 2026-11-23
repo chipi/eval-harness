@@ -53,6 +53,58 @@ GOAL = Entity(
 )
 
 
+def direction_warning(record: dict[str, Any]) -> str | None:
+    """The warning for a goal whose primary direction is neither lower nor higher (a decision rule such as
+    `non_inferior` is not a direction: RFC-041 F1), else None. The one wording of validate V14's note and of what goal-new
+    and goal-set say when they save it."""
+    primary = (record.get("success_criteria") or {}).get("primary") or {}
+    measure, says = primary.get("measure"), primary.get("direction")
+    if says is None or says in ("lower", "higher"):
+        return None
+    return (
+        f"primary direction {says!r} is neither lower nor higher, so {measure} is read as the runs and the name table "
+        "say; a decision rule is not a direction"
+    )
+
+
+def measure_warning(record: dict[str, Any], recorded: set[str]) -> str | None:
+    """The warning for a goal whose primary measure no run on its datasets records, when `recorded` (the numeric measures
+    those runs record) is not empty: a prose name for the measure decides on nothing the runs hold. None while no run
+    records anything yet (the goal comes first), or when the measure is one of them."""
+    from evaluation_harness import _runs  # noqa: PLC0415
+
+    measure = ((record.get("success_criteria") or {}).get("primary") or {}).get("measure")
+    if not measure or not recorded or measure in recorded:
+        return None
+    return (
+        f"primary measure {measure!r} is recorded by no run on {', '.join(_runs.goal_datasets(record))}; "
+        f"those runs record {', '.join(sorted(recorded))}"
+    )
+
+
+def recorded_on(datasets: list[str], data: Path | None = None) -> set[str]:
+    """The numeric measures the runs on `datasets` record, under any label."""
+    return {
+        k
+        for ds in datasets
+        for _sd, rec in _model_runs.scored(ds, label_is=None, data=data)
+        for k, v in (rec.get("scores") or {}).items()
+        if isinstance(v, (int, float))
+    }
+
+
+def warnings(record: dict[str, Any], data: Path | None = None) -> list[str]:
+    """What a goal asks of its runs that they cannot give (a warning, never a refusal: a goal is written before its runs),
+    said where the goal is saved (goal-new, goal-set; validate V14 notes the same)."""
+    from evaluation_harness import _runs  # noqa: PLC0415
+
+    found = [
+        direction_warning(record),
+        measure_warning(record, recorded_on(_runs.goal_datasets(record), data)),
+    ]
+    return [w for w in found if w]
+
+
 def status(goal_id: str, data: Path | None = None) -> dict[str, Any]:
     """Where a goal stands: each of its datasets (made, materialized, its reference, its runs and arms, its baseline),
     its rounds, the jobs working on it, and the next step, with the command that takes it. Read from `data` (another

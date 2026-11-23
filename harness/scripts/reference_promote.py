@@ -21,7 +21,7 @@ from typing import Any
 
 from evaluation_harness import _store
 from evaluation_harness._actor import stated
-from evaluation_harness._common import REFERENCES, die, load_dataset, now, read_json
+from evaluation_harness._common import REFERENCES, die, load_dataset, now, plain_id_ok, read_json
 from evaluation_harness._label_sets import answers, label_line, label_text, labels_for, sets, source_line
 from evaluation_harness._references import write_manifest
 from evaluation_harness.ops import legacy
@@ -90,9 +90,7 @@ def body(**inputs: Any) -> int:
         )
     set_ds, _, set_name = args.labels.rpartition("/")
     set_ds = set_ds or args.dataset_id
-    name = args.name or args.dataset_id
-    if "/" in name or name.startswith(".") or not name:
-        die(f"--name {name!r}: one name, no path", "bad-argument")
+    name = plain_id_ok(args.name, "--name") if args.name else args.dataset_id
     ref_dir = REFERENCES / args.tier / name
     kept_out = _store.is_file(ref_dir / "manifest.json") and not any(_store.glob(ref_dir, "*.txt"))
     hand_made = (

@@ -1122,6 +1122,10 @@ def test_example_scorer_suites_pass() -> None:
             "three look-alike projects of the beta projects' shapes (an import with prose goals, a fleet's repeat set, a zero-price bake-off): every read command and RFC-041's facts, asserted by hand",
         ),
         (
+            "test_writers_refuse.py",
+            "every writer records the fact or refuses by name (an id with a path or unicode, a repeat with no of, a reference not there, a goal the policy requires, a cost some items did not report), and validate names each broken link with its file",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),
