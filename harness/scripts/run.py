@@ -986,13 +986,8 @@ def _dry_run(
     # reads `provider` only if its system sets one: echo is the bundled adapter's default, not a fact about another.
     custom = adapter_id != BUNDLED_ADAPTER_ID
     provider = params.get("provider") if custom else params.get("provider", "echo")
-    what = ", ".join(
-        x
-        for x in (
-            f"adapter {adapter_id}" if custom else "",
-            f"{provider}" + (f" / {params['model']}" if params.get("model") else "") if provider else "",
-        )
-        if x
+    what = " / ".join(
+        x for x in (f"adapter {adapter_id}" if custom else "", provider, params.get("model")) if x
     )
     print(f"  system      {cfg['system_id']}  ({what})")
     print(f"  dataset     {ds['dataset_id']}  ({len(items)} items)")
