@@ -60,8 +60,15 @@ try:
     (proj / "data" / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tickets")
     goal = (KIT / "goals" / "tickets_summary.yaml").read_text().replace("tickets_v1", "tk_v1")
-    _runstore.write_text(proj, "goals/g_one.yaml", goal.replace("goal_id: tickets_summary", "goal_id: g_one"))
-    _runstore.write_text(proj, "goals/g_two.yaml", goal.replace("goal_id: tickets_summary", "goal_id: g_two"))
+    title = "title: One-line support ticket summaries"
+    for which, name in (("one", "First"), ("two", "Second")):
+        _runstore.write_text(
+            proj,
+            f"goals/g_{which}.yaml",
+            goal.replace("goal_id: tickets_summary", f"goal_id: g_{which}").replace(
+                title, f"title: {name} goal"
+            ),
+        )
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
     r = (
@@ -159,6 +166,14 @@ try:
         "a goal's page reads its own baseline, never the dataset's own",
         "two_v1" in page and run_of("free_v1") not in page,
         page[:300],
+    )
+    ds_page = (proj / ".build/catalog/datasets.html").read_text()
+    row = ds_page[ds_page.find('data-key="tk_v1"') :].split("</tr>")[0]
+    check(
+        "the datasets page names each goal's baseline on the dataset (the one goal's, not the latest of any)",
+        re.search(r"g/g_one\.html[^>]*>First goal</a>: <a [^>]*>two_<wbr>v1", row) is not None
+        and re.search(r"g/g_two\.html[^>]*>Second goal</a>: <a [^>]*>one_<wbr>v1", row) is not None,
+        re.sub(r"<[^>]+>", " ", row)[-400:],
     )
     check(
         "the goal page: the version, who promoted it, the evidence frozen in, the history folded",

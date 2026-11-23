@@ -992,11 +992,20 @@ def _goals_of(A: Adapter) -> dict:
     return out
 
 
+def _baseline_goal(goal_by_id: dict, goal_id: str | None) -> str:
+    """The goal a baseline belongs to, as a cell names it: its linked title, its id when the goal is gone, or "no goal"
+    for the dataset's own line."""
+    if goal_id is None:
+        return "no goal"
+    return goal_link(goal_by_id[goal_id]) if goal_id in goal_by_id else e(goal_id)
+
+
 def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """The datasets page: every dataset, its versions, arms, references, goals and baseline."""
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
     goals = _goals_of(A)
+    goal_by_id = {g["goal_id"]: g for g in A.goals()}
     w = window(A, by_ds)
     period_rows = period_datasets(A, by_ds)
     # every tag key some dataset carries: each is a "group by" chip (RFC-019: tags group and filter)
@@ -1005,7 +1014,8 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
         parent = (v.get("parent") or {}).get("dataset_id")
-        bl = (v.get("baselines") or [None])[-1]
+        # A baseline is a goal's: the latest promotion of each goal on this dataset, not "the" latest of any goal.
+        by_goal = {b.get("goal"): b for b in v.get("baselines") or []}
         label = {a["arm"]: a["label"] for a in v["arms"]}
         last = max((a["last"] for a in v["arms"]), default="")
         runs, usd = period_rows[ds]["runs"], period_rows[ds]["usd"]
@@ -1043,7 +1053,12 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     f'<span data-flow="usd">{e(fmt_amount(sum(x[1] for x in usd), "usd")) if usd else "—"}</span>',
                     ", ".join(reference_link(r["id"]) for r in v["refs"]) or "—",
                     "<br>".join(goal_link(g) for g in goals.get(ds, [])) or "—",
-                    arm_link(bl["arm"], label.get(bl["arm"], bl["run"])) if bl and bl.get("arm") else "—",
+                    "<br>".join(
+                        f"{_baseline_goal(goal_by_id, k)}: "
+                        + (arm_link(bl["arm"], label.get(bl["arm"], bl["run"])) if bl.get("arm") else "—")
+                        for k, bl in by_goal.items()
+                    )
+                    or "—",
                     f'<span data-v="{e(last)}">{e(last[:10]) or "—"}</span>',
                 ],
             }
