@@ -1091,6 +1091,10 @@ def test_example_scorer_suites_pass() -> None:
             "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
         ),
         (
+            "test_foreign_projects.py",
+            "three look-alike projects of the beta projects' shapes (an import with prose goals, a fleet's repeat set, a zero-price bake-off): every read command and RFC-041's facts, asserted by hand",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),
