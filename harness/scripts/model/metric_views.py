@@ -37,7 +37,7 @@ def metrics(
         where = idx[m]
         if dataset and dataset not in where["datasets"]:
             continue
-        lower = any(A.lower_is_better(m, ds) for ds in where["datasets"])
+        lower = cb.metric_lower(A, m, where)
         out.append(
             {
                 "metric": m,
@@ -61,7 +61,7 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
     where = idx.get(name)
     if where is None:
         raise Problem(f"no metric {name!r} is recorded: one of {', '.join(sorted(idx))}", "not-found")
-    lower = any(A.lower_is_better(name, ds) for ds in where["datasets"])
+    lower = cb.metric_lower(A, name, where)
     on = []
     for ds in sorted(where["datasets"]):
         if dataset and ds != dataset:

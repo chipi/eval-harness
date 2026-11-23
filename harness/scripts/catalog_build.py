@@ -3574,6 +3574,19 @@ def metric_index(A: Adapter, by_ds: dict) -> dict:
     return out
 
 
+def metric_lower(A: Adapter, m: str, where: dict) -> bool:
+    """Whether lower is better for `m`, `where` its metric_index entry: by the runs recording it (the goal they name
+    first, `A.lower_is_better`). A measure no run records yet goes by the goals deciding on it, then the name table; it
+    was "higher" whatever its goal said."""
+    if where["datasets"]:
+        return any(A.lower_is_better(m, ds) for ds in where["datasets"])
+    for g in where["goals"]:
+        said = ((g.get("success_criteria") or {}).get("primary") or {}).get("direction")
+        if said in ("lower", "higher"):
+            return said == "lower"
+    return A.lower_is_better(m)
+
+
 def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """One page, one row per metric: what it measures, which way is better, where it is recorded,
     and which goals decide on it. A row's anchor is #m-<metric>, which every metric link uses."""
@@ -3586,7 +3599,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     rows, period_rows = [], period_metrics(A, by_ds)
     for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed", "failed")), k)):
         where = idx[m]
-        lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
+        lower = metric_lower(A, m, where)
         # Direction first: cost, tokens and latency are "neutral" to the tests but lower is better.
         better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
         text = describe_metric(m, project)
@@ -4233,7 +4246,7 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
     and on every dataset the arms that record it, best first, with their spread."""
     from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
 
-    lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
+    lower = metric_lower(A, m, where)
     better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
     summary = describe_metric(m, project)
     details = metric_details(m, project)

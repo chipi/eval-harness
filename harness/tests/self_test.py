@@ -1083,6 +1083,10 @@ def test_example_scorer_suites_pass() -> None:
             "the tests a page collects are its thread's own: a server rendering on two threads gets each one's p",
         ),
         (
+            "test_metric_direction.py",
+            "a measure only a goal names goes the goal's way on metric-list, metric-show and the catalog, not 'higher'",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),
