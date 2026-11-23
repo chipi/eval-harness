@@ -14,6 +14,7 @@ import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 
+from evaluation_harness import _runs
 from evaluation_harness.axes import strategy_of
 from evaluation_harness.catalog_adapter import item_fields
 
@@ -203,17 +204,30 @@ def _group_key(a: dict) -> str:
     return f"judge {a['judge']}" if a.get("judge") else (a.get("reference") or "no reference")
 
 
-def goal_answers(goal: dict, by_ds: dict) -> list:
+def lower_on(A, goal: dict, measure: str, ds: str) -> bool:
+    """Whether `measure` is better lower on `ds`, for a goal's block: what every reader says (`_runs.direction`: the goal
+    that declares it, the runs, the name table), never the goal's `direction` alone, which a goal may leave out. Without
+    an adapter (a block read from rows alone), the goal and the name table."""
+    if A is not None:
+        return bool(A.lower_is_better(measure, ds))
+    return _runs.direction(measure, dataset=ds, goals={str(goal.get("goal_id", "")): goal}) == "lower"
+
+
+def goal_answers(goal: dict, by_ds: dict, A=None) -> list:
     """[{"dataset", "role", "notes", "groups": [{"key", "rows", "leader"}]}] for one goal: on each
     of its datasets, every arm that records the goal's primary measure, grouped by what it is
     scored against (gold first, then silver, then judges), best first within a group. Arms are
     ranked only against arms on the same dataset scored against the same thing, and a group's
     leader is never a flagged arm: fewer items than min_items, a format the goal does not accept,
-    or the arm that wrote the reference it is scored against."""
-    crit = goal.get("success_criteria") or {}
-    lower = (crit.get("primary") or {}).get("direction") == "lower"
+    or the arm that wrote the reference it is scored against. Each row ranks by its own measure's direction on its
+    dataset (`lower_on`: a judge's group reads on the judge's score)."""
     out = []
     for ds, role, notes, rows in _goal_rows(goal, by_ds):
+        lowers = {m: lower_on(A, goal, m, ds) for m in {r["measure"] for r in rows}}
+
+        def sign(r: dict, lowers: dict = lowers) -> float:
+            return r["mean"] if lowers[r["measure"]] else -r["mean"]
+
         groups: dict = {}
         for r in rows:
             groups.setdefault(_group_key(r), []).append(r)
@@ -230,12 +244,12 @@ def goal_answers(goal: dict, by_ds: dict) -> list:
                         "key": k,
                         "rows": sorted(
                             g,
-                            key=lambda r: (bool(r["flags"]), r["mean"] if lower else -r["mean"], r["label"]),
+                            key=lambda r: (bool(r["flags"]), sign(r), r["label"]),
                         ),
                         "leader": next(
                             (
                                 r
-                                for r in sorted(g, key=lambda r: r["mean"] if lower else -r["mean"])
+                                for r in sorted(g, key=sign)
                                 if not r["flags"]
                             ),
                             None,
@@ -311,7 +325,7 @@ def decided(A, g: dict, by_ds: dict) -> list:
     (`group_decision`; a group scored against silver beside a gold one is shown, not recommended)."""
     retired_in = retired_in_of(A, g)
     measure = ((g.get("success_criteria") or {}).get("primary") or {}).get("measure", "")
-    answers = goal_answers(g, by_ds)
+    answers = goal_answers(g, by_ds, A)
     for ans in answers:
         tiers = {r["id"]: r["tier"] for r in (by_ds.get(ans["dataset"]) or {}).get("refs", [])}
         for grp in ans["groups"]:
@@ -478,7 +492,7 @@ def _group_decision(
         own = {k: v for k, v in (crit.get("axes") or {}).items() if k != "quality"}
         goal = {
             **g,
-            "success_criteria": {**crit, "primary": {"measure": gm, "direction": "higher"}, "axes": own},
+            "success_criteria": {**crit, "primary": {"measure": gm}, "axes": own},
         }
     arms = {
         r["arm"]: {
@@ -633,7 +647,7 @@ def leader_vs_baseline(
     leader = next((r for r in rows if dec and r["arm"] == dec["leader"]), None)
     if not (leader and base and leader["arm"] != base):
         return None
-    lower = ((g.get("success_criteria") or {}).get("primary") or {}).get("direction") == "lower"
+    lower = lower_on(A, g, measure, ds)
     cmp = stats.compare(
         {
             leader["arm"]: (A.scores(leader["arm"]).get(measure) or {}).get("values") or {},
@@ -659,10 +673,10 @@ def glance(A, by_ds: dict) -> list[dict]:
     for g in A.goals():
         prim = (g.get("success_criteria") or {}).get("primary") or {}
         measure = prim.get("measure", "")
-        lower = prim.get("direction") == "lower"
         retired_in = retired_in_of(A, g)
-        for ans in goal_answers(g, by_ds):
+        for ans in goal_answers(g, by_ds, A):
             ds = ans["dataset"]
+            lower = lower_on(A, g, measure, ds)
             if not decides_on(g, ds):
                 continue  # a pilot slice or a generalization check: on the goal page, not the glance
             v = by_ds.get(ds) or {}
@@ -735,7 +749,7 @@ def dataset_groups(A, by_ds: dict, ds: str, goal: dict | None = None) -> list[di
     """The groups of one dataset as the goal reads them (`decided`: each with its decision), or, with no goal, every arm
     on its own headline grouped by what it is scored against (no decision): the tables of `evh leaderboard`."""
     if goal is None:
-        answers = goal_answers({"goal_id": "", "datasets": [{"dataset_id": ds}]}, by_ds)
+        answers = goal_answers({"goal_id": "", "datasets": [{"dataset_id": ds}]}, by_ds, A)
     else:
         answers = decided(
             A,
@@ -849,6 +863,11 @@ def leaderboard(
                 "baseline": {k: b[-1].get(k) for k in ("arm", "run", "promoted_at", "reason")} if b else None,
             }
         )
+    per_ds = {
+        str(d["dataset_id"]): "lower" if lower_on(A, g, str(prim.get("measure", "")), str(d["dataset_id"])) else "higher"
+        for d in g.get("datasets") or []
+        if d.get("dataset_id")
+    }
     return {
         "goal": goal_id,
         "item_word": getattr(A, "item_word", "item"),
@@ -871,7 +890,8 @@ def leaderboard(
         ],
         "answer": answer,
         "measure": prim.get("measure", ""),
-        "direction": "lower" if prim.get("direction") == "lower" else "higher",
+        "direction": _runs.combine(per_ds),
+        "direction_on": per_ds,
         "strategy": strategy_of(g),
         "strategy_about": STRATEGIES[strategy_of(g)],
         "tie_break": list(tie_break_of(g)),

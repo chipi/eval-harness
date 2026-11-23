@@ -1396,7 +1396,7 @@ def v14_goals() -> None:
                         f"goals/{g1}.yaml and goals/{g2}.yaml: {measure} is {d1}-is-better in the first, {d2}-is-better "
                         f"in the second, on {', '.join(where)}"
                     )
-    # A NOTE, never a failure: a direction that is not one (`non_inferior` is a decision rule) is read as higher, and a
+    # A NOTE, never a failure: a direction that is not one (`non_inferior` is a decision rule) is read as the runs and the name table say, and a
     # primary measure no run records (a prose name for the metric) decides on nothing the runs hold.
     for gid, g in sorted(goals.items()):
         primary = (g.get("success_criteria") or {}).get("primary") or {}
@@ -1404,7 +1404,7 @@ def v14_goals() -> None:
         if says is not None and says not in ("lower", "higher"):
             notes.append(
                 f"V14 goal {gid}: primary direction {says!r} is neither lower nor higher, so {measure} is read as "
-                "higher-is-better; a decision rule is not a direction"
+                "the runs and the name table say; a decision rule is not a direction"
             )
         on = goal_datasets(g)
         on_record = set().union(*(recorded_on.get(d, set()) for d in on)) if on else set()

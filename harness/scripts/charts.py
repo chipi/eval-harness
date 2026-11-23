@@ -436,7 +436,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
     A = _adapter()
     g = _goal(A, goal)
     prim = (g.get("success_criteria") or {}).get("primary") or {}
-    metric, lower = str(prim.get("measure", "")), prim.get("direction") == "lower"
+    metric = str(prim.get("measure", ""))
     rows: list[dict] = []
 
     def row(name: str, r: dict, flip: float, filled: bool, **extra: Any) -> dict:
@@ -464,6 +464,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         from evaluation_harness.ops.rounds import _round  # noqa: PLC0415
 
         rnd = _round(goal, round)
+        lower = A.lower_is_better(metric, rnd["dataset_id"])
         ev = model_rounds.evidence(goal, rnd, A)
         base = ev.get("baseline_arm") or ev.get("leader")
         if not base:

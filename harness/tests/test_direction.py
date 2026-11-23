@@ -406,7 +406,7 @@ try:
     check("V14: the notes do not fail the check", code == 0 and "FAIL V14" not in text, text[-800:])
     check(
         "V14: a primary direction that is neither lower nor higher is a note naming the goal and what it is read as",
-        "V14 goal g_ni: primary direction" in text and "non_inferior" in text and "read as higher" in text,
+        "V14 goal g_ni: primary direction" in text and "non_inferior" in text and "name table say" in text,
         text[-800:],
     )
     check(
@@ -491,6 +491,10 @@ ALLOWED_ASKS = {
     ),  # the arm's lower flag, for the primary measure the goal decides on
     ("model/goal_views.py", "_group_decision"),  # axes.decide's direction_of
     ("catalog_adapter.py", "direction_on"),  # for an adapter with no `direction`
+    ("model/goal_views.py", "lower_on"),  # a goal's block ranks by the one rule (the goal's own words first)
+    ("model/rounds.py", "evidence"),  # the round's leader and tests, by the primary measure on the round's dataset
+    ("charts.py", "gain_cost"),  # a round's gain against cost, by the primary measure on the round's dataset
+    ("catalog_build.py", "render_goal"),  # the goal page's axis titles: the quality limit's sign
 }
 
 

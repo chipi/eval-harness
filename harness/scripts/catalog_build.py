@@ -3028,7 +3028,14 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             + (f"; threshold {prim['threshold']}" if prim.get("threshold") is not None else ""),
         ),
         ("min items", crit.get("min_items", "")),
-        ("weighs", "; ".join(axis_title(x) for x in axes_of(g) if x["role"] != "ignore")),
+        (
+            "weighs",
+            "; ".join(
+                axis_title(x)
+                for x in axes_of(g, lambda m: "lower" if A.lower_is_better(m) else None)
+                if x["role"] != "ignore"
+            ),
+        ),
         ("strategy", f"{strategy_of(g)}: {STRATEGIES[strategy_of(g)]}"),
         ("tie-break", ", ".join(tie_break_of(g))),
         (

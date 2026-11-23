@@ -34,7 +34,7 @@ def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
     by_ds = cb.collect(A)
     retired_in = gv.retired_in_of(A, goal)
     out: dict[str, dict[str, Any]] = {}
-    for ans in gv.goal_answers(goal, by_ds):
+    for ans in gv.goal_answers(goal, by_ds, A):
         ds = ans["dataset"]
         if not ans["groups"]:
             continue

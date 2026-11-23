@@ -144,7 +144,12 @@ def print_goal(r: dict) -> None:
 
     print(f"{r['title']}\n")
     print(textwrap.fill(r["statement"], width=96))
-    print(f"\n  decision   {r['decision']}\n  decides    {r['measure']}, {r['direction']} is better")
+    better = (
+        f"{r['direction']} is better"
+        if r["direction"] != "mixed"
+        else _runs.better_word("mixed", r.get("direction_on"))
+    )
+    print(f"\n  decision   {r['decision']}\n  decides    {r['measure']}, {better}")
     print(f"  strategy   {r['strategy']}: {r['strategy_about']}")
     print(f"  tie-break  {', '.join(r['tie_break'])}")
     for gr in r["guardrails"]:
