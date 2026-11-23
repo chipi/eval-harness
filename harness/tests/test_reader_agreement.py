@@ -291,7 +291,7 @@ def kv(h: str) -> dict[str, str]:
 
 
 def catalog_facts(out: Path) -> tuple[dict[str, FactMap], dict[str, list[str]]]:
-    """What the export's pages state, from their attributes (`data-key`, `data-v`, `data-g`, `data-better`, `data-made`, the
+    """What the export's pages state, from their attributes (`data-key`, `data-v`, `data-g`, `data-better`, the
     arm page's `inspect.html?runs=` link) and, where a page has none, the words it says: an arm's `scored against` and `last
     run`, a metric's `better`, a dataset's `<goal>'s baseline, version N` sentence. A goal's baseline is the row a goal
     page tags `baseline`."""
@@ -310,7 +310,7 @@ def catalog_facts(out: Path) -> tuple[dict[str, FactMap], dict[str, list[str]]]:
     for p, h in pages.items():
         m = re.search(r'inspect\.html\?runs=([^"&,]+)', h)
         if m:
-            by_file[p.stem] = html.unescape(m.group(1))
+            by_file[p.stem] = urllib.parse.unquote(html.unescape(m.group(1)))
     if not arm_pages:
         why.setdefault("catalog:arm page", []).append("the export has no arm pages")
     for p, h in pages.items():
@@ -362,7 +362,6 @@ def catalog_facts(out: Path) -> tuple[dict[str, FactMap], dict[str, list[str]]]:
                 if row_arm is None or row_ds is None:
                     continue
                 put("arms index", "arms", (row_ds,), [row_arm])
-                put("arms index", "latest_day", (row_arm,), attr(a, "data-made"))
                 against = re.search(r" against (.+?) · ", attr(a, "data-set") or "")
                 put("arms index", "reference", (row_arm,), FD.ref(against.group(1)) if against else None)
                 cell = cells[col["deciding measure"]]

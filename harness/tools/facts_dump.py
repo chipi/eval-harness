@@ -272,9 +272,11 @@ def from_leaderboard(r: dict[str, Any], dataset: str) -> list[Fact]:
         m = re.search(r"ranked by: (\S+) \((higher|lower) is better\)", ln)
         if m:
             out.append(("direction", (dataset, m.group(1)), m.group(2)))
-    table = next((b for b in r.get("blocks") or [] if "system_id" in (b.get("columns") or [])), None)
+    tables = [
+        b for b in r.get("blocks") or [] if "system_id" in (b.get("columns") or [])
+    ]  # one per reference scored against
     arms = []
-    for row in (table or {}).get("rows") or []:
+    for row in (row for t in tables for row in t.get("rows") or []):
         label, system, _n = parse_arm_label(row["system_id"])
         arm = arm_id(label, dataset, system)
         arms.append(arm)
@@ -284,7 +286,7 @@ def from_leaderboard(r: dict[str, Any], dataset: str) -> list[Fact]:
                 out.append(("value", (arm, k), v))
         if "cost_usd" in row:
             out.append(("cost_state", (arm,), cost_state(row["cost_usd"])))
-    return [*out, ("arms", (dataset,), sorted(arms))] if table else out
+    return [*out, ("arms", (dataset,), sorted(arms))] if tables else out
 
 
 def from_baselines(r: dict[str, Any]) -> list[Fact]:

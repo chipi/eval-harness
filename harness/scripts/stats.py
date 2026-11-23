@@ -499,10 +499,12 @@ def _signs(n: int, permutations: int, seed: int) -> list:
     return _SIGNS[key]
 
 
-def fmt_p(p: float) -> str:
+def fmt_p(p: float | None) -> str:
     """A p-value as every command prints it: four decimals, and "<0.0001" for what would print
     as 0.0000 (a resampled p is never zero; one from the normal limit can be, ADR-0028). Every other value prints
-    exactly as it always has."""
+    exactly as it always has. None, a pair whose paired differences do not vary (the test has no p), prints "n/a"."""
+    if p is None:
+        return "n/a"
     s = f"{p:.4f}"
     return "<0.0001" if s == "0.0000" else s
 

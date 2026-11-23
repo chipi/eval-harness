@@ -476,7 +476,8 @@ def deciding_metric(
     runs: Iterable[Run] | None = ...,
     goals: dict | None = ...,
     refuse: Literal[True] = ...,
-) -> str: ...
+) -> str:
+    """The deciding metric; a refusal when nothing decides (the overload that does not return None)."""
 
 
 @overload
@@ -488,7 +489,8 @@ def deciding_metric(
     runs: Iterable[Run] | None = ...,
     goals: dict | None = ...,
     refuse: bool,
-) -> str | None: ...
+) -> str | None:
+    """The deciding metric, None when nothing decides and `refuse` is False."""
 
 
 def deciding_metric(
