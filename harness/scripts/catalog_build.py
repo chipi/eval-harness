@@ -3015,17 +3015,20 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     crit = g.get("success_criteria") or {}
     prim = crit.get("primary") or {}
     measure = prim.get("measure", "")
+    per = {
+        str(d["dataset_id"]): direction_on(A, measure, str(d["dataset_id"])) for d in g.get("datasets") or []
+    }
+    way = combine(per) if per else direction_on(A, measure)
+    if way == "lower" or (way == "higher" and prim.get("direction") == "higher"):
+        stated = f"{measure}, {way} is better"
+    else:  # nothing says higher (the default), or the datasets differ: the goal's rule states it better
+        stated = f"{measure}, no significant drop against the baseline"
     facts = [
         ("decision", g.get("decision", "")),
         ("audience", (g.get("context") or {}).get("audience", "")),
         (
             "decides",
-            (
-                f"{measure}, {prim['direction']} is better"
-                if prim.get("direction") in ("higher", "lower")
-                else f"{measure}, no significant drop against the baseline"
-            )
-            + (f"; threshold {prim['threshold']}" if prim.get("threshold") is not None else ""),
+            (stated) + (f"; threshold {prim['threshold']}" if prim.get("threshold") is not None else ""),
         ),
         ("min items", crit.get("min_items", "")),
         (

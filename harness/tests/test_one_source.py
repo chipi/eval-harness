@@ -422,11 +422,6 @@ ALLOWED: dict[tuple[str, str, str], str] = {
     ): "an axis's declared word; an undeclared one asks `direction_of`, which is `_runs.direction`",
     (
         "F1/declared-direction-read",
-        "catalog_build.py",
-        "render_goal",
-    ): "prints the goal's own words (its decision rule); the direction beside it comes from `direction_of`",
-    (
-        "F1/declared-direction-read",
         "promote_baseline.py",
         "evidence",
     ): "passes the goal's declaration on to the pair test; "
@@ -769,7 +764,13 @@ check(
 
 # -- the other source checks of these facts are still there ------------------------------------------------------------
 suite = (HARNESS / "tests" / "self_test.py").read_text(encoding="utf-8")
-for name in ("test_cap_shown.py", "test_today.py", "test_direction.py", "test_one_source.py"):
+for name in (
+    "test_cap_shown.py",
+    "test_today.py",
+    "test_direction.py",
+    "test_goal_block_direction.py",
+    "test_one_source.py",
+):
     check(f"{name} is in the suite", f'"{name}"' in suite and (HARNESS / "tests" / name).exists(), name)
 
 sys.exit(summary())

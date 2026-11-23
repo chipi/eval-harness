@@ -132,6 +132,23 @@ try:
         re.sub(r"<[^>]+>", " ", row)[:300],
     )
 
+    def decides(goal: str) -> str:
+        """The text of the goal page's "decides" fact."""
+        page = (out / "g" / f"{goal}.html").read_text() if (out / "g" / f"{goal}.html").exists() else ""
+        at = page.find("<dt>decides</dt>")
+        return re.sub(r"<[^>]+>|\s+", " ", page[at : page.find("</dd>", at)]).strip() if at >= 0 else ""
+
+    check(
+        "a goal with no direction on wer: its page says wer, lower is better (not 'no significant drop')",
+        "wer, lower is better" in decides("g_open"),
+        decides("g_open"),
+    )
+    check(
+        "a goal that says higher: its page says so",
+        "wer, higher is better" in decides("g_higher"),
+        decides("g_higher"),
+    )
+
     kept = leaders("g_higher", "tickets_b_v1", out)
     check(
         "a goal that says higher keeps it: the goal's block and page name the highest-wer arm",
@@ -149,6 +166,11 @@ finally:
 #: block takes its direction from `_runs.direction` (`goal_views.lower_on`, `axes.axes_of`'s `direction_of`); these read the
 #: goal's declaration for another reason, or a direction that was already decided.
 READS = {
+    ("_runs.py", "_declared_by"),  # the rule itself: a goal's declaration, the first thing `direction` asks
+    (
+        "catalog_build.py",
+        "render_goal",
+    ),  # says "higher is better" only where the goal itself declares it: the rule's default is not a declaration
     ("_study.py", "decide"),  # a study's own trial: the direction stats.compare gave
     (
         "_study.py",
@@ -171,7 +193,9 @@ READS = {
         "evidence",
     ),  # passes the goal's declaration on to the pair test; none leaves it to the rule
 }
-PATTERN = re.compile(r"""(\.get\("direction"\)|\["direction"\])\s*(==|!=)\s*"(lower|higher)\"""")
+PATTERN = re.compile(
+    r"""(\.get\("direction"\)|\["direction"\])\s*(==|!=|in|not in)\s*\(?\s*"(lower|higher)\""""
+)
 
 
 def reads(src: str) -> list[tuple[str, int]]:

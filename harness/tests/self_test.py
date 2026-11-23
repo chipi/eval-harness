@@ -1114,6 +1114,34 @@ def test_example_scorer_suites_pass() -> None:
             "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
         ),
         (
+            "test_goal_block_direction.py",
+            "a goal that leaves its direction out is read as every other reader reads it: the goal's block, page and decides line",
+        ),
+        (
+            "test_dry_run_label.py",
+            "evh run --dry-run says what runs: the project's adapter, or the provider the system names",
+        ),
+        (
+            "test_deciding_metric.py",
+            "the metric that decides on a dataset is answered once (_runs.deciding_metric)",
+        ),
+        (
+            "test_metric_show_wording.py",
+            "metric-show says a goal that decides and a goal that weighs a metric as two facts",
+        ),
+        (
+            "test_goal_baseline_per_goal.py",
+            "a goal's baseline is its own: every place that names it names the arm the goal promoted",
+        ),
+        (
+            "test_leaderboard_neutral.py",
+            "a leaderboard ranked on a descriptive metric says it is neutral, as every other reader does",
+        ),
+        (
+            "test_direction_assumed.py",
+            "a measure nobody declares is read as higher-is-better, and the readers say so",
+        ),
+        (
             "test_one_source.py",
             "no reader works out which way is better, which runs make an arm, an unknown cost, the public gate, the day or a goal's baseline itself: each is asked of its owner, and each check bites on a probe",
         ),
