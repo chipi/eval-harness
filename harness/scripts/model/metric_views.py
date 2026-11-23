@@ -25,7 +25,7 @@ def metrics(
 ) -> dict[str, Any]:
     """Every metric recorded (on `dataset`, when given): {"metrics": [{"metric", "better", "description", "datasets":
     {dataset: arms}, "decides": [goal], "weighs": [goal], "period": {"arms", "arms_prev", "new"} | None}], "period":
-    the line saying the period, or ""}. `better` is lower, higher or neutral."""
+    the line saying the period, or ""}. `better` is lower, higher, neutral or mixed (`better_on`: each dataset's answer)."""
     project = _project(A)
     idx = cb.metric_index(A, by_ds)
     per: dict[str, Any] = (
@@ -42,6 +42,7 @@ def metrics(
             {
                 "metric": m,
                 "better": cb.metric_direction(A, m, where),
+                "better_on": cb.metric_directions(A, m, where),
                 "description": cb.describe_metric(m, project) or None,
                 "datasets": dict(sorted(where["datasets"].items())),
                 "decides": [g["goal_id"] for g in where["goals"]],
@@ -61,8 +62,8 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
     where = idx.get(name)
     if where is None:
         raise Problem(f"no metric {name!r} is recorded: one of {', '.join(sorted(idx))}", "not-found")
+    per = cb.metric_directions(A, name, where)
     which = cb.metric_direction(A, name, where)
-    lower = which == "lower"
     on = []
     for ds in sorted(where["datasets"]):
         if dataset and ds != dataset:
@@ -70,6 +71,7 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
         v = by_ds[ds]
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
         arms = [a for a in v["arms"] if name in a["means"]]
+        lower = per.get(ds, which) == "lower"  # each dataset's arms go by that dataset's direction
         arms.sort(
             key=lambda a: (
                 cb.scored_by_rank(a, tiers),
@@ -95,7 +97,8 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
         )
     return {
         "metric": name,
-        "better": better_word(which),
+        "better": better_word(which, per),
+        "better_on": per,
         "description": cb.describe_metric(name, project) or None,
         "details": cb.metric_details(name, project),
         "kind": cb._kind_of(A, name, where["datasets"]),

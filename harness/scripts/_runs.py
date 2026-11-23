@@ -337,22 +337,26 @@ def direction(
     return direction_source(metric, dataset=dataset, runs=runs, goals=goals, kinds=kinds)[0]
 
 
-def combine(directions: Iterable[str]) -> str:
-    """One measure's directions on several datasets, as one: lower if any dataset says so, neutral only when every one
-    does, else higher."""
-    said = list(directions)
-    return (
-        "lower" if "lower" in said else "neutral" if said and all(d == "neutral" for d in said) else "higher"
-    )
+def combine(per: dict[str, str] | Iterable[str]) -> str:
+    """One measure's directions on several datasets ({dataset: direction}) as one: the direction they all give, or
+    "mixed" when they differ (a declaration on one dataset decides nothing for another)."""
+    said = set(per.values() if isinstance(per, dict) else per)
+    return said.pop() if len(said) == 1 else "mixed" if said else "higher"
 
 
 #: The words every page prints for a direction.
 BETTER_WORDS = {"lower": "lower", "higher": "higher", "neutral": "neutral: a description"}
 
 
-def better_word(which: str) -> str:
-    """The word that says which way is better, for a `direction` ("neutral: a description" for a count)."""
-    return BETTER_WORDS[which]
+def better_word(which: str, per: dict[str, str] | None = None) -> str:
+    """The word that says which way is better, for a `direction` ("neutral: a description" for a count). For "mixed",
+    the per-dataset answers: "lower on asr_v1; higher on dev_v1"."""
+    if which != "mixed":
+        return BETTER_WORDS[which]
+    by: dict[str, list[str]] = {}
+    for ds, d in sorted((per or {}).items()):
+        by.setdefault(d, []).append(ds)
+    return "; ".join(f"{d} on {', '.join(v)}" for d, v in by.items())
 
 
 def lower_is_better_on(runs: Iterable[Run], metric: str, goals: dict | None = None) -> bool:

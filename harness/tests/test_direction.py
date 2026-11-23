@@ -19,6 +19,7 @@
 import io
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -185,6 +186,13 @@ def rule() -> None:
         [_runs.better_word(d) for d in ("lower", "higher", "neutral")]
         == ["lower", "higher", "neutral: a description"],
     )
+    mixed = {"asr_v1": "lower", "dev_v1": "higher"}
+    check(
+        "combine: datasets that agree give their answer, datasets that differ give mixed, worded per dataset",
+        _runs.combine({"a": "lower", "b": "lower"}) == "lower"
+        and _runs.combine(mixed) == "mixed"
+        and _runs.better_word("mixed", mixed) == "lower on asr_v1; higher on dev_v1",
+    )
     check(
         "lower_is_better_on and verdict_for are the rule's thin callers",
         _runs.lower_is_better_on(run(), "der", only)
@@ -217,7 +225,7 @@ def call_system(text, params):
 
 def score(output, reference):
     v = float(output.split("|")[0])
-    return {"err": v, "wer": v, "output_chars": float(len(output))}
+    return {"err": v, "wer": v, "my_rate": v, "output_chars": float(len(output))}
 
 PRIMARY_METRIC = "err"
 """
@@ -408,6 +416,55 @@ try:
         and "err" in text
         and "output_chars" in text,
         text[-800:],
+    )
+    # -- a measure one goal declares on one dataset and nothing declares on another: mixed, each dataset by its own -----
+    r = evh("dataset-create", "--dataset-id", "tickets_b_v1", "--source-dir", "tutorial/tickets")
+    r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_b_v1")
+    for name in ("good", "bad"):
+        r = (
+            r
+            if r.returncode
+            else evh("run", "--system", f"{name}_v1", "--dataset", "tickets_b_v1", "--run-id", f"{name}_b")
+        )
+    check("setup: a second dataset with the same two systems", r.returncode == 0, r.stderr[-300:])
+    write_goal("g_rate", "{measure: my_rate, direction: lower}", ["tickets_v1"])
+    out2 = proj / "catalog2"
+    listed = {m["metric"]: m for m in result(evh("metric-list", "--json")).get("metrics", [])}
+    check(
+        "metric-list: my_rate (declared lower on tickets_v1 only) is mixed, with each dataset's answer",
+        listed.get("my_rate", {}).get("better") == "mixed"
+        and listed["my_rate"].get("better_on") == {"tickets_b_v1": "higher", "tickets_v1": "lower"}
+        and listed["wer"]["better"] == "lower",
+        listed.get("my_rate"),
+    )
+    shown = result(evh("metric-show", "my_rate", "--json"))
+    order = {
+        d["dataset"]: [a["arm"].rpartition("/")[2] for a in d["arms"]] for d in shown.get("datasets", [])
+    }
+    check(
+        "metric-show: the word names both, and each dataset's arms go by its own direction",
+        "lower on tickets_v1" in shown.get("better", "")
+        and "higher on tickets_b_v1" in shown.get("better", "")
+        and order.get("tickets_v1") == ["good_v1", "bad_v1"]
+        and order.get("tickets_b_v1") == ["bad_v1", "good_v1"],
+        (shown.get("better"), order),
+    )
+    r = evh("catalog", "--out", out2)
+    own = (out2 / "m" / "my_rate.html").read_text() if (out2 / "m" / "my_rate.html").exists() else ""
+    at = own.find("<dt>better</dt>")
+    cell = own[at : own.find("</dd>", at)] if at >= 0 else ""
+
+    check(
+        "the catalog's metric page agrees: both answers in the word",
+        r.returncode == 0 and "lower on tickets_v1" in cell and "higher on tickets_b_v1" in cell,
+        cell,
+    )
+    order_seen = re.findall(r"<tr[^>]*>(?:(?!</tr>).)*?(good|bad)_v1", own, re.S)
+    check(
+        "the catalog's metric page sorts each dataset's table by its own direction (tickets_b_v1 highest first, "
+        "tickets_v1 lowest first)",
+        order_seen == ["bad", "good", "good", "bad"],
+        order_seen,
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

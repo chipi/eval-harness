@@ -776,12 +776,12 @@ class HarnessAdapter:
     def direction(self, metric: str, dataset: str | None = None) -> str:
         """Which way is better for `metric` ("lower", "higher" or "neutral"), by the rule every reader uses
         (`_runs.direction`) over the runs on `dataset`: a declaration on one dataset must not flip another's.
-        With no dataset, the answers of the datasets that record it, combined (`_runs.combine`); a measure no
+        With no dataset, the answers of the datasets that record it, combined (`_runs.combine`: mixed when they differ); a measure no
         run records goes by the goals and the name table."""
         if dataset is None:
             on = sorted(self._recorded_on(metric))
             if on:
-                return combine(self.direction(metric, ds) for ds in on)
+                return combine({ds: self.direction(metric, ds) for ds in on})
         runs = [
             (d, m)
             for arm, ds in self._index().items()

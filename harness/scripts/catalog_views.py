@@ -22,7 +22,7 @@ import re
 import statistics
 import textwrap
 
-from evaluation_harness import _jsonout, _outputs, _sheet, _visibility
+from evaluation_harness import _jsonout, _outputs, _runs, _sheet, _visibility
 from evaluation_harness import catalog_arms as ca
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
@@ -532,9 +532,9 @@ def print_metrics(d: dict) -> None:
         print(d["period"] + "\n")
     for m in d["metrics"]:
         print(
-            f"{m['metric']}  ({m['better']} is better)"
-            if m["better"] != "neutral"
-            else f"{m['metric']}  (neutral: a description)"
+            f"{m['metric']}  ({_runs.better_word(m['better'], m.get('better_on'))})"
+            if m["better"] in ("neutral", "mixed")
+            else f"{m['metric']}  ({m['better']} is better)"
         )
         print(
             textwrap.fill(
