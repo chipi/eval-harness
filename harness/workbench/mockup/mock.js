@@ -3621,7 +3621,7 @@ window.MOCK = {
     "level": 0.01519817754635067,
     "set": "876b4306dfca95b7a4a77901a3e3604453814e18e5c4efb2cfc70552e54e3d0f",
     "dataset_id": "tk_test",
-    "harness": "0.8.0.dev0",
+    "harness": "0.8.0",
     "beyond_limit": false
    }
   },
@@ -3633,7 +3633,7 @@ window.MOCK = {
      {
       "beyond_limit": false,
       "dataset_id": "tk_test",
-      "harness": "0.8.0.dev0",
+      "harness": "0.8.0",
       "key": "ad1fdc02010b6e10",
       "level": 0.01519817754635067,
       "number": 1,
@@ -3649,7 +3649,7 @@ window.MOCK = {
      {
       "beyond_limit": false,
       "dataset_id": "tk_test",
-      "harness": "0.8.0.dev0",
+      "harness": "0.8.0",
       "key": "ad1fdc02010b6e10",
       "level": 0.01519817754635067,
       "number": 1,
@@ -3688,7 +3688,7 @@ window.MOCK = {
     "by": "person:owner",
     "command": "run",
     "created_at": "2026-11-12T14:49:28Z",
-    "harness": "0.8.0.dev0",
+    "harness": "0.8.0",
     "id": "20261112T144928-3c3199",
     "locks": [
      [
@@ -3729,7 +3729,7 @@ window.MOCK = {
    "env": {
     "EVAL_MAX_COST_USD": "1.0"
    },
-   "harness": "0.8.0.dev0",
+   "harness": "0.8.0",
    "id": "20261112T144928-3c3199",
    "locks": [
     [

@@ -137,7 +137,8 @@ try:
                 check(
                     f"{tag}: a hostile catalog place is escaped in the link, and one that is not a path is not used",
                     hrefs['/c/"><i id=injected>'][1] == 0
-                    and hrefs['/c/"><i id=injected>'][0] == base.split("/workbench")[0] + '/c/"><i id=injected>'
+                    and hrefs['/c/"><i id=injected>'][0]
+                    == base.split("/workbench")[0] + '/c/"><i id=injected>'
                     and hrefs["javascript:alert(1)"][0] == base.split("/workbench")[0] + "/",
                     hrefs,
                 )

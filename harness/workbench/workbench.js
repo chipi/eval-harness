@@ -1,5 +1,7 @@
-// The Workbench mockup (UXS-005, round 1 of the mockup): the app's first, static form. Every value shown is read from
-// this project by mock.js's extractor; what the mockup only pretends (jobs, saving) is labelled where it happens.
+// The Workbench's shared file, loaded by the live Workbench (index.html, whose screens are live.js's, built on what this
+// file exports as WB) and by the mockup (mockup/mockup.html, frozen as a design reference, D7). The screens below
+// are the mockup's: every value they show is read from this project by mock.js's extractor, and what the mockup only
+// pretends (jobs, saving) is labelled where it happens.
 (() => {
   const M = window.MOCK, H = window.HELP, G = window.GLOSSARY;
   const KEY = "wb-mock-r1";
