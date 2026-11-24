@@ -47,18 +47,26 @@ from evaluation_harness.axes import with_coverage
 from evaluation_harness.model.spend import judge_costs
 
 
-def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
-    """(billed, recorded, items with a bill, items total) for one run."""
-    billed = recorded = 0.0
+def billed_and_recorded(run_dir: Path) -> tuple[float, float | None, int, int]:
+    """(billed, recorded, items with a bill, items total) for one run. `recorded` is None when no item recorded a cost:
+    an unknown cost is not $0 (RFC-041 F3); a known $0 is."""
+    billed = 0.0
+    recorded: float | None = None
     with_bill = total = 0
     for r in _runs.item_rows(run_dir):
         total += 1
-        recorded += float(r.get("cost_usd") or 0.0)
+        if r.get("cost_usd") is not None:
+            recorded = (recorded or 0.0) + float(r["cost_usd"])
         b = ((r.get("_meta") or {}).get("usage") or {}).get("cost")
         if b is not None:
             with_bill += 1
             billed += float(b)
     return billed, recorded, with_bill, total
+
+
+def _usd(v: float | None) -> str:
+    """A recorded cost in the table's column: four places, "—" for none recorded."""
+    return "—" if v is None else f"{v:.4f}"
 
 
 def _ratio(r: float | None) -> str:
@@ -153,16 +161,23 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
         w = max((len(r[2]) for r in rows), default=20) + 2
         print(f"  {'arm':{w}}{'billed':>11}{'recorded':>11}{'ratio':>9}")
         print("  " + "-" * (w + 31))
-        tb = tr = 0.0
+        tb, known = 0.0, []
         for billed, recorded, cid, _ds in rows:
             ratio = (billed / recorded) if recorded else None
-            differs = billed > 0 if ratio is None else abs(ratio - 1) > 0.01
+            differs = recorded is not None and (billed > 0 if ratio is None else abs(ratio - 1) > 0.01)
             flag = "  <-- recorded is the price table" if differs else ""
-            print(f"  {cid:{w}}{billed:>11.4f}{recorded:>11.4f}{_ratio(ratio)}{flag}")
+            print(f"  {cid:{w}}{billed:>11.4f}{_usd(recorded):>11}{_ratio(ratio)}{flag}")
             tb += billed
-            tr += recorded
+            if recorded is not None:
+                known.append(recorded)
         print("  " + "-" * (w + 31))
-        print(f"  {'TOTAL':{w}}{tb:>11.4f}{tr:>11.4f}{_ratio((tb / tr) if tr else None)}")
+        # The recorded total is of the runs that recorded one, and says how many did not: an unknown is not $0.
+        tr = sum(known) if known else None
+        unrecorded = len(rows) - len(known)
+        print(
+            f"  {'TOTAL':{w}}{tb:>11.4f}{_usd(tr):>11}{_ratio((tb / tr) if tr else None)}"
+            + (f"  ({unrecorded} run{'s' if unrecorded != 1 else ''} recorded no cost)" if unrecorded else "")
+        )
 
     if no_bill:
         print(
@@ -170,7 +185,9 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
             f"there is, and they are NOT in the total above:"
         )
         for cid, recorded, ds, coverage in no_bill:
-            print(f"    {cid}  {with_coverage(f'${recorded:.4f}', coverage)}  ({ds})")
+            print(
+                f"    {cid}  {'—' if recorded is None else with_coverage(f'${recorded:.4f}', coverage)}  ({ds})"
+            )
 
     if rows or no_bill:
         print("\n  'billed' is the sum of _meta.usage.cost over every item: what the provider")

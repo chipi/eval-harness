@@ -1458,6 +1458,10 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_round_spend.py", "a round's spend: the known sum, the runs that recorded none, never $0"),
         (
+            "test_tests_exit.py",
+            "every test file exits with its tally: a bare summary() could not fail a gate",
+        ),
+        (
             "test_pair_versions.py",
             "pair-test --b-dataset: one arm on two versions of a dataset; the refusals (reference, ids, direction)",
         ),

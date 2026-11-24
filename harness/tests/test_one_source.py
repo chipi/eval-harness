@@ -536,11 +536,6 @@ ALLOWED: dict[tuple[str, str, str], str] = {
         "smoke_spend",
     ): "a total of the items' recorded costs, for a report with no "
     "`spent_usd`; a smoke of no spend adds no event",
-    (
-        "F3/cost-or-zero",
-        "cost_report.py",
-        "billed_and_recorded",
-    ): "a total of recorded costs, beside the billed ones",
     ("F3/cost-or-zero", "judge_score.py", "stored_cost"): "a total of the verdicts' recorded costs",
     ("F3/cost-or-zero", "judge_score.py", "run_judging"): "the same",
     ("F3/cost-or-zero", "judge_score.py", "summarise"): "the same",

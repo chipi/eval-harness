@@ -172,6 +172,12 @@ try:
         "$0.0120 (on 40 of 65 items)" in report.stdout,
         report.stdout[-800:] + report.stderr[-300:],
     )
+    unpriced = [ln for ln in report.stdout.splitlines() if ln.strip().startswith("sys_b")]
+    check(
+        "cost-report: a run whose items recorded no cost shows its recorded cost as unknown, not $0.0000",
+        bool(unpriced) and all("$0.0000" not in ln and "—" in ln for ln in unpriced),
+        report.stdout[-800:],
+    )
     from evaluation_harness import axes
 
     check(
@@ -182,4 +188,4 @@ try:
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
-summary()
+sys.exit(summary())

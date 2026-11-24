@@ -199,4 +199,4 @@ try:
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 
-summary()
+sys.exit(summary())

@@ -207,4 +207,4 @@ check(
     {f: ln for f, ln in found_js.items() if f not in JS_SITES},
 )
 
-summary()
+sys.exit(summary())
