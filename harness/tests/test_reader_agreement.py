@@ -642,13 +642,13 @@ def superseded_ranked(project: str, facts: dict[str, FactMap]) -> None:
 
 def arms_shown(project: str, facts: dict[str, FactMap], why: dict[str, list[str]]) -> None:
     """Every arm `arm-list` lists, `arm-show` shows, through the CLI, the API and the MCP reads: the arm-show answer of an
-    arm is its `reference` fact. A reader's refusal of a listed arm (`not-found`) is a disagreement, not an arm this evh
+    arm is its `runs` fact (its `reference` is none for a judged arm). A reader's refusal of a listed arm (`not-found`) is a disagreement, not an arm this evh
     is unable to say."""
     for reader in ("cli", "api", "mcp"):
         listed = {
             a for (kind, _k), v in facts.get(f"{reader}:arm-list", {}).items() if kind == "arms" for a in v
         }
-        shown = {key[0] for kind, key in facts.get(f"{reader}:arm-show", {}) if kind == "reference"}
+        shown = {key[0] for kind, key in facts.get(f"{reader}:arm-show", {}) if kind == "runs"}
         refused = why.get(f"{reader}:arm-show", [])
         check(
             f"arms: {project}: {reader}: every arm arm-list lists ({len(listed)}) is shown by arm-show",
