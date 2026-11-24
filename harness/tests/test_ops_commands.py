@@ -353,8 +353,7 @@ def test_runs_list_unknown_dirty() -> None:
         rec("r_nobuild", None),
     ]
     with (
-        mock.patch("evaluation_harness._runs.runs_on", return_value=found),
-        mock.patch.object(model_runs, "labels", return_value=[]),
+        mock.patch.object(model_runs, "scored", return_value=found),
         mock.patch.object(model_runs, "run_of", side_effect=lambda d: d),
     ):
         answer = records.runs_list()
