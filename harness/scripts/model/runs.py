@@ -241,7 +241,7 @@ DIFFERENCES_SHOWN = 6
 
 def differences(a: dict[str, Any], b: dict[str, Any]) -> list[str]:
     """What `same_measurement` found differing between runs `a` (then) and `b` (now), named by the field and its value in
-    each: "settings.params.n 30 then, 20 now", "adapter sha256 663c89dd… then, e92731fc… now". Only the parts the
+    each: "settings.params.n 30 then, 20 now", "adapter code hash (comments and docstrings left out) 663c89dd… then, e92731fc… now". Only the parts the
     fingerprint hashes (data, deployment, settings) and the adapter's own sha256 are looked into, as `same_measurement`
     reads them; the harness build, the system and the dataset are named there, not here. Empty when either run has no
     fingerprint."""
@@ -254,7 +254,7 @@ def differences(a: dict[str, Any], b: dict[str, Any]) -> list[str]:
             found.extend(_leaves(fa.get(part), fb.get(part), part))
     ax, ay = ((f.get("instrument") or {}).get("adapter", {}).get("sha256") for f in (fa, fb))
     if ax != ay:
-        found.append(("adapter sha256", ax, ay))
+        found.append(("adapter code hash (comments and docstrings left out)", ax, ay))
     out = [f"{path} {_shown(x)} then, {_shown(y)} now" for path, x, y in found]
     if len(out) > DIFFERENCES_SHOWN:
         out = [*out[:DIFFERENCES_SHOWN], f"and {len(out) - DIFFERENCES_SHOWN} more"]

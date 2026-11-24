@@ -154,9 +154,11 @@ try:
     r = evh(*base, "--dry-run")
     dry = says(r)
     check(
-        "B: a changed adapter is named with its sha256 then and now, abbreviated",
+        "B: a changed adapter is named with its code hash then and now, abbreviated, and says it is not the file's "
+        "sha256 (a comment changes the file, not the code hash; point B, fleet)",
         "not the same measurement" in dry
-        and f"adapter sha256 {old_sha[:8]}… then" in dry
+        and f"adapter code hash (comments and docstrings left out) {old_sha[:8]}… then" in dry
+        and "adapter sha256" not in dry
         and re.search(r"then, [0-9a-f]{8}… now", dry) is not None
         and "settings" not in dry,
         (dry, old_sha[:8]),
