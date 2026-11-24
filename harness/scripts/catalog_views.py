@@ -773,7 +773,11 @@ def print_arms(d: dict) -> None:
                     f"{r['measure']} {_fmt(r['value'])} {'↓' if r['lower'] else '↑'}"
                     if r["measure"]
                     else "—",
-                    "—" if r["cost"] is None else "$0" if r["cost"] == 0 else f"${r['cost']:.4f}",
+                    "—"
+                    if r["cost"] is None
+                    else with_coverage(
+                        "$0" if r["cost"] == 0 else f"${r['cost']:.4f}", r.get("cost_coverage")
+                    ),
                     "—"
                     if not r["latency"]
                     else f"{r['latency'] / 1000:.1f} s"

@@ -185,6 +185,22 @@ try:
         bool(unpriced) and all("$0.0000" not in ln and "—" in ln for ln in unpriced),
         report.stdout[-800:],
     )
+    # An arm whose items recorded a cost on 1 of 2: its per-item cost is of that one, and the arms table says so.
+    _runstore.write_text(proj, "systems/sys_e.yaml", "system_id: sys_e\n")
+    _runfix.put_run(
+        DATA,
+        {"run_id": "e_1", "config_id": "sys_e", "system_id": "sys_e", "dataset_id": "ds_v1", "primary_metric": "acc",
+         "scores": {"acc": 1.0, "cost_usd": 0.01}},
+        [{"item_id": "i1", "acc": 1.0, "cost_usd": 0.01}, {"item_id": "i2", "acc": 1.0}],
+    )  # fmt: skip
+    arms = evh("arm-list")
+    row_e = [ln for ln in arms.stdout.splitlines() if "sys_e" in ln]
+    row_a = [ln for ln in arms.stdout.splitlines() if "sys_a" in ln]
+    check(
+        "arm-list: an arm whose cost was recorded on 1 of its 2 items says so beside the cost; a whole one is plain",
+        len(row_e) == 1 and "(on 1 of 2 items)" in row_e[0] and all("(on " not in ln for ln in row_a),
+        arms.stdout[-900:] + arms.stderr[-300:],
+    )
     from evaluation_harness import axes
 
     check(
