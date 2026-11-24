@@ -11,7 +11,11 @@ it flags a call only where it can prove the receiver is a `Path` (`Path(...).rea
 for an `f` it cannot see the type of) and has no rule for a subprocess, so it found 40 of the ~2,000 sites.
 """
 
+import os
+import re
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -120,5 +124,38 @@ check(
     + f"\n    ({len(found)} in all)",
 )
 check("every exception still matches a call", matched == set(EXCEPTIONS), set(EXCEPTIONS) - matched)
+
+# infra's shell scripts carry Python of their own (`python3 - <<'PY'`), which the walk above never sees.
+HEREDOC = re.compile(r"<<'PY'\n(.*?)\nPY\n", re.S)
+embedded: list[str] = []
+for sh in sorted((ROOT / "infra").rglob("*.sh")):
+    src = sh.read_text(encoding="utf-8")
+    for m in HEREDOC.finditer(src):
+        first = src[: m.start(1)].count("\n") + 1
+        embedded += [
+            f"{sh.relative_to(ROOT).as_posix()}:{first + ln - 1} {w}"
+            for ln, _c, w in find_sites(m.group(1) + "\n")
+        ]
+check("infra's embedded Python names its encoding too", not embedded, "\n    " + "\n    ".join(embedded))
+
+# workflow_step.py prints a workflow's text as a script for bash: UTF-8 whatever the locale, not a crash.
+with tempfile.TemporaryDirectory() as td:
+    wf = Path(td) / "w.yml"
+    wf.write_text(
+        'jobs:\n  j:\n    steps:\n      - name: s\n        run: echo "a \u2014 b"\n', encoding="utf-8"
+    )
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONIOENCODING", "PYTHONUTF8")}
+    env.update(LC_ALL="C", LANG="C", PYTHONCOERCECLOCALE="0", PYTHONUTF8="0")
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "infra/deploy/workflow_step.py"), str(wf), "j", "s"],
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+check(
+    "workflow_step.py prints a non-ASCII step as UTF-8 under LC_ALL=C",
+    r.returncode == 0 and "\u2014".encode() in r.stdout,
+    (r.returncode, r.stdout, r.stderr[-300:]),
+)
 
 sys.exit(summary())
