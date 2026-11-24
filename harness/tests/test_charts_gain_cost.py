@@ -220,6 +220,17 @@ t = round_chart(
         "runs/d/uncounted": scores(0.5, 0.2),
     },
 )
+# No cost recorded, the same tokens on both arms (the workbench's echo round, 2026-11-24): the token difference 0 is known,
+# so the chart is drawn on tokens; it refused, reading "no token difference" as "no tokens".
+z = round_chart(
+    "higher", {"runs/d/base": scores(0.5, 0.0, tokens=50.0), "runs/d/same": scores(0.5, 0.2, tokens=50.0)}
+)
+check(
+    "no cost recorded and the same tokens on both arms: drawn on the tokens axis at a difference of 0, not refused",
+    set(circles(z["svg"])) == {"same"}
+    and {r["arm"]: r for r in z["rows"]}["same"]["tokens_delta_per_item"] == 0.0,
+    (circles(z["svg"]), z["caption"][-200:]),
+)
 check(
     "on the tokens axis an arm with no tokens recorded is left off and named, the same",
     set(circles(t["svg"])) == {"terse"} and "its tokens unknown: uncounted" in t["caption"],

@@ -156,7 +156,7 @@ def rescored(proj: Path, env: dict[str, str]) -> dict[str, Any]:
     shutil.copytree(KIT / "tickets", proj / "tickets")
     b.must("dataset-create", "--dataset-id", RESCORED_DS, "--source-dir", "tickets")
     b.must("dataset-materialize", "--dataset-id", RESCORED_DS)
-    (proj / "a.py").write_text(RESCORED_ADAPTER)
+    (proj / "a.py").write_text(RESCORED_ADAPTER, encoding="utf-8")
     b.put("systems/arm_w_v1.yaml", "system_id: arm_w_v1\nadapter: a.py\nparams:\n  provider: echo\n")
     base = "arm_w_v1_20261110T150000Z"
     b.must("run", "--system", "arm_w_v1", "--dataset", RESCORED_DS, "--repeat", "2", "--run-id", base)
@@ -165,7 +165,7 @@ def rescored(proj: Path, env: dict[str, str]) -> dict[str, Any]:
         _runstore.write_text(
             proj, f"runs/{n}/run.json", json.dumps({**rec, "purpose": "repeat"}, indent=2) + "\n"
         )
-    (proj / "a.py").write_text(RESCORED_ADAPTER.replace("SHIFT = 0", "SHIFT = 1"))
+    (proj / "a.py").write_text(RESCORED_ADAPTER.replace("SHIFT = 0", "SHIFT = 1"), encoding="utf-8")
     b.must("rescore", "--dataset-id", RESCORED_DS, "--match", "arm_w", "--label", "rescored 3d3a6afd")
     return {"datasets": [RESCORED_DS], "runs": [f"{base}_r1", f"{base}_r2"]}
 

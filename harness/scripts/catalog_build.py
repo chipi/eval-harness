@@ -2637,7 +2637,9 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
         head = dataset_link(ds, "../")
         if bl and latest and str(latest.get("closed_at") or "") > str(bl[-1].get("promoted_at") or ""):
             b = bl[-1]
-            arm = label.get(read or "", b["run"])
+            # the system, as the line said before the goal read its baseline's re-score (RFC-022): the page names the
+            # re-score's scorer once, not in the baseline's label
+            arm = brief(label.get(read or "", b["run"]))
             who = arm_link(read, arm, "../") if read else e(arm)
             parts.append(
                 f'<div class="answer"><p class="small muted">{head} · round {e(latest["round_id"])} concluded '
@@ -2657,7 +2659,9 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
             )
         elif bl:
             b = bl[-1]
-            arm = label.get(read or "", b["run"])
+            # the system, as the line said before the goal read its baseline's re-score (RFC-022): the page names the
+            # re-score's scorer once, not in the baseline's label
+            arm = brief(label.get(read or "", b["run"]))
             who = arm_link(read, arm, "../") if read else e(arm)
             parts.append(
                 f'<div class="answer"><p class="small muted">{head} · baseline promoted {e(_when(b["promoted_at"]))}'

@@ -673,7 +673,7 @@ try:
     for n in ("resc_v1_A_r1", "resc_v1_A_r2"):
         R.write_run(n, {**(R.run(n) or {}), "purpose": "repeat"})
     (proj / "a.py").write_text(
-        ADAPTER.replace("float(len(output.split()))", "float(len(output.split())) + 1")
+        ADAPTER.replace("float(len(output.split()))", "float(len(output.split())) + 1"), encoding="utf-8"
     )
     r = evh("rescore", "--dataset-id", DS, "--match", "resc_v1", "--label", "rescored 3d3a6afd")
     resc = arms_of("resc_v1")
@@ -698,7 +698,7 @@ try:
 
                 self.srv, self.port, _lines = _serve.start(proj, env)
                 tok = proj / ".build" / "api-token"
-                self.token = tok.read_text().strip() if tok.exists() else None
+                self.token = tok.read_text(encoding="utf-8").strip() if tok.exists() else None
             return self
 
         def __exit__(self, *_exc):
@@ -804,7 +804,7 @@ PRIMARY_METRIC = "words"
     system("val_v1")
     allow("many_v1", "val_v1")
     for tag, n_seen, v in (("a", 3, "1.0"), ("b", 1, "0.0")):
-        (proj / f"p_{tag}.py").write_text(partial + f"K = {n_seen}\nVALUE = {v}\n")
+        (proj / f"p_{tag}.py").write_text(partial + f"K = {n_seen}\nVALUE = {v}\n", encoding="utf-8")
         _runstore.write_text(
             proj,
             "systems/val_v1.yaml",

@@ -344,9 +344,10 @@ def pooled_mean(values: Iterable[float]) -> float | None:
     """An arm's value on a metric: the mean over its items of each item's score, where an item's score is already the
     mean of its repeats' (`HarnessAdapter.scores`); None for no item. The one place that says it: `arm-show`,
     `metric-show`, the goal views and the leaderboard read it, so runs that score different item counts give one number
-    (a mean of the runs' means is another)."""
+    (a mean of the runs' means is another). Rounded to 6 places, as `evh run` records a mean and `record` recomputes one,
+    so an arm of one run reads the number its run recorded."""
     xs = list(values)
-    return statistics.fmean(xs) if xs else None
+    return round(statistics.fmean(xs), 6) if xs else None
 
 
 def latest_key(rec: dict[str, Any]) -> tuple[str, str]:
