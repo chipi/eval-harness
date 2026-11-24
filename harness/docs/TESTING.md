@@ -18,7 +18,8 @@ CI runs each tier on every pull request: `make verify` (unit and integration, th
 recomputed, the site rebuilt), `browser`, `budget` (then `make browser-real-check` on the catalog it
 built) (`.github/workflows/reproduce.yml`), `rerun` (`.github/workflows/rerun.yml`: it fetches from Hugging Face, so it reports but never holds back a deploy or a release; its data is cached), and `make quality` (lint, types, security,
 dead code, spelling), and `commands` runs `make commands-check` beside them, a few minutes, so not
-in `verify`. `guards` (`.github/workflows/guards.yml`, a required check) runs on every pull request too, but
+in `verify`; `catalog-render` runs `make catalog-render-check` (this repository's catalog rendered page by page and over
+HTTP against its export, every p drawn four times) beside them, for the same reason. `guards` (`.github/workflows/guards.yml`, a required check) runs on every pull request too, but
 runs `make guard-check` only when a checker or the harness code it reads changed since the base: it
 proves the checkers, and a change to the reports or the runs leaves them as they were (`make ci`
 still checks that every string it plants is in its file). A release does not re-run any of it; it

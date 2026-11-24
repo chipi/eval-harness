@@ -163,7 +163,6 @@ def _run_timed(script: str, env: dict) -> subprocess.CompletedProcess:
 #: The files that take longest (CPU seconds, 2026-11-24, under taskset -c 0-3), started first: a pool that begins with
 #: the long ones ends with the short ones, where one started last leaves three of four CPUs idle for its whole length.
 LONGEST_FIRST = (
-    "test_catalog_render_real.py",
     "test_scores_once.py",
     "test_data_mutations.py",
     "check_commands.py",
@@ -1329,10 +1328,6 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_catalog_render.py",
             "one renderer, two drivers (RFC-040): every page rendered on its own is the exported file, on threads too",
-        ),
-        (
-            "test_catalog_render_real.py",
-            "this repository's catalog: every page rendered on its own, in a shuffled order, is the exported file",
         ),
         (
             "test_catalog_served.py",
