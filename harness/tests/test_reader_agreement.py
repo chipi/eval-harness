@@ -73,17 +73,7 @@ FactMap = dict[tuple, Any]
 
 #: Disagreements this test found that are not fixed yet: (project, fact, key, the readers that differ) -> where it is.
 #: The check reproduces each one and fails when it no longer does.
-KNOWN: dict[tuple[str, str, tuple, frozenset], str] = {
-    (
-        "rescored",
-        "arms",
-        ("tickets_rescored_v1",),
-        frozenset({"api:leaderboard", "cli:leaderboard", "mcp:leaderboard"}),
-    ): (
-        "the leaderboard ranks an arm's re-score in place of the arm (arm-list's `superseded_by`), and arm-list lists both: "
-        "the dump states the leaderboard's arms as the dataset's; found once the dump named arms by their ids"
-    ),
-}
+KNOWN: dict[tuple[str, str, tuple, frozenset], str] = {}
 
 
 class Project:
@@ -740,6 +730,21 @@ def dumper_checks(p: Project) -> None:
     )
 
 
+def runs_list_states_no_value() -> None:
+    """runs-list gives an arm's runs, not its value: the dump takes `value` from the readers that state one. Two runs of
+    one arm with different item counts: a mean of the runs' means (0.75) is not the arm's item-pooled mean (arm-show)."""
+    runs = [
+        {"run_id": "a", "dataset_id": "d", "system_id": "s", "arm": "runs/d/s", "scores": {"m": 1.0}},
+        {"run_id": "b", "dataset_id": "d", "system_id": "s", "arm": "runs/d/s", "scores": {"m": 0.5}},
+    ]
+    got = FD.from_runs_list({"runs": runs}, "")
+    check(
+        "facts_dump: runs-list states an arm's runs and no value of it (a mean of run means is no arm's mean)",
+        any(f[0] == "runs" for f in got) and not any(f[0] == "value" for f in got),
+        [f for f in got if f[0] == "value"],
+    )
+
+
 def thin(facts: dict[str, FactMap]) -> int:
     """How many facts two readers or more give: what the agreement was checked over."""
     n: dict[tuple, int] = {}
@@ -796,6 +801,7 @@ def main() -> int:
             arms_shown(name, facts, why)
             hand_checks(name, facts)
         dumper_checks(projects["tutorial"])
+        runs_list_states_no_value()
         print("\nfact x reader (gives / -), over the five projects:")
         print("\n".join(matrix(per_project)))
 

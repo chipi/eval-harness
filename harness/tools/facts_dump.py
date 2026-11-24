@@ -178,7 +178,8 @@ def newest(runs: list[tuple[str, str]]) -> str | None:
 
 # ── one extractor per command: result -> facts ───────────────────────────────────────────────────────────────────────
 def from_runs_list(r: dict[str, Any], label: str) -> list[Fact]:
-    """Facts from `evh runs list`: each arm's runs, latest run, mean values and cost state."""
+    """Facts from `evh runs list`: each arm's runs, latest run and cost state. Not its value: that is the item-pooled mean the
+    readers that state it give; a mean of the runs' means differs where runs have different item counts."""
     arms: dict[str, list[dict[str, Any]]] = {}
     for run in r.get("runs") or []:
         arms.setdefault(run.get("arm") or arm_id(label, run["dataset_id"], run["system_id"]), []).append(run)
@@ -190,11 +191,6 @@ def from_runs_list(r: dict[str, Any], label: str) -> list[Fact]:
         out += [("runs", (arm,), ids), ("n_runs", (arm,), len(ids))]
         out.append(("latest", (arm,), newest([(x.get("created_at") or "", x["run_id"]) for x in runs])))
         out.append(("latest_day", (arm,), max((x.get("created_at") or "")[:10] for x in runs) or None))
-        keys = {k for x in runs for k in x.get("scores") or {}}
-        for k in sorted(keys):
-            vals = [x["scores"][k] for x in runs if isinstance(x.get("scores", {}).get(k), (int, float))]
-            if vals:
-                out.append(("value", (arm, k), sum(vals) / len(vals)))
         costs = [x["scores"]["cost_usd"] for x in runs if (x.get("scores") or {}).get("cost_usd") is not None]
         out.append(("cost_state", (arm,), cost_state(sum(costs) / len(costs) if costs else None)))
     return out
