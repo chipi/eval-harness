@@ -26,8 +26,10 @@ from evaluation_harness._common import (
     RUNS,
     die,
     how,
+    tree_state,
     verdict_for,
 )
+from evaluation_harness._runs import note_assumed
 from evaluation_harness.model import runs as model_runs
 
 
@@ -193,8 +195,13 @@ def _run(args: argparse.Namespace) -> int:
     if a["build"]["ref"] == b["build"]["ref"]:
         print("\n  NOTE: identical build on both sides — any delta here is the")
         print("  instrument or run-to-run noise, not a code change.")
-    if a["build"].get("dirty") or b["build"].get("dirty"):
+    states = [tree_state(a["build"]), tree_state(b["build"])]
+    if True in states:
         print("\n  NOTE: a build was DIRTY — its ref does not identify what ran.")
+    elif None in states:
+        print(
+            "\n  NOTE: git could not say whether a build's tree was clean — its ref may not identify what ran."
+        )
 
     _report_fingerprint_delta(a, b)
 
@@ -211,6 +218,13 @@ def _run(args: argparse.Namespace) -> int:
     kinds = {**(a.get("metric_kinds") or {}), **(b.get("metric_kinds") or {})}
     for run in (a, b):
         kinds.update(recorded_metric_kinds(run.get("adapter")) or {})
+    # The runs and their dataset, as leaderboard asks: with neither, any goal (the first by name) decided, so a goal on
+    # another dataset flipped a verdict here (review, 2026-11-24).
+    ask = {
+        "kinds": kinds,
+        "runs": [(RUNS / args.baseline, a), (RUNS / args.candidate, b)],
+        "dataset": a["dataset_id"],
+    }
 
     worth = 0
     shown: list[tuple] = []  # (metric, baseline, candidate, delta, verdict); None where a side has none
@@ -229,12 +243,13 @@ def _run(args: argparse.Namespace) -> int:
             # Direction comes from _common, the same place leaderboard.py gets it.
             # This used to be `"better" if d > 0 else "worse"` for every metric, so a
             # run that got FASTER or CHEAPER was reported as worse.
-            verdict = verdict_for(k, d, kinds=kinds)
+            verdict = verdict_for(k, d, **ask)
             # Only a real regression or improvement counts toward "moved beyond the
             # noise floor". A descriptive metric moving is not a verdict, and counting
             # it inflated the number a reader uses to decide whether to care.
             if verdict in ("better", "worse"):
                 worth += 1
+                note_assumed(k, **ask)
         shown.append((k, av, bv, d, verdict))
 
     if not _jsonout.table(["metric", "baseline", "candidate", "delta", "verdict"], shown):
@@ -252,7 +267,7 @@ def _run(args: argparse.Namespace) -> int:
             "baseline_build": a["build"]["ref"],
             "candidate_build": b["build"]["ref"],
             "same_build": a["build"]["ref"] == b["build"]["ref"],
-            "dirty_build": bool(a["build"].get("dirty") or b["build"].get("dirty")),
+            "dirty_build": True if True in states else (None if None in states else False),
             "noise": args.noise,
             "moved_beyond_noise": worth,
         }

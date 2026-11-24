@@ -64,7 +64,7 @@ def setting(value=None, config=None):
     if config is None:
         cfg.unlink(missing_ok=True)
     else:
-        cfg.write_text(config)
+        cfg.write_text(config, encoding="utf-8")
     os.environ.pop("EVAL_STORE", None)
     if value is not None:
         os.environ["EVAL_STORE"] = value
@@ -129,9 +129,9 @@ try:
         _store.write_text(a, "één\n")
         _store.mkdir(data / "x" / "y", parents=True, exist_ok=True)
         _store.write_bytes(data / "x" / "y" / "b.bin", bytes(range(256)))
-        with _store.open_file(data / "x" / "c.log", "w") as fh:
+        with _store.open_file(data / "x" / "c.log", "w", encoding="utf-8") as fh:
             fh.write("one\n")
-        with _store.open_file(data / "x" / "c.log", "a") as fh:
+        with _store.open_file(data / "x" / "c.log", "a", encoding="utf-8") as fh:
             fh.write("two\n")
         _store.copy_file(a, data / "x" / "y")
         _store.copy_tree(data / "x" / "y", data / "z")
@@ -295,7 +295,7 @@ try:
 
     # A path relative to a setting climbs out through a folder that is only a key in the database (a config's
     # `adapter: ../../bonus_adapter.py`): found on disk all the same (the store matrix, 2026-11-08: "adapter not found").
-    (proj / "beside.py").write_text("x = 1\n")
+    (proj / "beside.py").write_text("x = 1\n", encoding="utf-8")
     via = data / "configs" / ".." / ".." / "beside.py"
     check(
         "sqlite: a file outside data/ reached through a folder in the database (data/configs/../../x.py) is found",
@@ -382,11 +382,13 @@ try:
     run = data / "runs" / "arm_v1_x"
     run.mkdir(parents=True)
     score_of(run).mkdir(parents=True)
-    (run / "run.json").write_text(json.dumps({"run_id": run.name, "dataset_id": "ds", "system_id": "arm_v1"}))
-    (score_of(run) / "score.json").write_text(
-        json.dumps({"scorer": "s1", "reference": "gold/ds", "label": ""})
+    (run / "run.json").write_text(
+        json.dumps({"run_id": run.name, "dataset_id": "ds", "system_id": "arm_v1"}), encoding="utf-8"
     )
-    (score_of(run) / "metrics.json").write_text(json.dumps({"scores": {"s": 0.75}}))
+    (score_of(run) / "score.json").write_text(
+        json.dumps({"scorer": "s1", "reference": "gold/ds", "label": ""}), encoding="utf-8"
+    )
+    (score_of(run) / "metrics.json").write_text(json.dumps({"scores": {"s": 0.75}}), encoding="utf-8")
     w = _outputs.writer(run)
     # i3's text holds the characters JSON keeps raw and str.splitlines splits on (a review, 2026-11-17: the move
     # read the file with splitlines and dropped such an output, its read-back check reading it the same way).
@@ -395,15 +397,17 @@ try:
     _outputs.write_rows(score_of(run), [{"item_id": "i1", "s": 1.5}, {"item_id": "i2", "s": 0}])
     stopped = data / "runs" / "arm_v1_stopped"
     stopped.mkdir()
-    (stopped / "run.json").write_text("{}")
+    (stopped / "run.json").write_text("{}", encoding="utf-8")
     _outputs.append_partial(stopped, {"item_id": "i1", "s": 1})
     (data / "datasets").mkdir()
-    (data / "datasets" / "ds.json").write_text(json.dumps({"dataset_id": "ds", "items": []}, indent=2))
+    (data / "datasets" / "ds.json").write_text(
+        json.dumps({"dataset_id": "ds", "items": []}, indent=2), encoding="utf-8"
+    )
     (data / "references" / "gold" / "ds").mkdir(parents=True)
     (data / "references" / "gold" / "ds" / "i1.txt").write_bytes("gold\r\nline\xa0".encode() + b"\x00\xff")
     # A reference has a manifest (V16, ADR-0022); with no `redistributed: false` in it, a release publishes its texts.
     (data / "references" / "gold" / "ds" / "manifest.json").write_text(
-        json.dumps({"dataset_id": "ds"}) + "\n"
+        json.dumps({"dataset_id": "ds"}) + "\n", encoding="utf-8"
     )
     before = {f: (data / f).read_bytes() for f in disk_files()}
     # a file's time goes with it, both ways (advisor review, 2026-11-06: every file showed the migration's)
@@ -417,7 +421,7 @@ try:
         r.stderr[-300:],
     )
     (data / "scorers").mkdir()
-    (data / "scorers" / "mine.py").write_text("x = 1\n")
+    (data / "scorers" / "mine.py").write_text("x = 1\n", encoding="utf-8")
     r = evh("data-migrate", "--to", "sqlite", store="sqlite")
     check(
         "--to sqlite refuses while data/ holds Python, naming it",
@@ -520,7 +524,7 @@ try:
     # 2026-11-06). The migration refuses it by name; V23's files-on-disk check names it.
     elsewhere = proj / "corpus-elsewhere"
     elsewhere.mkdir()
-    (elsewhere / "big.txt").write_text("a corpus\n")
+    (elsewhere / "big.txt").write_text("a corpus\n", encoding="utf-8")
     (data / "sources").mkdir(exist_ok=True)
     (data / "sources" / "big").symlink_to(elsewhere, target_is_directory=True)
     r = evh("data-migrate", "--to", "sqlite", store="sqlite")
@@ -542,8 +546,8 @@ try:
 
     old = data / "runs" / "arm_v1_old"
     (old / "outputs").mkdir(parents=True)
-    (old / "run.json").write_text("{}")
-    (old / "outputs" / "i1.txt").write_text("x")
+    (old / "run.json").write_text("{}", encoding="utf-8")
+    (old / "outputs" / "i1.txt").write_text("x", encoding="utf-8")
     r = evh("data-migrate", "--to", "sqlite", store="sqlite")
     check(
         "--to sqlite refuses a run in the layout before 0.8.0 (evh migrate first)",
@@ -571,7 +575,8 @@ try:
         "    while seen < n and time.monotonic() < end:\n"
         "        seen = max(seen, _outputs.count(d))\n"
         "        time.sleep(0.002)\n"
-        "    print(seen)\n"
+        "    print(seen)\n",
+        encoding="utf-8",
     )
     wenv = {**env, "EVAL_STORE": "sqlite"}
     c1, c2 = data / "runs" / "conc_1", data / "runs" / "conc_2"
@@ -618,7 +623,9 @@ try:
     blob = b"".join(p.read_bytes() for p in rel.rglob("*") if p.is_file())
     hid = [
         json.loads(x)
-        for x in (score_of(rel / "runs" / "rel_h") / "predictions.jsonl").read_text().splitlines()
+        for x in (score_of(rel / "runs" / "rel_h") / "predictions.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
     ]
     check(
         "release from the database: the files layout, the shown run's outputs, none of the hidden run's text",
@@ -665,6 +672,7 @@ ALLOWED = {
     "harness/scripts/importers/*.py": "an importer reads the file a person names to it",
     "harness/tools/_wheel.py": "packaging: copies the harness's own files",
     "harness/tools/store_matrix.py": "writes the test runs' logs under .build/, never data/",
+    "harness/tools/facts_dump.py": "reads and writes the dump files a person names (--out, --diff); a project's data only through evh",
     "harness/tools/view_bench.py": "copies a project's data/ into a scratch directory outside any project, and reads its goals' folder",
     "site/*.py": "the public site's own build and checks: its pages and the docs, never a project's data",
     "examples/*/fetch.py": "an example's fetch writes its sources as files; in SQLite data-migrate moves them in (RFC-025)",
@@ -772,7 +780,7 @@ for f in scanned:
     where = f.relative_to(REPO).as_posix()
     if allowed(where):
         continue
-    tree = ast.parse(f.read_text())
+    tree = ast.parse(f.read_text(encoding="utf-8"))
     mods = set()
     for n in ast.walk(tree):
         if isinstance(n, ast.Import):

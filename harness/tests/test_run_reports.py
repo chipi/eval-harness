@@ -88,7 +88,7 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (proj / "data" / "systems").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    (proj / "adapter.py").write_text(ADAPTER)
+    (proj / "adapter.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
@@ -160,7 +160,7 @@ try:
         kept,
         (done, _runstore.listdir(proj, f"runs/{stopped.name}") if stopped else None),
     )
-    flag.write_text("1")
+    flag.write_text("1", encoding="utf-8")
     r = evh(
         "run", "--system", "flaky_v1", "--dataset", "tickets_v1", "--resume", stopped.name if stopped else ""
     )
@@ -207,7 +207,7 @@ try:
         and "no decision" not in said,
         out[-600:],
     )
-    back.write_text("1")
+    back.write_text("1", encoding="utf-8")
     r = evh("run", "--system", "refused_v1", "--dataset", "tickets_v1", "--resume", gone.name if gone else "")
     # A resume is a run of its own (config id and the time it started), unless both start in the same second:
     # read the newest run of the arm, never assume it is the stopped one's directory.

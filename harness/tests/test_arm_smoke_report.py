@@ -82,7 +82,7 @@ try:
         (proj / "data" / d).mkdir(parents=True)
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    (proj / "smoke_adapter.py").write_text(ADAPTER)
+    (proj / "smoke_adapter.py").write_text(ADAPTER, encoding="utf-8")
     MREC = {
         "model_id": "mrec",
         "kind": "llm",
@@ -338,7 +338,8 @@ try:
         ADAPTER.replace(
             'return {"words": float(len(output.split()))}',
             'return {"words": float(len(output.split())), "zeta": 1.0}',
-        ).replace('PRIMARY_METRIC = "words"', 'PRIMARY_METRIC = "zeta"')
+        ).replace('PRIMARY_METRIC = "words"', 'PRIMARY_METRIC = "zeta"'),
+        encoding="utf-8",
     )
     for name in ("two_a", "two_b"):
         _runstore.write_text(
@@ -368,7 +369,8 @@ try:
         ADAPTER.replace(
             'return {"words": float(len(output.split()))}',
             'return {"words": float(len(output.split()))} | ({"late": 1.0} if reference else {})',
-        ).replace('PRIMARY_METRIC = "words"', 'PRIMARY_METRIC = "late"')
+        ).replace('PRIMARY_METRIC = "words"', 'PRIMARY_METRIC = "late"'),
+        encoding="utf-8",
     )
     for name in ("late_a", "late_b"):
         _runstore.write_text(

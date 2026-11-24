@@ -218,8 +218,8 @@ try:
     if not _runstore.sqlite():
         (data / "systems").mkdir(parents=True)
     write(_format.NAME, f"format: {_format.FORMAT}\n")
-    (proj / "judge_prompt.txt").write_text(PROMPT + "\n")
-    (proj / "rated_source.py").write_text(SOURCE_PY)
+    (proj / "judge_prompt.txt").write_text(PROMPT + "\n", encoding="utf-8")
+    (proj / "rated_source.py").write_text(SOURCE_PY, encoding="utf-8")
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -235,7 +235,7 @@ try:
     check("setup: a rated dataset with its ratings as the gold reference", r.returncode == 0, out(r)[-400:])
     (proj / "plain").mkdir()
     for i in range(3):
-        (proj / "plain" / f"p{i}.txt").write_text(f"plain text {i}\n")
+        (proj / "plain" / f"p{i}.txt").write_text(f"plain text {i}\n", encoding="utf-8")
     # the people rated one of the scorer's two dimensions only (Zhang's raters did not rate fluency)
     (proj / "rated_sub_source.py").write_text(
         "import json\n\nLENGTHS = "
@@ -246,7 +246,8 @@ try:
         "            outs = [' '.join(f'w{i}{k}' for k in range(n)) for k, n in enumerate(lens)]\n"
         "            r = {'accuracy': [float(n) for n in lens]}\n"
         "            yield {'item_id': f'r{i}', 'text': json.dumps({'source': f'Ticket {i}a: the customer cannot export a report.', 'outputs': outs}),\n"
-        "                   'answer': json.dumps({'ratings': r, 'raters': [r, r]})}\n"
+        "                   'answer': json.dumps({'ratings': r, 'raters': [r, r]})}\n",
+        encoding="utf-8",
     )
     r = evh(
         "dataset-create",
@@ -502,7 +503,9 @@ try:
     )
     attempt("refused: a pick scorer whose outputs_per_call is below the item's outputs",
             lambda: "outputs_per_call" in run_cmd(scorer=scorer("vj_pick_low_v1", "pick", 2).stem, dataset="rated_v1", dry_run=True)[2])  # fmt: skip
-    (proj / "judge_prompt_nodims.txt").write_text("Rate the {n} numbered replies. Reply with JSON.\n")
+    (proj / "judge_prompt_nodims.txt").write_text(
+        "Rate the {n} numbered replies. Reply with JSON.\n", encoding="utf-8"
+    )
     scorer("vj_nodims_v1", prompt={"file": "judge_prompt_nodims.txt"})
     attempt(
         "refused: a grade prompt that does not name every dimension, as judge-score refuses",
@@ -598,7 +601,7 @@ try:
     def systems_written():
         f = proj / "data" / "systems" / "vj_grade_v1__ja__validation.yaml"
         d = (
-            yaml.safe_load(f.read_text())
+            yaml.safe_load(f.read_text(encoding="utf-8"))
             if f.exists()
             else _runstore.read_text(proj, "systems/vj_grade_v1__ja__validation.yaml")
         )
@@ -790,10 +793,11 @@ try:
             "import json\n\n\nclass Importer:\n    def __init__(self, options):\n        pass\n\n"
             "    def records(self, query):\n        for i in range(" + str(len(LENGTHS)) + "):\n"
             "            n = len(json.loads(open(f'item_{i}.json').read())['outputs'])\n"
-            "            yield {'id': f'r{i}', 'body': {'scores': {d: [float(k + 1) for k in range(n)] for d in ('accuracy', 'usefulness')}, 'blocks': 1, 'parsed': 1}}\n"
+            "            yield {'id': f'r{i}', 'body': {'scores': {d: [float(k + 1) for k in range(n)] for d in ('accuracy', 'usefulness')}, 'blocks': 1, 'parsed': 1}}\n",
+            encoding="utf-8",
         )
         for i in range(len(LENGTHS)):
-            (proj / f"item_{i}.json").write_text(json.dumps(item_json(i)))
+            (proj / f"item_{i}.json").write_text(json.dumps(item_json(i)), encoding="utf-8")
         made = evh(
             "capture",
             "--importer",

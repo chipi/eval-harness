@@ -61,16 +61,16 @@ from evaluation_harness._common import (  # noqa: E402
     scored_against_dir,
 )
 from evaluation_harness._runs import (  # noqa: E402
-    default_metric,
-    direction,
+    deciding_metric,
     per_item,
+    ranks_lower,
     refuse_run_level,
     repeat_agreement,
     runs_on,
     say_agreement,
     warn_on_ambiguous_runs,
 )
-from evaluation_harness.stats import LARGE_SAMPLE, clustered, fmt_p, p_method, sign_flip_p  # noqa: E402
+from evaluation_harness.stats import LARGE_SAMPLE, clustered, fmt_p, min_attainable_p, p_method, sign_flip_p  # noqa: E402
 from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E402
 
 
@@ -356,10 +356,10 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
     if args.family is None:
         args.family = 1
     _named_metric = bool(args.metric)
-    args.metric = args.metric or default_metric(args.dataset_id, label=args.label)
+    args.metric = args.metric or deciding_metric(args.dataset_id, label=args.label)
     refuse_run_level([*runs, *runs_b], args.metric, "pair-test")
     if cross and not _named_metric:
-        other = default_metric(args.b_dataset, label=args.label)
+        other = deciding_metric(args.b_dataset, label=args.label)
         if other != args.metric:
             die(
                 f"the two datasets' runs record different primary metrics ({args.dataset_id}: {args.metric}, "
@@ -369,8 +369,8 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
     if cross:
         arm_a = [r for r in runs if r[1]["system_id"] == args.a]
         arm_b = [r for r in runs_b if r[1]["system_id"] == args.b]
-        lower = direction(arm_a, args.metric, args.asc, args.desc)
-        lower_b = direction(arm_b, args.metric, args.asc, args.desc)
+        lower = ranks_lower(arm_a, args.metric, args.asc, args.desc)
+        lower_b = ranks_lower(arm_b, args.metric, args.asc, args.desc)
         if lower != lower_b:
             die(
                 f"{args.metric} is {'lower' if lower else 'higher'}-is-better for {args.a} on {args.dataset_id} "
@@ -398,7 +398,7 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
                     "not-enough",
                 )
     else:
-        lower = direction(runs, args.metric, args.asc, args.desc)
+        lower = ranks_lower(runs, args.metric, args.asc, args.desc)
 
         def scores_now() -> tuple[dict, dict]:
             if values is not None:
@@ -614,6 +614,15 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
                 else "    (uncorrected: valid only if this pair was named before the table was read)"
             )
         )
+    # What these many items can show at all: when the smallest p they can reach is above the level, no result is
+    # significant here, whatever the data say (3 items: 0.25).
+    min_p = min_attainable_p(n_units)
+    level = thresh if args.family > 1 else 0.05
+    if min_p > level:
+        print(
+            f"    smallest p         {fmt_p(min_p)}: {n_units} {'clusters' if args.cluster else 'items'} cannot reach {level:.4g}, "
+            "so a verdict of not significant says nothing about the arms"
+        )
     if hyp:
         agrees = _hypothesis.agreement(hyp["direction"], obs, lower, p <= thresh)
         shown = {"better": "better than", "worse": "worse than", "no-worse": "no worse than"}[
@@ -671,6 +680,7 @@ def _run(args: argparse.Namespace, ap: Any) -> int:
             "wins": wins,
             "ties": ties,
             "p": p,
+            "min_p": min_p,
             "method": method,
             "permutations": args.permutations if method == "sampled" else None,
             "seed": args.seed,

@@ -57,9 +57,7 @@ def list_goals(period: str | None = None) -> dict[str, Any]:
     """Every goal: its id, title, status and primary measure, its datasets, how many systems were filed for it, the arm each
     of its decisions recommends (with what it costs and how fast it is against the baseline), and its studies; with
     `period`, each goal's runs and spend in the period against the one before, and what happened in it."""
-    from datetime import date  # noqa: PLC0415
-
-    from evaluation_harness import _jsonout  # noqa: PLC0415
+    from evaluation_harness import _common, _jsonout  # noqa: PLC0415
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
     from evaluation_harness.model import goal_views as gv  # noqa: PLC0415
@@ -106,7 +104,7 @@ def list_goals(period: str | None = None) -> dict[str, Any]:
         got = period_views.rows_in(A, by_ds, rows_p, key)
         for row in out["goals"]:
             row["period"] = _jsonout.plain(got["rows"].get(row["goal"]))
-        b = cp.bounds(key, date.today(), cb.window(A, by_ds)["first"])
+        b = cp.bounds(key, _common.today(), cb.window(A, by_ds)["first"])
         out["period"] = {
             "key": key,
             "line": got["line"],
@@ -159,11 +157,18 @@ def history(goal: str) -> dict[str, Any]:
     return {"goal": goal, "saves": GOAL.history(goal)}
 
 
+def _with_warnings(saved: dict[str, Any]) -> dict[str, Any]:
+    """A save's answer with what the saved goal asks of its runs that they cannot give (`model.goals.warnings`)."""
+    from evaluation_harness.model.goals import warnings  # noqa: PLC0415
+
+    return {**saved, "warnings": warnings(saved["record"])}
+
+
 def new(goal: str, set: dict[str, Any], by: str) -> dict[str, Any]:
     """Make the goal from its fields (dotted keys), checked; an id that is taken is refused."""
     from evaluation_harness.model.goals import GOAL  # noqa: PLC0415
 
-    return GOAL.make(goal, {"goal_id": goal}, list(set.items()), by)
+    return _with_warnings(GOAL.make(goal, {"goal_id": goal}, list(set.items()), by))
 
 
 def change(
@@ -172,7 +177,7 @@ def change(
     """Set and remove the goal's fields (dotted keys), checked; its comments kept."""
     from evaluation_harness.model.goals import GOAL  # noqa: PLC0415
 
-    return GOAL.patch(goal, list((set or {}).items()), list(unset or []), by)
+    return _with_warnings(GOAL.patch(goal, list((set or {}).items()), list(unset or []), by))
 
 
 def say_list(r: dict[str, Any]) -> str:
@@ -234,4 +239,5 @@ def say_history(r: dict[str, Any]) -> str:
 
 def say_saved(r: dict[str, Any]) -> str:
     """A save's answer as text: saved, or unchanged."""
-    return f"{r['id']}: {'saved' if r['changed'] else 'unchanged (nothing to save)'}"
+    head = f"{r['id']}: {'saved' if r['changed'] else 'unchanged (nothing to save)'}"
+    return "\n".join([head, *(f"  WARNING: {w}" for w in r.get("warnings") or [])])

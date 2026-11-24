@@ -13,7 +13,7 @@ Pin a release tag:
 
 ```toml
 # pyproject.toml
-"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.0#subdirectory=harness",
+"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.1#subdirectory=harness",
 ```
 
 - **Pin a tag, never a branch.** A branch moves; a run recorded against it cannot be
@@ -29,18 +29,25 @@ Pin a release tag:
 
 ## Cutting a release
 
-1. **Bump the version** in `harness/scripts/_version.py` (semantic versioning):
+1. **Bump the version** in `harness/scripts/_version.py`, and the `harness-version` each bundled skill names
+   (`harness/skills/*/SKILL.md`; `tests/test_skills.py` fails a skill that names another), using semantic versioning:
    - patch: a fix that cannot move a result;
    - minor: new capability, or any change that can move a result;
    - major: a change to the run format or the CLI that breaks existing projects.
 2. **Write its section** at the top of `harness/CHANGELOG.md` (`## X.Y.Z — YYYY-MM-DD`).
-   Anything that can move a number goes under **Changed**, in words a consumer can act on.
-   Open it with a short paragraph a reader can take in at once: what the release lets you do,
-   and whether upgrading changes any result. The section is the release notes in three places:
-   the GitHub Release (the workflow copies it), the docs site and the harness site's release
-   notes page. A section longer than GitHub's release-body limit is cut, in the GitHub Release
-   only, to its opening, its headings and a link to the full section. Use absolute links: the
-   GitHub Release cannot resolve relative ones.
+   **A section is short: at most 4,000 characters** (from 0.8.0 on; `make -C harness site-check`
+   fails a longer one, `site/releases.py` `SECTION_LIMIT`). Open it with a short paragraph a reader
+   can take in at once: what the release lets you do, and whether upgrading changes any result.
+   Anything that can move a number is named there or under **Changed**, in words a consumer can
+   act on. When the release has more to say than fits, write the full notes, every change by area,
+   in `docs/releases/X.Y.Z.md` (a page of the docs site) and end the section with a link to it:
+   `[docs/releases/X.Y.Z.md](https://github.com/chipi/eval-harness/blob/main/docs/releases/X.Y.Z.md)`.
+   The check also fails a section that links a notes page that does not exist, and a notes page
+   its section does not link to. The section is the release notes in three places: the GitHub
+   Release (the workflow copies it), the docs site and the harness site's release notes page; the
+   link carries the reader to the full notes from each. Use absolute links: the GitHub Release
+   cannot resolve relative ones. A section written this way never reaches `harness-release.yml`'s
+   cut at 120,000 characters (GitHub's limit is 125,000), which stays as a backstop.
 3. **Move every install pin to the new tag** (`@vX.Y.Z#subdirectory=harness`): the READMEs,
    the getting-started guide, the tutorials and these docs. `make -C harness site-check` fails on a
    pin that names an older release than the changelog's newest dated section, so dating the
@@ -54,6 +61,20 @@ Pin a release tag:
    `python tools/validate_judge_zhang.py --scorer <scorer> --no-calls` for each scorer that
    has the records; they recompute every figure for $0. Commit any change, and run `make ci`,
    which then recomputes the report's claims from the human data too.
+
+   **4b. Check the upgrade over an install.** `make -C harness upgrade-check` (network and an authenticated `gh`; a
+   minute or two) installs the previous release's wheel in a throwaway venv, makes a `files` and a `sqlite` project on
+   it, installs this tree's build over it as `docs/UPGRADING.md` says, and runs `evh --version`, `migrate --check`,
+   `migrate --dry-run`, `validate`, `runs-list` and `leaderboard` in each. It also checks UPGRADING's claim that a plain
+   `pip install` of a build that reports the installed version keeps the old code. Run it on the release pull request, once
+   the version is bumped; a failure is a release that breaks the project of someone who upgrades.
+
+   **4c. Check that the readers agree on this repository's own data.** `make -C harness reader-agreement-repo` (15 to 25
+   minutes; not in the self-test) asks the CLI, the API, the MCP reads, the catalog export and the inspector for the same
+   facts of `harness/data`, on a copy, and fails when two of them differ. The self-test's version runs the same check on
+   small projects; this one runs it on the real ones, where a migration or a re-score leaves a shape no fixture has.
+   Run it on the release pull request; a disagreement is a reader that says something different from the others about
+   a project someone is using.
 5. **Run the [newcomer scenario](SCENARIO.md)** on the release candidate **when the newcomer's path
    changed** since its last recorded run: the install, getting started, the tutorials, or the
    commands and files they use. It is a smoke test: a fresh project, the published docs only, two
@@ -76,14 +97,32 @@ Pin a release tag:
    - creates the GitHub Release with the changelog section as notes and the package
      attached.
 
-A failed release leaves no Release behind. Fix the problem, delete the tag
-(`git push --delete origin vX.Y.Z`) and tag again. **Never move a tag that has a Release:**
-someone may already have pinned it. Cut the next patch version instead.
+8. **Deploy, when the release changes what the site or catalog show.** A merge to `main` deploys
+   nothing: the production deploy is its own step, run from the repository root with an
+   authenticated `gh`:
+   ```bash
+   make deploy-dry   # dispatches deploy-prod.yml with dry_run=true on origin/main's head and watches it
+   make deploy       # refuses unless a dry run of that same commit passed; then the real deploy
+   ```
+   `infra/deploy/dispatch.sh` recognises a dry run by `dry_run=true sha=<sha>` in the workflow run's title
+   (`run-name`) and by the same head sha, and passes the sha as a required input that the workflow's first
+   step checks against the commit it got, so a main that moves meanwhile deploys nothing
+   (`infra/README.md`, "Cutover").
+
+A failed release leaves no Release behind. Fix the problem and cut the next patch version: the
+`release tags` ruleset refuses deleting or moving a `v*` tag for everyone, an admin included (it
+has no bypass list since 2026-11-23). To reuse the number of a tag that has no Release, a maintainer
+sets the ruleset's enforcement to Disabled (Settings → Rules → Rulesets → `release tags`), deletes
+the tag (`git push --delete origin vX.Y.Z`), sets it back to Active, and tags again: moving a tag
+is a change to the ruleset made on purpose. **Never move a tag that has a Release:** someone may
+already have pinned it. Cut the next patch version instead.
 
 ## One-time repository settings (done by a maintainer in GitHub)
 
 - **Settings → Rules → Rulesets → New tag ruleset.** Target `v*`, and block updates and
-  deletions, so a released tag cannot move under its users.
+  deletions, so a released tag cannot move under its users. Leave its bypass list empty, so it
+  holds for an admin too: a bypass lets a tag be deleted and then created again on another commit
+  (the ruleset has no creation rule, because the release creates tags).
 - **Settings → Actions → General → Workflow permissions** must allow the workflow token to
   write contents, or the release step cannot create the Release (the workflow asks for
   `contents: write`).

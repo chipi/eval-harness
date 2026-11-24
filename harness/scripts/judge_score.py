@@ -579,16 +579,14 @@ def pick_subset(item_ids: Sequence[str], frac: float, seed: Any, salt: str) -> l
 def discover_arms(dataset_id: str, match: str) -> list[dict[str, Any]]:
     """The primary run of every arm on the dataset: system_id contains `match`, latest wins. `dir` is the score the
     run made, whose outputs and rows are read."""
-    latest: dict[str, tuple[str, Path, dict[str, Any]]] = {}
-    # One run per arm, the latest, on purpose: judging scores an arm's outputs, so repeats
+    by_system: dict[str, list[tuple[Path, dict[str, Any]]]] = {}
+    # One run per arm, the latest (model.runs.latest), on purpose: judging scores an arm's outputs, so repeats
     # are not averaged as they are everywhere else (_runs.per_item).
     for d, m in runs_on(dataset_id, match=match or None):
-        cid = m["system_id"]
-        key = m.get("created_at", "") + m["run_id"]
-        if cid not in latest or key > latest[cid][0]:
-            latest[cid] = (key, d, m)
+        by_system.setdefault(m["system_id"], []).append((d, m))
+    latest = {cid: last for cid, found in by_system.items() if (last := _model_runs.latest(found))}
     arms = []
-    for cid, (_k, d, m) in sorted(latest.items()):
+    for cid, (d, m) in sorted(latest.items()):
         arms.append(
             {
                 "system_id": cid,
@@ -910,7 +908,7 @@ def run_judging(
                 all_judges = [j["params"] for j in sc["judges"]]
                 if _spend.stops(spent, cap, *all_judges):
                     raise CostCapExceeded(
-                        f"spent ${spent:.4f} of the ${cap:.4f} cap"
+                        f"spent ${spent:.4f}, cap {_spend.shown(cap)}"
                         + (f": {_spend.ZERO_CAP_HINT}" if _spend.zero_blocked(cap, *all_judges) else "")
                     )
                 if msg is None:
@@ -1873,7 +1871,7 @@ def body(**inputs: Any) -> int:
             tcost += e["est_cost_usd"]
         print(
             f"  TOTAL        calls {tc:5d}  tokens in {tt_in:>10,}  out {tt_out:>8,}  "
-            f"est ${tcost:.4f}   cap {(f'${cap:.2f}') if cap is not None else 'NONE'}"
+            f"est ${tcost:.4f}   cap {_spend.shown(cap)}"
         )
         return 0
 

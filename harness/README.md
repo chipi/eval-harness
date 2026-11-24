@@ -12,7 +12,7 @@ comparisons that **refuse** to mislead you.
 
 ```bash
 cd your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.1#subdirectory=harness"
 evh init --store files --tutorial   # the data folders, config.yaml, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt and the tutorial kit; --store sqlite is its equal; leave --tutorial off for a project of your own (tutorial 1 does)
 evh --help             # the verbs, in the order you need them
 ```
@@ -107,7 +107,7 @@ data/profiles/       evh dataset-profile   what is inside a dataset, for its pag
 (an agent)           evh mcp            the read commands as MCP tools
 ```
 
-`evh validate` checks the whole tree — twenty-eight integrity rules (V1–V28), exits non-zero,
+`evh validate` checks the whole tree — thirty integrity rules (V1–V30), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -349,7 +349,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | twenty-eight integrity checks (V1–V28) |
+| `scripts/validate_tree.py` | thirty integrity checks (V1–V30) |
 | `scripts/ops/records.py` | what runs and baselines exist: `evh runs-list`, `evh baselines` |
 | `schemas/` | the contracts: dataset, metrics (a run), baseline, system (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |

@@ -58,14 +58,14 @@ def version(ds: str, tickets: Path, gold: Path, arm: str = "lead1") -> subproces
         r = r if r.returncode else evh(*step)
     if r.returncode:
         return r
-    goal = (KIT / "goals" / "tickets_summary.yaml").read_text().replace("tickets_v1", ds)
+    goal = (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8").replace("tickets_v1", ds)
     _runstore.write_text(proj, f"goals/{ds}.yaml", goal.replace("goal_id: tickets_summary", f"goal_id: {ds}"))
     return arm_on(ds, arm)
 
 
 def arm_on(ds: str, arm: str) -> subprocess.CompletedProcess:
     """The tutorial's arm run on this dataset, as tickets_<arm>_<its suffix>."""
-    cfg = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+    cfg = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8")
     sid = f"tickets_{arm}_{ds.split('_')[-1]}"
     cfg = cfg.replace(f"tickets_{arm}_v1", sid)
     _runstore.write_text(proj, f"systems/{sid}.yaml", cfg)
@@ -82,19 +82,25 @@ try:
     t2 = proj / "tutorial" / "tickets_v2"
     shutil.copytree(t1, t2)
     fixed = t2 / "t03_export.txt"
-    fixed.write_text("The export was started from the admin panel. " + fixed.read_text())
+    fixed.write_text(
+        "The export was started from the admin panel. " + fixed.read_text(encoding="utf-8"), encoding="utf-8"
+    )
     # v3: the same ids, but the owner reworded one summary.
     gold3 = proj / "tutorial" / "gold_v3"
     shutil.copytree(KIT / "gold", gold3)
-    (gold3 / "t05_delete.txt").write_text("Deleting an account is refused while a subscription is active.\n")
+    (gold3 / "t05_delete.txt").write_text(
+        "Deleting an account is refused while a subscription is active.\n", encoding="utf-8"
+    )
     # v4: no id in common with v1.
     t4 = proj / "tutorial" / "tickets_v4"
     t4.mkdir()
     gold4 = proj / "tutorial" / "gold_v4"
     gold4.mkdir()
     for f in sorted(t1.glob("*.txt")):
-        (t4 / f"x_{f.name}").write_text(f.read_text())
-        (gold4 / f"x_{f.name}").write_text((KIT / "gold" / f.name).read_text())
+        (t4 / f"x_{f.name}").write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+        (gold4 / f"x_{f.name}").write_text(
+            (KIT / "gold" / f.name).read_text(encoding="utf-8"), encoding="utf-8"
+        )
 
     for ds, tickets, gold in (
         ("tickets_v1", t1, KIT / "gold"),

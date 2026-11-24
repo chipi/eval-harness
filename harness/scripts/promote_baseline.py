@@ -45,18 +45,28 @@ def run_record(run_id: str) -> dict | None:
 
 
 def _repeats(m: dict) -> dict | None:
-    """The repeats of the promoted run's arm (same system, same base run id, `repeat_index` set):
-    their run ids and the mean of each score over them; None for a run that is not a repeat."""
-    import re  # noqa: PLC0415
+    """The repeat set of the promoted run's arm (`model.runs.set_of`: the runs `--repeat` made and the repeats joined to
+    the run they repeat): their run ids and the mean of each score over them; None for a run that is not in one."""
     import statistics  # noqa: PLC0415
 
-    if not m.get("repeat_index"):
+    d = RUNS / m["run_id"]
+    mine = model_runs.first_score(d) or next(iter(model_runs.scores_of(d)), None)
+    if mine is None:
         return None
-    base = re.sub(r"_r\d+$", "", m["run_id"])
+    arm = model_runs.arm_of(mine, m)
+    members = model_runs.set_of(
+        [
+            (sd, rec)
+            for sd, rec in model_runs.scored(m["dataset_id"], system_id=m["system_id"], label_is=None)
+            if model_runs.arm_of(sd, rec) == arm
+        ]
+    )
+    if m["run_id"] not in {rec["run_id"] for _sd, rec in members}:
+        return None
     sibs = []
-    for d in sorted(_store.glob(RUNS, f"{base}_r*")):
-        mm = run_record(d.name) or {}
-        if mm.get("system_id") == m["system_id"] and mm.get("repeat_index"):
+    for run_id in sorted({rec["run_id"] for _sd, rec in members}):
+        mm = run_record(run_id) or {}
+        if mm.get("system_id") == m["system_id"]:
             sibs.append(mm)
     if len(sibs) < 2:
         return None
@@ -225,6 +235,18 @@ def body(
             "  (--allow-unknown-build overrides, but then the baseline names no system.)",
             "not-configured",
         )
+    # No ref at all (not a git project) was refused above, and --allow-unknown-build already says so: one flag, not two.
+    if (
+        _common.tree_state(build) is None
+        and build.get("ref", "unknown") != "unknown"
+        and not args.allow_dirty
+    ):
+        die(
+            f"REFUSED — git could not say whether the tree run {args.run} came from was clean.\n"
+            f"  build.ref={build.get('ref', '?')[:12]} is not proven to describe what actually ran.\n"
+            "  Re-run where git works and promote that — or --allow-dirty and say why in --reason.",
+            "not-allowed",
+        )
     if build.get("dirty") and not args.allow_dirty:
         die(
             f"REFUSED — run {args.run} was produced by a DIRTY tree.\n"
@@ -257,6 +279,14 @@ def body(
                 "mismatch",
             )
 
+    if goal_doc is not None:
+        measure = ((goal_doc.get("success_criteria") or {}).get("primary") or {}).get("measure")
+        if measure and measure not in m["scores"]:
+            print(
+                f"  WARNING: goal {goal_id}'s primary measure {measure!r} is none of the scores of {m['run_id']} "
+                f"({', '.join(k for k in m['scores'] if not k.startswith(BOOKKEEPING_PREFIXES))}): this baseline "
+                "answers nothing on it"
+            )
     look_ctx: dict = {}
     in_round: dict = {}
     if args.round and goal_id:

@@ -72,8 +72,15 @@ Each check exists because its absence let a real defect through somewhere:
   V28 rows           a stored row holding a run setting (generation_config, generation_requested,
                      encoder_window) equal to its run's `call`, or a usage key outside the kept set
                      (format 7, RFC-033)
+  V29 repeats        a repeat's `of` naming a run of another system or dataset (RFC-041 F2); a repeat
+                     whose `of` is not there, and a round arm that records a repeat where it is no longer
+                     read, are notes (a round reads what it recorded)
+  V30 recorded links a run the harness scored whose reference (gold or silver) or label set is not there,
+                     named with the file that holds the link (RFC-041 F7). A goal `datasets:` entry that names
+                     no dataset (a plain id, or prose, a pattern or a range) is a note, FAIL from 0.9 for a plain id;
+                     an imported run's reference that is not under data/ is a note
 
-Exit 1 on any failure, so it can gate.
+Exit 6 on any failure, so it can gate (RUNBOOK's exit codes).
 
     evh validate
 """
@@ -108,12 +115,19 @@ from evaluation_harness._common import (
     jsonl_lines,
     load_goals,
     load_module,
-    lower_is_better,
     read_json,
     sha256,
     system_files,
 )
-from evaluation_harness._runs import recorded_direction
+from evaluation_harness._runs import (
+    ASSUMED,
+    assumed_note,
+    direction,
+    direction_source,
+    goal_datasets,
+    goal_declarations,
+    recorded_direction,
+)
 from evaluation_harness.axes import axes_of
 from evaluation_harness.model import runs as _mr
 
@@ -183,7 +197,11 @@ def tracked_arms() -> list[str]:
         tracked = {
             f.rsplit("/", 1)[0]
             for f in subprocess.run(
-                ["git", "ls-files", data_rel(RUNS)], cwd=ROOT, capture_output=True, text=True
+                ["git", "ls-files", data_rel(RUNS)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
             ).stdout.split()
             if f.endswith("/metrics.json")
         }
@@ -300,14 +318,14 @@ def v2_dataset_ids() -> None:
         parent = (doc.get("derived_from") or {}).get("dataset_id")
         if parent and parent not in known:
             dangling.append(f"dataset {p.stem} derived from {parent}, which does not exist")
-        cap = (doc.get("made_from") or {}).get("capture")
-        if cap:
+        capture = (doc.get("made_from") or {}).get("capture")
+        if capture:
             try:
-                there = _store.is_file(_datasets.CAPTURE.path(str(cap)))
+                there = _store.is_file(_datasets.CAPTURE.path(str(capture)))
             except Problem:  # not a capture id
                 there = False
             if not there:
-                dangling.append(f"dataset {p.stem} made from capture {cap}, which does not exist")
+                dangling.append(f"dataset {p.stem} made from capture {capture}, which does not exist")
     for d in dangling:
         print(f"       {d}")
     check(
@@ -661,7 +679,7 @@ def all_scores() -> list[tuple[str, Path, dict]]:
 def _tracked_files() -> list[str]:
     """Every file of data/runs git tracks, as paths from the project root."""
     return subprocess.run(
-        ["git", "ls-files", data_rel(RUNS)], cwd=ROOT, capture_output=True, text=True
+        ["git", "ls-files", data_rel(RUNS)], cwd=ROOT, capture_output=True, text=True, encoding="utf-8"
     ).stdout.split()
 
 
@@ -748,6 +766,7 @@ def v9_no_committed_evidence_is_missing() -> None:
         cwd=ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     tracked = listed.stdout.split()
     missing, incomplete = [], []
@@ -758,7 +777,7 @@ def v9_no_committed_evidence_is_missing() -> None:
     if listed.returncode != 0:
         no_repo = (
             subprocess.run(
-                ["git", "rev-parse", "--git-dir"], cwd=ROOT, capture_output=True, text=True
+                ["git", "rev-parse", "--git-dir"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8"
             ).returncode
             != 0
         )
@@ -1004,11 +1023,11 @@ def v8_no_duplicate_system_ids() -> None:
     the situation instead, which is one rule in one place and covers every tool that
     has not been written yet.
 
-    `--repeat N` writes `<id>_r1.._rN`: one arm measured N times, averaged on purpose,
-    and not ambiguous.
+    A repeat set is one arm measured N times, averaged on purpose, and not ambiguous: the runs `--repeat N` made
+    (their record's `repeat_index`) and the repeats joined to the run they repeat (`--purpose repeat --of`, with the
+    same fingerprint hash), as `model.runs.set_of` says. What a run is called says nothing, and two `--repeat`
+    invocations are two sets: runs that carry one `repeat_index` twice are not a set.
     """
-    import re as _re  # noqa: PLC0415
-
     #: The arms whose runs back a report. A throwaway pass (`evh run --scratch`) is outside the data.
     # The `linux` arm was omitted when it was added, so the sixth committed arm was the one place a duplicate
     # system_id could still land -- and the latency claims read it by filesystem order, so a duplicate changed the
@@ -1024,14 +1043,13 @@ def v8_no_duplicate_system_ids() -> None:
         groups: dict = {}
         for sd, m in by_arm.get(arm, []):
             key = (m.get("dataset_id"), m.get("system_id"))
-            rid = _mr.run_of(sd).name
-            if key[1] and rid not in groups.setdefault(key, []):
-                groups[key].append(rid)
-        for (ds, cid), names in sorted(groups.items()):
+            if key[1] and all(_mr.run_of(sd) != _mr.run_of(x) for x, _m in groups.setdefault(key, [])):
+                groups[key].append((sd, m))
+        for (ds, cid), found in sorted(groups.items()):
+            names = [_mr.run_of(sd).name for sd, _m in found]
             if len(names) < 2:
                 continue
-            stems = {_re.sub(r"_r\d+$", "", n) for n in names}
-            if len(stems) == 1 and all(_re.search(r"_r\d+$", n) for n in names):
+            if _mr.is_set(found):
                 continue
             if (ds, cid) in ALLOWED:
                 notes.append(
@@ -1339,11 +1357,17 @@ def v14_goals() -> None:
     since = str(goal_policy().get("required_from") or "")
     unnamed, n_runs = [], 0
     filed: dict[str, list] = defaultdict(list)
+    recorded_on: dict[str, set[str]] = defaultdict(set)  # dataset -> the measures its runs record
+    runs_on_ds: dict[str, list] = defaultdict(list)
     named_runs: set[str] = set()
     for _label, run, m in all_scores():
         rid = _mr.run_of(run).name
         if m.get("goal"):
             filed[str(m["goal"])].append((run, m))
+        runs_on_ds[str(m.get("dataset_id"))].append((run, m))
+        recorded_on[str(m.get("dataset_id"))].update(
+            k for k, v in (m.get("scores") or {}).items() if isinstance(v, (int, float))
+        )
         if rid in named_runs:  # a run's goal and format are its own, whatever it was scored as
             continue
         named_runs.add(rid)
@@ -1368,10 +1392,69 @@ def v14_goals() -> None:
             bad.append(
                 f"goals/{gid}.yaml: {measure} is {says}-is-better, its runs record {recorded}-is-better"
             )
-        elif not recorded and says == "higher" and lower_is_better(measure):
+        elif not recorded and says == "higher" and direction(measure, goals={}) == "lower":
             bad.append(
                 f"goals/{gid}.yaml: {measure} is a cost, speed or token count; higher-is-better contradicts it"
             )
+    # TWO GOALS, ONE ANSWER (_runs.direction): a measure two goals give opposite directions on one dataset would be
+    # ranked one way by one goal's page and the other way by the next. Both list the dataset, or neither restricts.
+    said: dict[str, list[tuple[str, str, list[str]]]] = defaultdict(list)
+    for gid, g in sorted(goals.items()):
+        for measure, which in goal_declarations(g).items():
+            said[measure].append((gid, which, goal_datasets(g)))
+    for measure, declared in sorted(said.items()):
+        for i, (g1, d1, ds1) in enumerate(declared):
+            for g2, d2, ds2 in declared[i + 1 :]:
+                where = sorted(set(ds1) & set(ds2)) if ds1 and ds2 else [] if ds1 or ds2 else ["any dataset"]
+                if d1 != d2 and where:
+                    bad.append(
+                        f"goals/{g1}.yaml and goals/{g2}.yaml: {measure} is {d1}-is-better in the first, {d2}-is-better "
+                        f"in the second, on {', '.join(where)}"
+                    )
+    # A NOTE, never a failure: a direction that is not one (`non_inferior` is a decision rule) is read as the runs and the name table say, and a
+    # primary measure no run records (a prose name for the metric) decides on nothing the runs hold. The words are the
+    # ones goal-new and goal-set say when they save the goal (model.goals).
+    from evaluation_harness.model import goals as _model_goals  # noqa: PLC0415
+
+    for gid, g in sorted(goals.items()):
+        on = goal_datasets(g)
+        on_record = set().union(*(recorded_on.get(d, set()) for d in on)) if on else set()
+        for w in (_model_goals.direction_warning(g), _model_goals.measure_warning(g, on_record)):
+            if w:
+                notes.append(f"V14 goal {gid}: {w}")
+    # A direction nobody declared is the default, higher (`_runs.ASSUMED`): a note for each goal primary measure and each
+    # primary_metric a run records whose direction is that, so a ranking on it is a choice somebody made.
+    for gid, g in sorted(goals.items()):
+        primary = (g.get("success_criteria") or {}).get("primary") or {}
+        measure = primary.get("measure")
+        if (
+            not measure or primary.get("direction") is not None
+        ):  # a direction that is no direction has its own note
+            continue
+        by = direction_source(measure, runs=filed.get(gid, []), goals={gid: g})[1]
+        if line := assumed_note(measure, by):
+            notes.append(f"V14 goal {gid}: primary {line}")
+    assumed_on: dict[str, list[str]] = defaultdict(list)
+    for ds, found in sorted(runs_on_ds.items()):
+        for measure in sorted({str(m["primary_metric"]) for _d, m in found if m.get("primary_metric")}):
+            if assumed_note(measure, direction_source(measure, dataset=ds, runs=found, goals=goals)[1]):
+                assumed_on[measure].append(ds)
+    for measure, dss in sorted(assumed_on.items()):
+        notes.append(
+            f"V14 runs: {assumed_note(measure, ASSUMED)} (the primary_metric recorded on {', '.join(dss)})"
+        )
+    # A goal says nothing about a dataset it does not list. Where its measure is recorded on one, another goal, the runs
+    # or the name table answer, and a note names both when the answer differs.
+    for gid, g in sorted(goals.items()):
+        listed = goal_datasets(g)
+        for measure, which in goal_declarations(g).items() if listed else []:
+            for ds in sorted(d for d in recorded_on if d not in listed and measure in recorded_on[d]):
+                answer, by = direction_source(measure, dataset=ds, runs=runs_on_ds[ds], goals=goals)
+                if answer != which:
+                    notes.append(
+                        f"V14 goal {gid}: {measure} is {which}-is-better on {', '.join(listed)}, but on {ds}, which it "
+                        f"does not list, it is read as {answer} ({by})"
+                    )
     # A goal's `cluster:` names a field the dataset's items carry: a typo would test item by item and say nothing.
     for gid, g in goals.items():
         for d in g.get("datasets") or []:
@@ -1497,7 +1580,9 @@ def v16_references() -> None:
         d for tier in ("gold", "silver") for d in sorted(_store.glob(base / tier, "*")) if _store.is_dir(d)
     ]
     if not dirs:
-        print("  --   V16 references (none)")
+        print(
+            "  --   V16 references — 0 sets under data/references, so no manifest was checked (each reference a run used from elsewhere has a note below)"
+        )
         return
     schema = json.loads(_store.read_text(SCHEMAS / "reference.schema.json")) if jsonschema else None
     bad: list[str] = []
@@ -2082,6 +2167,136 @@ def v28_rows_in_format_7() -> None:
     )
 
 
+def v29_repeats_and_the_arms_that_read_them() -> None:
+    """V29: a run's `of` (a repeat's, a re-timing's, a pair's) names a run of its own system and dataset (a repeat of
+    another system's run is no repeat of it), and a round arm's runs are still read in the arm the round names (RFC-041 F2): a repeat of the same
+    measurement as the run it repeats is read in that run's arm, so a round that recorded it under `repeats` no longer
+    reads it there. A round reads what it recorded and there is no migration (RUNBOOK 1531): a note, never a failure."""
+    from evaluation_harness import _rounds  # noqa: PLC0415
+    from evaluation_harness.model import rounds as _model_rounds  # noqa: PLC0415
+
+    bad: list[str] = []
+    repeats = 0
+    for rid in _mr.run_ids():
+        rj = _mr.run(rid) or {}
+        if not rj.get("of"):
+            continue
+        what = rj.get("purpose") or "run"
+        repeats += 1
+        of = _mr.run(str(rj["of"]))
+        if of is None:
+            notes.append(
+                f"run {rid} is a {what} of {rj['of']}, which is not there (runs/{rid}/run.json)"
+                + (": it is read under `repeats`" if what == "repeat" else "")
+            )
+            continue
+        wrong = [k for k, w in (("system", "system_id"), ("dataset", "dataset_id")) if of.get(w) != rj.get(w)]
+        if wrong:
+            bad.append(
+                f"run {rid} is a {what} of {rj['of']}, a run of {of.get('system_id')} on {of.get('dataset_id')} "
+                f"({' and '.join(wrong)} differ)"
+            )
+    for rnd in _rounds.load_rounds():
+        for a in _model_rounds.arms(rnd):
+            want = _model_rounds.arm_id(rnd, a)
+            for rid in a.get("runs") or []:
+                recs = [(sd, _mr.record(sd)) for sd in _mr.scores_of(rid)]
+                read_in = {_mr.arm_of(sd, rec) for sd, rec in recs if rec}
+                joined = next((j for sd, rec in recs if rec and (j := _mr.joins(sd, rec))), None)
+                repeat = next((rec["of"] for sd, rec in recs if rec and _mr._is_repeat(rec)), None)
+                if (joined or repeat) and want not in read_in:
+                    why = (
+                        f"it is a repeat of the same measurement as {joined}, read in that run's arm"
+                        if joined
+                        else f"it is a repeat of {repeat}, which is not the run it joined"
+                    )
+                    notes.append(
+                        f"round {rnd['round_id']} of {rnd['goal']} records {rid} in its arm {want}, where it is no "
+                        f"longer read: {why} ({', '.join(sorted(read_in))}). The round reads what it recorded"
+                    )
+    for b in bad[:10]:
+        print(f"       {b}")
+    if len(bad) > 10:
+        print(f"       ... and {len(bad) - 10} more")
+    check(
+        f"V29 repeats — {repeats} name the run they re-do, which is one of their own system and dataset, and every "
+        "round reads the runs it recorded where it recorded them",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
+def _imported(rec: dict[str, Any]) -> bool:
+    """Whether a score's record says it came from an import (`evh import-run`): the harness did not score it, so it
+    cannot vouch for where the reference the importer named lives."""
+    return bool(rec.get("imported")) or str(rec.get("adapter") or "").startswith("imported:")
+
+
+def v30_recorded_links() -> None:
+    """V30: the links the harness wrote resolve. A goal's `datasets:` entry that is not a dataset of the project is a
+    note naming the goal and the entry (a goal file is the project's own text; a plain id that names no dataset
+    becomes a FAIL in 0.9, an entry that is no id, prose, a glob or a range `_v1..v3`, never does). The reference or label set a score was
+    measured against (`fingerprint.data.reference_id`, the one every reader follows: `gold/<name>`, `silver/<name>`,
+    or `labels/<dataset>/<set>`) is there for a run the harness scored (FAIL when it is not); for an imported run,
+    whose importer named it and kept it where it likes (a bare name, a folder outside data/), one note says a missing
+    one once. A link is named with the file that holds it: the score's metrics.json for a score with a fingerprint of
+    its own (a re-score), else its run's run.json (RFC-041 F7)."""
+    from evaluation_harness._common import DATASET_ID, missing_reference_note, reference_found  # noqa: PLC0415
+
+    found: dict[str, bool] = {}
+    bad: list[str] = []
+    imported_missing: dict[str, set[str]] = {}
+    named = 0
+    listed = 0
+    for gid, g in sorted(load_goals().items()):
+        for ds in goal_datasets(g):
+            listed += 1
+            if not DATASET_ID.fullmatch(ds) or ".." in ds:
+                notes.append(
+                    f"V30 goal {gid}: datasets entry {ds!r} is not a dataset id (prose, a pattern or a list), so "
+                    "nothing checks it; name each dataset by its id"
+                )
+            elif not _store.is_file(DATASETS / f"{ds}.json"):
+                notes.append(
+                    f"V30 goal {gid}: datasets entry {ds!r} names no dataset of this project (goals/{gid}.yaml); "
+                    "this is a FAIL from 0.9"
+                )
+    for rid in _mr.run_ids():
+        for sd in _mr.scores_of(rid):
+            rec = _mr.record(sd)
+            ref = _mr.reference_of(rec) if rec else ""
+            if not rec or not ref:
+                continue
+            named += 1
+            if ref not in found:
+                found[ref] = reference_found(ref)
+            if found[ref]:
+                continue
+            if _imported(rec):
+                imported_missing.setdefault(ref, set()).add(rid)
+                continue
+            held = (
+                f"runs/{rid}/scores/{sd.name}/{_mr.METRICS}"
+                if "fingerprint" in (parsed(sd / _mr.METRICS) or {})
+                else f"runs/{rid}/{_mr.RUN}"
+            )
+            bad.append(
+                f"{held}: {'label set' if ref.startswith('labels/') else 'reference'} {ref!r} is not there"
+            )
+    for ref, runs in sorted(imported_missing.items()):
+        notes.append(missing_reference_note(ref, runs))
+    for b in bad[:10]:
+        print(f"       {b}")
+    if len(bad) > 10:
+        print(f"       ... and {len(bad) - 10} more")
+    check(
+        f"V30 recorded links — {listed} goal dataset(s) and {named} score reference(s) or label set(s), and every one "
+        "the harness wrote is there",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
     score derived from them has them. And the project is files or its database, never both
@@ -2191,6 +2406,7 @@ def note_uncommitted_runs() -> None:
             capture_output=True,
             text=True,
             timeout=60,
+            encoding="utf-8",
         )
     except (OSError, subprocess.SubprocessError):
         return
@@ -2231,7 +2447,7 @@ def note_round_scorers() -> None:
 
 
 def body() -> int:
-    """Run all integrity checks over the eval tree; 1 if any fails."""
+    """Run all integrity checks over the eval tree; 6 if any fails."""
     problems.clear()
     notes.clear()
     print(f"eval tree: {DATA}\n")
@@ -2264,6 +2480,8 @@ def body() -> int:
         v26_faithfulness,
         v27_studies,
         v28_rows_in_format_7,
+        v29_repeats_and_the_arms_that_read_them,
+        v30_recorded_links,
         note_uncommitted_runs,
         note_round_scorers,
     ):

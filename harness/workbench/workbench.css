@@ -42,6 +42,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* top bar */
 .restarted { padding: 10px 16px; background: var(--surface-2); color: var(--ink); border-bottom: 3px solid var(--bad); font: 14px/1.4 var(--text); text-align: center; }
+/* A public server's visitor (RFC-039): one line on every screen, under the bar; it is not dismissed. */
+.viewer-note { padding: 8px 16px; background: var(--surface-2); color: var(--ink-2); border-bottom: 1px solid var(--hair); font: 13px/1.45 var(--text); text-align: center; }
+.viewer-note code { font: 12px/1 var(--mono); color: var(--ink); }
+.viewer-note a { color: var(--ink); }
 .bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; align-items: center; gap: 16px;
   height: 52px; padding: 0 16px; border-bottom: 1px solid var(--hair);
   background: color-mix(in srgb, var(--page) 86%, transparent); backdrop-filter: blur(12px); }

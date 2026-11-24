@@ -32,12 +32,12 @@ def on_config(config):
     """The footer names the harness version (from _version.py) and the build, which the
     deploy (pages.yml) replaces with the commit being served, as on the harness site."""
     v = re.search(
-        r'__version__ = "([^"]+)"', (ROOT / "harness" / "scripts" / "_version.py").read_text()
+        r'__version__ = "([^"]+)"', (ROOT / "harness" / "scripts" / "_version.py").read_text(encoding="utf-8")
     ).group(1)
     if ".dev" in v:  # before a release: the newest release the CHANGELOG dates (site/build.py does the same)
         dated = re.search(
             r"^## (\d+\.\d+\.\d+) — \d{4}-\d{2}-\d{2}$",
-            (ROOT / "harness" / "CHANGELOG.md").read_text(),
+            (ROOT / "harness" / "CHANGELOG.md").read_text(encoding="utf-8"),
             re.MULTILINE,
         )
         v = dated.group(1) if dated else v
@@ -119,7 +119,7 @@ def on_post_page(output, page, config):
         '<meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">'
         '<meta name="twitter:card" content="summary_large_image">'
     )
-    cfg = json.loads((ROOT / "site" / "analytics.json").read_text())
+    cfg = json.loads((ROOT / "site" / "analytics.json").read_text(encoding="utf-8"))
     if cfg.get("umami_src") and cfg.get("website_id"):
         domains = f' data-domains="{escape(cfg["domains"])}"' if cfg.get("domains") else ""
         tag += f'<script defer src="{escape(cfg["umami_src"])}" data-website-id="{escape(cfg["website_id"])}"{domains}></script>'

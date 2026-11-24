@@ -98,7 +98,7 @@ def serve() -> tuple[subprocess.Popen, int]:
 
 def call(port: int, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
     """One API call with the server's token."""
-    token = (proj / ".build" / "api-token").read_text().strip()
+    token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
     h = {"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"}
     raw = json.dumps(body).encode() if body is not None else None
     if raw is not None:
@@ -279,10 +279,10 @@ try:
         [x.stderr[-160:] for x in refused],
     )  # fmt: skip
     whole = proj / "whole.yaml"
-    whole.write_text(before + "cost_cap_usd: 9\n")
+    whole.write_text(before + "cost_cap_usd: 9\n", encoding="utf-8")
     changed = evh("data-put", "--path", "scorers/s_v1.yaml", "--file", str(whole))
     checked = evh("data-put", "--path", "scorers/s_v1.yaml", "--file", str(whole), "--check")
-    whole.write_text("# only a comment changes\n" + before)
+    whole.write_text("# only a comment changes\n" + before, encoding="utf-8")
     comment = evh("data-put", "--path", "scorers/s_v1.yaml", "--file", str(whole), "--check")
     check(
         "data-put of a whole file: a changed one is refused (saving or checking), one whose content is the same passes",
@@ -417,10 +417,10 @@ try:
         (same, other),
     )
     rec_v = jsonschema.Draft202012Validator(
-        json.loads((HARNESS / "schemas" / "judge-validation-record.schema.json").read_text())
+        json.loads((HARNESS / "schemas" / "judge-validation-record.schema.json").read_text(encoding="utf-8"))
     )
     rep_v = jsonschema.Draft202012Validator(
-        json.loads((HARNESS / "schemas" / "judge-validation-report.schema.json").read_text())
+        json.loads((HARNESS / "schemas" / "judge-validation-report.schema.json").read_text(encoding="utf-8"))
     )
     nofp = {k: v for k, v in goyal.items() if k != "judge_fp"}
     both = {**goyal, "block": 0}

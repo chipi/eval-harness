@@ -51,7 +51,7 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | 3 | describe the arms, say what the evaluation is for, commit | `cp tutorial/systems/tickets_*.yaml data/systems/`, `cp tutorial/goals/tickets_summary.yaml data/goals/` |
 | 4 | run the best arm first (a dry run prices it); the run names its goal | `evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary [--dry-run]` |
 | 5 | optional: make its outputs the reference (its outputs become a model's labels, which you promote) | `evh label-from-run --run <run_id> --set author_v1`, then `evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "…" --by <you>` |
-| 6 | run the other arms, three times each (a system that already has a plain run on the dataset refuses `--repeat`; it repeats the run it has) | `evh run --system … --dataset … --goal … --repeat 3`; for the system that has a run: `evh run --system … --dataset … --purpose repeat --of <run_id>` |
+| 6 | run the other arms, three times each (a system that already has a plain run on the dataset refuses `--repeat`; it repeats the run it has) | `evh run --system … --dataset … --goal … --repeat 3`; for the system that has a run: `evh run --system … --dataset … --purpose repeat --of <run_id>` (`--of` is required; a repeat made as that run was made joins its arm) |
 | 7 | compare | `evh leaderboard`, `evh pair-test`, `evh family-test` |
 | 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh baselines`, `evh validate` |
 

@@ -40,7 +40,9 @@ def run_script(*args: str, env: dict | None = None, cwd: Path | None = None) -> 
             resolved_args.append(str(ROOT / arg))
         else:
             resolved_args.append(arg)
-    return subprocess.run([PY, *resolved_args], cwd=cwd or ROOT, capture_output=True, text=True, env=e)
+    return subprocess.run(
+        [PY, *resolved_args], cwd=cwd or ROOT, capture_output=True, text=True, env=e, encoding="utf-8"
+    )
 
 
 def project(meta: dict) -> Path:
@@ -81,7 +83,7 @@ def write_run(
         "run_id": run_id,
         "dataset_id": dataset_id,
         "system_id": system_id,
-        "build": {"ref": "abc123def456"},
+        "build": {"ref": "abc123def456", "dirty": False},
         "scores": scores,
         "metric_kinds": dict.fromkeys(scores, "quality"),
         "fingerprint": {
@@ -765,7 +767,7 @@ def test_json_pair_test() -> int:
         fam,
     )
     # The last 20 items: ten of them differ by 1, ten tie. 11 sign patterns' worth of nothing: p = 2 / 2^10, exact.
-    (tmp / "last20.txt").write_text("\n".join(f"i{i:02d}" for i in range(20, 40)) + "\n")
+    (tmp / "last20.txt").write_text("\n".join(f"i{i:02d}" for i in range(20, 40)) + "\n", encoding="utf-8")
     ex_args = [*base, "--items", str(tmp / "last20.txt")]
     ex = parsed(run_script(*ex_args, "--json", env=env, cwd=tmp))["result"]["values"]
     ex_text = run_script(*ex_args, env=env, cwd=tmp).stdout

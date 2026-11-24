@@ -143,7 +143,7 @@ def serve(*extra):
                 break
         except OSError:
             time.sleep(0.1)
-    return p, port, (proj / ".build" / "api-token").read_text().strip()
+    return p, port, (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
 
 
 def call(method, path, body=None, data_header=True):
@@ -183,7 +183,7 @@ try:
     (proj / "data" / "systems").mkdir(parents=True)
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
-    (proj / "slow.py").write_text(SLOW)
+    (proj / "slow.py").write_text(SLOW, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
     r = (
@@ -326,7 +326,7 @@ try:
     stopped_q = _jobs.stop(qid)
     stat = Path(f"/proc/{spid}/stat")
     # Ended: no such process, or a zombie this test (its parent) has not reaped.
-    sup_gone = not stat.exists() or stat.read_text().rsplit(")", 1)[1].split()[0] == "Z"
+    sup_gone = not stat.exists() or stat.read_text(encoding="utf-8").rsplit(")", 1)[1].split()[0] == "Z"
     try:
         fds = _jobs.take_locks([("aaa:first", True)], "the test")
         first_free = True
@@ -341,13 +341,22 @@ try:
         stopped_q.get("state") == "cancelled" and sup_gone and first_free,
         (stopped_q.get("state"), sup_gone, first_free),
     )
+    # RFC-041 F3: a job that recorded nothing spent is unknown, never $0; one that recorded $0 is $0.
+    unrecorded = _jobs.read(qid)["spent_usd"]
+    (_jobs.job_dir(qid) / "spent.json").write_text(json.dumps({"spent_usd": 0}), encoding="utf-8")
+    recorded_zero = _jobs.read(qid)["spent_usd"]
+    check(
+        "a job with no spent.json reads spent_usd null; one that recorded 0 reads 0",
+        unrecorded is None and recorded_zero == 0 and recorded_zero is not None,
+        (unrecorded, recorded_zero),
+    )
     # Stop waits for the supervisor itself, not only its lock: the kernel frees a dying process's locks before it ends
     # (CI, 2026-11-13: the lock free, the supervisor not yet gone). Ended = gone or a zombie, never a live process.
     live = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
     dead = subprocess.Popen([sys.executable, "-c", "pass"])
     end = time.monotonic() + 30
     while (
-        Path(f"/proc/{dead.pid}/stat").read_text().rsplit(")", 1)[1].split()[0] != "Z"
+        Path(f"/proc/{dead.pid}/stat").read_text(encoding="utf-8").rsplit(")", 1)[1].split()[0] != "Z"
         and time.monotonic() < end
     ):
         time.sleep(0.05)
@@ -365,10 +374,11 @@ try:
     waiter_py = proj / "waiter.py"
     waiter_py.write_text(
         "from evaluation_harness import _jobs\n"
-        "with _jobs.holding([('goal:wait_g', True)], 'the waiter', _jobs.say_waiting):\n    print('got it')\n"
+        "with _jobs.holding([('goal:wait_g', True)], 'the waiter', _jobs.say_waiting):\n    print('got it')\n",
+        encoding="utf-8",
     )
     w = subprocess.Popen([sys.executable, str(waiter_py)], cwd=proj, env={**env, "PYTHONPATH": str(HERE.parent)},
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)  # fmt: skip
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")  # fmt: skip
     time.sleep(1.5)
     for fd in held:
         os.close(fd)
@@ -376,7 +386,7 @@ try:
     silent = [
         f"{f.name}:{n}"
         for f in sorted(HERE.glob("*.py"))
-        for n, line in enumerate(f.read_text().splitlines(), 1)
+        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1)
         if "holding(" in line and "lambda" in line and ": None" in line
     ]
     check(
@@ -407,8 +417,14 @@ try:
     )
     st, _x = call("POST", f"/api/v1/jobs/{bdone['id']}/resume")
     check("a succeeded job is not resumed", st == 409, st)
-    paid = json.loads((proj / ".build/jobs" / a["id"] / "spent.json").read_text())["spent_usd"]
-    rjob = json.loads((proj / ".build/jobs" / res["id"] / "job.json").read_text()) if res.get("id") else {}
+    paid = json.loads((proj / ".build/jobs" / a["id"] / "spent.json").read_text(encoding="utf-8"))[
+        "spent_usd"
+    ]
+    rjob = (
+        json.loads((proj / ".build/jobs" / res["id"] / "job.json").read_text(encoding="utf-8"))
+        if res.get("id")
+        else {}
+    )
     check(
         "the resumed job is given what the stopped one left of its cap, not the cap again",
         paid > 0 and abs(float(rjob.get("env", {}).get("EVAL_MAX_COST_USD", "nan")) - (1 - paid)) < 1e-6,
@@ -558,10 +574,12 @@ try:
     old_dir.mkdir(parents=True)
     (old_dir / "job.json").write_text(
         json.dumps({"id": old_id, "command": "catalog", "argv": ["--out", "x"], "by": None, "locks": [["catalog", True]],
-                    "env": {}, "created_at": "2020-01-01T00:00:00Z", "harness": "0.7.2"})
+                    "env": {}, "created_at": "2020-01-01T00:00:00Z", "harness": "0.7.2"}), encoding="utf-8"
     )  # fmt: skip
-    (old_dir / "state.json").write_text(json.dumps({"state": "succeeded", "exit": 0, "refusal": None}))
-    (old_dir / "log").write_text("old log line\n")
+    (old_dir / "state.json").write_text(
+        json.dumps({"state": "succeeded", "exit": 0, "refusal": None}), encoding="utf-8"
+    )
+    (old_dir / "log").write_text("old log line\n", encoding="utf-8")
     o1 = evh("jobs-status")
     o2 = evh("jobs-status", "--json")
     o3 = evh("jobs-status", old_id)
@@ -652,8 +670,10 @@ try:
     # The token is on disk before the port listens. A client waits for the port and reads .build/api-token at once:
     # the server listened first and wrote its token after, so for a moment the file held the previous server's token
     # (a 401 in the store matrix under load). A start hook that sleeps makes that moment 1.5 s; an old token is there.
-    (proj / "slow_start.py").write_text("import time\n\ndef start(info):\n    time.sleep(1.5)\n")
-    (proj / ".build" / "api-token").write_text("the-previous-servers-token\n")
+    (proj / "slow_start.py").write_text(
+        "import time\n\ndef start(info):\n    time.sleep(1.5)\n", encoding="utf-8"
+    )
+    (proj / ".build" / "api-token").write_text("the-previous-servers-token\n", encoding="utf-8")
     srv, PORT, TOKEN = serve("--hooks", "slow_start.py")
     first, _ = call("GET", "/api/v1/goals")
     srv.terminate()
@@ -704,7 +724,7 @@ try:
     cur = env.get("EVAL_STORE", "files")
     target = "files" if cur == "sqlite" else "sqlite"
     env.pop("EVAL_STORE", None)
-    (proj / "config.yaml").write_text(f"store: {cur}\n")
+    (proj / "config.yaml").write_text(f"store: {cur}\n", encoding="utf-8")
     srv, PORT, TOKEN = serve()
     st, before = call("GET", "/api/v1/datasets")
 
@@ -716,7 +736,7 @@ try:
             return exc.code
 
     file_before = served_file()
-    (proj / "config.yaml").write_text(f"store: {target}\n")
+    (proj / "config.yaml").write_text(f"store: {target}\n", encoding="utf-8")
     st2, mj = op_job("data-migrate", {"to": target}, by="person:ana")
     mjd = until(mj.get("id"), ("succeeded", "failed", "lost"), 180) if st2 == 202 else {}
     after = {}

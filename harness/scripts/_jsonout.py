@@ -29,6 +29,7 @@ import sys
 import threading
 from collections.abc import Iterator
 
+from evaluation_harness._console import dump_json
 from evaluation_harness._version import __version__
 
 # The call's, not the process's: the MCP server answers calls at once, in threads of one process.
@@ -262,10 +263,5 @@ def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     c.flush()
     result = c.result()
     sys.stdout.write(
-        json.dumps(
-            {"command": command, "version": __version__, "result": result},
-            ensure_ascii=False,
-            default=str,
-        )
-        + "\n"
+        dump_json({"command": command, "version": __version__, "result": result}, default=str) + "\n"
     )

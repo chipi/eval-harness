@@ -25,7 +25,7 @@ check(
     "split-half: a unique winner in both halves is agreement",
     _sea.split_half(_clear, list(_clear["top"]), 3, random.Random(1))["same_winner"] == 1.0,
 )
-_src = (Path(__file__).resolve().parents[1] / "tools" / "summeval_analysis.py").read_text()
+_src = (Path(__file__).resolve().parents[1] / "tools" / "summeval_analysis.py").read_text(encoding="utf-8")
 check(
     "holm: summeval_analysis uses stats.holm, so it cannot disagree with the inspector",
     "holm(" in _src and "/ (m - i)" not in _src,

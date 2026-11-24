@@ -38,27 +38,41 @@ WHAT IT CANNOT TELL YOU
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from evaluation_harness import _jsonout, _runs
 from evaluation_harness._common import die
-from evaluation_harness._runs import runs_on
+from evaluation_harness._runs import left_out, runs_on
+from evaluation_harness.axes import with_coverage
 from evaluation_harness.model.spend import judge_costs
 
 
-def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
-    """(billed, recorded, items with a bill, items total) for one run."""
-    billed = recorded = 0.0
+def billed_and_recorded(run_dir: Path) -> tuple[float, float | None, int, int]:
+    """(billed, recorded, items with a bill, items total) for one run. `recorded` is None when no item recorded a cost:
+    an unknown cost is not $0 (RFC-041 F3); a known $0 is."""
+    billed = 0.0
+    recorded: float | None = None
     with_bill = total = 0
     for r in _runs.item_rows(run_dir):
         total += 1
-        recorded += float(r.get("cost_usd") or 0.0)
+        if r.get("cost_usd") is not None:
+            recorded = (recorded or 0.0) + float(r["cost_usd"])
         b = ((r.get("_meta") or {}).get("usage") or {}).get("cost")
         if b is not None:
             with_bill += 1
             billed += float(b)
     return billed, recorded, with_bill, total
+
+
+def _usd(v: float | None) -> str:
+    """A recorded cost in the table's column: four places, "—" for none recorded."""
+    return "—" if v is None else f"{v:.4f}"
+
+
+def _ratio(r: float | None) -> str:
+    """The ratio column: `billed / recorded`, or "—" where nothing was recorded to divide by: 0 billed against 0
+    recorded is no ratio (not 0), and a bill against nothing recorded is not an infinite one."""
+    return f"{r:>8.2f}x" if r is not None else f"{'—':>8} "
 
 
 def _print_judging(rows: list[dict]) -> None:
@@ -90,17 +104,22 @@ def _print_judging(rows: list[dict]) -> None:
 
 def _repeat_names(runs: list) -> dict[Path, str]:
     """{score dir: the name its row carries}: the system id, and for a system that ran more than once the repeat
-    (r1, r2, r3: the run id's own _rN, else its place in run order), so no two rows read alike."""
+    (r1, r2, r3: the pass the run records as its `repeat_index`, else the next number no run of the system has), so no
+    two rows read alike."""
     seen: dict[str, int] = {}
+    taken: dict[str, set[int]] = {}
     for _d, m in runs:
         seen[m["system_id"]] = seen.get(m["system_id"], 0) + 1
-    nth: dict[str, int] = {}
+        if m.get("repeat_index"):
+            taken.setdefault(m["system_id"], set()).add(int(m["repeat_index"]))
     out = {}
     for d, m in runs:
         cid = m["system_id"]
-        nth[cid] = nth.get(cid, 0) + 1
-        own = re.search(r"_(r\d+)$", m["run_id"])
-        out[d] = f"{cid} {own.group(1) if own else f'r{nth[cid]}'}" if seen[cid] > 1 else cid
+        n = int(m["repeat_index"]) if m.get("repeat_index") else 0
+        while not n:
+            n = next(i for i in range(1, len(runs) + 2) if i not in taken.setdefault(cid, set()))
+            taken[cid].add(n)
+        out[d] = f"{cid} r{n}" if seen[cid] > 1 else cid
     return out
 
 
@@ -109,6 +128,8 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
     rows = []
     no_bill = []
     runs = runs_on(dataset_id or None, match=match)
+    for line in left_out(dataset_id or None, match=match):
+        print(f"  WARNING: {line}: its cost is not in this report.")
     names = _repeat_names(runs)
     for d, m in runs:
         cid = names[d]
@@ -116,11 +137,18 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
         if total == 0:
             continue
         if with_bill == 0:
-            no_bill.append((cid, recorded, m.get("dataset_id")))
+            no_bill.append((cid, recorded, m.get("dataset_id"), m.get("cost_coverage")))
             continue
         if with_bill != total:
             # Half a bill is not a bill. Say so rather than summing a mixture.
-            no_bill.append((f"{cid} (only {with_bill}/{total} items billed)", recorded, m.get("dataset_id")))
+            no_bill.append(
+                (
+                    f"{cid} (only {with_bill}/{total} items billed)",
+                    recorded,
+                    m.get("dataset_id"),
+                    m.get("cost_coverage"),
+                )
+            )
             continue
         rows.append((billed, recorded, cid, m.get("dataset_id")))
 
@@ -133,23 +161,33 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
         w = max((len(r[2]) for r in rows), default=20) + 2
         print(f"  {'arm':{w}}{'billed':>11}{'recorded':>11}{'ratio':>9}")
         print("  " + "-" * (w + 31))
-        tb = tr = 0.0
+        tb, known = 0.0, []
         for billed, recorded, cid, _ds in rows:
-            ratio = (billed / recorded) if recorded else float("nan")
-            flag = "  <-- recorded is the price table" if abs(ratio - 1) > 0.01 else ""
-            print(f"  {cid:{w}}{billed:>11.4f}{recorded:>11.4f}{ratio:>8.2f}x{flag}")
+            ratio = (billed / recorded) if recorded else None
+            differs = recorded is not None and (billed > 0 if ratio is None else abs(ratio - 1) > 0.01)
+            flag = "  <-- recorded is the price table" if differs else ""
+            print(f"  {cid:{w}}{billed:>11.4f}{_usd(recorded):>11}{_ratio(ratio)}{flag}")
             tb += billed
-            tr += recorded
+            if recorded is not None:
+                known.append(recorded)
         print("  " + "-" * (w + 31))
-        print(f"  {'TOTAL':{w}}{tb:>11.4f}{tr:>11.4f}{(tb / tr) if tr else float('nan'):>8.2f}x")
+        # The recorded total is of the runs that recorded one, and says how many did not: an unknown is not $0.
+        tr = sum(known) if known else None
+        unrecorded = len(rows) - len(known)
+        print(
+            f"  {'TOTAL':{w}}{tb:>11.4f}{_usd(tr):>11}{_ratio((tb / tr) if tr else None)}"
+            + (f"  ({unrecorded} run{'s' if unrecorded != 1 else ''} recorded no cost)" if unrecorded else "")
+        )
 
     if no_bill:
         print(
             f"\n  {len(no_bill)} run(s) with NO provider bill — the price table is all "
             f"there is, and they are NOT in the total above:"
         )
-        for cid, recorded, ds in no_bill:
-            print(f"    {cid}  ${recorded:.4f}  ({ds})")
+        for cid, recorded, ds, coverage in no_bill:
+            print(
+                f"    {cid}  {'—' if recorded is None else with_coverage(f'${recorded:.4f}', coverage)}  ({ds})"
+            )
 
     if rows or no_bill:
         print("\n  'billed' is the sum of _meta.usage.cost over every item: what the provider")

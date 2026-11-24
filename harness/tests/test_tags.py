@@ -60,7 +60,9 @@ try:
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     for arm in ("lead1", "lead2"):
         _runstore.write_text(
-            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         r = r if r.returncode else evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
     check("setup: the dataset and two runs", r.returncode == 0, (r.stdout + r.stderr)[-300:])
@@ -230,11 +232,13 @@ try:
     )
     (data / "goals").mkdir()
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     r = evh("catalog", "--out", "cat")
     gp = proj / "cat" / "g" / "tickets_summary.html"
-    html = gp.read_text() if gp.is_file() else ""
+    html = gp.read_text(encoding="utf-8") if gp.is_file() else ""
     check(
         "the goal page counts each tagged arm's failure modes on its dataset",
         r.returncode == 0

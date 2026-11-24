@@ -135,7 +135,7 @@ def evh(*args: str) -> subprocess.CompletedProcess[str]:
     """`evh <args>` in the project."""
     return subprocess.run(  # nosec B603 - this interpreter and the harness's own CLI
         [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args],
-        cwd=PROJECT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
+        cwd=PROJECT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False, encoding="utf-8",
     )  # fmt: skip
 
 
@@ -217,4 +217,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main())

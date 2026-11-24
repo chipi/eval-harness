@@ -10,15 +10,16 @@ OpenAPI 3.1 takes JSON Schema 2020-12 as is, which is what the operations' input
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from typing import Any
 
+from evaluation_harness._console import dump_json
 from evaluation_harness.ops.registry import OPS, Op
 
 #: A refusal of the model's, as an HTTP status (the kinds are `_common.REFUSALS`).
 REFUSAL_STATUS = {
     "not-found": 404,
+    "nothing-measured": 404,
     "bad-argument": 400,
     "invalid-file": 422,
     "would-overwrite": 409,
@@ -582,8 +583,9 @@ def document() -> dict[str, Any]:
             "description": "The model's entities as resources and its operations as actions, on this machine only. "
             "Every call carries the server's token (.build/api-token) as a bearer or as the cookie "
             "GET /api/v1/session sets, to a 127.0.0.1 or localhost Host and no foreign Origin; a call "
-            "that is not a read carries X-EVH-Data: 1. A server started --public or behind a proxy "
-            "answers none of it.",
+            "that is not a read carries X-EVH-Data: 1. A server started behind a proxy answers none of it; one "
+            "started --public (a deployed site) answers the reads the public MCP server offers, to anyone and with no "
+            "token, and refuses everything else (RFC-039).",
         },
         "security": [{"bearerAuth": []}, {"cookieAuth": []}],
         "paths": paths,
@@ -639,7 +641,10 @@ def document() -> dict[str, Any]:
                                 "at": {"type": "string"},
                             },
                         },
-                        "spent_usd": {"type": "number", "description": "what it has spent so far"},
+                        "spent_usd": {
+                            "type": ["number", "null"],
+                            "description": "what it has spent so far; null when it recorded nothing",
+                        },
                     },
                     "required": ["id", "operation", "inputs", "state"],
                     "additionalProperties": True,
@@ -657,9 +662,12 @@ def main(argv: list[str] | None = None) -> int:
     argparse.ArgumentParser(
         prog=evh_prog(), description="the API's OpenAPI 3.1 description, made from the operations, as JSON"
     ).parse_args(argv)
-    print(json.dumps(document(), ensure_ascii=False, indent=2))
+    print(dump_json(document(), indent=2))
     return 0
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main())

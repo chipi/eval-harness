@@ -61,9 +61,9 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._fingerprint import measuring_modules  # noqa: E402
 from evaluation_harness._runs import (  # noqa: E402 -- one implementation of "score per item"
-    default_metric,
-    direction,
+    deciding_metric,
     per_item,
+    ranks_lower,
     refuse_run_level,
     runs_on,
     warn_on_ambiguous_runs,
@@ -279,7 +279,7 @@ def _run(args) -> int:
     # Two runs sharing a system_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(args.label, args.dataset_id)
-    args.metric = args.metric or default_metric(args.dataset_id, label=args.label)
+    args.metric = args.metric or deciding_metric(args.dataset_id, label=args.label)
     runs = runs_on(args.dataset_id, label=args.label)
     refuse_run_level(runs, args.metric, "family-test")
     values = None
@@ -289,7 +289,7 @@ def _run(args) -> int:
         values = _round_defaults(args, runs)
         keep_arms = set(arms_of(resolve(args.round, args.goal))) | {args.a}
         runs = [(d, m) for d, m in runs if m["system_id"] in keep_arms]
-    lower = direction(runs, args.metric, args.asc, args.desc)
+    lower = ranks_lower(runs, args.metric, args.asc, args.desc)
     if values is not None:
         A = values(args.a, args.metric)
     else:

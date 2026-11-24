@@ -79,7 +79,7 @@ def label_set_row(set_id: str, rec: dict[str, Any]) -> dict[str, Any]:
         "actor": rec.get("actor"),
         # A hidden dataset's notes are free text a person wrote on its items, which can quote them (RFC-019 section 4).
         "note": rec.get("note")
-        if _visibility.text_shown(rec.get("dataset_id"), public=_visibility.public_env())
+        if _visibility.text_shown(rec.get("dataset_id"), public=_visibility.public())
         else None,
         "items": rec.get("n_items", len(rec.get("items") or {})),
         "created_at": rec.get("created_at"),
@@ -194,7 +194,7 @@ def show_dataset(dataset: str) -> dict[str, Any]:
     rec = DATASET.get(dataset)
     everyone = _records(DATASET)
     parent = (rec.get("derived_from") or {}).get("dataset_id")
-    cap = (rec.get("made_from") or {}).get("capture")
+    capture = (rec.get("made_from") or {}).get("capture")
     return {
         "dataset": dataset,
         "file": where(DATASET, dataset),
@@ -213,7 +213,7 @@ def show_dataset(dataset: str) -> dict[str, Any]:
         },
         "label_sets": [label_set_row(i, r) for i, r in _records(LABEL_SET) if i.split("/", 1)[0] == dataset],
         "references": [reference_row(i, REFERENCE.get(i)) for i in references_of(dataset)],
-        "captures": [cap] if cap else [],
+        "captures": [capture] if capture else [],
         "tag_sets": [tag_set_row(i, r) for i, r in _records(TAG_SET) if i.split("/", 1)[0] == dataset],
     }
 
@@ -294,7 +294,7 @@ def show_label_set(dataset: str, set: str, items: bool = False) -> dict[str, Any
     sid = f"{dataset}/{set}"
     rec = LABEL_SET.get(sid)
     # What a person wrote on a hidden dataset's items is free text, which can quote them (RFC-019 section 4).
-    hidden = not _visibility.text_shown(dataset, public=_visibility.public_env())
+    hidden = not _visibility.text_shown(dataset, public=_visibility.public())
     out = {
         "set": sid,
         "items": rec.get("n_items", len(rec.get("items") or {})),
@@ -304,7 +304,7 @@ def show_label_set(dataset: str, set: str, items: bool = False) -> dict[str, Any
     }
     if items:
         # Labels are reference material: a public server answers with none (the gold references are not published).
-        out["labels"] = {} if hidden or _visibility.public_env() else rec.get("items") or {}
+        out["labels"] = {} if hidden or _visibility.public() else rec.get("items") or {}
     return out
 
 

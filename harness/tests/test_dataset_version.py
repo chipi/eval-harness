@@ -67,7 +67,7 @@ try:
     for d, names in (("a", "abcd"), ("b", "abcde"), ("c", "abc")):
         (src / d).mkdir(parents=True)
         for n in names:
-            (src / d / f"{n}.txt").write_text(f"item {n}\n")
+            (src / d / f"{n}.txt").write_text(f"item {n}\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "t_v1", "--source-dir", "src/a")
     check("a first dataset is 1.0", r.returncode == 0 and ds("t_v1")["version"] == "1.0", r.stderr[-300:])
     r = evh("dataset-create", "--dataset-id", "t_v2", "--source-dir", "src/b", "--from", "t_v1")

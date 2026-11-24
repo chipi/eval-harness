@@ -55,9 +55,11 @@ def wheel() -> Path:
                 shutil.copy(p, src / name)
         base = [sys.executable, "-m", "pip", "wheel", "-q", "--no-deps", "-w", str(out), str(src)]
         # Offline first, with the setuptools already installed; an isolated build fetches it.
-        r = subprocess.run([*base[:4], "--no-build-isolation", *base[4:]], capture_output=True, text=True)
+        r = subprocess.run(
+            [*base[:4], "--no-build-isolation", *base[4:]], capture_output=True, text=True, encoding="utf-8"
+        )
         if r.returncode:
-            r = subprocess.run(base, capture_output=True, text=True)
+            r = subprocess.run(base, capture_output=True, text=True, encoding="utf-8")
         if r.returncode:
             raise SystemExit(f"building the wheel failed:\n{r.stdout}{r.stderr}")
     finally:
@@ -83,6 +85,7 @@ def install(target: Path) -> Path:
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     if r.returncode:
         raise SystemExit(f"installing the wheel failed:\n{r.stdout}{r.stderr}")
@@ -90,6 +93,10 @@ def install(target: Path) -> Path:
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     if len(sys.argv) != 3 or sys.argv[1] != "install":
         raise SystemExit("usage: _wheel.py install <target-dir>")
     print(install(Path(sys.argv[2])))

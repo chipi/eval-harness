@@ -23,7 +23,9 @@ os.environ.setdefault("EVAL_HOME", str(pathlib.Path(__file__).resolve().parents[
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from evaluation_harness import _store
 from evaluation_harness._common import no_options
+from evaluation_harness._console import degrade_unencodable
 
+degrade_unencodable()
 no_options(__doc__)  # --help prints this; anything else is refused
 
 # The repo root, derived from THIS FILE. It was hardcoded to one laptop's absolute

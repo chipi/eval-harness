@@ -72,7 +72,7 @@ try:
     shutil.copytree(EXAMPLE, MINE, ignore=shutil.ignore_patterns("__pycache__"))
     made = subprocess.run(
         [sys.executable, str(MINE / "make_history.py"), "--out", "replay-filing"], cwd=proj, env=env,
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8",
     )  # fmt: skip
     steps = [
         ("capture", "--importer", "jsonl", "--query", json.dumps({"path": "replay-filing/rows.jsonl"}), "--capture", "filing_prod"),
@@ -322,7 +322,7 @@ try:
         "commit"  # the host's pull time no longer recorded: approximate
     )
     _runstore.write_text(proj, "models/toy_filing.yaml", yaml.safe_dump(rec, sort_keys=False))
-    (proj / "lab.yaml").write_text("- {absent: [no_such_field], label: decided}\n")
+    (proj / "lab.yaml").write_text("- {absent: [no_such_field], label: decided}\n", encoding="utf-8")
     LAB = [
         "label-from-capture",
         "--dataset-id",
@@ -374,7 +374,9 @@ try:
     page = next((proj / ".build" / "catalog" / "a").glob("*filing_candidate_v3_hidden*.html"), None)
     check(
         "the catalog's arm page marks the candidate's history confound",
-        page is not None and "history confound" in page.read_text() and "1 of 20 item(s)" in page.read_text(),
+        page is not None
+        and "history confound" in page.read_text(encoding="utf-8")
+        and "1 of 20 item(s)" in page.read_text(encoding="utf-8"),
         str(page),
     )
     _runstore.unlink(proj, "systems/filing_bad_hide_v1.yaml")

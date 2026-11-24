@@ -56,7 +56,7 @@ def out(r):
 def serve():
     """catalog-serve on a free port, once it answers: (the process, the port, its bearer token)."""
     p, port, _out = _serve.start(proj, env)
-    return p, port, (proj / ".build" / "api-token").read_text().strip()
+    return p, port, (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
 
 
 def api(port, token, path):
@@ -94,7 +94,9 @@ try:
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -130,7 +132,9 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for arm in ("lead1", "lead2"):
         _runstore.write_text(
-            proj, f"systems/tickets_{arm}_v1.yaml", (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+            proj,
+            f"systems/tickets_{arm}_v1.yaml",
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
 
@@ -153,7 +157,7 @@ try:
         out(r),
     )
 
-    cfg = (KIT / "systems" / "tickets_author_v1.yaml").read_text()
+    cfg = (KIT / "systems" / "tickets_author_v1.yaml").read_text(encoding="utf-8")
     _runstore.write_text(proj, "systems/tickets_author_v1.yaml", cfg)
     r = evh(
         "run",
@@ -471,6 +475,7 @@ try:
         capture_output=True,
         text=True,
         stdin=subprocess.DEVNULL,
+        encoding="utf-8",
     )
     check(
         "round-carry is a decision: it needs who made it",
@@ -484,7 +489,7 @@ try:
         env={k: v for k, v in env.items() if k != "EVH_ACTOR"},
         capture_output=True,
         text=True,
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     check(
         "round-retire is a decision (RFC-027): it needs who made it, as round-close and round-carry do",
@@ -815,7 +820,7 @@ try:
         _serve.stop(srv, proj)
 
     evh("catalog")
-    page = (proj / ".build/catalog/g/tickets_summary.html").read_text()
+    page = (proj / ".build/catalog/g/tickets_summary.html").read_text(encoding="utf-8")
     check(
         "catalog: the goal page shows its rounds, the open one's suggestions as commands",
         'id="rounds"' in page

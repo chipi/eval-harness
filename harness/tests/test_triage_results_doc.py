@@ -17,7 +17,9 @@ sys.path.insert(0, str(HERE))
 from evaluation_harness._check import check, summary  # noqa: E402
 
 GEN = HERE.parent / "research" / "internal" / "triage_results.py"
-r = subprocess.run([sys.executable, str(GEN), "--check"], capture_output=True, text=True, cwd=HERE)
+r = subprocess.run(
+    [sys.executable, str(GEN), "--check"], capture_output=True, text=True, cwd=HERE, encoding="utf-8"
+)
 check(
     "TRIAGE_RESULTS_LIVE.md: its table matches what the harness ranks now",
     r.returncode == 0 and "up to date" in r.stdout,
@@ -28,6 +30,7 @@ g = subprocess.run(
     capture_output=True,
     text=True,
     cwd=HERE,
+    encoding="utf-8",
 )
 check(
     "evh goal-leaderboard: a dataset's notes are printed, with the arms read from their re-score",

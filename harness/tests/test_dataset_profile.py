@@ -253,7 +253,11 @@ try:
     out = proj / "catalog"
     r = evh("catalog", "--out", str(out))
     check("catalog: builds", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    page = (out / "d" / "topics.html").read_text() if (out / "d" / "topics.html").is_file() else ""
+    page = (
+        (out / "d" / "topics.html").read_text(encoding="utf-8")
+        if (out / "d" / "topics.html").is_file()
+        else ""
+    )
     check(
         "page: what's inside, with the item count, the labels, a link per item and the source",
         "what&#x27;s inside" in page
@@ -266,9 +270,13 @@ try:
         "page: no inline style attribute (the deployment's CSP)",
         ' style="' not in page.split("what&#x27;s inside")[1],
     )
-    notes = (out / "d" / "notes.html").read_text() if (out / "d" / "notes.html").is_file() else ""
+    notes = (
+        (out / "d" / "notes.html").read_text(encoding="utf-8") if (out / "d" / "notes.html").is_file() else ""
+    )
     check("page: a profile of another version is marked stale", "items changed since this profile" in notes)
-    ents = (out / "d" / "ents.html").read_text() if (out / "d" / "ents.html").is_file() else ""
+    ents = (
+        (out / "d" / "ents.html").read_text(encoding="utf-8") if (out / "d" / "ents.html").is_file() else ""
+    )
     check(
         "page: without a profile, it says how to write one",
         "A profile is optional" in ents and "dataset-profile" in ents,
@@ -288,7 +296,7 @@ try:
             _html.unescape(c) for c in re.findall(r"<code>(.*?)</code>", m.group(1))
         ]
         for f in sorted(out.rglob("*.html"))
-        for m in [term.search(f.read_text())]
+        for m in [term.search(f.read_text(encoding="utf-8"))]
         if m
     }
     check(
@@ -308,10 +316,11 @@ try:
                     bad.append((where, c, r.stderr[-120:]))
     check("every page: its command is a read tool, and runs as named", not bad, bad[:5])
     check(
-        "without --mcp: no tool call is named", "data-elsewhere=mcp" not in (out / "index.html").read_text()
+        "without --mcp: no tool call is named",
+        "data-elsewhere=mcp" not in (out / "index.html").read_text(encoding="utf-8"),
     )
     r = evh("catalog", "--out", str(out), "--mcp", "https://evals.example.test/mcp")
-    d = (out / "d" / "topics.html").read_text()
+    d = (out / "d" / "topics.html").read_text(encoding="utf-8")
     check(
         "--mcp: each page names its tool call, the server and how to connect",
         r.returncode == 0
@@ -321,7 +330,7 @@ try:
         and "how to connect" in d,
         d.split("<footer>")[-1][:600],
     )
-    home = (out / "index.html").read_text()
+    home = (out / "index.html").read_text(encoding="utf-8")
     check(
         "share card: a description and og:title/og:description on every page, still noindex, no image without --card",
         '<meta name="description" content="' in home
@@ -332,7 +341,7 @@ try:
         home[:900],
     )
     r = evh("catalog", "--out", str(out), "--card", "https://evals.example.test/assets/social.png")
-    d = (out / "d" / "topics.html").read_text()
+    d = (out / "d" / "topics.html").read_text(encoding="utf-8")
     check(
         "share card: --card names the image, and the card is the large one",
         r.returncode == 0
@@ -349,7 +358,7 @@ try:
         "--link",
         "MCP=https://evals.example.test/#mcp",
     )
-    menu = (out / "goals.html").read_text().split('class="menu-links"')[-1].split("</nav>")[0]
+    menu = (out / "goals.html").read_text(encoding="utf-8").split('class="menu-links"')[-1].split("</nav>")[0]
     check(
         "phone menu: an MCP section the bar hides on phones is in the menu",
         r.returncode == 0 and 'class="menu-mcp" href="https://evals.example.test/#mcp"' in menu,

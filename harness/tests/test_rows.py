@@ -141,8 +141,10 @@ try:
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", D)
     check("setup: the tutorial dataset, with its fields", r.returncode == 0, out(r)[-300:])
     # The governed dataset v1 stands for: three tickets, so `api`, `mobile` and `enterprise` are new to it.
-    gov = [x for x in csv.DictReader((KIT / "ticket_fields.csv").open()) if x["item_id"] < "t04"]
-    with (proj / "gov_fields.csv").open("w", newline="") as f:
+    gov = [
+        x for x in csv.DictReader((KIT / "ticket_fields.csv").open(encoding="utf-8")) if x["item_id"] < "t04"
+    ]
+    with (proj / "gov_fields.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(gov[0]))
         w.writeheader()
         w.writerows(gov)
@@ -197,7 +199,7 @@ try:
         _runstore.write_text(
             proj,
             f"systems/tickets_{arm}_v1.yaml",
-            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         r = evh("run", "--system", f"tickets_{arm}_v1", "--dataset", D, "--goal", "tickets_summary")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
@@ -207,7 +209,7 @@ try:
     RUNS = "tickets_lead1_v1,tickets_author_v1,tickets_lead2_noisy_v1"
     every = sorted(decided["lead1"])
     # A person labels three tickets: production right on t01 and t03, wrong on t02.
-    with (proj / "sheet.csv").open("w", newline="") as f:
+    with (proj / "sheet.csv").open("w", newline="", encoding="utf-8") as f:
         sheet = csv.writer(f)
         sheet.writerow(["item_id", "label"])
         sheet.writerows([["t01_login", "A"], ["t02_invoice", "B"], ["t03_export", "A"]])
@@ -273,7 +275,7 @@ try:
     check("--wrong-against DATASET/SET names the same set", sorted(ids(rs)) == want, out(r)[-300:])
     # Another dataset holding the same tickets has a set of the same name that says otherwise on t02: a bare name
     # is two sets, and reading the first one found was a guess.
-    with (proj / "gov.csv").open("w", newline="") as f:
+    with (proj / "gov.csv").open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows([["item_id", "label"], ["t02_invoice", "A"]])
     r = evh(
         "label-import",
@@ -300,7 +302,7 @@ try:
     _runstore.rmtree(proj, "labels/tickets_gov")
     (proj / "gov.csv").unlink()
     # A label accepting both answers on t02: production's A is one of them, so not wrong; the rows show both.
-    (proj / "two.csv").write_text("item_id,label,also right\nt02_invoice,B,A\n")
+    (proj / "two.csv").write_text("item_id,label,also right\nt02_invoice,B,A\n", encoding="utf-8")
     r = evh("label-import", "--sheet", "two.csv", "--dataset-id", D, "--set", "owner_two", "--by", "owner")
     r2, rs = rows("--wrong-against", "owner_two")
     _, every_row = rows()
@@ -390,7 +392,8 @@ try:
         "def same(a, b):\n"
         "    return json.loads(a)['disposition'] == json.loads(b)['disposition']\n"
         "def decision(output):\n"
-        "    return json.loads(output)['disposition']\n"
+        "    return json.loads(output)['disposition']\n",
+        encoding="utf-8",
     )
     _runstore.write_text(
         proj,
@@ -417,7 +420,7 @@ try:
         "t02_invoice": flip.get(jout.get("t02_invoice", "file"), "file"),
         "t03_export": jout.get("t03_export", "file"),
     }
-    with (proj / "bare.csv").open("w", newline="") as fh:
+    with (proj / "bare.csv").open("w", newline="", encoding="utf-8") as fh:
         wr = csv.writer(fh)
         wr.writerow(["item_id", "label"])
         wr.writerows(bare.items())
@@ -442,7 +445,7 @@ try:
     # A label set made from a run holds the run's whole output: its column shows the adapter's decision, as the arm's does
     # (080d inspector #7: "label: billing reason: The customer reports ..." beside the clean gold "billing").
     whole = json.dumps({"disposition": jout.get("t01_login", "file"), "reason": "because"})
-    with (proj / "whole.csv").open("w", newline="") as fh:
+    with (proj / "whole.csv").open("w", newline="", encoding="utf-8") as fh:
         wr = csv.writer(fh)
         wr.writerow(["item_id", "label"])
         wr.writerow(["t01_login", whole])
@@ -863,7 +866,8 @@ try:
         "def decision(output):\n"
         "    return output.split()[0]\n"
         "def title(item):\n"
-        "    return 'TITLE ' + item.split()[0]\n"
+        "    return 'TITLE ' + item.split()[0]\n",
+        encoding="utf-8",
     )
     _runstore.write_text(
         proj,

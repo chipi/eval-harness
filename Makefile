@@ -14,6 +14,7 @@
 #   make guard-check                     the checks can fail: each checker catches its planted defects
 #   make quality                         lint, types, security, dead code, docstrings, spelling, shell, llms.txt
 #   make llms                            llms.txt, the agent-facing index of the docs (tools/llms_txt.py)
+#   make deploy-dry, then make deploy    the production deploy (a merge to main deploys nothing); deploy refuses without a dry run
 #
 # docs/REPRODUCE.md walks through it. The harness's own verbs live in harness/Makefile
 # (`make -C harness help`); this file drives the worked examples and the repository-wide checks.
@@ -26,11 +27,11 @@ ARMS ?=
 SYSTEM ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check guard-check commands-check stores-check \
+.PHONY: help setup verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check guard-check commands-check catalog-render-check stores-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
-	@sed -n '1,19p' Makefile | sed 's/^# \{0,1\}//'
+	@sed -n '1,20p' Makefile | sed 's/^# \{0,1\}//'
 
 $(PY):
 	$(MAKE) -C harness install
@@ -84,6 +85,9 @@ browser-real-check: $(PY)
 commands-check: $(PY)
 	$(MAKE) -C harness commands-check
 
+catalog-render-check: $(PY)
+	$(MAKE) -C harness catalog-render-check
+
 stores-check: $(PY)
 	$(MAKE) -C harness stores-check
 
@@ -119,6 +123,18 @@ budget-check: obs-vendor
 
 docs:
 	mkdocs build --strict
+
+# A merge to main deploys nothing (deploy-prod.yml has no push trigger). `deploy-dry` dispatches it with
+# dry_run=true on origin/main's head and watches it; `deploy` dispatches the real one and refuses unless a dry
+# run of that same commit passed (infra/deploy/dispatch.sh). Needs an authenticated `gh`.
+deploy-dry:
+	bash infra/deploy/dispatch.sh dry
+
+deploy:
+	bash infra/deploy/dispatch.sh real
+
+deploy-check:
+	PYTHON=$(abspath $(PY)) bash infra/deploy/test_dispatch.sh
 
 # ── code quality ─────────────────────────────────────────────────────────────────────────
 # The tools are pinned in harness/requirements-dev.txt. Every gate fails the target; only

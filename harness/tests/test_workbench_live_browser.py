@@ -7,7 +7,7 @@ through the model's API.
 In a project with a goal, a dataset, its reference and a run: the startup prints the link that signs in; through it the
 home lists the project's goal with the next step its status names; the goal's screen shows its dataset as the API
 says; a screen not wired yet says so instead of showing the mockup's data; a browser with no cookie is asked to sign
-in; at a phone's width nothing scrolls sideways; and a public server has no /workbench/.
+in; at a phone's width nothing scrolls sideways; a public server serves it read-only and one behind a proxy not at all.
 
 The models (step 2): a model brought in through the form is made by the model's API with who made it, and a bad id is
 refused on the page; a deployment added on its page points at a fake OpenAI-shaped server; "Run the probes" starts
@@ -69,7 +69,9 @@ SENT: list[str] = []
 
 
 class Fake(http.server.BaseHTTPRequestHandler):
-    """An OpenAI-shaped server whose model reasons unless told not to: its onboarding is flagged."""
+    """An OpenAI-shaped server whose model reasons unless told not to: its onboarding is flagged. It bills $0, as a
+    proxy over a local model does: an unpriced, unbilled arm has no cost to draw (RFC-041 F3), and the round's chart
+    against the echo arm (a known $0, no tokens) needs one."""
 
     def _send(self, doc):
         data = json.dumps(doc).encode()
@@ -96,7 +98,7 @@ class Fake(http.server.BaseHTTPRequestHandler):
             msg["reasoning"] = "Let me think. 17 divided by 2, 3, 5 ... prime."
         self._send({"id": "x", "object": "chat.completion", "created": 0, "model": "fake:1b",
                     "choices": [{"index": 0, "message": msg, "finish_reason": "stop"}],
-                    "usage": {"prompt_tokens": 40, "completion_tokens": 60, "total_tokens": 100}})  # fmt: skip
+                    "usage": {"prompt_tokens": 40, "completion_tokens": 60, "total_tokens": 100, "cost": 0.0}})  # fmt: skip
 
     def log_message(self, *a):
         pass
@@ -126,10 +128,14 @@ def arm_listed(page, system: str) -> None:
         for d in [
             x
             for x in jobs
-            if json.loads((x / "job.json").read_text()).get("operation") in ("round-open", "round-carry")
+            if json.loads((x / "job.json").read_text(encoding="utf-8")).get("operation")
+            in ("round-open", "round-carry")
         ][-2:]:
-            st, job = json.loads((d / "state.json").read_text()), json.loads((d / "job.json").read_text())
-            log = (d / "log").read_text()[-400:]
+            st, job = (
+                json.loads((d / "state.json").read_text(encoding="utf-8")),
+                json.loads((d / "job.json").read_text(encoding="utf-8")),
+            )
+            log = (d / "log").read_text(encoding="utf-8")[-400:]
             print(
                 "DIAG job",
                 d.name,
@@ -149,7 +155,7 @@ def arm_listed(page, system: str) -> None:
             "DIAG #cy-out",
             page.locator("#cy-out").inner_text() if page.locator("#cy-out").count() else "(none)",
         )
-        print("DIAG r2.yaml", r2f.read_text() if r2f.is_file() else "(missing)")
+        print("DIAG r2.yaml", r2f.read_text(encoding="utf-8") if r2f.is_file() else "(missing)")
         raise
 
 
@@ -160,7 +166,7 @@ def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
         port = s.getsockname()[1]
     p = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port), *extra], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     lines: list[str] = []
     assert p.stdout is not None
@@ -170,7 +176,9 @@ def serve(*extra: str) -> tuple[subprocess.Popen, int, list[str]]:
                 break
         except OSError:
             time.sleep(0.1)
-    if "--public" in extra:
+    # Only a local server prints the start-up lines `_serve.startup` waits for.
+    if "--public" in extra or "--behind-proxy" in extra:
+        _serve.drain(p, lines)
         return p, port, lines
     return p, port, _serve.startup(p, lines)  # its start-up lines, the rest read as it comes
 
@@ -179,7 +187,7 @@ try:
     r = evh("init", "--store", "files", "--tutorial")
     shutil.copytree(KIT / "tickets", proj / "tickets")
     notes = "id,text,label,words\nn1,first note,a,2\nn2,second note,b,2\nn3,third note,a,2\n"
-    (proj / "notes.csv").write_text(notes)
+    (proj / "notes.csv").write_text(notes, encoding="utf-8")
     col = lambda c: {"fileObject": {"@id": "notes.csv"}, "extract": {"column": c}}  # noqa: E731
     (proj / "croissant.json").write_text(json.dumps({
         "@type": "sc:Dataset", "name": "notes",
@@ -189,9 +197,9 @@ try:
             {"name": f"default/{c}", "dataType": t, "source": col(c)}
             for c, t in (("id", "sc:Text"), ("text", "sc:Text"), ("label", "sc:Text"), ("words", "sc:Integer"))
         ]}],
-    }))  # fmt: skip
+    }), encoding="utf-8")  # fmt: skip
     (proj / "data" / "systems" / "one_v1.yaml").write_text(
-        "system_id: one_v1\nparams:\n  provider: echo\n  sentences: 1\n"
+        "system_id: one_v1\nparams:\n  provider: echo\n  sentences: 1\n", encoding="utf-8"
     )
     for step in (
         ("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets"),
@@ -222,7 +230,7 @@ try:
     ):  # fmt: skip
         if "elsewhere_v1" in step and step[0] == "run":
             (proj / "data" / "systems" / "elsewhere_v1.yaml").write_text(
-                "system_id: elsewhere_v1\nparams:\n  provider: echo\n  sentences: 1\n"
+                "system_id: elsewhere_v1\nparams:\n  provider: echo\n  sentences: 1\n", encoding="utf-8"
             )
         r = r if r.returncode else evh(*step)
     check(
@@ -260,16 +268,22 @@ try:
                 and not errors,
                 (home[:400], errors[:2]),
             )
+            in_use = _slow.font_in_use(page)
+            check(
+                "the page is laid out in the test's bundled font, not the machine's: fit checks mean the same on every machine",
+                in_use["family"].startswith(_slow.FAMILY) and in_use["loaded"] >= 1,
+                in_use,
+            )
             served = page.evaluate(
-                "() => Promise.all(['mock.js', 'mockup.html', 'workflows.js', 'round5.js', 'live.js'].map((n) =>"
+                "() => Promise.all(['mock.js','mockup.html', 'workflows.js', 'round5.js', 'live.js'].map((n) =>"
                 " fetch('/workbench/' + n, {credentials: 'same-origin'}).then((r) => [n, r.status])))"
             )
             import tomllib
             from evaluation_harness.catalog_serve import WORKBENCH_FILES
 
-            shipped = tomllib.loads((HARNESS / "pyproject.toml").read_text())["tool"]["setuptools"][
-                "package-data"
-            ]["evaluation_harness.workbench"]
+            shipped = tomllib.loads((HARNESS / "pyproject.toml").read_text(encoding="utf-8"))["tool"][
+                "setuptools"
+            ]["package-data"]["evaluation_harness.workbench"]
             beside = sorted(
                 x.name
                 for x in (HARNESS / "workbench").iterdir()
@@ -357,9 +371,9 @@ try:
             )
             page.click("#ds-make")
             page.wait_for_selector("h1:has-text('Ticket summaries')", timeout=60000)
-            g = yaml.safe_load((proj / "data" / "goals" / "tickets_summary.yaml").read_text())
+            g = yaml.safe_load((proj / "data" / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"))
             made = (
-                json.loads((proj / "data" / "datasets" / "notes_v1.json").read_text())
+                json.loads((proj / "data" / "datasets" / "notes_v1.json").read_text(encoding="utf-8"))
                 if (proj / "data" / "datasets" / "notes_v1.json").is_file()
                 else {}
             )
@@ -402,7 +416,7 @@ try:
             )
             page.click("#gf-save")
             page.wait_for_selector("h1:has-text('Notes triage')", timeout=20000)
-            made = yaml.safe_load((proj / "data" / "goals" / "notes_triage.yaml").read_text())
+            made = yaml.safe_load((proj / "data" / "goals" / "notes_triage.yaml").read_text(encoding="utf-8"))
             check(
                 "Make the goal: goal-new with its five things, no dataset yet, the winner rule balanced",
                 made.get("title") == "Notes triage"
@@ -417,8 +431,14 @@ try:
             page.fill("#gf-by", "tester")
             page.click("#gf-save")
             page.wait_for_selector("h1:has-text('Notes triage')", timeout=20000)
-            changed = yaml.safe_load((proj / "data" / "goals" / "notes_triage.yaml").read_text())
-            goal_hist = (proj / "data" / "history" / "goals" / "notes_triage.jsonl").read_text().splitlines()
+            changed = yaml.safe_load(
+                (proj / "data" / "goals" / "notes_triage.yaml").read_text(encoding="utf-8")
+            )
+            goal_hist = (
+                (proj / "data" / "history" / "goals" / "notes_triage.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+            )
             last = json.loads(goal_hist[-1])
             check(
                 "Edit the goal: goal-set saves the change (the decision), the rest kept, recorded with who made it",
@@ -484,13 +504,17 @@ try:
             page.click("#lb-submit")
             page.wait_for_selector("text=Written: label set", timeout=60000)
             lab = json.loads(
-                (proj / "data" / "labels" / "notes_v1" / "tester_pass" / "labels.json").read_text()
+                (proj / "data" / "labels" / "notes_v1" / "tester_pass" / "labels.json").read_text(
+                    encoding="utf-8"
+                )
             )
             check(
                 "Submit: label-import writes the label set from the filled sheet (2 labels, a person's), the sheet dropped",
                 lab.get("n_items") == 2
                 and lab.get("source", {}).get("kind") == "person"
-                and (proj / "data" / "labels" / "notes_v1" / "tester_pass" / "n2.txt").read_text().strip()
+                and (proj / "data" / "labels" / "notes_v1" / "tester_pass" / "n2.txt")
+                .read_text(encoding="utf-8")
+                .strip()
                 == "b"
                 and page.evaluate("localStorage.getItem('evh.draft.label.notes_v1')") is None,
                 lab,
@@ -555,7 +579,7 @@ try:
                 "the form makes the model through the API, recorded as who made it",
                 (proj / "data" / "models" / "fake-1b.yaml").is_file()
                 and bool(hist)
-                and '"person:tester"' in hist[0].read_text(),
+                and '"person:tester"' in hist[0].read_text(encoding="utf-8"),
                 page.locator("main").inner_text()[:300],
             )
             check(
@@ -595,7 +619,9 @@ try:
             page.locator("text=Accepted as this deployment's nature").or_(
                 page.locator("#acc-here [role=alert]")
             ).first.wait_for(timeout=20000)
-            dep = yaml.safe_load((proj / "data" / "deployments" / "fake-1b" / "here.yaml").read_text())
+            dep = yaml.safe_load(
+                (proj / "data" / "deployments" / "fake-1b" / "here.yaml").read_text(encoding="utf-8")
+            )
             kinds = [c.get("kind") for c in dep.get("checks") or []]
             check(
                 "accepting it with why keeps the decision in the deployment's checks, with who made it",
@@ -631,7 +657,9 @@ try:
             )
             page.click("#sn-make")
             page.wait_for_selector("td.mono:has-text('fake-1b_here')", timeout=20000)
-            sysrec = yaml.safe_load((proj / "data" / "systems" / "fake-1b_here.yaml").read_text())
+            sysrec = yaml.safe_load(
+                (proj / "data" / "systems" / "fake-1b_here.yaml").read_text(encoding="utf-8")
+            )
             heads_1 = [h.strip().lower() for h in page.locator("table").first.locator("th").all_inner_texts()]
             wcol = heads_1.index("where it runs") if "where it runs" in heads_1 else -1
             cells = {
@@ -662,7 +690,8 @@ try:
             check(
                 "the prompt is recorded as a version of the goal's prompt, and the system points at it (RFC-028; owner, "
                 "2026-11-17: a manual eval and a study both make versions)",
-                v1_text.is_file() and v1_text.read_text() == "Summarise the ticket in one line:",
+                v1_text.is_file()
+                and v1_text.read_text(encoding="utf-8") == "Summarise the ticket in one line:",
                 (pv1, sorted(x.name for x in v1_text.parent.iterdir()) if v1_text.parent.is_dir() else []),
             )
             SENT.clear()
@@ -671,7 +700,9 @@ try:
             page.fill("#sm-by", "tester")
             page.click("[data-smoke='fake-1b_here']")
             page.wait_for_selector("#sm-fake-1b_here details", timeout=120000)
-            dep_doc = yaml.safe_load((proj / "data" / "deployments" / "fake-1b" / "here.yaml").read_text())
+            dep_doc = yaml.safe_load(
+                (proj / "data" / "deployments" / "fake-1b" / "here.yaml").read_text(encoding="utf-8")
+            )
             check(
                 "Check it on three items: arm-smoke as a job, its status, cost and projection, a reply per item; kept as the "
                 "deployment's check",
@@ -747,10 +778,10 @@ try:
                 page.locator("#sm-one_v1").inner_text(),
             )
             smoke_jobs = [
-                json.loads((d / "state.json").read_text())
+                json.loads((d / "state.json").read_text(encoding="utf-8"))
                 for d in sorted((proj / ".build" / "jobs").iterdir())
                 if (d / "job.json").is_file()
-                and json.loads((d / "job.json").read_text()).get("operation") == "arm-smoke"
+                and json.loads((d / "job.json").read_text(encoding="utf-8")).get("operation") == "arm-smoke"
             ]
             page.goto(f"http://127.0.0.1:{port}/workbench/#jobs")
             page.wait_for_selector("table tbody tr", timeout=20000)
@@ -770,10 +801,12 @@ try:
                 "from pathlib import Path\n\nfrom evaluation_harness.adapter import Result, score  # noqa: F401\n\n\n"
                 "def call_system(text, params):\n    d = Path(params['make'])\n    d.mkdir(parents=True, exist_ok=True)\n"
                 "    (d / 'log.txt').write_text('ok')\n"
-                "    return Result(output=text[:60], cost_usd=0.0, meta={'artifact': params['artifact']})\n"
+                "    return Result(output=text[:60], cost_usd=0.0, meta={'artifact': params['artifact']})\n",
+                encoding="utf-8",
             )
             (proj / "data" / "systems" / "art_v1.yaml").write_text(
-                "system_id: art_v1\nadapter: art.py\nparams: {artifact: artifacts/h1/trial, make: artifacts/h1/trial}\n"
+                "system_id: art_v1\nadapter: art.py\nparams: {artifact: artifacts/h1/trial, make: artifacts/h1/trial}\n",
+                encoding="utf-8",
             )
             page.goto(f"http://127.0.0.1:{port}/workbench/#systems/tickets_summary")
             page.reload()
@@ -840,10 +873,11 @@ try:
                 "    with open(params['log'], 'a') as fh:\n        fh.write(text[:12].replace(chr(10), ' ') + chr(10))\n"
                 "    if 'invoice' in text.lower() and not __import__('os').path.exists(params['log'] + '.ok'):\n"
                 "        raise ValueError('400: this input is refused')\n"
-                "    return Result(output=text[:40], cost_usd=0.0)\n"
+                "    return Result(output=text[:40], cost_usd=0.0)\n",
+                encoding="utf-8",
             )
             (proj / "data" / "systems" / "once_v1.yaml").write_text(
-                f"system_id: once_v1\nadapter: once.py\nparams: {{log: '{calls_log}'}}\n"
+                f"system_id: once_v1\nadapter: once.py\nparams: {{log: '{calls_log}'}}\n", encoding="utf-8"
             )
             # a dataset of its own: the run's failed item must not meet the re-scores of the goal's dataset below
             made = [
@@ -866,7 +900,7 @@ try:
             held_rows = page.locator(
                 "h2:has-text('Called once and not finished') ~ .tablewrap tbody tr"
             ).all_inner_texts()
-            n_calls = len(calls_log.read_text().splitlines())
+            n_calls = len(calls_log.read_text(encoding="utf-8").splitlines())
             check(
                 "a call-once run's job lists the item it called once and did not finish, with what happened, and the decision",
                 len(held_rows) == 1 and "refused" in held_rows[0] and page.locator("#rc-go").is_visible(),
@@ -881,7 +915,7 @@ try:
                 "the cost first: the dry run of the recall prices only the held item, says it is called again, and calls nothing",
                 "1 call(s) in all" in est
                 and "CALLED AGAIN" in est
-                and len(calls_log.read_text().splitlines()) == n_calls,
+                and len(calls_log.read_text(encoding="utf-8").splitlines()) == n_calls,
                 est[:400],
             )
             cmds_text = page.locator("main").text_content() or ""
@@ -891,19 +925,19 @@ try:
                 and "evh run --system once_v1 --dataset tk_once_v1 --resume" in cmds_text,
                 cmds_text[-500:],
             )
-            (proj / "once_calls.log.ok").write_text("the item is fine now\n")
+            (proj / "once_calls.log.ok").write_text("the item is fine now\n", encoding="utf-8")
             page.fill("#rc-by", "tester")
             page.click("#rc-go")
             page.wait_for_url("**#jobs/*", timeout=20000)
             page.wait_for_function(f"location.hash !== '#jobs/{first}'", timeout=20000)
             for _try in range(120):
-                if len(calls_log.read_text().splitlines()) > n_calls:
+                if len(calls_log.read_text(encoding="utf-8").splitlines()) > n_calls:
                     break
                 page.wait_for_timeout(500)
             page.wait_for_function(
                 "document.querySelector('main').innerText.includes('succeeded')", timeout=120000
             )
-            lines = calls_log.read_text().splitlines()
+            lines = calls_log.read_text(encoding="utf-8").splitlines()
             check(
                 "calling it again runs the resume with the flag: exactly the held item is called, once more",
                 len(lines) == n_calls + 1 and lines.count(lines[-1]) == 2,
@@ -917,7 +951,9 @@ try:
             page.fill("#cl-val-fake-1b_here", "0.5")
             page.click("#cl-go-fake-1b_here")
             page.wait_for_selector("td.mono:has-text('fake-1b_here_t05')", timeout=20000)
-            clone = yaml.safe_load((proj / "data" / "systems" / "fake-1b_here_t05.yaml").read_text())
+            clone = yaml.safe_load(
+                (proj / "data" / "systems" / "fake-1b_here_t05.yaml").read_text(encoding="utf-8")
+            )
             check(
                 "Clone it, change one thing: a new system, the temperature changed and everything else as the original's",
                 clone["params"].get("temperature") == 0.5
@@ -935,7 +971,9 @@ try:
             )
             page.click("#cl-go-fake-1b_here")
             page.wait_for_selector("td.mono:has-text('fake-1b_here_p2')", timeout=30000)
-            p2 = yaml.safe_load((proj / "data" / "systems" / "fake-1b_here_p2.yaml").read_text())
+            p2 = yaml.safe_load(
+                (proj / "data" / "systems" / "fake-1b_here_p2.yaml").read_text(encoding="utf-8")
+            )
             pv2 = (p2.get("prompts") or {}).get("tickets_summary/prompt", {}).get("version", "")
             v2_doc = proj / "data" / "prompts" / "tickets_summary" / "prompt" / f"{pv2.split('/')[-1]}.json"
             check(
@@ -944,9 +982,9 @@ try:
                 bool(pv2)
                 and pv2 != pv1
                 and v2_doc.is_file()
-                and json.loads(v2_doc.read_text()).get("parent") == pv1
+                and json.loads(v2_doc.read_text(encoding="utf-8")).get("parent") == pv1
                 and p2["params"] == sysrec["params"],
-                (p2, v2_doc.read_text() if v2_doc.is_file() else None),
+                (p2, v2_doc.read_text(encoding="utf-8") if v2_doc.is_file() else None),
             )
             # W1 the eval (UXS-005 step 5): a round opened with its question, two arms run as one sweep, the evidence
             # read, one arm retired with its reason, the round closed with its conclusion and the leader promoted
@@ -957,7 +995,9 @@ try:
             page.fill("#ro-by", "tester")
             page.click("#ro-open")
             page.wait_for_selector("[data-run]", timeout=60000)
-            rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
+            rnd = yaml.safe_load(
+                (proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text(encoding="utf-8")
+            )
             check(
                 "Open the round: round-open as a job, its question kept as the hypothesis, the round open",
                 rnd.get("status") == "open"
@@ -979,7 +1019,7 @@ try:
             arm_listed(page, "one_v1")
             page.check("[data-run='fake-1b_here']")
             page.click("#rn-est")
-            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
+            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", state="attached", timeout=60000)
             check(
                 "See the cost first: the sweep's dry run (POST /estimate), nothing run",
                 page.locator("#rn-out pre").count() == 1
@@ -995,7 +1035,8 @@ try:
             )
             (proj / "data" / "systems" / "nosmoke_v1.yaml").write_text(
                 "system_id: nosmoke_v1\nparams:\n  provider: openai\n  model: fake:1b\n  max_tokens: 20\n"
-                f"  base_url: http://127.0.0.1:{fake.server_port}/v1\n"
+                f"  base_url: http://127.0.0.1:{fake.server_port}/v1\n",
+                encoding="utf-8",
             )
             page.reload()
             page.wait_for_selector("[data-run='nosmoke_v1']", timeout=20000)
@@ -1040,7 +1081,7 @@ try:
             page.uncheck("[data-run='fake-1b_here']")
             page.check("[data-run='nosmoke_v1']")
             page.click("#rn-est")
-            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", timeout=60000)
+            page.wait_for_selector("#rn-out pre, #rn-out [role=alert]", state="attached", timeout=60000)
             smoke_text = page.locator("#rn-out").inner_text()
             check(
                 "See the cost first, for an arm never smoked: the dry run says no arm-smoke is recorded, and the screen "
@@ -1066,7 +1107,9 @@ try:
                     page.locator("main").inner_text()[:800],
                 )
                 raise
-            rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
+            rnd = yaml.safe_load(
+                (proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text(encoding="utf-8")
+            )
             check(
                 "Run them: the sweep job runs the new arm in the round; it joins the carried one and the evidence reads both",
                 {a["system"] for a in rnd.get("arms") or []} >= {"one_v1", "fake-1b_here"}
@@ -1176,7 +1219,9 @@ try:
             page.fill("#rt-why", "it repeats one fixed answer whatever the ticket says")
             page.click("#rt-go")
             page.wait_for_selector("li:has-text('fake-1b_here') .status:has-text('retired')", timeout=60000)
-            rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
+            rnd = yaml.safe_load(
+                (proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text(encoding="utf-8")
+            )
             gone: dict = next((a for a in rnd["arms"] if a["system"] == "fake-1b_here"), {})
             check(
                 "Retire: round-retire with its reason, final, kept on the arm",
@@ -1198,7 +1243,9 @@ try:
             except Exception:
                 print("RC-OUT", page.locator("#rc-out").inner_text()[:600])
                 raise
-            rnd = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text())
+            rnd = yaml.safe_load(
+                (proj / "data" / "rounds" / "tickets_summary" / "r1.yaml").read_text(encoding="utf-8")
+            )
             base = list((proj / "data" / "baselines" / "tickets_summary" / "tk_v1").glob("*.json"))
             check(
                 "Close the round: round-close with its conclusion, the leader's run promoted to the goal's baseline",
@@ -1263,7 +1310,9 @@ try:
             )
             page.click("#cy-go")
             arm_listed(page, "one_v1")
-            r2 = yaml.safe_load((proj / "data" / "rounds" / "tickets_summary" / "r2.yaml").read_text())
+            r2 = yaml.safe_load(
+                (proj / "data" / "rounds" / "tickets_summary" / "r2.yaml").read_text(encoding="utf-8")
+            )
             carried: dict = next((a for a in r2.get("arms") or [] if a["system"] == "one_v1"), {})
             check(
                 "Carry it in: round-carry brings an arm of the round before into the open round, unchanged",
@@ -1295,7 +1344,11 @@ try:
                 for x in (proj / "data" / "baselines" / "tickets_summary" / "tk_v1").glob("*.json")
             )
             v3 = (
-                json.loads((proj / "data" / "baselines" / "tickets_summary" / "tk_v1" / "3.json").read_text())
+                json.loads(
+                    (proj / "data" / "baselines" / "tickets_summary" / "tk_v1" / "3.json").read_text(
+                        encoding="utf-8"
+                    )
+                )
                 if 3 in vers
                 else {}
             )
@@ -1311,10 +1364,12 @@ try:
             from evaluation_harness.baselines_migrate import BEFORE
 
             v1_path = proj / "data" / "baselines" / "tickets_summary" / "tk_v1" / "1.json"
-            v1 = json.loads(v1_path.read_text())
+            v1 = json.loads(v1_path.read_text(encoding="utf-8"))
             # Replaced whole (the server reads the data while it runs: a truncate-then-write is a torn file to it).
             v1_tmp = v1_path.with_name("1.json.tmp")
-            v1_tmp.write_text(json.dumps(v1 | {"actor": BEFORE, "migrated": True}, indent=2) + "\n")
+            v1_tmp.write_text(
+                json.dumps(v1 | {"actor": BEFORE, "migrated": True}, indent=2) + "\n", encoding="utf-8"
+            )
             os.replace(v1_tmp, v1_path)
             page.reload()
             try:
@@ -1339,15 +1394,19 @@ try:
             )
             # ...and a label set `evh migrate` filled in, on the reference screen's list of label sets
             ls_path = proj / "data" / "labels" / "tk_v1" / "g" / "labels.json"
-            ls_text = ls_path.read_text()
-            ls_path.write_text(json.dumps(json.loads(ls_text) | {"actor": BEFORE}, indent=2) + "\n")
+            ls_text = ls_path.read_text(encoding="utf-8")
+            ls_path.write_text(
+                json.dumps(json.loads(ls_text) | {"actor": BEFORE}, indent=2) + "\n", encoding="utf-8"
+            )
             page.goto(f"http://127.0.0.1:{port}/workbench/#reference/tk_v1")
             page.reload()  # the reads are kept until the page reloads: the label sets read again
             page.wait_for_selector("h3:has-text('Its label sets')", timeout=20000)
             g_line = next(
                 (t for t in page.locator("main li").all_inner_texts() if t.startswith("tk_v1/g ")), ""
             )
-            ls_path.write_text(ls_text)  # as it was: the steps after this read the label set as made
+            ls_path.write_text(
+                ls_text, encoding="utf-8"
+            )  # as it was: the steps after this read the label set as made
             check(
                 "a migrated label set names nobody in the Workbench, not the placeholder 'before 0.8.0'",
                 "by nobody recorded (before 0.8.0)" in g_line and "by before 0.8.0" not in g_line,
@@ -1419,8 +1478,8 @@ try:
                 "what went wrong: a failure-mode list made here (failure-modes-new), a tag sheet, the tags written as a tag set",
                 (proj / "data" / "failure-modes" / "tk_modes.yaml").is_file()
                 and tags_doc.is_file()
-                and "too-short" in tags_doc.read_text(),
-                tags_doc.read_text()[:300] if tags_doc.is_file() else "no tag set",
+                and "too-short" in tags_doc.read_text(encoding="utf-8"),
+                tags_doc.read_text(encoding="utf-8")[:300] if tags_doc.is_file() else "no tag set",
             )
             # W3 (UXS-005): production's records captured, made a dataset, its decisions scored as an arm, the rows where
             # it was wrong against a label set picked, and the next version of a dataset made with them
@@ -1433,7 +1492,9 @@ try:
                 }
                 for i in range(1, 7)
             ]
-            (proj / "prod.jsonl").write_text("".join(json.dumps(r) + "\n" for r in prod_rows))
+            (proj / "prod.jsonl").write_text(
+                "".join(json.dumps(r) + "\n" for r in prod_rows), encoding="utf-8"
+            )
             page.goto(f"http://127.0.0.1:{port}/workbench/#production/tickets_summary")
             page.wait_for_selector("#cp-go", timeout=20000)
             page.fill("#pd-by", "tester")
@@ -1447,7 +1508,12 @@ try:
             check(
                 "Capture them, make a dataset of it: capture and dataset-from-capture as jobs, the capture listed with it",
                 (proj / "data" / "captures" / "prod_2026_11" / "capture.json").is_file()
-                and len(json.loads((proj / "data" / "datasets" / "prod_v1.json").read_text())["items"]) == 6,
+                and len(
+                    json.loads((proj / "data" / "datasets" / "prod_v1.json").read_text(encoding="utf-8"))[
+                        "items"
+                    ]
+                )
+                == 6,
                 page.locator("main").inner_text()[:400],
             )
             page.select_option("#ca-cap", "prod_2026_11")
@@ -1465,7 +1531,7 @@ try:
             labels_dir = proj / "prod_labels"
             labels_dir.mkdir()
             for i in range(1, 7):
-                (labels_dir / f"p{i}.txt").write_text("export")
+                (labels_dir / f"p{i}.txt").write_text("export", encoding="utf-8")
             lr = evh(
                 "label-import",
                 "--sheet",
@@ -1517,14 +1583,19 @@ try:
             )
             page.wait_for_timeout(1000)
             v2 = (
-                json.loads((proj / "data" / "datasets" / "tk_v2.json").read_text())
+                json.loads((proj / "data" / "datasets" / "tk_v2.json").read_text(encoding="utf-8"))
                 if (proj / "data" / "datasets" / "tk_v2.json").is_file()
                 else {}
             )
             check(
                 "Make the next version: dataset-extend makes tk_v2 from tk_v1's items and the picks waiting for it",
                 len(v2.get("items", []))
-                == len(json.loads((proj / "data" / "datasets" / "tk_v1.json").read_text())["items"]) + 2,
+                == len(
+                    json.loads((proj / "data" / "datasets" / "tk_v1.json").read_text(encoding="utf-8"))[
+                        "items"
+                    ]
+                )
+                + 2,
                 (
                     len(v2.get("items", [])),
                     page.locator("#ex-out").inner_text() if page.locator("#ex-out").count() else "",
@@ -1543,7 +1614,7 @@ try:
             page.click("#ol-go")
             page.wait_for_selector("#ol-out table", timeout=60000)
             out_doc = proj / "data" / "labels" / "prod_v1" / "outcomes_v1" / "labels.json"
-            olab = json.loads(out_doc.read_text()) if out_doc.is_file() else {}
+            olab = json.loads(out_doc.read_text(encoding="utf-8")) if out_doc.is_file() else {}
             check(
                 "Labels from what happened later: label-from-capture with the rules typed here, a rule label set, then its "
                 "coverage read from the rules the job kept",
@@ -1623,7 +1694,9 @@ try:
             short = proj / "short"
             short.mkdir()
             for f in sorted((KIT / "gold").iterdir()):
-                (short / f.name).write_text(f.read_text().split(".")[0] + ".\n")
+                (short / f.name).write_text(
+                    f.read_text(encoding="utf-8").split(".")[0] + ".\n", encoding="utf-8"
+                )
             r = evh(
                 "label-import", "--sheet", str(short), "--dataset-id", "tk_v1", "--set", "short", "--by", "t"
             )
@@ -1705,7 +1778,7 @@ try:
             page.fill("#rr-why", "the scorer's tokenizer changed, so the round reads the new numbers")
             page.click("#rr-go")
             page.wait_for_selector("#rr-out:has-text('Re-scored'), #rr-out [role=alert]", timeout=60000)
-            r2t = (proj / "data" / "rounds" / "tickets_summary" / "r2.yaml").read_text()
+            r2t = (proj / "data" / "rounds" / "tickets_summary" / "r2.yaml").read_text(encoding="utf-8")
             check(
                 "Apply it to a round: rescore with the goal, the round and why, the reason kept on the round",
                 "the scorer's tokenizer changed" in r2t,
@@ -1719,8 +1792,9 @@ try:
             (proj / "data" / "scorers").mkdir(exist_ok=True)
             (proj / "data" / "scorers" / "tickets-judge-v1.yaml").write_text(
                 (KIT / "scorers" / "tickets-judge-v1.yaml")
-                .read_text()
-                .replace("dataset_id: tickets_v1", "dataset_id: tk_v1")
+                .read_text(encoding="utf-8")
+                .replace("dataset_id: tickets_v1", "dataset_id: tk_v1"),
+                encoding="utf-8",
             )
             # RFC-038 §3.4: a rated dataset (items {source, outputs}, the people's ratings as their reference) for the
             # scorer's dimensions, which the judge screen offers to validate on
@@ -1731,7 +1805,8 @@ try:
                 "            outs = [' '.join(f'w{i}{k}' for k in range(n)) for k, n in enumerate(lens)]\n"
                 "            r = {d: [float(n) for n in lens] for d in ('accuracy', 'usefulness')}\n"
                 "            yield {'item_id': f'r{i}', 'text': json.dumps({'source': f'ticket {i}', 'outputs': outs}),\n"
-                "                   'answer': json.dumps({'ratings': r, 'raters': [r, r]})}\n"
+                "                   'answer': json.dumps({'ratings': r, 'raters': [r, r]})}\n",
+                encoding="utf-8",
             )
             made = evh(
                 "dataset-create",
@@ -1750,8 +1825,9 @@ try:
             # the same, rated on one of the scorer's two dimensions only: what is not validated on it is said, not averaged in
             (proj / "rated_sub_source.py").write_text(
                 (proj / "rated_source.py")
-                .read_text()
-                .replace("for d in ('accuracy', 'usefulness')", "for d in ('accuracy',)")
+                .read_text(encoding="utf-8")
+                .replace("for d in ('accuracy', 'usefulness')", "for d in ('accuracy',)"),
+                encoding="utf-8",
             )
             sub = evh("dataset-create", "--dataset-id", "rated_sub_v1", "--source", "rated_sub_source.py:Source", "--query", '{"answer": "answer"}')  # fmt: skip
             sub = sub if sub.returncode else evh("dataset-materialize", "--dataset-id", "rated_sub_v1")
@@ -1829,7 +1905,9 @@ try:
                 "Write it into the scorer: a fake judge's validation is refused, saying why, and the scorer is as it was",
                 "fake" in page.locator("#jv-fill-out").inner_text()
                 and "validation"
-                not in yaml.safe_load((proj / "data" / "scorers" / "tickets-judge-v1.yaml").read_text()),
+                not in yaml.safe_load(
+                    (proj / "data" / "scorers" / "tickets-judge-v1.yaml").read_text(encoding="utf-8")
+                ),
                 page.locator("#jv-fill-out").inner_text()[:400],
             )
             page.evaluate("WB.forgetUnsent()")  # the refused write's typed reason is a form nobody will send
@@ -1845,7 +1923,9 @@ try:
                 "() => document.querySelector('#js-cap') && document.querySelector('#js-cap').value === '0.02'",
                 timeout=20000,
             )
-            sc = yaml.safe_load((proj / "data" / "scorers" / "tickets-judge-v1.yaml").read_text())
+            sc = yaml.safe_load(
+                (proj / "data" / "scorers" / "tickets-judge-v1.yaml").read_text(encoding="utf-8")
+            )
             check(
                 "Save sends only what changed (scorer-set): the cap, the rest of the record as it was",
                 sc.get("cost_cap_usd") == 0.02
@@ -1958,7 +2038,7 @@ try:
             page.wait_for_selector("[data-scorer='tickets-judge-v1-v2'], #jn-out [role=alert]", timeout=20000)
             v2f = proj / "data" / "scorers" / "tickets-judge-v1-v2.yaml"
             v2 = (
-                yaml.safe_load(v2f.read_text())
+                yaml.safe_load(v2f.read_text(encoding="utf-8"))
                 if v2f.is_file()
                 else {"page": page.locator("#jn-out").inner_text()}
             )
@@ -2128,7 +2208,7 @@ try:
             )
             pol.parent.mkdir(parents=True, exist_ok=True)
             pol.write_text(
-                "required_from: 2098-01-01\n"
+                "required_from: 2098-01-01\n", encoding="utf-8"
             )  # made elsewhere after the page read that there was none
             page.fill("#sf-text", "required_from: 2099-01-01\n")
             page.click("#sf-save")
@@ -2139,8 +2219,8 @@ try:
             check(
                 "a file made elsewhere after the page read that there was none is not overwritten (data-put new): refused",
                 "exists" in page.locator("#sf-out").inner_text()
-                and pol.read_text() == "required_from: 2098-01-01\n",
-                (page.locator("#sf-out").inner_text()[:300], pol.read_text()),
+                and pol.read_text(encoding="utf-8") == "required_from: 2098-01-01\n",
+                (page.locator("#sf-out").inner_text()[:300], pol.read_text(encoding="utf-8")),
             )
             page.once("dialog", lambda d: d.accept())  # the unsent policy asks before leaving: leave
             page.goto(f"http://127.0.0.1:{port}/workbench/#home")
@@ -2160,8 +2240,11 @@ try:
             )
             check(
                 "Save (data-put with the file, new): the policy written as typed",
-                pol.is_file() and pol.read_text() == "required_from: 2099-01-01\n",
-                (page.locator("#sf-out").inner_text()[:300], pol.read_text() if pol.is_file() else None),
+                pol.is_file() and pol.read_text(encoding="utf-8") == "required_from: 2099-01-01\n",
+                (
+                    page.locator("#sf-out").inner_text()[:300],
+                    pol.read_text(encoding="utf-8") if pol.is_file() else None,
+                ),
             )
             page.select_option("#pb-ds", "tk_v1")
             page.fill("#pb-repo", "someone/tk")
@@ -2243,7 +2326,7 @@ try:
 
             def done_items(jid: str) -> int:
                 f = proj / ".build" / "jobs" / jid / "progress.json"
-                return (json.loads(f.read_text()).get("done") or 0) if f.is_file() else 0
+                return (json.loads(f.read_text(encoding="utf-8")).get("done") or 0) if f.is_file() else 0
 
             early = start_run()
             page.goto(f"http://127.0.0.1:{port}/workbench/#jobs/{early.get('id')}")
@@ -2252,7 +2335,9 @@ try:
             page.wait_for_selector(
                 "#jb-resume, #jb-out [role=alert]", timeout=30000
             )  # the page draws the job again after a stop
-            stopped = json.loads((proj / ".build" / "jobs" / early["id"] / "state.json").read_text())
+            stopped = json.loads(
+                (proj / ".build" / "jobs" / early["id"] / "state.json").read_text(encoding="utf-8")
+            )
             jobs_before = len(list((proj / ".build" / "jobs").iterdir()))
             if page.locator("#jb-resume").count():
                 page.click("#jb-resume")
@@ -2278,9 +2363,19 @@ try:
             deadline = time.monotonic() + 120
             while done_items(started["id"]) < 1 and time.monotonic() < deadline:
                 time.sleep(0.2)
+            if done_items(started["id"]) < 1:  # say why, not a Resume that has nothing to continue
+                held = json.loads(
+                    (proj / ".build" / "jobs" / started["id"] / "state.json").read_text(encoding="utf-8")
+                )
+                raise AssertionError(
+                    f"the run answered no item in 120 s: {held}, "
+                    + (proj / ".build" / "jobs" / started["id"] / "log").read_text(encoding="utf-8")[-600:]
+                )
             page.click("#jb-stop")
             page.wait_for_selector("#jb-resume, #jb-out [role=alert]", timeout=30000)
-            stopped = json.loads((proj / ".build" / "jobs" / started["id"] / "state.json").read_text())
+            stopped = json.loads(
+                (proj / ".build" / "jobs" / started["id"] / "state.json").read_text(encoding="utf-8")
+            )
             check(
                 "a running run stopped after it wrote something: cancelled, and Resume the run offered",
                 stopped.get("state") == "cancelled" and page.locator("#jb-resume").count() == 1,
@@ -2290,14 +2385,19 @@ try:
             gate2.release(10)
             page.click("#jb-resume")
             page.wait_for_function(
-                f"() => location.hash.startsWith('#jobs/') && !location.hash.endsWith('{started['id']}')",
+                f"() => (location.hash.startsWith('#jobs/') && !location.hash.endsWith('{started['id']}')) || document.querySelector('#jb-out [role=alert]')",
                 timeout=20000,
             )
+            assert not page.locator("#jb-out [role=alert]").count(), page.locator(
+                "#jb-out"
+            ).inner_text()  # Resume refused: say why
             page.wait_for_selector(
                 "h1 ~ p.lead:has-text('succeeded'), h1 ~ p.lead:has-text('failed')", timeout=120000
             )
             again = json.loads(
-                (proj / ".build" / "jobs" / page.url.rsplit("/", 1)[-1] / "job.json").read_text()
+                (proj / ".build" / "jobs" / page.url.rsplit("/", 1)[-1] / "job.json").read_text(
+                    encoding="utf-8"
+                )
             )
             check(
                 "Resume the run: a new job continues the stopped run (run --resume its run id) with what it left of its cap, "
@@ -2380,8 +2480,14 @@ try:
             forms = {}
             for rid in (rounds[0], rounds[-1]):
                 page.goto(f"http://127.0.0.1:{port}/workbench/#eval/tickets_summary/{rid}")
-                page.wait_for_selector("main h2", timeout=20000)
-                page.wait_for_timeout(1500)
+                # the round's own tab drawn and every read of the screen landed: the form is there or not by then
+                page.wait_for_function(
+                    "(rid) => !Object.keys(LIVE.pending).length && !document.querySelector('main [role=status]')"
+                    " && document.querySelector('main h2')"
+                    " && [...document.querySelectorAll('main [role=tab][aria-selected=true]')].some((t) => t.textContent.startsWith(rid))",
+                    arg=rid,
+                    timeout=20000,
+                )
                 forms[rid] = page.locator("#ro-q").count()
             check(
                 "the open-round form is on the last round's tab, not on a closed round before it",
@@ -2471,7 +2577,7 @@ try:
                 (on_ds, on_sys, on_day),
             )
             (proj / "data" / "systems" / "two_v1.yaml").write_text(
-                "system_id: two_v1\nparams:\n  provider: echo\n  sentences: 2\n"
+                "system_id: two_v1\nparams:\n  provider: echo\n  sentences: 2\n", encoding="utf-8"
             )
             r_b = rail_of(page, "goal/rail_b")
             check(
@@ -2831,22 +2937,29 @@ try:
         srv.terminate()
         srv.wait(timeout=20)
 
-    pub, pport, _ = serve("--public", "evals.example")
-    try:
-        import urllib.error
-        import urllib.request
+    import urllib.error
+    import urllib.request
 
-        req = urllib.request.Request(
-            f"http://127.0.0.1:{pport}/workbench/", headers={"Host": "evals.example"}
-        )
+    def workbench_status(port: int) -> int:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/workbench/", headers={"Host": "evals.example"})
         try:
-            code = urllib.request.urlopen(req, timeout=30).status  # noqa: S310 - the test's own server  # nosec B310
+            return urllib.request.urlopen(req, timeout=30).status  # noqa: S310 - the test's own server  # nosec B310
         except urllib.error.HTTPError as exc:
-            code = exc.code
-        check("a public server has no /workbench/", code == 404, code)
-    finally:
-        pub.terminate()
-        pub.wait(timeout=20)
+            return exc.code
+
+    # RFC-039: a public server serves the Workbench read-only (tests/test_workbench_viewer*.py say what it refuses);
+    # a server behind a private proxy still keeps it this machine's own.
+    for flag, want, says in (
+        ("--public", 200, "a public server serves /workbench/, read-only (RFC-039)"),
+        ("--behind-proxy", 404, "a server behind a proxy has no /workbench/"),
+    ):
+        pub, pport, _ = serve(flag, "evals.example")
+        try:
+            code = workbench_status(pport)
+            check(says, code == want, code)
+        finally:
+            pub.terminate()
+            pub.wait(timeout=20)
 finally:
     fake.shutdown()
     shutil.rmtree(proj, ignore_errors=True)

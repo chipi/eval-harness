@@ -47,6 +47,7 @@ from evaluation_harness._adapter import (
 )
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
+    BUNDLED_ADAPTER_ID,
     DATA,
     EXIT_NOTHING,
     EXIT_STOPPED,
@@ -61,18 +62,22 @@ from evaluation_harness._common import (
     classify_metrics,
     die,
     env_float,
+    goal_required_from,
     how,
     load_dataset,
     load_goals,
     now,
+    plain_id_ok,
     warn_if_ignored,
 )
 from evaluation_harness._fingerprint import build_fingerprint
-from evaluation_harness._providers import priced_by_table, secret_params
+from evaluation_harness._number import counted, is_scored
+from evaluation_harness._providers import priced_by_table, secret_params, temperature
 from evaluation_harness._record import (
     aggregate_scores,
     cut_off_items,
     empty_at_cap_note,
+    non_number,
     run_level_scores,
     run_record,
     run_scorer,
@@ -80,6 +85,7 @@ from evaluation_harness._record import (
 from evaluation_harness._retry import call_with_retries, is_transient
 from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.model import results as _results
+from evaluation_harness.model import rounds as _model_rounds
 from evaluation_harness.model import runs as _model_runs
 from evaluation_harness.ops import legacy
 
@@ -350,13 +356,13 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     from evaluation_harness.dataset_from_capture import load_capture  # noqa: PLC0415
 
     params = cfg.setdefault("params", {})
-    cap = params.get("capture")
-    if not cap:
+    capture = params.get("capture")
+    if not capture:
         die(
             f"{cfg.get('system_id')}: provider recorded needs params.capture, the capture its outputs come from",
             "bad-argument",
         )
-    _doc, recs = load_capture(cap)
+    _doc, recs = load_capture(capture)
     by_id = {r["id"]: r for r in recs}
     mod = _module_or_none(adapter_path)
     hook = getattr(mod, "recorded_output", None)
@@ -377,13 +383,15 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
         out[it["item_id"]] = str(hook(rec) if callable(hook) else (rec.get("fields") or {}).get(field, ""))
     if missing:
         die(
-            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}",
+            f"capture {capture} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}",
             "not-found",
         )
     from evaluation_harness._common import CAPTURES  # noqa: PLC0415
 
-    params["capture_sha256"] = hashlib.sha256(_store.read_bytes(CAPTURES / cap / "capture.json")).hexdigest()
-    print(f"  a recorded arm: {len(out)} output(s) read from the capture {cap}, no system called")
+    params["capture_sha256"] = hashlib.sha256(
+        _store.read_bytes(CAPTURES / capture / "capture.json")
+    ).hexdigest()
+    print(f"  a recorded arm: {len(out)} output(s) read from the capture {capture}, no system called")
     return out
 
 
@@ -498,6 +506,23 @@ def progress_line(
     return line
 
 
+def _refuse_unmaterialized(dataset_id: str) -> Path:
+    """The dataset's materialized folder; refused (`not-materialized`) when there is none, as a pass and a dry run both
+    need its item texts."""
+    mat = MATERIALIZED / dataset_id
+    if not _store.is_dir(mat):
+        die(
+            f"{dataset_id} is not materialized.\n"
+            f"  "
+            + how(
+                f"evh dataset-materialize --dataset-id {dataset_id}",
+                f"make dataset-materialize DATASET_ID={dataset_id}",
+            ),
+            "not-materialized",
+        )
+    return mat
+
+
 def one_pass(
     ds: dict[str, Any],
     cfg: dict[str, Any],
@@ -528,17 +553,7 @@ def one_pass(
     RFC-030); with ``once`` each item is called exactly once, a failure recorded and never retried (a retry would
     repeat a replay's side effects). A resumed pass with ``once`` does not call again an item the earlier run called
     once and did not finish (a failed row, a start mark with no row) unless ``recall`` names them (RFC-038)."""
-    mat = MATERIALIZED / ds["dataset_id"]
-    if not _store.is_dir(mat):
-        die(
-            f"{ds['dataset_id']} is not materialized.\n"
-            f"  "
-            + how(
-                f"evh dataset-materialize --dataset-id {ds['dataset_id']}",
-                f"make dataset-materialize DATASET_ID={ds['dataset_id']}",
-            ),
-            "not-materialized",
-        )
+    mat = _refuse_unmaterialized(ds["dataset_id"])
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
     ref_dir, ref_tier = scored_against or _reference_for(ds["dataset_id"])
@@ -690,11 +705,6 @@ def one_pass(
                 raise ServerUnreachable(f"item {item['item_id']}: every model call failed: {unreachable}")
         failed = bool(failed_items) and failed_items[-1]["item_id"] == item["item_id"]
         outputs[item["item_id"]] = res.output
-        # A failed item's output is not written: --resume calls it again.
-        if live is not None and not resumed and not failed:
-            # One synced line per item: `--resume` treats a complete line as proof the item is done, and a torn
-            # last line (a kill mid-append) as not done, so a half-written output is never replayed and scored.
-            live.add(item["item_id"], res.output)
 
         reference = None
         if ref_dir is not None:
@@ -708,21 +718,62 @@ def one_pass(
         # hallucination check simply never ran and nothing said so.
         # A failed item scores as an empty answer (0 on most measures), or as the adapter's score_failure(reference)
         # says when it has one: a failure never makes an arm look better.
-        if (
-            item["item_id"] in bound
-            and not failed
-            and not (same or (lambda a, b: a.strip() == b.strip()))(res.output, bound[item["item_id"]])
-        ):
-            scored = {}
-            not_scorable.append(item["item_id"])
-        elif failed and score_failure is not None:
-            scored = score_failure(reference)
-        else:
-            scored = (
-                score(res.output, reference, source_text)
-                if score_wants_source(score)
-                else score(res.output, reference)
-            )
+        try:
+            if (
+                item["item_id"] in bound
+                and not failed
+                and not (same or (lambda a, b: a.strip() == b.strip()))(res.output, bound[item["item_id"]])
+            ):
+                scored = {}
+                not_scorable.append(item["item_id"])
+            elif failed and score_failure is not None:
+                scored = score_failure(reference)
+            else:
+                scored = (
+                    score(res.output, reference, source_text)
+                    if score_wants_source(score)
+                    else score(res.output, reference)
+                )
+        except (
+            BaseException
+        ):  # the scorer raised: the output is kept all the same, as when it was written first
+            if live is not None and not resumed and not failed:
+                live.add(item["item_id"], res.output)
+            raise
+        if (bad := non_number(scored)) is not None:
+            # RFC-041 F7: a score that is not a number (NaN, an infinity, None) is a failed item, never a mean's term:
+            # recorded with its reason, scored as a failed item is, its output not written (--resume calls it again).
+            if not failed:
+                failed_items.append({"item_id": item["item_id"], "error": bad})
+                print(f"      FAILED item {item['item_id'][:8]}: {bad}")
+                if not resumed and recorded is None:
+                    n_failed_called += 1
+                    if n_failed_called > FAILED_STOP_COUNT and n_failed_called > FAILED_STOP_SHARE * n_called:
+                        raise SystematicFailure(
+                            f"{n_failed_called} of the {n_called} items called failed (the last: {bad}): "
+                            "an adapter or configuration error, not the items"
+                        )
+                failed = True
+                scored = (
+                    score_failure(reference)
+                    if score_failure is not None
+                    else score("", reference, source_text)
+                    if score_wants_source(score)
+                    else score("", reference)
+                )
+            # what the failed item's own score holds that is a number stays; a measure its fallback could not score
+            # either (NaN, an infinity, None) counts 0, as a failed item does: dropped, the mean ran over the other items
+            # and the failure made the arm look better (review, 2026-11-24). A boolean or text is no score: left out.
+            scored = {
+                k: v if non_number({k: v}) is None else counted(v)
+                for k, v in scored.items()
+                if non_number({k: v}) is None or is_scored(v)
+            }
+        # A failed item's output is not written: --resume calls it again.
+        if live is not None and not resumed and not failed:
+            # One synced line per item: `--resume` treats a complete line as proof the item is done, and a torn
+            # last line (a kill mid-append) as not done, so a half-written output is never replayed and scored.
+            live.add(item["item_id"], res.output)
         row: dict[str, Any] = {"item_id": item["item_id"], **scored}
         if by_run is not None:
             run_items.append(
@@ -857,6 +908,15 @@ def one_pass(
     }
 
 
+def _cost_coverage(rows: list[dict[str, Any]]) -> dict[str, int] | None:
+    """How many of the items that did not fail reported a cost, when only some did (a failed item is named in
+    `failed_items`); None when all did or none did: no cost reported is unknown, and the run then records no total, so
+    a total is never the sum of some items passed off as all (RFC-041 F7)."""
+    done = [r for r in rows if not r.get("failed")]
+    known = sum(1 for r in done if "cost_usd" in r)
+    return {"items_with_cost": known, "items": len(done)} if 0 < known < len(done) else None
+
+
 def _confound(rows: list[dict[str, Any]]) -> dict[str, int] | None:
     """A replay's history confound (RFC-031 P1): how many rows its adapter marked, of how many; None when it marks none."""
     marked = [r for r in rows if "history_confound" in r]
@@ -885,6 +945,10 @@ def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _cap_shown(cap: float | None) -> str:
+    return _spend.shown(cap) + (" — set EVAL_MAX_COST_USD" if cap is None else " (EVAL_MAX_COST_USD)")
+
+
 def _dry_run(
     ds: dict[str, Any],
     cfg: dict[str, Any],
@@ -894,8 +958,11 @@ def _dry_run(
     once: bool = False,
     only: int | None = None,
     note: str | None = None,
+    adapter_id: str = BUNDLED_ADAPTER_ID,
+    repeat_line: str | None = None,
 ) -> int:
-    """Shape and cost the sweep without calling anything.
+    """Shape and cost the sweep without calling anything. `repeat_line`: where a `--purpose repeat` run would be read
+    (`_says_repeat`).
 
     The estimate counts what the system alone shows: one call per item (or the adapter's declared
     `CALLS_PER_ITEM`), the prompt in and max_tokens out, each call as large as the first. It is NOT an upper
@@ -931,17 +998,22 @@ def _dry_run(
     )  # a resume pays for the items it calls, not all of them
 
     print("DRY RUN — nothing was called\n")
-    print(
-        f"  system      {cfg['system_id']}  ({params.get('provider', 'echo')}"
-        + (f" / {params['model']}" if params.get("model") else "")
-        + ")"
+    # What runs: the bundled adapter's provider (echo unless the system names one), or the project's own adapter, which
+    # reads `provider` only if its system sets one: echo is the bundled adapter's default, not a fact about another.
+    custom = adapter_id != BUNDLED_ADAPTER_ID
+    provider = params.get("provider") if custom else params.get("provider", "echo")
+    what = " / ".join(
+        x for x in (f"adapter {adapter_id}" if custom else "", provider, params.get("model")) if x
     )
+    print(f"  system      {cfg['system_id']}  ({what})")
     print(f"  dataset     {ds['dataset_id']}  ({len(items)} items)")
     print(f"  repeats     {repeat}")
     if once:
         print(CALL_ONCE_LINE)
     if note:
         print(f"  {note}")
+    if repeat_line:
+        print(repeat_line)
     print(f"  API calls   {calls}")
     print(
         f"              {per_item} per item, declared by the adapter (CALLS_PER_ITEM)"
@@ -959,8 +1031,9 @@ def _dry_run(
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
     est = None
     if pin is None or pout is None:
-        print("\n  No price in the system, so no estimate. Add usd_per_mtok_in /")
-        print("  usd_per_mtok_out and the run will record what it actually cost.")
+        print("\n  No price in the system, so no estimate. Add usd_per_mtok_in / usd_per_mtok_out to the")
+        print("  params of the system file (0 is a valid price for a local model) and the run will record")
+        print("  what it actually cost.")
     else:
         est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat * per_item * share
         print(
@@ -1000,13 +1073,14 @@ def _dry_run(
                 " from that"
             )
     cap = env_float("EVAL_MAX_COST_USD")
-    print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
+    print("  cap         " + _cap_shown(cap))
     _jsonout.value(
         "dry_run",
         {
             "system_id": cfg["system_id"],
             "dataset_id": ds["dataset_id"],
-            "provider": params.get("provider", "echo"),
+            "adapter": adapter_id,
+            "provider": provider,
             "model": params.get("model"),
             "items": len(items),
             "repeats": repeat,
@@ -1030,7 +1104,7 @@ def _dry_run(
                 if measured
                 else None
             ),
-            "cap_usd": cap or None,
+            "cap_usd": cap,
         },
     )
     return 0
@@ -1111,6 +1185,121 @@ def _prompt_versions(
     return out
 
 
+def _refuse_unrelated_of(of: str, cfg: dict[str, Any], purpose: str) -> None:
+    """Refuse, before any call, an `--of` that names a run of another system or dataset: a `purpose` of that run is no
+    re-run of it (RFC-041 F7: `of` is a link the readers follow, so a writer records only one that holds)."""
+    of_rec = _model_runs.run(of) or {}
+    wrong = [
+        k for k, w in (("system", "system_id"), ("dataset", "dataset_id")) if of_rec.get(w) != cfg.get(w)
+    ]
+    if wrong:
+        die(
+            f"--of {of}: a run of {of_rec.get('system_id')} on {of_rec.get('dataset_id')}, and this run is of "
+            f"{cfg['system_id']} on {cfg['dataset_id']}: a {purpose} names a run of its own system and dataset "
+            f"({' and '.join(wrong)} differ). Name that run, or make this one without --purpose {purpose}.",
+            "mismatch",
+        )
+
+
+def _fingerprint_of(
+    cfg: dict[str, Any],
+    ds: dict[str, Any],
+    ref_id: str | None,
+    ref_tier: str | None,
+    adapter_id: str,
+    adapter_path: Path | None,
+    model_fingerprint: Any,
+    resolved: dict[str, Any] | None,
+    plan: Any,
+) -> dict[str, Any]:
+    """The fingerprint a run of this arm on `ds` records: a run's and its dry run's are one."""
+    return build_fingerprint(
+        root=ROOT,
+        data_dir=DATA,
+        dataset=ds,
+        reference_id=ref_id,
+        reference_tier=ref_tier,
+        system_id=cfg["system_id"],
+        params=dict(cfg.get("params") or {}),
+        adapter_id=adapter_id,
+        adapter_path=adapter_path,
+        model_hook=model_fingerprint,
+        cfg=cfg,
+        prompt_settings=(resolved or {}).get("settings"),
+        replay=plan,
+    )
+
+
+def _repeat_reading(
+    of: str, fingerprint: dict[str, Any], cfg: dict[str, Any], label_as: str
+) -> dict[str, Any]:
+    """Where a `--purpose repeat --of <run>` run will be read (model.runs.repeat_reading)."""
+    mine = {"dataset_id": cfg["dataset_id"], "system_id": cfg["system_id"], "fingerprint": fingerprint}
+    return _model_runs.repeat_reading(of, mine, label_as)
+
+
+def _says_repeat(of: str, reading: dict[str, Any], subset: tuple[int, int] | None = None) -> tuple[str, str]:
+    """What a `--purpose repeat --of <run>` run tells, before its first call (a dry run too) and again as its last line:
+    whether it will be read in the arm of the run it repeats (the same measurement taken again), or under `repeats` as
+    another one, and what differs, each field with its value then and now (RFC-041 F2). `subset` is (the items `--items`
+    runs, the dataset's): the fingerprint's data is those items, so the repeat joins only a run of exactly them."""
+    arm = reading["arm"]
+    build = f" (the {_model_runs.HARNESS} differs)" if reading["notes"] else ""
+    if reading["joins"]:
+        same_items = f"; made on the same items as {of}" if subset else ""
+        return (
+            (
+                f"  repeat of {of}: the same measurement (data, deployment, settings, adapter), so this run joins its "
+                f"arm {arm} and is averaged with it{build}{same_items}"
+            ),
+            f"  repeat of {of}: joined {arm}{build}",
+        )
+    what = "; ".join(reading["differs"]) or ", ".join(reading["why"])
+    why_items = (
+        f"; --items is a subset ({subset[0]} of {subset[1]} items), other data than a run of the whole dataset: a "
+        "repeat joins only a run of the same items"
+        if subset and "data" in reading["why"]
+        else ""
+    )
+    return (
+        (
+            f"  repeat of {of}: not the same measurement ({what}{why_items}), so this run is read under `repeats` "
+            f"({arm}), a separate arm, and is not averaged with {of}; to join its arm, run it again as {of} was run"
+        ),
+        f"  repeat of {of}: read under `repeats` ({arm}), not in {of}'s arm: {what}",
+    )
+
+
+def _repeat_line(
+    args: argparse.Namespace,
+    fingerprint: dict[str, Any],
+    cfg: dict[str, Any],
+    label_as: str,
+    rnd: dict[str, Any] | None,
+    subset: tuple[int, int] | None,
+) -> tuple[tuple[str, str], bool]:
+    """(the two lines `_says_repeat` tells, whether the run joins RUN's arm) for a `--purpose repeat --of RUN` run, as a
+    run and its dry run both say it."""
+    reading = _repeat_reading(args.of, fingerprint, cfg, label_as)
+    if reading["joins"] and rnd is not None:
+        _refuse_repeat_of_retired(rnd, cfg["system_id"], reading["label"], args.of)
+    return _says_repeat(args.of, reading, subset), reading["joins"]
+
+
+def _refuse_repeat_of_retired(rnd: dict[str, Any], system_id: str, label: str, of: str) -> None:
+    """Refuse, before any call, a repeat that joins the arm of a run the round retired: a run made in a round brings
+    its system back into play, and a repeat of a retired arm's run is not a reason to (the round's arm would come back
+    silently)."""
+    arm = _model_rounds.retired_arm(rnd, system_id, label)
+    if arm is not None:
+        die(
+            f"--of {of}: {system_id}'s arm in round {rnd['round_id']} is retired ({(arm.get('retired') or {}).get('reason') or 'no reason'}), "
+            "and this repeat would join it and bring it back into play. Repeat the run outside the round (leave out "
+            "--round), or bring the arm back on purpose with a run of its own.",
+            "bad-argument",
+        )
+
+
 def _refuse_repeat_beside_run(system_id: str, dataset_id: str, repeat: int) -> None:
     """Refuse, before any call, a --repeat set of a system on a dataset where it already has a plain run: the set is
     meant to be the arm's measurement, so beside the run it makes two measurements of one system id, which every
@@ -1130,18 +1319,21 @@ def _refuse_repeat_beside_run(system_id: str, dataset_id: str, repeat: int) -> N
     allowed = {tuple(x) for x in ((policy if isinstance(policy, dict) else {}).get("duplicate_ok") or [])}
     if (dataset_id, system_id) in allowed:
         return
-    have = sorted(
-        {_model_runs.run_of(sd).name for sd, _rec in _model_runs.scored(dataset_id, system_id=system_id)}
-    )
-    if not have:
+    found = _model_runs.scored(dataset_id, system_id=system_id)
+    newest = _model_runs.latest(found)
+    if newest is None:
         return
-    last = have[-1]
+    have = sorted({_model_runs.run_of(sd).name for sd, _rec in found})
+    last = _model_runs.run_of(newest[0]).name
     die(
         f"{system_id} already has a measured run on {dataset_id}: {', '.join(have)}. A --repeat {repeat} set beside it "
         "would be a second measurement of the same arm: every reader averages them, and validate fails V8 once they "
         "are committed.\n"
         f"  To measure its noise, repeat the run it has, once per repeat: evh run --system {system_id} --dataset "
         f"{dataset_id} --purpose repeat --of {last}\n"
+        "  Run as that run was run (the same data, deployment, settings and adapter), each repeat joins its arm: the arm is "
+        "then read as one measurement over all its runs. A repeat that differs in any of them is read under `repeats`, as "
+        "another measurement.\n"
         f"  To measure it as a set from the start, delete that run first: evh data-rm --path runs/{last}",
         "would-overwrite",
     )
@@ -1253,6 +1445,9 @@ def body(**inputs: Any) -> int:
 def _run(args: argparse.Namespace) -> int:
     from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
+    if args.run_id:
+        plain_id_ok(args.run_id, "--run-id")
+
     cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
     # A system may name a model record (RFC-020, optional): its settings come from the record, under the
     # system's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
@@ -1288,6 +1483,12 @@ def _run(args: argparse.Namespace) -> int:
         die(
             f"--goal {cfg['goal']!r} is not in {GOALS} (known: {', '.join(sorted(load_goals())) or 'none'})",
             "not-found",
+        )
+    if not cfg.get("goal") and not args.scratch and (since := goal_required_from()):
+        die(
+            f"goals are required from {since} (data/goals/policy.yaml): name the goal this run answers with --goal "
+            "(evh goal-list)",
+            "bad-argument",
         )
     # A run may name a round of its goal (ADR-0004, optional): refused before a cent is spent
     # when the round does not exist, is closed, or runs on another dataset.
@@ -1329,6 +1530,7 @@ def _run(args: argparse.Namespace) -> int:
                 "call_once(params)): its failed items were retried, and --resume calls them again without a flag",
                 "bad-argument",
             )
+    subset: tuple[int, int] | None = None
     if args.items is not None:
         if not _store.is_file(args.items):
             die(f"--items {args.items}: no such file", "not-found")
@@ -1346,6 +1548,7 @@ def _run(args: argparse.Namespace) -> int:
             die(f"--items {args.items}: no item ids in it", "not-enough")
         keep = set(wanted)
         ds = {**ds, "items": [it for it in ds["items"] if it["item_id"] in keep]}
+        subset = (len(ds["items"]), len(known_ids))
         print(f"  --items: {len(ds['items'])} of {len(known_ids)} items of {cfg['dataset_id']}")
     # A SEALED SIDE IS HELD OUT (the fleet's feedback 29): refused before a cent is spent, unless an unseal named
     # this system in advance.
@@ -1368,6 +1571,14 @@ def _run(args: argparse.Namespace) -> int:
     label_as = _datasets.label_of(ref_id.removeprefix(LABELS_PREFIX)) if args.labels and ref_id else ""
     if args.of and not _model_runs.run(args.of):
         die(f"--of {args.of}: no run of that id in {runs}", "not-found")
+    if args.of and args.purpose != "run":
+        _refuse_unrelated_of(args.of, cfg, args.purpose)
+    if args.purpose == "repeat" and not args.of and not args.scratch:
+        die(
+            "--purpose repeat names the run it repeats: add --of RUN (a run with no --of is read under `repeats`, "
+            "joined to no arm, so nothing says what it repeats)",
+            "bad-argument",
+        )
     if args.purpose == "run" and args.of:
         die("--of names the run a re-run re-does: give its --purpose (repeat, retime, pair)", "bad-argument")
     if args.purpose == "run" and args.repeat > 1 and not args.resume and not args.scratch and not args.labels:
@@ -1416,6 +1627,7 @@ def _run(args: argparse.Namespace) -> int:
         _faithfulness_gate(plan, ds, adapter_id, adapter_path, ref_tier, args) if plan is not None else None
     )
 
+    _refuse_unmaterialized(cfg["dataset_id"])
     if args.dry_run:
         calls_only, note = None, None
         if args.resume and declared_once:  # what the resume would call, not the whole dataset
@@ -1430,7 +1642,30 @@ def _run(args: argparse.Namespace) -> int:
                 f"({'CALLED AGAIN, --recall-failed: their side effects repeat' if args.recall_failed else 'not called; --recall-failed would call them'}), "
                 f"{len(fresh)} never attempted (called): {calls_only} call(s) in all"
             )
-        return _dry_run(ds, cfg, args.repeat, adapter_path, args.config, declared_once, calls_only, note)
+        says = None
+        if args.purpose == "repeat" and args.of and not args.scratch:
+            import atexit  # noqa: PLC0415
+
+            from evaluation_harness import _prompts  # noqa: PLC0415
+
+            resolved = _prompts.resolve(cfg, args.config, cfg["system_id"], dry=True)
+            atexit.register(_prompts.remove_copy, resolved)
+            fp = _fingerprint_of(
+                cfg, ds, ref_id, ref_tier, adapter_id, adapter_path, model_fingerprint, resolved, plan
+            )
+            says, _joins = _repeat_line(args, fp, cfg, label_as, rnd, subset)
+        return _dry_run(
+            ds,
+            cfg,
+            args.repeat,
+            adapter_path,
+            args.config,
+            declared_once,
+            calls_only,
+            note,
+            adapter_id,
+            says[0] if says else None,
+        )
 
     if declared_once:
         print(CALL_ONCE_LINE)
@@ -1488,22 +1723,14 @@ def _run(args: argparse.Namespace) -> int:
         else:
             print(f"  warmed up in {warmup_ms:.0f}ms — timing below excludes it")
 
-    fingerprint = build_fingerprint(
-        root=ROOT,
-        data_dir=DATA,
-        dataset=ds,
-        reference_id=ref_id,
-        reference_tier=ref_tier,
-        system_id=cfg["system_id"],
-        params=dict(cfg.get("params") or {}),
-        adapter_id=adapter_id,
-        adapter_path=adapter_path,
-        model_hook=model_fingerprint,
-        cfg=cfg,
-        prompt_settings=(resolved or {}).get("settings"),
-        replay=plan,
+    fingerprint = _fingerprint_of(
+        cfg, ds, ref_id, ref_tier, adapter_id, adapter_path, model_fingerprint, resolved, plan
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
+    repeat_says, repeat_joins = None, False
+    if args.purpose == "repeat" and args.of and not args.scratch:
+        repeat_says, repeat_joins = _repeat_line(args, fingerprint, cfg, label_as, rnd, subset)
+        print(repeat_says[0])
     prompt_versions = {} if args.scratch else _prompt_versions(adapter_path, adapter_id, cfg, fingerprint)
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads
     # is not a warning: a 72-run sweep completed with `harness.dirty: true` throughout, so
@@ -1548,7 +1775,7 @@ def _run(args: argparse.Namespace) -> int:
         dep = _models.deployment_of(rec, cfg["deployment"]) or {}
         # Determinism is a deployment's, not a model's: the same weights differ between machines.
         same = (((dep.get("onboarding") or {}).get("report") or {}).get("deterministic")) is True
-        if same and float((cfg.get("params") or {}).get("temperature") or 0) == 0:
+        if same and temperature(cfg.get("params") or {}) == 0:
             where = f" on {cfg['deployment']}"
             print(
                 f"  NOTE: {cfg['model_record']} gave the same output twice{where} when it was onboarded, and this arm "
@@ -1710,6 +1937,7 @@ def _run(args: argparse.Namespace) -> int:
             recalled=result.get("recalled") or None,
             not_scorable=result.get("not_scorable") or None,
             history_confound=_confound(result["predictions"]),
+            cost_coverage=_cost_coverage(result["predictions"]),
             repeat_index=(i + 1) if args.repeat > 1 else None,
             faithfulness=faith,
         )
@@ -1768,6 +1996,7 @@ def _run(args: argparse.Namespace) -> int:
                 run_id,
                 _model_runs.label(score_dir),
                 _actor.actor(),
+                repeat_joins,
             )
             if joined is None:
                 print(
@@ -1892,4 +2121,6 @@ def _run(args: argparse.Namespace) -> int:
         return EXIT_STOPPED
     if not args.scratch:
         warn_if_ignored(runs)
+    if repeat_says:
+        print(repeat_says[1])
     return 0

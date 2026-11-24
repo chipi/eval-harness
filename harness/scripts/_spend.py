@@ -57,6 +57,16 @@ def reached(spent: float, cap_usd: float | None) -> bool:
     return cap_usd is not None and spent > 0 and spent >= cap_usd
 
 
+def shown(cap_usd: float | None) -> str:
+    """A cap as every command prints it. Three meanings, never two: no cap, spend nothing, and an amount. A test of the
+    cap's truth printed a cap of 0 as none (the homelab bake-off, v0.8.0)."""
+    if cap_usd is None:
+        return "NONE"
+    if cap_usd <= 0:
+        return "$0.00 (spend nothing: only what is known to be free runs)"
+    return f"${cap_usd:.2f}"
+
+
 ZERO_CAP_HINT = (
     "a cap of 0 runs only what is known to be free: provider echo, a judge of provider fake, a recorded arm (provider "
     "recorded), or a system that declares usd_per_mtok_in: 0 and usd_per_mtok_out: 0. Declare those two prices as 0, "
@@ -101,7 +111,7 @@ def add(cost: float | None) -> None:
         if _common.SPENT_LIVE:
             with contextlib.suppress(OSError):
                 tmp = Path(_common.SPENT_LIVE + ".tmp")
-                tmp.write_text(json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n")
+                tmp.write_text(json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n", encoding="utf-8")
                 os.replace(tmp, _common.SPENT_LIVE)
 
 
@@ -112,7 +122,9 @@ def _report() -> None:
     if not _common.SPENT_TO:
         return
     with contextlib.suppress(OSError):
-        Path(_common.SPENT_TO).write_text(json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n")
+        Path(_common.SPENT_TO).write_text(
+            json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n", encoding="utf-8"
+        )
 
 
 def run_child(cmd: list[str], **kw: Any) -> tuple[Any, float]:
@@ -129,6 +141,7 @@ def run_child(cmd: list[str], **kw: Any) -> tuple[Any, float]:
     fd, name = tempfile.mkstemp(prefix="evh-spent-", suffix=".json")
     os.close(fd)
     env["EVH_SPENT_TO"] = name
+    env["PYTHONIOENCODING"] = "utf-8"  # the callers read the child's answer as UTF-8
     try:
         r = subprocess.run(cmd, env=env, **kw)
         try:
@@ -176,7 +189,7 @@ def _alive(pid: Any) -> bool:
         pid = int(pid)
         stat = Path(f"/proc/{pid}/stat")
         if stat.exists():
-            return stat.read_text().rsplit(")", 1)[1].split()[0] != "Z"
+            return stat.read_text(encoding="utf-8").rsplit(")", 1)[1].split()[0] != "Z"
         os.kill(pid, 0)
     except (OSError, ValueError, TypeError, IndexError):
         return False
@@ -231,9 +244,8 @@ def round_left(rnd: dict[str, Any], data: Path | None = None) -> float | None:
         return None
     from evaluation_harness import _rounds  # noqa: PLC0415
 
-    used = sum(
-        float((m.get("scores") or {}).get("total_cost_usd") or 0) for _, m in _rounds.runs_of(rnd, data=data)
-    )
+    # An unknown cost cannot be charged: only what runs recorded counts, and over-budget names the rest.
+    used = _rounds.spend_of(rnd, data)[0] or 0.0
     for e in _read(ledger_path(rnd["goal"], rnd["round_id"])).get("entries", []):
         used += _entry_use(e)
     return float(rnd["budget_usd"]) - used
@@ -272,9 +284,14 @@ def reserve(rnd: dict[str, Any], command: str, run_ids: list[str] | None = None)
         left_now = round_left(rnd)
         assert left_now is not None
         if left_now <= 0:
+            from evaluation_harness import _rounds  # noqa: PLC0415
+
+            unpriced = _rounds.no_cost_words(_rounds.spend_of(rnd)[1])
             _common.die(
                 f"round {rnd['round_id']} of {rnd['goal']} has spent its budget (${float(rnd['budget_usd']):.2f}, "
-                "counting what its running commands have reserved): nothing is called. Raise budget_usd in the "
+                "counting what its running commands have reserved"
+                + (f"; {unpriced}, so what they cost is not counted" if unpriced else "")
+                + "): nothing is called. Raise budget_usd in the "
                 f"round, or wait for a running arm to end (`evh round-evidence {rnd['goal']} {rnd['round_id']}` shows what was spent)",
                 "over-budget",
             )

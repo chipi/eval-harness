@@ -27,6 +27,7 @@ from typing import Any
 from evaluation_harness import _common, _jsonout, _models, _store
 from evaluation_harness._adapter import call_once, load_adapter, score_wants_source
 from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, load_dataset, now
+from evaluation_harness._record import non_number
 from evaluation_harness.ops import legacy
 
 #: A reply is long when it is this many times the arm's median reply (RFC-020: "far longer than the arm's
@@ -128,13 +129,15 @@ def flags_for(items: list[dict[str, Any]], calls: list[dict[str, Any]], params: 
                     f"slow call: {len(slow)} call(s) over half the {limit:.0f} s limit (max {max(c['s'] for c in slow):.1f} s)"
                 )
         sizes = sorted(c["tokens_out"] for c in calls if c.get("tokens_out"))
-        cap = params.get("max_tokens")
-        if cap:
+        reply_cap = params.get("max_tokens")
+        if reply_cap:
             # With a reply cap, a reply is long when it passes half the cap: an adapter that makes short probe calls
             # beside its answer (the triage fleet) made every answer 3x the median.
-            long = [n for n in sizes if n > int(cap) / 2]
+            long = [n for n in sizes if n > int(reply_cap) / 2]
             if long:
-                out.append(f"long reply: {len(long)} call(s) over half the {cap}-token cap (max {max(long)})")
+                out.append(
+                    f"long reply: {len(long)} call(s) over half the {reply_cap}-token reply_cap (max {max(long)})"
+                )
         elif len(sizes) >= LONG_MIN_CALLS:
             median = (
                 sizes[len(sizes) // 2]
@@ -196,16 +199,17 @@ def spend_line(
 
 
 def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
-    """The full run from the smoke: about how long and how much, from the mean and the slowest item."""
+    """The full run from the smoke: about how long and how much, from the mean and the slowest item. `usd` is None unless
+    every item recorded a cost: an item nobody priced is not a free one."""
     secs = [i["s"] for i in items if i.get("s") is not None]
-    costs = [i.get("cost_usd") or 0.0 for i in items]
+    costs = [i["cost_usd"] for i in items if i.get("cost_usd") is not None]
     if not secs:
         return {}
     return {
         "items": n_items,
         "minutes": round(statistics.fmean(secs) * n_items / 60, 1),
         "worst_minutes": round(max(secs) * n_items / 60, 1),
-        "usd": round(statistics.fmean(costs) * n_items, 4),
+        "usd": round(statistics.fmean(costs) * n_items, 4) if costs and len(costs) == len(items) else None,
     }
 
 
@@ -215,9 +219,28 @@ def body(**inputs: Any) -> int:
     return _smoke(args)
 
 
+def _refuse_unnamed_goal_and_round(args: argparse.Namespace) -> None:
+    """The goal and round a smoke is for are the project's: a round spends the smoke on its budget, and one that is not
+    there, or that names no goal, would drop the spend without a word (RFC-041 F7). A closed round stays allowed."""
+    from evaluation_harness import _rounds  # noqa: PLC0415
+
+    if args.round and not args.goal:
+        die(f"--round {args.round}: name its goal too (--goal; a round belongs to a goal)", "bad-argument")
+    if args.goal and _store.is_dir(_common.GOALS) and args.goal not in _common.load_goals():
+        known = ", ".join(sorted(_common.load_goals())) or "none"
+        die(f"--goal {args.goal!r} is not in {_common.GOALS} (known: {known})", "not-found")
+    if args.round and _rounds.find(args.goal, args.round) is None:
+        die(
+            f"--round {args.round}: no round {args.round!r} for goal {args.goal!r} at "
+            f"{_rounds.path_of(args.goal, args.round)}",
+            "not-found",
+        )
+
+
 def _smoke(args: argparse.Namespace) -> int:
     from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
 
+    _refuse_unnamed_goal_and_round(args)
     cfg, args.config = arm_of(args.system, args.dataset, args.goal, args.round)
     try:
         cfg = _models.resolve(cfg, DATA)
@@ -347,7 +370,12 @@ def _smoke(args: argparse.Namespace) -> int:
             ref = _store.read_text(ref_dir / f"{item['item_id']}.txt", encoding="utf-8", errors="replace")
         try:
             scored = score(res.output, ref, text) if score_wants_source(score) else score(res.output, ref)
-            row["scored"] = bool(scored)
+            if (
+                bad := non_number(scored)
+            ) is not None:  # RFC-041 F7: the smoke says so, as evh run fails the item
+                row.update(scored=False, score_error=bad)
+            else:
+                row["scored"] = bool(scored)
         except Exception as exc:  # noqa: BLE001
             row.update(scored=False, score_error=f"{type(exc).__name__}: {exc}")
         item_calls = calls_of(res, wall)
@@ -385,7 +413,8 @@ def _smoke(args: argparse.Namespace) -> int:
     if proj:
         print(
             f"  full run: {proj['items']} items, about {proj['minutes']} min (slowest item x all: "
-            f"{proj['worst_minutes']} min), about ${proj['usd']}"
+            f"{proj['worst_minutes']} min), "
+            + (f"about ${proj['usd']}" if proj["usd"] is not None else "cost unknown (no price recorded)")
         )
     print(f"  {spend_line(spent, billed, n_calls, unpriced, by_table[0], frozenset(sources))}")
     if once:

@@ -18,7 +18,10 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-from collections.abc import Callable
+import copy
+import threading
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -50,12 +53,40 @@ def _read(f: Path) -> dict[str, Any] | None:
     return doc if isinstance(doc, dict) else None
 
 
+#: The records read while a catalog Site renders one state of the data (RFC-040): each goal page's deploy sheet looked
+#: an alias up in every record, 0.5 s a page on this repository's catalog.
+_KEPT = threading.local()
+
+
+@contextmanager
+def records_kept(memo: dict) -> Iterator[None]:
+    """Within the block, on this thread, `find`, `load` and `deployments` read each record once and keep it in `memo`:
+    for one state of the data only (a new state needs a new memo). Each caller gets its own copy."""
+    prev = getattr(_KEPT, "memo", None)
+    _KEPT.memo = memo
+    try:
+        yield
+    finally:
+        _KEPT.memo = prev
+
+
+def _record(f: Path) -> dict[str, Any] | None:
+    """The record in `f`, read once within `records_kept`."""
+    memo = getattr(_KEPT, "memo", None)
+    if memo is None:
+        return _read(f)
+    key = str(f)
+    if key not in memo:
+        memo[key] = _read(f)
+    return copy.deepcopy(memo[key])
+
+
 def deployments(data_dir: Path, model_id: str) -> list[dict[str, Any]]:
     """A model's deployment records, as stored, by id."""
     base = deployments_dir(data_dir, model_id)
     if not _store.is_dir(base):
         return []
-    found = [d for f in sorted(_store.glob(base, "*.yaml")) if (d := _read(f)) is not None]
+    found = [d for f in sorted(_store.glob(base, "*.yaml")) if (d := _record(f)) is not None]
     return sorted(found, key=lambda d: (d.get("order", len(found)), str(d.get("deployment_id"))))
 
 
@@ -96,7 +127,7 @@ def load(data_dir: Path) -> list[dict[str, Any]]:
     _format.require(data_dir)
     out = []
     for f in sorted(_store.glob(base, "*.yaml")):
-        doc = _read(f)
+        doc = _record(f)
         if doc is not None:
             out.append(joined(doc, deployments(data_dir, str(doc.get("model_id") or f.stem))))
     return out
@@ -129,7 +160,7 @@ def _locked_write(
     from evaluation_harness import _common  # noqa: PLC0415
     from evaluation_harness._actor import actor  # noqa: PLC0415
 
-    with _store.open_file(lock_path(f), "w") as fh:
+    with _store.open_file(lock_path(f), "w", encoding="utf-8") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
         try:
             doc = (_read(f) if _store.is_file(f) else None) or dict(start)
@@ -220,7 +251,7 @@ def find(data_dir: Path, model_id: str) -> dict[str, Any] | None:
     if yaml is None or not _store.is_file(f):
         return None
     _format.require(data_dir)
-    doc = _read(f)
+    doc = _record(f)
     return joined(doc, deployments(data_dir, model_id)) if doc is not None else None
 
 

@@ -19,7 +19,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import os
 
-from evaluation_harness import _providers, _retry, _store
+from evaluation_harness import _providers, _retry, _spend, _store
 from evaluation_harness._common import (
     DOTENV_LOADED,
     DOTENV_SET,
@@ -152,10 +152,11 @@ def main() -> int:
     cap = env_float("EVAL_MAX_COST_USD")
     print(
         "  EVAL_MAX_COST_USD      "
+        + _spend.shown(cap)
         + (
-            f"${cap:.2f} — mid-run abort ({_source('EVAL_MAX_COST_USD')})"
-            if cap
-            else "NONE — a sweep can bill without limit"
+            " — a sweep can bill without limit"
+            if cap is None
+            else f" — mid-run abort ({_source('EVAL_MAX_COST_USD')})"
         )
     )
     print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', _retry.DEFAULT_MAX_RETRIES)}")
@@ -182,4 +183,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

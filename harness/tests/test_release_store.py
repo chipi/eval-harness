@@ -62,7 +62,7 @@ def run(args, env=None, cwd=None):
     e = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
     e.update(env or {})
     return subprocess.run(
-        [sys.executable, *map(str, args)], env=e, cwd=cwd, capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL
+        [sys.executable, *map(str, args)], env=e, cwd=cwd, capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL, encoding="utf-8"
     )  # fmt: skip
 
 
@@ -115,6 +115,7 @@ def tracked_refs(src: Path) -> str:
         capture_output=True,
         text=True,
         check=True,
+        encoding="utf-8",
     ).stdout
     return "".join(line.removeprefix("data/") + "\n" for line in out.splitlines())
 
@@ -158,10 +159,13 @@ def read_release(root: Path) -> dict:
         key = p.relative_to(data).as_posix()
         if p.name == "outputs.jsonl":
             outs[p.parent.relative_to(data).as_posix()] = [
-                (d["item_id"], d["text"], d["sha256"]) for d in map(json.loads, p.read_text().splitlines())
+                (d["item_id"], d["text"], d["sha256"])
+                for d in map(json.loads, p.read_text(encoding="utf-8").splitlines())
             ]
         elif p.name in ("predictions.jsonl", "rows.partial.jsonl"):
-            rows[(p.parent.relative_to(data).as_posix(), p.name == "rows.partial.jsonl")] = p.read_text()
+            rows[(p.parent.relative_to(data).as_posix(), p.name == "rows.partial.jsonl")] = p.read_text(
+                encoding="utf-8"
+            )
         else:
             files[key] = hashlib.sha256(p.read_bytes()).hexdigest()
     return {"files": files, "outputs": outs, "rows": rows}
@@ -187,7 +191,9 @@ def make_release(src: Path, store: str, dst: Path, source_store: str) -> subproc
 
 def add_caches(root: Path) -> None:
     (root / "cache").mkdir(exist_ok=True)
-    (root / "cache" / "evh-p.jsonl").write_text(json.dumps({"k": "a" * 64, "p": (0.5).hex()}) + "\n")
+    (root / "cache" / "evh-p.jsonl").write_text(
+        json.dumps({"k": "a" * 64, "p": (0.5).hex()}) + "\n", encoding="utf-8"
+    )
 
 
 def run_check(root: Path, tracked: Path):
@@ -223,11 +229,11 @@ try:
     build_source(files_src)
     migrate_source(files_src, sqlite_src)
     tracked = tmp / "tracked.txt"
-    tracked.write_text(tracked_refs(files_src))
+    tracked.write_text(tracked_refs(files_src), encoding="utf-8")
     check(
         "setup: the project's tracked references are the silver text and the two manifests",
-        len(tracked.read_text().split()) == 3,
-        tracked.read_text(),
+        len(tracked.read_text(encoding="utf-8").split()) == 3,
+        tracked.read_text(encoding="utf-8"),
     )
 
     # ── the build: both sources, both stores ─────────────────────────────────────────────────────────────────────
@@ -270,7 +276,7 @@ try:
             f"a SQLite release {label}: data/ holds the database alone, out of write-ahead logging, and says so in config.yaml",
             sorted(os.listdir(root / "data")) == ["project.sqlite"]
             and db.read_bytes()[18:20] == b"\x01\x01"
-            and (root / "config.yaml").read_text() == "store: sqlite\n",
+            and (root / "config.yaml").read_text(encoding="utf-8") == "store: sqlite\n",
             (sorted(os.listdir(root / "data")), db.read_bytes()[18:20]),
         )
     c = sqlite3.connect(f"file:{fs / 'data' / 'project.sqlite'}?mode=ro&immutable=1", uri=True)
@@ -284,7 +290,7 @@ try:
     check(
         "a files release has no database and its config.yaml says `store: files`",
         not (ff / "data" / "project.sqlite").exists()
-        and (ff / "config.yaml").read_text() == "store: files\n",
+        and (ff / "config.yaml").read_text(encoding="utf-8") == "store: files\n",
     )
 
     # ── the same data makes the same bytes (rsync re-sends a deploy's database unless it does) ───────────────────
@@ -356,7 +362,7 @@ try:
 
     # ── the refusals, in each store, before anything is written ──────────────────────────────────────────────────
     (files_src / "data" / "references" / "gold" / "ds1" / "x.txt").write_text(
-        "a gold text git does not track\n"
+        "a gold text git does not track\n", encoding="utf-8"
     )
     r = make_release(files_src, "sqlite", tmp / "refused-f" / "inspector", "files")
     r2 = make_release(files_src, "files", tmp / "refused-g" / "inspector", "files")
@@ -369,14 +375,14 @@ try:
     (files_src / "data" / "references" / "gold" / "ds1" / "x.txt").unlink()
     # a hidden run's run.json is copied whole: its `call` holds the run settings and nothing else
     hidden_run_json = files_src / "data" / "runs" / "rh" / "run.json"
-    good_text = hidden_run_json.read_text()
+    good_text = hidden_run_json.read_text(encoding="utf-8")
     good_doc = json.loads(good_text)
     for planted in (
         {"provider": "p"},
         {"generation_config": {"temperature": 0}, "predicted": "HIDDEN guess"},
         "HIDDEN",
     ):
-        hidden_run_json.write_text(json.dumps({**good_doc, "call": planted}))
+        hidden_run_json.write_text(json.dumps({**good_doc, "call": planted}), encoding="utf-8")
         rs = [
             make_release(files_src, store, tmp / f"refused-call-{store}" / "inspector", "files")
             for store in ("files", "sqlite")
@@ -388,7 +394,7 @@ try:
             and "HIDDEN" not in "".join(r.stdout for r in rs),
             said(rs[0]),
         )  # fmt: skip
-    hidden_run_json.write_text(good_text)
+    hidden_run_json.write_text(good_text, encoding="utf-8")
     check(
         "a hidden run's call of run settings only is released",
         make_release(files_src, "sqlite", tmp / "ok-call" / "inspector", "files").returncode == 0,
@@ -455,7 +461,7 @@ try:
         )
         case(
             "an empty p cache fails check",
-            lambda root: (root / "cache" / "evh-p.jsonl").write_text(""),
+            lambda root: (root / "cache" / "evh-p.jsonl").write_text("", encoding="utf-8"),
             "p cache",
         )
         case(
@@ -509,7 +515,7 @@ try:
             case("a database at another page size fails check", small_pages, "4096-byte pages")
             case(
                 "a file of the release's data/ left on disk beside the database fails check",
-                lambda root: (root / "data" / "references.txt").write_text("a leak"),
+                lambda root: (root / "data" / "references.txt").write_text("a leak", encoding="utf-8"),
                 "not just project.sqlite",
             )
 
@@ -550,7 +556,7 @@ try:
         said(r),
     )
     (files_src / "config.yaml").write_text(
-        "store: files\n"
+        "store: files\n", encoding="utf-8"
     )  # as this repository's harness/config.yaml names it
     r = run(
         [pkg / "_release.py", "copy-data", files_src / "data", tmp / "r2" / "data", "--store", "sqlite"],
@@ -568,7 +574,10 @@ try:
     if not render.is_file():
         print("  --   render.sh not here (not a checkout)")
     else:
-        sh, compose = render.read_text(), (ROOT / "infra" / "compose.yml").read_text()
+        sh, compose = (
+            render.read_text(encoding="utf-8"),
+            (ROOT / "infra" / "compose.yml").read_text(encoding="utf-8"),
+        )
         check(
             "render.sh builds the release in the store EVALS_STORE names (sqlite unless said), through copy-data",
             'STORE="${EVALS_STORE:-sqlite}"' in sh and '--store "$STORE"' in sh and "files|sqlite" in sh,
@@ -584,6 +593,10 @@ try:
             in sh
             and 'PYTHONDONTWRITEBYTECODE=1 python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" check'
             in sh,
+        )
+        check(
+            "render.sh: the catalog's switcher links to the Workbench the site serves at /workbench/ (--link, as the other parts)",
+            '--link "Workbench=https://$SITE/workbench/"' in sh,
         )
         inspector = compose.split("  inspector:")[1].split("\n  mcp:")[0]
         mcp = compose.split("\n  mcp:")[1]

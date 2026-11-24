@@ -162,6 +162,7 @@ fetched = subprocess.run(
     stdin=subprocess.DEVNULL,
     timeout=600,
     check=False,
+    encoding="utf-8",
 )
 check(
     "fetch.py brings back the item texts and the gold texts byte for byte as dataset-create and reference-promote wrote them",

@@ -126,7 +126,9 @@ try:
     )
     check("setup: a new version, which supersedes s_v1", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     # A validated scorer: its validation runs are in the project's runs, which the catalog's reading must find.
-    want = hashlib.sha256((proj / "judge_prompt.txt").read_text().strip().encode()).hexdigest()
+    want = hashlib.sha256(
+        (proj / "judge_prompt.txt").read_text(encoding="utf-8").strip().encode()
+    ).hexdigest()
     vj = {"provider": "litellm", "temperature": 0.0, "family": "x"}
     val_runs = []
     for j in ("ja", "jb"):
@@ -231,7 +233,7 @@ try:
     )  # fmt: skip
     check(
         "no page carries a verdict's reply, a judging set's outputs or a check's record",
-        not [n for n, t in allp.items() if REPLY in t] and not [p for p in cat.rglob("*") if p.is_file() and REPLY in p.read_text(errors="replace")],
+        not [n for n, t in allp.items() if REPLY in t] and not [p for p in cat.rglob("*") if p.is_file() and REPLY in p.read_text(errors="replace", encoding="utf-8")],
         [n for n, t in allp.items() if REPLY in t],
     )  # fmt: skip
 
@@ -242,12 +244,12 @@ try:
     (other / "datasets").mkdir()
     (other / "sources").mkdir()
     (other / "scorers" / "s_copy.yaml").write_text(
-        stored("scorers/s_v1.yaml").replace("scorer_id: s_v1", "scorer_id: s_copy")
+        stored("scorers/s_v1.yaml").replace("scorer_id: s_v1", "scorer_id: s_copy"), encoding="utf-8"
     )
     (other / "datasets" / "ds2.json").write_text(
-        json.dumps({"dataset_id": "ds2", "items": [{"item_id": "a"}]})
+        json.dumps({"dataset_id": "ds2", "items": [{"item_id": "a"}]}), encoding="utf-8"
     )
-    (other / "sources" / "a").write_text("an item")
+    (other / "sources" / "a").write_text("an item", encoding="utf-8")
     A = HarnessAdapter(other)
     check(
         "the adapter reads the scorers of its own data directory: the copy's, not the project's",
@@ -295,7 +297,11 @@ try:
     check(
         "nor does any page of the copy carry a reply, nor the copy's records",
         not [n for n, t in rp.items() if REPLY in t]
-        and not [p for p in (rel / "data" / "judge-validation").rglob("*.json") if REPLY in p.read_text()]
+        and not [
+            p
+            for p in (rel / "data" / "judge-validation").rglob("*.json")
+            if REPLY in p.read_text(encoding="utf-8")
+        ]
         and bool(counts),
     )
 finally:

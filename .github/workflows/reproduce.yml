@@ -14,8 +14,13 @@
 #              site/test_browser.py): a tutorial project built from
 #              the package's wheel and the site served with production's headers, any console error or
 #              CSP violation a failure. The same make targets a developer runs.
+#   catalog-render
+#              this repository's own catalog, every page rendered on its own and over HTTP against its export with the
+#              p-value cache off, empty and full (harness/tests/test_catalog_render_real.py, make catalog-render-check):
+#              every p of 673 arms drawn in four passes, a third of the self-test's CPU time, so beside verify.
 #   stores     every test file again on the SQLite store (RFC-025): the jobs above run the files store, and a
-#              project kept in its database is exactly as safe as the tests that run there (make stores-check).
+#              project kept in its database is exactly as safe as the tests that run there (make stores-check; two
+#              jobs, half of the files each).
 #   budget     the run inspector's budgets on this repository's runs (harness/tests/test_inspector_budget.py):
 #              its memory under --warm below 200 MB (prod's container has 256 MiB; the 0.4.0
 #              inspector peaked at 260 MB and was OOM-killed every ~5 minutes), a cached answer in
@@ -133,7 +138,7 @@ jobs:
       - name: make commands-check
         run: make commands-check
 
-  stores:
+  catalog-render:
     runs-on: ubuntu-latest
     needs: tested
     if: needs.tested.outputs.skip != 'true'
@@ -147,8 +152,31 @@ jobs:
           cache-dependency-path: harness/requirements.txt
       - name: harness environment
         run: make -C harness install
-      - name: make stores-check
-        run: make stores-check
+      - name: make catalog-render-check
+        run: make catalog-render-check
+
+  stores:
+    runs-on: ubuntu-latest
+    needs: tested
+    if: needs.tested.outputs.skip != 'true'
+    timeout-minutes: 30
+    # Two halves of the test files (tools/store_matrix.py --shard, balanced by the files' measured times), a job each:
+    # the 0.8.1 candidate's single job was cancelled at 30 minutes (0.8.0's took 9-15).
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ["1/2", "2/2"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: harness/requirements.txt
+      - name: harness environment
+        run: make -C harness install
+      - name: make stores-check (the ${{ matrix.shard }} part of the test files)
+        run: make stores-check SHARD=${{ matrix.shard }}
 
   browser:
     runs-on: ubuntu-latest

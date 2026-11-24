@@ -267,13 +267,14 @@ def _listed(problems: list[str]) -> str:
 
 
 def _latest_run(sid: str, dataset_id: str) -> str | None:
-    """The newest run of this system on this dataset (run ids end in their start's stamp), or None."""
-    runs = [
-        r
+    """The latest run of this system on this dataset (model.runs.latest), or None. The system is the record's own, not
+    a run id's prefix: `smoke`'s runs are not `smoke_v1`'s."""
+    found = _model_runs.latest(
+        (_model_runs.run_dir(r), rec)
         for r in _model_runs.run_ids()
-        if r.startswith(f"{sid}_") and (_model_runs.run(r) or {}).get("dataset_id") == dataset_id
-    ]
-    return max(runs) if runs else None
+        if (rec := _model_runs.run(r)) and rec.get("system_id") == sid and rec.get("dataset_id") == dataset_id
+    )
+    return found[1]["run_id"] if found else None
 
 
 def _scores_of(run_id: str) -> dict[str, Any] | None:
@@ -484,9 +485,7 @@ def body(**inputs: Any) -> int:
             tc += e["calls"]
             tcost += cost or 0.0
         print("  floor        " + (f"run {args.floor_run}" if args.floor_run else "random: 0 calls, $0"))
-        print(
-            f"  TOTAL        calls {tc:5d}  est ${tcost:.4f}   cap {(f'${cap:.2f}') if cap is not None else 'NONE'}"
-        )
+        print(f"  TOTAL        calls {tc:5d}  est ${tcost:.4f}   cap {_spend.shown(cap)}")
         _jsonout.value(
             "dry_run",
             {"scorer": sid_scorer, "dataset": dataset_id, "calls": tc, "estimate_usd": round(tcost, 6), "cap_usd": cap,
@@ -507,7 +506,9 @@ def body(**inputs: Any) -> int:
         )
     # The runs share one cap, the command's: `_spend` counts across them in this process.
     if cap is not None:
-        os.environ["EVAL_MAX_COST_USD"] = str(min(cap, env_float("EVAL_MAX_COST_USD") or cap))
+        os.environ["EVAL_MAX_COST_USD"] = str(
+            min(cap, own) if (own := env_float("EVAL_MAX_COST_USD")) is not None else cap
+        )
 
     for j in chosen:
         if ensure_system(system_id(sid_scorer, j["id"]), units[j["id"]]):

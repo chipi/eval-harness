@@ -193,7 +193,8 @@ with tempfile.TemporaryDirectory() as td:
                 "datasets": [{"dataset_id": "ds1", "role": "test"}],
                 "measures": [{"id": "acc", "kind": "metric", "validity": "partial"}],
             }
-        )
+        ),
+        encoding="utf-8",
     )
     run(data, "r1", "cfg_a", {"model": "gem:1b"}, record="gem", deployment="mac")
     run(data, "r2", "cfg_b", {"model": "gem-alias", "max_tokens": 2048})
@@ -254,7 +255,7 @@ with tempfile.TemporaryDirectory() as td:
 
     out = tmp / "site"
     counts = cb.build(A, out)
-    models = (out / "models.html").read_text()
+    models = (out / "models.html").read_text(encoding="utf-8")
     check(
         "models.html and a page per record are written",
         all((out / "models" / f"{k}.html").is_file() for k in rec),
@@ -318,7 +319,7 @@ with tempfile.TemporaryDirectory() as td:
         and "dgx onboarding: pass" in models
         and "reasoning_effort (server default) → none (it looped)" in models,
     )
-    page = (out / "models" / "gem.html").read_text()
+    page = (out / "models" / "gem.html").read_text(encoding="utf-8")
     check(
         "model page: facts, deployments with what differs, each one's onboarding probes, history and its arms",
         all(
@@ -368,7 +369,7 @@ with tempfile.TemporaryDirectory() as td:
         "#1 of" in gem_row and gem_row.count("#1 of") + gem_row.count("#2 of") == 1,
         gem_row[-800:],
     )
-    bare = (out / "models" / "bare.html").read_text()
+    bare = (out / "models" / "bare.html").read_text(encoding="utf-8")
     check(
         "model page: a record with no deployments, history or arms says so",
         all(
@@ -382,7 +383,7 @@ with tempfile.TemporaryDirectory() as td:
         ),
     )
 
-    arms_html = (out / "arms.html").read_text()
+    arms_html = (out / "arms.html").read_text(encoding="utf-8")
     a_row, b_row, c_row, d_row = (
         rows_of(arms_html, f"runs/ds1/{c}") for c in ("cfg_a", "cfg_b", "cfg_c", "cfg_d")
     )
@@ -404,7 +405,7 @@ with tempfile.TemporaryDirectory() as td:
         and A.arm_config("runs/ds1/cfg_b")["deployment"] == "",
     )
     check("arms page: an arm with no record gets no badge", "smoke" not in d_row and "models/" not in d_row)
-    home = (out / "index.html").read_text()
+    home = (out / "index.html").read_text(encoding="utf-8")
     check(
         "home: a models tile beside arms opens the models page, and it counts the records",
         'href="models.html"' in home and 'title="4 models"' in home and counts["arms"] == 4,
@@ -489,8 +490,8 @@ with tempfile.TemporaryDirectory() as td:
     cb.build(E, tmp / "site_empty")
     check(
         "no records: the page says how to add one, the tile counts 0, evh model-list says none",
-        "No model record yet" in (tmp / "site_empty" / "models.html").read_text()
-        and 'title="0 models"' in (tmp / "site_empty" / "index.html").read_text()
+        "No model record yet" in (tmp / "site_empty" / "models.html").read_text(encoding="utf-8")
+        and 'title="0 models"' in (tmp / "site_empty" / "index.html").read_text(encoding="utf-8")
         and "no model records" in view(E, ["models"]),
     )
 
@@ -503,7 +504,7 @@ with tempfile.TemporaryDirectory() as td:
     A = HarnessAdapter(committed)
     out = Path(td) / "site"
     cb.build(A, out)
-    models = (out / "models.html").read_text()
+    models = (out / "models.html").read_text(encoding="utf-8")
     check(
         "committed records: the migrated ones and gemma4-12b all render on the page",
         len(re.findall(r'<tr[^>]* data-key="', models)) == n
@@ -511,7 +512,7 @@ with tempfile.TemporaryDirectory() as td:
         and "not onboarded" in models,
         n,
     )
-    g = (out / "models" / "gemma4-12b.html").read_text()
+    g = (out / "models" / "gemma4-12b.html").read_text(encoding="utf-8")
     check(
         "committed records: the gemma4-12b page has its build, onboarding report, settings and history",
         all(
@@ -555,7 +556,9 @@ with tempfile.TemporaryDirectory() as td:
 import jsonschema  # noqa: E402
 from evaluation_harness import _models  # noqa: E402
 
-SCHEMA = json.loads((Path(__file__).resolve().parents[1] / "schemas" / "model.schema.json").read_text())
+SCHEMA = json.loads(
+    (Path(__file__).resolve().parents[1] / "schemas" / "model.schema.json").read_text(encoding="utf-8")
+)
 fleet = {
     "model_id": "triage-fleet",
     "kind": "code",
@@ -597,19 +600,20 @@ with tempfile.TemporaryDirectory() as td:
     (data / "runs").mkdir(parents=True)
     record(data, fleet)
     (data / "faithfulness" / "triage-fleet").mkdir(parents=True)
-    (data / "faithfulness" / "triage-fleet" / "1.json").write_text(json.dumps(FAITHFULNESS))
+    (data / "faithfulness" / "triage-fleet" / "1.json").write_text(json.dumps(FAITHFULNESS), encoding="utf-8")
     (data / "faithfulness" / "triage-fleet" / "1.exceptions.jsonl").write_text(
         "".join(
             json.dumps({"item_id": i, "cause": "c", "actor": {"type": "person", "name": "t"}, "at": "x"})
             + "\n"
             for i in ("clock slack", "a reopen")
-        )
+        ),
+        encoding="utf-8",
     )
     run(data, "fleet_guard_v1_20261105", "fleet_guard_v1", {"repo": "signal-fleet"}, record="triage-fleet")
     A = HarnessAdapter(data)
     out = Path(td) / "site"
     cb.build(A, out)
-    page = (out / "models" / "triage-fleet.html").read_text()
+    page = (out / "models" / "triage-fleet.html").read_text(encoding="utf-8")
     check(
         "code record page: its repo and its versions, newest first, faithfulness where a replay checked it",
         "chipi/agentic-ai-homelab" in page
@@ -620,7 +624,7 @@ with tempfile.TemporaryDirectory() as td:
         and "model-onboard" not in page,
         page[page.find("versions") :][:600],
     )
-    models = (out / "models.html").read_text()
+    models = (out / "models.html").read_text(encoding="utf-8")
     row = rows_of(models, "triage-fleet")
     check(
         "code record: listed on the Models page with its latest version and versions checked, its arm counted, never 'not onboarded'",

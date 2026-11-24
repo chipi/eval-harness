@@ -3,7 +3,8 @@
 - **Status**: Active
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: workflows, decisions)
-- **Related RFCs**: [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (the entities and operations every screen
+- **Related RFCs**: [RFC-039](../rfc/RFC-039-workbench-read-only-for-visitors.md) (the read-only viewer on the deployed
+  site), [RFC-032](../rfc/RFC-032-one-model-two-surfaces.md) (the entities and operations every screen
   calls), [RFC-033](../rfc/RFC-033-per-item-results-as-a-model.md) (per-item results)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md) (the catalog: shell, tokens), [UXS-002](UXS-002-inspector.md)
   (the inspector), [UXS-003](UXS-003-cli-and-onboarding.md) (commands), [UXS-004](UXS-004-data-page.md) (the Settings screen)
@@ -313,14 +314,18 @@ decision kept with its reason. This is where people spend most of their time (W1
 - **Run arms in it:** the systems that are not in the round and not yet measured on its dataset (a second measurement
   of a measured system is refused by `evh run`), leaving out a system measured only for another goal (its arms' goal;
   a system never run is offered on every goal); ticked, with a cap, **See the cost first** is the dry run of the sweep
-  (`POST /estimate`) and **Run them** is one `sweep` job for the round's arms under that cap, with its progress. A
+  (`POST /estimate`): it shows each arm's `ESTIMATE ~$…` line and the cap from the field (the one **Run them** sends; the dry
+  run's own cap line is the estimate's, which runs with none) first, as a short summary in view without
+  scrolling (a sweep's answer carries each arm's lines in its text, not in its blocks), and the whole dry run under
+  "the whole dry run", folded. **Run them** is one `sweep` job for the round's arms under that cap, with its progress. A
   system already measured is carried in, never run again. An arm never smoked has no measured cost to cap from: the dry run
   says so ("no arm-smoke of it is recorded"), and the screen links **Choose the systems**, where **Check it on three
   items** (`arm-smoke`, with its command printed) runs the smoke. A smoke is kept on a model's deployment (RFC-032), so a
   system that names no model record never has one recorded: the dry run and the screen say that ("names no model record,
   so an arm-smoke of it is not kept") and point at the check's own "all N items ≈" line to set the cap from, and the check
-  says "not kept" under its result. A note under the cap says the screen wrote files into the project and to commit them
-  before a paid run (a run on uncommitted files is recorded dirty).
+  says "not kept" under its result. A note above the systems to tick, the cap and **Run them** says the screen wrote files
+  into the project and to commit them before a paid run (a run on uncommitted files is recorded dirty). It shows
+  whenever there is an arm to run, whatever the state of the tree.
 - **Close the round:** the conclusion, and a checkbox to promote the leader's run to the goal's baseline with the conclusion
   as its reason; the browser asks to confirm. This checkbox is the only way to make a baseline on this screen. A conclusion
   shorter than three words is refused by `round-close`, a reason by `round-retire`.
@@ -582,6 +587,32 @@ decision kept with its reason. This is where people spend most of their time (W1
   (`study-stop`) and **Continue it** under a cap end or resume it.
 - **A new study** offers this goal's own systems and validation datasets, plus those no goal uses yet (step 4's rule), and starts from the goal's promoted baseline system when it has one, else the first offered.
 - A study is research on validation items and never promotes; only its confirmation on a test set is evidence.
+
+## The viewer
+
+The deployed site serves the Workbench to a visitor who is not signed in ([RFC-039](../rfc/RFC-039-workbench-read-only-for-visitors.md),
+owner, 2026-11-23). The same screens, read-only; the server refuses every write, whatever the page shows.
+
+```text
+ evh workbench                    Home   Models   Prompts   Words   Catalog ↗   [x] hints   ◐
+ This is a read-only view of a published project. To run your own: pip install ..., evh init, evh catalog-serve.
+```
+
+- **A banner on every screen** says it is a read-only view, and how to run your own (the install page and the three
+  commands). It cannot be dismissed.
+- **No control that acts.** Open, run, estimate, close, retire, carry in, promote, save, delete, the editing forms and
+  the unsent-changes guard are not drawn. Where a screen's main job is to act (Jobs, Settings, Bring in a model, the label
+  and reference editors) the menu leaves it out and its address shows the banner and a link home.
+- **Every read stays.** Home, a goal and its step rail, rounds and their evidence, datasets, systems, models, runs,
+  the leaderboards and the tests, as far as the public rules allow. A screen that needs a refused read (the sheet, an
+  item's input, a judge's reasons, the held-out test) shows "not shown publicly" in that place, with the reason.
+- **The command stays.** Each screen still prints the `evh` command that does what it shows, as text a reader can copy.
+- **No token, no sign-in, no cookie.** A visitor is never asked for either.
+- **Text follows the public rules** (`text: hidden`, `--publish`): the page shows what the API answers and adds nothing.
+  A system's `params.prompt` and a recorded prompt file's text are prompts and show only with `--publish prompts`; a reference's promotion reason and a prompt version's note stay public (owner, 2026-11-23).
+
+Tested in a browser on a fixture with a `text: hidden` dataset: no marker word appears, no acting control is present,
+and a request for the sheet or an item's input is refused.
 
 ## Help, for someone who is new to this
 

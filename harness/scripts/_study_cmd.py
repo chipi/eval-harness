@@ -265,7 +265,7 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
     if t.get("outcome") == "failed":
         die(f"trial {t['k']} failed: nothing to confirm", "not-allowed")
     metric = str(s["measure"])
-    lower = _study.lower_is_better(goal, metric) or s.get("direction") == "lower"
+    lower = _study.lower_is_better(goal, metric, s.get("dataset")) or s.get("direction") == "lower"
     margin = (
         a.margin
         if a.margin is not None

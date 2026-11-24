@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -33,19 +34,44 @@ CASES = [
 ]
 
 
-def rows_api(ds: str, cfg: str, split: str, offset: int, length: int) -> list[tuple[int, dict]]:
-    """(row number, row) from /rows, retried a few times on a transient failure."""
+#: Seconds slept before each retry: seven tries, about two minutes in all.
+BACKOFF = (5, 10, 15, 20, 25, 45)
+
+
+class RowsUnavailable(Exception):
+    """/rows did not answer: its message is the one line the job ends in."""
+
+
+def rows_api(
+    ds: str, cfg: str, split: str, offset: int, length: int, sleep=time.sleep
+) -> list[tuple[int, dict]]:
+    """(row number, row) from /rows. A 5xx, a refused or reset connection and a timeout are retried with a bounded
+    backoff, each retry on stderr; a 4xx is the request's own fault and fails at once."""
     q = urllib.parse.urlencode(
         {"dataset": ds, "config": cfg, "split": split, "offset": offset, "length": length}
     )
-    for attempt in range(4):
+    tries = len(BACKOFF) + 1
+    for attempt in range(1, tries + 1):
         try:
             with urllib.request.urlopen(f"{ROWS_API}?{q}", timeout=60) as resp:  # noqa: S310 — a constant https URL  # nosec B310
                 return [(r["row_idx"], r["row"]) for r in json.loads(resp.read()).get("rows") or []]
-        except Exception:
-            if attempt == 3:
-                raise
-            time.sleep(5 * (attempt + 1))
+        except urllib.error.HTTPError as e:
+            code: object = e.code
+            if e.code < 500:
+                raise RowsUnavailable(
+                    f"datasets-server /rows unavailable ({code}) after {attempt} tries: not a difference"
+                ) from e
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+            code = type(e.reason if isinstance(e, urllib.error.URLError) else e).__name__
+        if attempt == tries:
+            raise RowsUnavailable(
+                f"datasets-server /rows unavailable ({code}) after {attempt} tries: not a difference"
+            )
+        print(
+            f"/rows {code}, attempt {attempt} of {tries}: retrying in {BACKOFF[attempt - 1]} s",
+            file=sys.stderr,
+        )
+        sleep(BACKOFF[attempt - 1])
     return []
 
 
@@ -54,7 +80,11 @@ def main() -> int:
     for ds, cfg, split, offsets in CASES:
         for off in offsets:
             a = [(r.row_idx, dict(r)) for r in hf_rows.page(ds, cfg, split, off, 5)]
-            b = rows_api(ds, cfg, split, off, 5)
+            try:
+                b = rows_api(ds, cfg, split, off, 5)
+            except RowsUnavailable as e:
+                print(e, file=sys.stderr)
+                return 1
             same = a == b
             bad += not same
             print(
@@ -65,4 +95,13 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _sys.path.insert(
+        0, str(_Path(__file__).resolve().parents[2] / "harness")
+    )  # the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main())

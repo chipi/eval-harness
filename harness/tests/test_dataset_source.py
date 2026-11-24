@@ -132,7 +132,7 @@ try:
 
     # ── a folder outside the project is copied in ─────────────────────────────────────────────────────────────
     for name, text in {**ITEMS, "README.md": "docs\n", "skip.csv": "x\n"}.items():
-        (outside / name).write_text(text)
+        (outside / name).write_text(text, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "ext_v1", "--source-dir", str(outside), "--glob", "*.txt")
     check("an outside folder: dataset-create", r.returncode == 0, out(r)[-400:])
     rec = record("ext_v1") if r.returncode == 0 else {}
@@ -181,7 +181,7 @@ try:
     )
 
     # a manifest of files in an outside folder
-    (outside / "m.csv").write_text("item_id,source_path\nfirst,a.txt\nsecond,c.txt\n")
+    (outside / "m.csv").write_text("item_id,source_path\nfirst,a.txt\nsecond,c.txt\n", encoding="utf-8")
     r = evh(
         "dataset-create",
         "--dataset-id",

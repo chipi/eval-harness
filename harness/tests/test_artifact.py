@@ -39,7 +39,7 @@ import _catalog_fixture as fx  # noqa: E402
 import _cli  # noqa: E402
 import _runstore  # noqa: E402
 import _serve  # noqa: E402
-from evaluation_harness import _artifact, _common, _format  # noqa: E402
+from evaluation_harness import _artifact, _common, _format, _visibility  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
@@ -48,7 +48,7 @@ from evaluation_harness.model import runs as R  # noqa: E402
 proj = Path(tempfile.mkdtemp(prefix="evh-artifact-"))
 outside = Path(tempfile.mkdtemp(prefix="evh-artifact-out-"))
 dest = Path(tempfile.mkdtemp(prefix="evh-artifact-copy-"))
-(outside / "secret.txt").write_text("not for the browser\n")
+(outside / "secret.txt").write_text("not for the browser\n", encoding="utf-8")
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-artifact", PROJ=str(proj))
 for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_ACTOR"):
     env.pop(k, None)
@@ -113,7 +113,7 @@ try:
     # --- the rules ---------------------------------------------------------------------------------------------
     root = Path(tempfile.mkdtemp(prefix="evh-artifact-rules-"))
     (root / "artifacts" / "d").mkdir(parents=True)
-    (root / "artifacts" / "f.txt").write_text("x")
+    (root / "artifacts" / "f.txt").write_text("x", encoding="utf-8")
     (root / "artifacts" / "out").symlink_to(outside)
     (root / "artifacts" / "in").symlink_to(root / "artifacts" / "d")
     n = lambda v: _artifact.normalise(v, root)  # noqa: E731
@@ -180,7 +180,7 @@ try:
         lk("artifacts/none"),
     )
     (root / "reports").mkdir()
-    (root / "reports" / "r.html").write_text("<p>")
+    (root / "reports" / "r.html").write_text("<p>", encoding="utf-8")
     check(
         "link: a path under no served prefix has no url",
         lk("reports/r.html") == {"path": "reports/r.html", "kind": "file"},
@@ -240,7 +240,7 @@ try:
         "--reason", "The kit's hand-written summaries decide.", "--by", "owner",
     )  # fmt: skip
     check("setup: the tutorial dataset and its gold", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    (proj / "art.py").write_text(ADAPTER)
+    (proj / "art.py").write_text(ADAPTER, encoding="utf-8")
     for sid, params in SYSTEMS.items():
         _runstore.write_text(
             proj, f"systems/{sid}.yaml", f"system_id: {sid}\nadapter: art.py\nparams: {params}\n"
@@ -424,19 +424,21 @@ try:
     tmp = Path(tempfile.mkdtemp(prefix="evh-artifact-srv-"))
     data = tmp / "data"
     (tmp / "artifacts" / "h1" / "trial_a" / "sub").mkdir(parents=True)
-    (tmp / "artifacts" / "h1" / "trial_a" / "sub" / "notes.txt").write_text("n\n")
-    (tmp / "artifacts" / "h1" / "trial_a" / "result.txt").write_text("ok\n")
-    (tmp / "artifacts" / "h1" / "trial_a" / "index.html").write_text("<script>fetch('/api/v1/jobs')</script>")
+    (tmp / "artifacts" / "h1" / "trial_a" / "sub" / "notes.txt").write_text("n\n", encoding="utf-8")
+    (tmp / "artifacts" / "h1" / "trial_a" / "result.txt").write_text("ok\n", encoding="utf-8")
+    (tmp / "artifacts" / "h1" / "trial_a" / "index.html").write_text(
+        "<script>fetch('/api/v1/jobs')</script>", encoding="utf-8"
+    )
     (tmp / "artifacts" / "h1" / "trial_a" / "inside.txt").symlink_to(
         tmp / "artifacts" / "h1" / "trial_a" / "result.txt"
     )
     (tmp / "artifacts" / "h1" / "trial_a" / "escape").symlink_to(outside)
     (tmp / "artifacts" / "h1" / "leak.txt").symlink_to(outside / "secret.txt")
     (tmp / "docs").mkdir()
-    (tmp / "docs" / "report.html").write_text("<p>report</p>")
+    (tmp / "docs" / "report.html").write_text("<p>report</p>", encoding="utf-8")
     (tmp / "docs" / "leak").symlink_to(outside)
     (tmp / ".build" / "catalog").mkdir(parents=True)
-    (tmp / ".build" / "catalog" / "index.html").write_text("<script src=x.js></script>")
+    (tmp / ".build" / "catalog" / "index.html").write_text("<script src=x.js></script>", encoding="utf-8")
     rows = [
         {"item_id": "i00", "acc": 0.5, "_meta": {"artifact": "artifacts/h1/trial_a"}},
         {"item_id": "i01", "acc": 0.5, "_meta": {"artifact": "artifacts/h1/gone"}},
@@ -444,6 +446,13 @@ try:
     fx.put(data, "a_1", {"run_id": "a_1", "dataset_id": "ds1", "system_id": "arm_a", "primary_metric": "acc",
                          "metric_kinds": {"acc": "quality"}, "fingerprint": {"data": {"reference_id": "gold/ds1"}}},
            "\n".join(json.dumps(x) for x in rows) + "\n", outputs={"i00": "an output", "i01": "another"})  # fmt: skip
+    # A public server serves a dataset's text only when its record can be read; this fixture's data is not the project's.
+    (data / "datasets").mkdir()
+    (data / "datasets" / "ds1.json").write_text(
+        json.dumps({"dataset_id": "ds1", "items": []}), encoding="utf-8"
+    )
+    real_record_file = _visibility.record_file
+    _visibility.record_file = lambda ds, data_dir=None: data / "datasets" / f"{ds}.json"  # type: ignore[assignment]
     old_root = _common.ROOT
     _common.ROOT = tmp
     cs.ROOT = tmp
@@ -458,7 +467,7 @@ try:
             gone["kind"] == "missing" and "why" not in gone,
             gone,
         )
-        (data / "release.json").write_text('{"released": true}\n')
+        (data / "release.json").write_text('{"released": true}\n', encoding="utf-8")
         gone = A.item_view(arm, "i01")["artifact"]
         check(
             "in a release's copy (data/release.json, which copy_data writes) a missing artifact is 'not in this deployment'",
@@ -589,6 +598,7 @@ try:
         srv.shutdown()
     finally:
         del _common.ROOT  # the project's own again, resolved lazily as before
+        _visibility.record_file = real_record_file
         cs.ROOT = old_root
         cs.Handler.prefixes = ()
         shutil.rmtree(tmp, ignore_errors=True)
@@ -623,12 +633,12 @@ try:
     copy = dest / "data"
     r = subprocess.run(
         [sys.executable, str(HARNESS / "scripts" / "_release.py"), "copy-data", str(rel / "data"), str(copy), "--store", "files"],
-        cwd=rel, env=renv, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+        cwd=rel, env=renv, capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     ok_rows = [
         json.loads(x)
         for p in (copy / "runs" / "h_ok").rglob("predictions.jsonl")
-        for x in p.read_text().splitlines()
+        for x in p.read_text(encoding="utf-8").splitlines()
     ]
     check(
         "release: copy_data marks its copy (data/release.json), which is what 'not in this deployment' reads",

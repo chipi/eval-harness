@@ -8,9 +8,11 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from evaluation_harness import _visibility
 from evaluation_harness import catalog_arms as ca
 from evaluation_harness import catalog_build as cb
 from evaluation_harness.axes import axis_title, builtin_axes, cell_of, cell_text
+from evaluation_harness.catalog_adapter import direction_on
 from evaluation_harness.model import goal_views as gv
 from evaluation_harness.model import period_views
 from evaluation_harness.model import runs as model_runs
@@ -175,9 +177,7 @@ def arm(A, by_ds: dict, arm_id: str) -> dict[str, Any]:
                 "mean": mean,
                 "shown": cb.metric_value(A, m, mean),
                 "n": k,
-                "better": "lower"
-                if A.lower_is_better(m, ds)
-                else ("neutral" if A.is_neutral(m, ds) else "higher"),
+                "better": direction_on(A, m, ds),
             }
             for m, (mean, k) in sorted(a["means"].items(), key=lambda kv: (kv[0] != a["metric"], kv[0]))
         ],
@@ -187,11 +187,15 @@ def arm(A, by_ds: dict, arm_id: str) -> dict[str, Any]:
                 "made": r.get("created_at") or "",
                 "items": r.get("items"),
                 "cost_usd": r.get("cost_usd") if isinstance(r.get("cost_usd"), (int, float)) else None,
+                "cost_coverage": r.get("cost_coverage"),
                 "how": r.get("derived") or "measured",
             }
             for r in a["run_list"]
         ],
-        "config": {k: cfg.get(k) for k in ("system_id", "adapter", "deployment", "params")}
+        "config": {
+            k: (_visibility.without_prompts(cfg.get(k)) if k == "params" else cfg.get(k))
+            for k in ("system_id", "adapter", "deployment", "params")
+        }
         if cfg.get("params")
         else None,
         "conditions": (cond_fn(a["arm"]) if callable(cond_fn) else {}) or {},

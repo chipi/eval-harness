@@ -25,7 +25,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         run-dry-run run sweep \
         runs-list run-compare leaderboard run-promote \
-        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check stores-check coverage ci test smoke-fixture cost-report clean clean-cache \
+        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check catalog-render-check upgrade-check stores-check coverage ci test smoke-fixture cost-report facts-dump reader-agreement-repo clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -107,24 +107,35 @@ browser-install:
 	$(VENV)/bin/pip install -q -r requirements-browser.txt
 	$(VENV)/bin/python -m playwright install chromium $(ARGS)
 
-# The inspector's budgets on this repository's runs: memory under --warm (prod's limit is 256 MiB)
+# The inspector's budgets on this repository's runs: memory under --warm and the Workbench's reads (the mem_limit in infra/compose.yml)
 # and how long an answer takes, cached and cold (tests/test_inspector_budget.py).
 budget-check:
 	$(PYTHON) tests/test_inspector_budget.py $(ARGS)
 
+# The inspector's test runs on both stores (the store matrix skips every *_browser.py, so
+# this is where the SQLite store meets a browser, as does browser-real-check). The viewer runs on both too: the deployed
+# site's store is SQLite. The other workbench tests are files only.
 browser-check:
-	$(PYTHON) tests/test_inspector_browser.py
+	EVAL_STORE=files $(PYTHON) tests/test_inspector_browser.py
+	EVAL_STORE=sqlite $(PYTHON) tests/test_inspector_browser.py
 	$(PYTHON) tests/test_workbench_browser.py
 	$(PYTHON) tests/test_workbench_live_browser.py
+	$(PYTHON) tests/test_workbench_spend_browser.py
+	EVAL_STORE=files $(PYTHON) tests/test_workbench_viewer_browser.py
+	EVAL_STORE=sqlite $(PYTHON) tests/test_workbench_viewer_browser.py
 	$(PYTHON) tests/test_workbench_replay_browser.py
 	$(PYTHON) tests/test_workbench_store_browser.py
 	$(PYTHON) tests/test_workbench_heldout_browser.py
+	$(PYTHON) tests/test_workbench_paid_browser.py
+	$(PYTHON) tests/test_inspector_names_browser.py
+	$(PYTHON) tests/test_judge_gold_browser.py
 
 # The catalog of this repository's own runs in Chromium (tests/test_catalog_real_browser.py): the
 # pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.
 browser-real-check:
 	@test -f .build/budget-catalog/index.html || $(PYTHON) scripts/cli.py catalog --out .build/budget-catalog
-	$(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
+	EVAL_STORE=files $(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
+	EVAL_STORE=sqlite $(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
 
 # The checks can fail: every checker, run once over a copy of the repository with all its planted
 # defects, must name each one (tests/test_checks_can_fail.py). Not in `make ci`: it proves the
@@ -139,10 +150,24 @@ commands-check:
 	$(PYTHON) tests/test_report_tools.py
 	$(PYTHON) tests/test_ops_commands.py
 
+# This repository's own catalog, every page rendered on its own and over HTTP against its export, the p-value cache off,
+# empty and full (tests/test_catalog_render_real.py, RFC-040). Every p of the 673 arms is drawn in four passes, about 11
+# minutes of CPU together: about a third of the self-test's CPU time when it was in it, so it is not in `make check`;
+# `make ci` runs it, and CI runs it as its own job, beside verify.
+catalog-render-check:
+	$(PYTHON) tests/test_catalog_render_real.py
+
+# The previous release's wheel installed, a project on it per store, this tree's build installed over it, and the
+# reads UPGRADING ends on (tests/check_upgrade_install.py). Needs the network and an authenticated `gh`, and a minute
+# or two, so it is not in `make ci`: run it on the release pull request (RELEASING.md, step 4b).
+upgrade-check:
+	$(PYTHON) tests/check_upgrade_install.py $(ARGS)
+
 # Every test file on the sqlite store (RFC-025), each in its own process: the self-test runs them on files, and the
 # store's other mode is exactly as safe as the tests that run on it (architecture review, 2026-11-06).
+# SHARD=I/N runs the I-th of N parts of the files (CI runs two parts, one job each).
 stores-check:
-	$(PYTHON) tools/store_matrix.py --store sqlite --jobs 4
+	$(PYTHON) tools/store_matrix.py --store sqlite --jobs 4 $(if $(SHARD),--shard $(SHARD))
 
 # Line coverage under the whole self-test and commands-check, subprocesses included (pyproject.toml's
 # [tool.coverage.*]): which code no test runs. Needs `coverage` (requirements-dev.txt). Measured on
@@ -317,6 +342,19 @@ rescore:
 cost-report:
 	$(PYTHON) scripts/cli.py cost-report $(ARGS)
 
+# The facts every reader states (value, runs, direction, latest run, reference, cost state, baseline, public), from
+# `evh <command> --json` alone, as one JSON document: run it under each version a project has and compare with
+# `make facts-dump ARGS="--diff old.json new.json"` (tools/facts_dump.py; standard library only, so it also runs
+# under an installed evh with another interpreter: `python tools/facts_dump.py --evh evh --project <dir>`).
+facts-dump:
+	$(PYTHON) tools/facts_dump.py $(ARGS)
+
+# Every reader (CLI, API, MCP, catalog export, inspector) asked for the same facts of this repository's own data, on a
+# copy in a temporary folder (nothing is written to data/). PROJECT names another project root (config.yaml and data/).
+PROJECT ?= $(CURDIR)
+reader-agreement-repo:
+	EVH_AGREE_PROJECT=$(PROJECT) $(PYTHON) tests/test_reader_agreement.py
+
 
 leaderboard:
 	$(PYTHON) scripts/cli.py leaderboard $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) $(ARGS)
@@ -404,10 +442,11 @@ format-check:
 catalog:
 	$(PYTHON) scripts/cli.py catalog $(ARGS)
 
-catalog-serve: catalog
+catalog-serve:  # renders its pages on request (RFC-040): nothing to build first
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
 
-# The whole thing on 127.0.0.1, to try it: the catalog and the run inspector over this project's data. STORE=sqlite
+# The whole thing on 127.0.0.1, to try it: the catalog (rendered on request, RFC-040) and the run inspector over this
+# project's data. STORE=sqlite
 # serves a SQLite copy of data/ (.build/serve-sqlite/data/project.sqlite, made once by data-migrate; FRESH=1 makes it
 # again), so trying it never touches the tracked files.
 SERVE_COPY := .build/serve-sqlite
@@ -416,10 +455,8 @@ ifeq ($(STORE),sqlite)
 	@if [ -n "$(FRESH)" ] || [ ! -f $(SERVE_COPY)/data/project.sqlite ]; then \
 	  rm -rf $(SERVE_COPY) && mkdir -p $(SERVE_COPY) && cp -r data $(SERVE_COPY)/data && \
 	  EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/cli.py data-migrate --to sqlite; fi
-	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/cli.py catalog --out $(SERVE_COPY)/catalog
 	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_serve.py --build-dir $(SERVE_COPY)/catalog $(ARGS)
 else
-	$(PYTHON) scripts/cli.py catalog
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
 endif
 
@@ -501,7 +538,7 @@ site-check:
 docs:
 	cd .. && mkdocs build --strict
 
-ci: check site-check
+ci: check catalog-render-check site-check
 	@echo "ci: green"
 
 # The judging PASS (ADR-0001): a validated LLM judge re-measures every arm's frozen outputs,

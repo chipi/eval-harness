@@ -46,6 +46,7 @@ SITE = "https://evals.humancopilot.eu"
 #: (catalog, goal pages, run inspector) live on their own subdomains, linked from the nav.
 DOCS = "https://evals.humancopilot.eu/docs/"
 CATALOG = "https://evals.humancopilot.eu/catalog/"
+WORKBENCH = "https://evals.humancopilot.eu/workbench/"  # read-only for visitors (RFC-039)
 # The bar's icons, drawn the same on the site, in the catalog (catalog_build.ICON) and in the
 # docs (site/docs_theme/partials/header.html): a glyph like ☰ or ◐ renders differently per font.
 _SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'
@@ -980,9 +981,11 @@ def home(f: dict) -> str:
                 "The harness builds pages over your committed runs: every goal with what it recommends, "
                 "every dataset, arm, reference set and metric, and an inspector that compares any arms item "
                 "by item. On your machine the same server opens the Workbench, where the loop is worked in a "
-                "browser. Every view and action is also an evh command."
+                "browser. Every view and action is also an evh command. Ours is open here to read: the "
+                "catalog, and the Workbench as a viewer, which shows everything and changes nothing."
             ),
             (CATALOG, "Ours, on the six worked examples"),
+            (WORKBENCH, "The Workbench, read-only"),
         ),
     ]
 
@@ -1100,7 +1103,7 @@ def home(f: dict) -> str:
     )
     idea_html = "".join(
         f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}'
-        + (f' <a href="{rest[0][0]}">{e(rest[0][1])} →</a>' if rest else "")
+        + "".join(f' <a href="{href}">{e(name)} →</a>' for href, name in rest)
         + "</span></div>"
         for n, t, d, *rest in ideas
     )
@@ -1228,7 +1231,7 @@ def home(f: dict) -> str:
     <div class="habit-card"><span class="n">decisions</span><b>Decisions kept with their evidence</b><span>A promoted baseline keeps the test that justified it, in versions you can roll back; every record says who acted, a person or an agent and the person it acted for.</span></div>
     <div class="habit-card"><span class="n">test sets</span><b>Studies, and a test set that stays sealed</b><span>A study searches on a validation set and its winner is confirmed on a test set; every look at a test set counts against its limit.</span></div>
   </div>
-  <p class="dek-note">Served by <code>evh catalog-serve</code> on this machine only, behind a token it prints; <a href="docs/tutorials/8-the-workbench/">tutorial 8</a> walks it.</p>
+  <p class="dek-note">Served by <code>evh catalog-serve</code>: on your machine behind a token it prints, or read-only to a deployment's visitors (<code>--public</code>: nothing that writes or spends); <a href="docs/tutorials/8-the-workbench/">tutorial 8</a> walks it.</p>
 </div></section>
 
 <section class="block" id="lasting" data-nav="Rounds"><div class="wrap">
@@ -2223,6 +2226,7 @@ def check_crawl_files(out: Path) -> list:
 #: infra/README.md's cutover steps record the release they were run with.
 PIN_FILES = ("README.md", "harness/README.md", "docs/**/*.md", "harness/docs/*.md")
 PIN_EXEMPT = {"harness/docs/UPGRADING.md", "harness/CHANGELOG.md"}
+PIN_EXEMPT_DIRS = ("docs/releases/",)  # a release's full notes name its own era's pins
 PIN = re.compile(r"eval-harness@v(\d+\.\d+\.\d+)#subdirectory=harness")
 
 
@@ -2233,7 +2237,7 @@ def check_pins() -> list:
     for pattern in PIN_FILES:
         for p in sorted(_store.glob(ROOT, pattern)):
             rel = p.relative_to(ROOT).as_posix()
-            if rel in PIN_EXEMPT:
+            if rel in PIN_EXEMPT or rel.startswith(PIN_EXEMPT_DIRS):
                 continue
             for n, line in enumerate(_store.read_text(p, encoding="utf-8").splitlines(), 1):
                 for v in PIN.findall(line):
@@ -2291,11 +2295,29 @@ def point_docs(out: Path) -> None:
 
 # ── build ───────────────────────────────────────────────────────────────────
 def build(out: Path) -> dict:
-    """Write the site into `out`; return the figures it was built from."""
+    """Write the site into `out`; return the figures it was built from.
+
+    Written beside `out` and swapped in once whole: a build takes about two minutes, and a failure or an interrupt in
+    it must never leave the live site half-deleted."""
+    stage = Path(tempfile.mkdtemp(prefix=f".{out.name}-", dir=out.parent))
+    stage.chmod(0o755)  # mkdtemp makes it 0700, and the swapped-in directory is the site's
+    old = stage.with_name(stage.name + ".old")
+    try:
+        f = _build_into(stage)
+        if _store.exists(out):
+            out.rename(old)
+        stage.rename(out)
+        return f
+    finally:
+        for left in (stage, old):
+            if _store.exists(left):
+                _store.rmtree(left)
+
+
+def _build_into(out: Path) -> dict:
+    """The site's pages, written into the empty directory `out`."""
     f = figures.compute()
-    if _store.exists(out):
-        _store.rmtree(out)
-    _store.mkdir(out / "evals", parents=True)
+    _store.mkdir(out / "evals", parents=True, exist_ok=True)
     shutil.copytree(HERE / "assets", out / "assets")
     _store.write_text(out / "index.html", home(f), encoding="utf-8")
     _store.write_text(out / "evals.html", landing(f), encoding="utf-8")
@@ -2369,9 +2391,17 @@ def main() -> int:
         print("FAIL  install pins:", *pins, sep="\n  ")
         return 1
     print("ok    every install pin in the docs names the latest release")
+    sections = releases.check_sections(_store.read_text(releases.CHANGELOG))
+    if sections:
+        print("FAIL  release sections:", *sections, sep="\n  ")
+        return 1
+    print("ok    every release section from 0.8.0 is short and links to its full notes")
     print("ok    site/public matches a fresh build")
     return 0
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

@@ -119,9 +119,11 @@ try:
     src = proj / "tickets"
     src.mkdir(parents=True)
     for i in ("t1", "t2", "t3"):
-        (src / f"{i}.txt").write_text(f"Ticket {i}. The user cannot log in. Support replied.\n")
+        (src / f"{i}.txt").write_text(
+            f"Ticket {i}. The user cannot log in. Support replied.\n", encoding="utf-8"
+        )
     (data / "fields").mkdir(parents=True)
-    (data / "fields" / "tickets.yaml").write_text(FIELDSET)
+    (data / "fields" / "tickets.yaml").write_text(FIELDSET, encoding="utf-8")
     _runstore.migrate_in(proj)
     good = (
         "item_id,product,priority,opened,wait,escalated\n"
@@ -129,10 +131,10 @@ try:
         "t2,billing,2,2026-10-02,300,yes\n"
         "t3,login,3,,,\n"
     )
-    (proj / "fields.csv").write_text(good)
+    (proj / "fields.csv").write_text(good, encoding="utf-8")
 
     def bad_csv(body, label, expect):
-        (proj / "bad.csv").write_text(body)
+        (proj / "bad.csv").write_text(body, encoding="utf-8")
         r = evh(
             "dataset-create",
             "--dataset-id",
@@ -210,7 +212,7 @@ try:
     from evaluation_harness._fingerprint import items_digest
 
     before_id, before_fields, before_at = items_digest(ds), ds["fields_sha256"], ds["created_at"]
-    (proj / "fix.csv").write_text("item_id,product,priority\nt3,export,3\n")
+    (proj / "fix.csv").write_text("item_id,product,priority\nt3,export,3\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "fix.csv")
     ds2 = _runstore.read_json(proj, "datasets/tk_v1.json")
     check(
@@ -247,7 +249,7 @@ try:
         "made_from": {"capture": "c1"},
     }
     _runstore.write_text(proj, "datasets/tk_v1.json", json.dumps({**rec, **kept}))
-    (proj / "fix2.csv").write_text("item_id,product,priority\nt3,export,2\n")
+    (proj / "fix2.csv").write_text("item_id,product,priority\nt3,export,2\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "fix2.csv")
     ds_k = _runstore.read_json(proj, "datasets/tk_v1.json")
     check(
@@ -258,7 +260,7 @@ try:
     _runstore.write_text(
         proj, "datasets/tk_v1.json", json.dumps({k: v for k, v in ds_k.items() if k not in kept})
     )
-    (proj / "clear.csv").write_text("item_id,opened,priority\nt1,,1\n")
+    (proj / "clear.csv").write_text("item_id,opened,priority\nt1,,1\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "clear.csv")
     ds3 = _runstore.read_json(proj, "datasets/tk_v1.json")
     t1 = {i["item_id"]: i.get("fields") for i in ds3["items"]}["t1"]
@@ -267,7 +269,7 @@ try:
         r.returncode == 0 and "opened" not in t1 and t1.get("wait") == 3600,
         (out(r)[-200:], t1),
     )
-    (proj / "clear_req.csv").write_text("item_id,priority\nt1,\n")
+    (proj / "clear_req.csv").write_text("item_id,priority\nt1,\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "clear_req.csv")
     check(
         "update-fields: clearing a required field is refused",
@@ -350,7 +352,8 @@ try:
     (proj / "manifest.csv").write_text(
         "item_id,source_url,source_sha256,product,priority\n"
         f"ep_a,{base}/a.mp3,{sha_a},login,1\n"
-        f"ep_b,{base}/b.mp3,,billing,2\n"
+        f"ep_b,{base}/b.mp3,,billing,2\n",
+        encoding="utf-8",
     )
     r = evh(
         "dataset-create", "--dataset-id", "urls_v1", "--manifest", "manifest.csv", "--fieldset", "tickets"
@@ -391,7 +394,9 @@ try:
         and not (proj / ".cache" / "items" / hashlib.sha256(b"ID3 audio b, re-encoded").hexdigest()).exists(),
         out(r)[-300:],
     )
-    (proj / "auth_manifest.csv").write_text(f"item_id,source_url\nep_p,{base}/private.mp3\n")
+    (proj / "auth_manifest.csv").write_text(
+        f"item_id,source_url\nep_p,{base}/private.mp3\n", encoding="utf-8"
+    )
     r = evh("dataset-create", "--dataset-id", "private_v1", "--manifest", "auth_manifest.csv")
     check(
         "fetch: a URL that needs a header is refused without it",
@@ -407,7 +412,7 @@ try:
         out(r)[-200:],
     )
     check("fetch: the header is never written into the dataset", stored and "t0k" not in stored)
-    (proj / "away_manifest.csv").write_text(f"item_id,source_url\nep_r,{base}/away.mp3\n")
+    (proj / "away_manifest.csv").write_text(f"item_id,source_url\nep_r,{base}/away.mp3\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "away_v1", "--manifest", "away_manifest.csv")
     check(
         "fetch: a redirect to another host does not carry the header",
@@ -416,7 +421,7 @@ try:
     )
     env.pop("EVAL_FETCH_HEADERS")
     env["EVAL_RETRY_MAX_DELAY"] = "0"
-    (proj / "flaky_manifest.csv").write_text(f"item_id,source_url\nep_f,{base}/flaky.mp3\n")
+    (proj / "flaky_manifest.csv").write_text(f"item_id,source_url\nep_f,{base}/flaky.mp3\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "flaky_v1", "--manifest", "flaky_manifest.csv")
     check(
         "fetch: a transient 503 is retried, then the item is pinned",
@@ -424,7 +429,7 @@ try:
         out(r)[-300:],
     )
     env.pop("EVAL_RETRY_MAX_DELAY")
-    (proj / "bad_manifest.csv").write_text(f"item_id,source_url\nep_x,{base}/missing.mp3\n")
+    (proj / "bad_manifest.csv").write_text(f"item_id,source_url\nep_x,{base}/missing.mp3\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "bad_urls_v1", "--manifest", "bad_manifest.csv")
     check(
         "manifest: a URL that cannot be read is refused",
@@ -433,7 +438,7 @@ try:
     )
     secret = proj / "local_secret.txt"
     secret.write_bytes(b"not for a dataset")
-    (proj / "file_manifest.csv").write_text(f"item_id,source_url\nep_l,{secret.as_uri()}\n")
+    (proj / "file_manifest.csv").write_text(f"item_id,source_url\nep_l,{secret.as_uri()}\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "file_urls_v1", "--manifest", "file_manifest.csv")
     check(
         "manifest: a file:// URL is refused before anything is read",

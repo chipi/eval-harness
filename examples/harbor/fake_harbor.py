@@ -118,7 +118,7 @@ def main(argv: list[str]) -> int:
     if mode in ("hang", "stubborn"):
         trial = job / f"{task}__hang001"
         trial.mkdir(parents=True)
-        (trial / "config.json").write_text("{}")
+        (trial / "config.json").write_text("{}", encoding="utf-8")
         child = subprocess.Popen(["sleep", "300"])
         if os.environ.get("FAKE_HARBOR_PIDS"):
             with open(os.environ["FAKE_HARBOR_PIDS"], "a", encoding="utf-8") as fh:
@@ -139,4 +139,13 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _sys.path.insert(
+        0, str(_Path(__file__).resolve().parents[2] / "harness")
+    )  # the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main(sys.argv[1:]))

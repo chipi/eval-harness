@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _catalog_fixture as fx  # noqa: E402
 import _runstore  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
-from evaluation_harness._runs import direction, item_rows, matrix, per_item, runs_on  # noqa: E402
+from evaluation_harness._runs import item_rows, matrix, per_item, ranks_lower, runs_on  # noqa: E402
 
 
 def _run(data: Path, name: str, metrics: dict, rows: list, outputs: dict | None = None) -> Path:
@@ -84,17 +84,17 @@ with tempfile.TemporaryDirectory() as tmp, _runstore._InProject(tmp) as data:
     else:
         _runstore.put_rows(a_dir, [{"item_id": "i1", "f1": 0.9}])
 
-    check("direction: a cost metric is lower-is-better without a flag", direction(runs, "cost_usd"))
-    check("direction: a quality metric is higher-is-better", not direction(runs, "f1"))
+    check("direction: a cost metric is lower-is-better without a flag", ranks_lower(runs, "cost_usd"))
+    check("direction: a quality metric is higher-is-better", not ranks_lower(runs, "f1"))
     asc_runs = [(d, {**mm, "metric_directions": {"wer": "lower"}}) for d, mm in runs]
     check(
         "direction: metric_directions, which an adapter or import-run --asc records, is read",
-        direction(asc_runs, "wer"),
+        ranks_lower(asc_runs, "wer"),
     )
-    check("direction: --desc overrides what the runs declare", not direction(asc_runs, "wer", desc=True))
-    check("direction: --asc overrides", direction(runs, "f1", asc=True))
+    check("direction: --desc overrides what the runs declare", not ranks_lower(asc_runs, "wer", desc=True))
+    check("direction: --asc overrides", ranks_lower(runs, "f1", asc=True))
     try:
-        direction(runs, "f1", asc=True, desc=True)
+        ranks_lower(runs, "f1", asc=True, desc=True)
         contradicted = False
     except SystemExit:
         contradicted = True
@@ -226,6 +226,7 @@ with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as els
         },
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "runs: <project>/data/runs, not relative to the shell's directory",
@@ -254,6 +255,7 @@ with tempfile.TemporaryDirectory() as top:
         env={**os.environ, "PYTHONPATH": str(HERE.parent), "EVAL_HOME": str(pinned)},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "pinned project: the bundled adapter id is the package's copy, and the parent is not searched",
@@ -284,14 +286,14 @@ wer_goal = {"g": {"success_criteria": {"primary": {"measure": "wer", "direction"
 plain = [(Path("."), {"system_id": "a", "goal": "g"})]
 check("direction: the goal the runs name decides (wer, lower)", lower_is_better_on(plain, "wer", wer_goal))
 check(
-    "direction: without a goal or a declaration, wer is not known to go down",
-    not lower_is_better_on(plain, "wer", {}),
+    "direction: without a goal or a declaration, a measure the name table does not know goes up",
+    not lower_is_better_on(plain, "my_rate", {}),
 )
 declared = [(Path("."), {"system_id": "a", "metric_directions": {"wer": "lower"}})]
 check("direction: the adapter's declaration, recorded on the run", lower_is_better_on(declared, "wer", {}))
 both = [(Path("."), {"system_id": "a", "goal": "g", "metric_directions": {"wer": "higher"}})]
 check("direction: the goal outranks the recorded declaration", lower_is_better_on(both, "wer", wer_goal))
-check("direction: a flag outranks the goal", not direction(both, "wer", desc=True))
+check("direction: a flag outranks the goal", not ranks_lower(both, "wer", desc=True))
 with tempfile.TemporaryDirectory() as tmp:
     ad = Path(tmp) / "wer_adapter.py"
     ad.write_text(
@@ -336,6 +338,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "V14: a goal saying higher while its runs record lower fails",
@@ -359,6 +362,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "V1: a system key nothing reads, and a malformed verdict, fail",
@@ -380,7 +384,9 @@ with tempfile.TemporaryDirectory() as tmp:
     env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""}
 
     def _default_id() -> str:
-        r = subprocess.run([sys.executable, str(adapter_probe)], env=env, capture_output=True, text=True)
+        r = subprocess.run(
+            [sys.executable, str(adapter_probe)], env=env, capture_output=True, text=True, encoding="utf-8"
+        )
         return r.stdout.strip() or r.stderr[-300:]
 
     bundled_id = _default_id()
@@ -434,6 +440,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     bl_rel = "baselines/_dataset/d/1.json"
     with aimed():
@@ -447,7 +454,11 @@ with tempfile.TemporaryDirectory() as tmp:
 
     def _v6() -> str:
         r = subprocess.run(
-            [sys.executable, str(HERE / "cli.py"), "validate"], env=env, capture_output=True, text=True
+            [sys.executable, str(HERE / "cli.py"), "validate"],
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         )
         return next((ln for ln in r.stdout.splitlines() if " V6 " in ln), r.stdout[-300:])
 
@@ -480,6 +491,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "rescore: --out is not a flag any more",
@@ -524,6 +536,7 @@ def _stats_project(tmp: str, rec: dict) -> None:
             capture_output=True,
             text=True,
             stdin=subprocess.DEVNULL,
+            encoding="utf-8",
         )
         if moved.returncode != 0:
             raise RuntimeError(f"data-migrate --to sqlite failed: {(moved.stdout + moved.stderr)[-500:]}")
@@ -540,6 +553,7 @@ def _validate(tmp: str, extra: dict) -> str:
         },
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     return r.stdout
 

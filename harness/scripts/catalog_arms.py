@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import html
 
-from evaluation_harness.axes import fmt_ms
+from evaluation_harness.axes import fmt_ms, with_coverage
 from evaluation_harness.model import goal_views as gv
 
 #: Providers that bill per call over the network. An arm is hosted when it runs through one of
@@ -46,6 +46,18 @@ def e(s) -> str:
 def _base(arm: str) -> str:
     """The label prefix an arm's id starts with (runs, silver, rescored-cd35dc1f, ...)."""
     return arm.split("/", 1)[0]
+
+
+def _cost_coverage(means: dict) -> dict | None:
+    """How many of an arm's items its per-item cost is over, when that is fewer than its items (the most any measure is
+    over); None when the cost is of every item or there is none."""
+    cost = means.get("cost_usd")
+    items = max(
+        (m[1] for m in means.values() if isinstance(m, (list, tuple)) and len(m) > 1 and m[1]), default=0
+    )
+    if cost is None or len(cost) < 2 or cost[0] is None or cost[1] is None or cost[1] >= items:
+        return None
+    return {"items_with_cost": cost[1], "items": items}
 
 
 def arm_rows(A, by_ds: dict, only: str | None = None) -> list[dict]:
@@ -171,6 +183,8 @@ def arm_rows(A, by_ds: dict, only: str | None = None) -> list[dict]:
                     "lower": lower,
                     "repeats": a["runs"],
                     "cost": (a["means"].get("cost_usd") or (None,))[0],
+                    # a cost recorded on only some items is a mean over those (RFC-041 F3): the table says over how many
+                    "cost_coverage": _cost_coverage(a["means"]),
                     "latency": (a["means"].get("latency_ms") or (None,))[0],
                     "first": min(dated, default="")[:10],
                     "last": max(dated, default="")[:10],
@@ -394,7 +408,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     if r["measure"] and r["value"] is not None
                     else "—",
                     f'<span data-v="{r["repeats"]}">{r["repeats"]}</span>',
-                    f'<span class="ax" data-v="{r["cost"] if r["cost"] is not None else ""}">{cb.fmt_amount(r["cost"], "usd") if r["cost"] is not None else "—"}</span>',
+                    f'<span class="ax" data-v="{r["cost"] if r["cost"] is not None else ""}">{e(with_coverage(cb.fmt_amount(r["cost"], "usd"), r.get("cost_coverage"))) if r["cost"] is not None else "—"}</span>',
                     f'<span class="ax" data-v="{r["latency"] if r["latency"] is not None else ""}">{latency}</span>',
                     f'<span data-flow="runs" data-line>{len(period_rows[r["arm"]]["runs"])}</span>',
                     '<span data-flow="usd">—</span>',
@@ -415,7 +429,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     + f'<br><small class="muted">{e(c["provider"] or "—")}{" · local" if c["local"] else ""}</small>',
                     "<br>".join(cb.dataset_link(d) for d in c["datasets"]),
                     f'<span data-v="{c["arms"]}">{c["arms"]}</span>',
-                    f'<span data-v="{c["usd"] or 0}">{cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—"}</span>',
+                    f'<span data-v="{c["usd"] or 0}">{cb.fmt_spend(c["usd"])}</span>',
                     # sorts by its best place, as a share of its field (#3 of 33 before #10 of 33)
                     (
                         f'<span data-v="{min(i / n for _g, _ds, i, n in c["ranks"]):.4f}">'

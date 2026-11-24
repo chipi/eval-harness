@@ -15,7 +15,7 @@ The task: one-sentence summaries of short local-news briefs. Your items can be a
 ```bash
 mkdir briefs-evals && cd briefs-evals && git init -q
 python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.1#subdirectory=harness"
 evh init --store files
 # your system's own libraries: a CPU build of torch, the model's, and the metric's
 pip install torch --index-url https://download.pytorch.org/whl/cpu

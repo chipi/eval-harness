@@ -45,7 +45,7 @@ def mode() -> str:
 def _read(f: Path) -> dict:
     out: dict = {}
     if f.is_file():
-        for line in f.read_text().splitlines():
+        for line in f.read_text(encoding="utf-8").splitlines():
             k, sep, v = line.strip().partition("=")
             if sep and k and not k.startswith("#"):
                 out[k.strip()] = v.strip().strip('"').strip("'")
@@ -77,7 +77,7 @@ def dsn_refused(dsn: str, m: str) -> str:
 def release(release_file: Path, m: str) -> str:
     """sha-<7> of the release (render.sh writes the sha to RELEASE); in dev, with no such file, dev-<7> of this checkout's
     commit, so GlitchTip and the traces name the code a dev error came from."""
-    sha = release_file.read_text().strip() if release_file.is_file() else ""
+    sha = release_file.read_text(encoding="utf-8").strip() if release_file.is_file() else ""
     if sha:
         return f"sha-{sha[:7]}"
     if m == "dev":
@@ -86,6 +86,7 @@ def release(release_file: Path, m: str) -> str:
             capture_output=True,
             text=True,
             check=False,
+            encoding="utf-8",
         )
         if r.returncode == 0 and r.stdout.strip():
             return f"dev-{r.stdout.strip()}"
@@ -103,6 +104,7 @@ def worktree() -> str:
             text=True,
             timeout=5,
             check=False,
+            encoding="utf-8",
         )
     except (OSError, subprocess.SubprocessError):
         return "unknown"

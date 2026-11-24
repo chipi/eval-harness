@@ -102,9 +102,9 @@ def ds(i):
 
 
 try:
-    (proj / "notes.csv").write_text(CSV)
+    (proj / "notes.csv").write_text(CSV, encoding="utf-8")
     sha = hashlib.sha256(CSV.encode()).hexdigest()
-    (proj / "croissant.json").write_text(json.dumps(description(sha)))
+    (proj / "croissant.json").write_text(json.dumps(description(sha)), encoding="utf-8")
     (proj / "data" / "fields").mkdir(parents=True)
     _runstore.write_text(
         proj,
@@ -152,7 +152,7 @@ try:
         json.dumps({**q, "limit": 2, "fields": []}),
     )
     check("limit holds", r.returncode == 0 and len(ds("c_v2")["items"]) == 2, (r.stdout + r.stderr)[-300:])
-    (proj / "croissant.json").write_text(json.dumps(description("0" * 64)))
+    (proj / "croissant.json").write_text(json.dumps(description("0" * 64)), encoding="utf-8")
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -183,7 +183,7 @@ try:
     psha = hashlib.sha256((proj / "notes.parquet").read_bytes()).hexdigest()
     pdoc = description(psha, "application/x-parquet")
     pdoc["distribution"][0]["contentUrl"] = "notes.parquet"
-    (proj / "croissant.json").write_text(json.dumps(pdoc))
+    (proj / "croissant.json").write_text(json.dumps(pdoc), encoding="utf-8")
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -211,7 +211,7 @@ try:
     )
     for f in fsdoc["recordSet"][0]["field"]:
         f["source"] = {"fileSet": {"@id": "parts"}, "extract": {"column": f["name"]}}
-    (proj / "croissant.json").write_text(json.dumps(fsdoc))
+    (proj / "croissant.json").write_text(json.dumps(fsdoc), encoding="utf-8")
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -226,7 +226,7 @@ try:
         r.returncode == 1 and "FileSet of application/x-parquet" in r.stderr,
         r.stderr[-300:],
     )
-    (proj / "croissant.json").write_text(json.dumps(description(sha)))
+    (proj / "croissant.json").write_text(json.dumps(description(sha)), encoding="utf-8")
     r = evh(
         "dataset-create",
         "--dataset-id",

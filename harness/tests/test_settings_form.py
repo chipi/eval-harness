@@ -164,7 +164,7 @@ def main() -> int:
         if start is None:
             target.unlink(missing_ok=True)
         else:
-            target.write_text(start)
+            target.write_text(start, encoding="utf-8")
         subprocess.run = fake(*answers)
         try:
             F.guarded_write("goals/g.yaml", target, "changed: 2\n")
@@ -175,7 +175,7 @@ def main() -> int:
             kind = type(exc).__name__
         finally:
             subprocess.run = real_run
-        outcomes.append((kind, target.read_text() if target.exists() else None, start))
+        outcomes.append((kind, target.read_text(encoding="utf-8") if target.exists() else None, start))
     check("a validate that crashes or hangs refuses the save (kind failed); the file stays as it was",
           all(k == "failed" and now == was for k, now, was in outcomes), outcomes)  # fmt: skip
 

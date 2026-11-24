@@ -99,6 +99,7 @@ def _run(project: Path, cmd: list[str]) -> subprocess.CompletedProcess[str]:
         text=True,
         stdin=subprocess.DEVNULL,
         check=False,
+        encoding="utf-8",
     )
 
 
@@ -128,7 +129,7 @@ def prepare(
     for store in stores:
         proj = scratch / store
         marker = scratch / f"{store}.stamp"
-        if not rebuild and marker.is_file() and marker.read_text() == stamp and proj.is_dir():
+        if not rebuild and marker.is_file() and marker.read_text(encoding="utf-8") == stamp and proj.is_dir():
             out[store] = proj
             continue
         shutil.rmtree(proj, ignore_errors=True)
@@ -139,14 +140,14 @@ def prepare(
                 shutil.copy2(source / name, proj / name)
         if store == "sqlite":
             cfg = proj / "config.yaml"
-            kept = re.sub(r"(?m)^store:.*\n?", "", cfg.read_text()) if cfg.is_file() else ""
-            cfg.write_text(f"{kept}store: sqlite\n")
+            kept = re.sub(r"(?m)^store:.*\n?", "", cfg.read_text(encoding="utf-8")) if cfg.is_file() else ""
+            cfg.write_text(f"{kept}store: sqlite\n", encoding="utf-8")
             r = _run(
                 proj, [sys.executable, str(code / "scripts" / "cli.py"), "data-migrate", "--to", "sqlite"]
             )
             if r.returncode != 0 or not (proj / "data" / "project.sqlite").is_file():
                 raise SystemExit(f"data-migrate to sqlite failed ({r.returncode}):\n{r.stdout}\n{r.stderr}")
-        marker.write_text(stamp)
+        marker.write_text(stamp, encoding="utf-8")
         out[store] = proj
     return out
 
@@ -254,4 +255,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

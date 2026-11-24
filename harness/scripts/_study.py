@@ -125,8 +125,8 @@ def problems(goal: str, sid: str, s: dict[str, Any]) -> list[str]:
     if not (acc == "test" or (isinstance(acc, dict) and ("point" in acc or acc.get("rule") == "test"))):
         out.append("accept: {point: {min_gain: 0}} or test")
     stop = s.get("stop") or {}
-    if not stop.get("trials") and not (stop.get("usd") and stop.get("wall_h")):
-        out.append("stop: trials, or (to run until stopped) both usd and wall_h")
+    if not stop.get("trials") and stop.get("usd") is None and stop.get("wall_h") is None:
+        out.append("stop: at least one bound: trials, usd or wall_h")
     if name == "grid" and not ((s.get("space") or {}).get("groups")):
         out.append("space.groups: what the grid sampler tries")
     return out
@@ -251,7 +251,10 @@ def run_system(
     argv += ["--round", round_id] if round_id else []
     argv += ["--repeat", str(repeats)] if repeats > 1 else []
     argv += ["--items", str(items)] if items is not None else []
-    r, paid = _spend.run_child(argv, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+    # the arm is a child told to write UTF-8 (_spend.run_child); replacement keeps a stray byte from crashing here
+    r, paid = _spend.run_child(
+        argv, capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8", errors="replace"
+    )
     sys.stderr.write(r.stderr)
     runs = []
     with contextlib.suppress(ValueError, AttributeError):
@@ -345,10 +348,15 @@ def _mean(run_ids: list[str], metric: str) -> float | None:
     return sum(vals) / len(vals) if vals else None
 
 
-def lower_is_better(goal: str, metric: str) -> bool:
-    """Whether the study's measure is better lower: the goal's primary direction when it is that measure."""
-    prim = ((_common.load_goals().get(goal) or {}).get("success_criteria") or {}).get("primary") or {}
-    return prim.get("measure") == metric and prim.get("direction") == "lower"
+def lower_is_better(goal: str, metric: str, dataset: str | None = None) -> bool:
+    """Whether the study's measure is better lower, by the rule every reader uses (`_runs.direction`), the study's
+    goal named first: its declaration, else the name table (a study on cost_usd keeps the cheaper trial)."""
+    from evaluation_harness import _runs  # noqa: PLC0415
+
+    return (
+        _runs.direction(metric, dataset=dataset, runs=[(Path(), {"goal": goal})], goals=_common.load_goals())
+        == "lower"
+    )
 
 
 def trial(
@@ -367,7 +375,7 @@ def trial(
     cid = write_trial_system(goal, sid, k, best_cid, proposal)
     code, paid, runs = run_system(cid, s["dataset"], goal, st["round"], int(s.get("repeats") or 1))
     metric = str(s["measure"])
-    lower = lower_is_better(goal, metric) or s.get("direction") == "lower"
+    lower = lower_is_better(goal, metric, s.get("dataset")) or s.get("direction") == "lower"
     line: dict[str, Any] = {
         "event": "trial",
         "k": k,
@@ -433,7 +441,7 @@ def weakest(goal: str, sid: str, best_cid: str, n: int) -> list[dict[str, Any]]:
         return []
     s = spec(goal, sid)
     metric = str(s["measure"])
-    lower = lower_is_better(goal, metric) or s.get("direction") == "lower"
+    lower = lower_is_better(goal, metric, s.get("dataset")) or s.get("direction") == "lower"
     runs = _runs.runs_on(s["dataset"], system_id=best_cid)
     if not runs:
         return []
@@ -509,11 +517,11 @@ def grid_next(goal: str, sid: str) -> dict[str, Any] | None:
         if not g.get("enabled", True) or not g.get("params"):
             continue
         in_group = [t for t in st["trials"] if t.get("group") == g.get("name")]
-        cap = g.get("move_on_after")
+        move_on_after = g.get("move_on_after")
         since_kept = 0
         for t in in_group:
             since_kept = 0 if t.get("outcome") == "kept" else since_kept + 1
-        if cap and since_kept >= int(cap):
+        if move_on_after and since_kept >= int(move_on_after):
             continue
         for path, values in g["params"].items():
             vals = values if isinstance(values, list) else _range(values)
@@ -546,7 +554,12 @@ class CommandSampler:
         import shlex  # noqa: PLC0415
 
         self.p = subprocess.Popen(  # nosec B603 - the project's own sampler, named in its spec
-            shlex.split(command), stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, cwd=_common.ROOT
+            shlex.split(command),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            cwd=_common.ROOT,
+            encoding="utf-8",
         )
 
     def _say(self, msg: dict[str, Any]) -> dict[str, Any]:

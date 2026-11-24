@@ -67,7 +67,7 @@ try:
         }
         for n in range(1, 5)
     ]
-    (proj / "prod.jsonl").write_text("".join(json.dumps(x) + "\n" for x in new))
+    (proj / "prod.jsonl").write_text("".join(json.dumps(x) + "\n" for x in new), encoding="utf-8")
     r = evh(
         "capture",
         "--importer",
@@ -150,7 +150,7 @@ try:
     )
 
     # ── a label on a picked item follows it ────────────────────────────────────────────────
-    (proj / "sheet.csv").write_text("item_id,label\np1,needs-engineering\n")
+    (proj / "sheet.csv").write_text("item_id,label\np1,needs-engineering\n", encoding="utf-8")
     r = evh(
         "label-import", "--sheet", "sheet.csv", "--dataset-id", "prod_v1", "--set", "owner_p", "--by", "owner"
     )

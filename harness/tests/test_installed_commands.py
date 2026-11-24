@@ -76,6 +76,7 @@ def main() -> int:
                 capture_output=True,
                 text=True,
                 timeout=timeout,
+                encoding="utf-8",
             )
 
         # Importing the package's modules, as INTEGRATION.md documents: `evaluation_harness.judging`
@@ -93,6 +94,7 @@ def main() -> int:
             capture_output=True,
             text=True,
             timeout=120,
+            encoding="utf-8",
         )
         check(
             "import evaluation_harness.judging and .catalog_adapter: one _common",
@@ -154,7 +156,8 @@ def main() -> int:
             "            outs = [' '.join(f'w{i}{k}' for k in range(n)) for k, n in enumerate(lens)]\n"
             "            r = {d: [float(n) for n in lens] for d in ('accuracy', 'usefulness')}\n"
             "            yield {'item_id': f'r{i}', 'text': json.dumps({'source': f'ticket {i}', 'outputs': outs}),\n"
-            "                   'answer': json.dumps({'ratings': r, 'raters': [r, r]})}\n"
+            "                   'answer': json.dumps({'ratings': r, 'raters': [r, r]})}\n",
+            encoding="utf-8",
         )
         setup(
             "dataset-create",
@@ -181,7 +184,8 @@ def main() -> int:
                 for i in (
                     it["item_id"] for it in _runstore.read_json(proj, "datasets/tickets_v1.json")["items"]
                 )
-            )
+            ),
+            encoding="utf-8",
         )
         subprocess.run(["git", "init", "-q"], cwd=proj, env=env)
         subprocess.run(["git", "add", "-A"], cwd=proj, env=env)
@@ -700,7 +704,7 @@ def main() -> int:
                     s.bind(("127.0.0.1", 0))
                     port = s.getsockname()[1]
                 log = tmp / "serve.log"
-                with open(log, "w") as fh:
+                with open(log, "w", encoding="utf-8") as fh:
                     p = subprocess.Popen(
                         [sys.executable, "-m", "evaluation_harness", "catalog-serve", "--port", str(port)],
                         cwd=proj,
@@ -710,17 +714,20 @@ def main() -> int:
                         start_new_session=True,
                     )
                 for _ in range(100):
-                    if "catalog:" in log.read_text() or p.poll() is not None:
+                    if "catalog:" in log.read_text(encoding="utf-8") or p.poll() is not None:
                         break
                     time.sleep(0.1)
-                out = log.read_text()
+                out = log.read_text(encoding="utf-8")
                 alive = p.poll() is None
                 # The deploy's second health probe (infra/deploy/probe_link.sh, deploy.sh): the
                 # first group link on the dataset pages, answered with verdict rows, no error.
                 probe = REPO / "infra" / "deploy" / "probe_link.sh"
                 if alive and probe.is_file():
                     q = subprocess.run(
-                        ["bash", str(probe), str(proj / ".build/catalog/d")], capture_output=True, text=True
+                        ["bash", str(probe), str(proj / ".build/catalog/d")],
+                        capture_output=True,
+                        text=True,
+                        encoding="utf-8",
                     ).stdout.strip()
                     body = ""
                     if q:
@@ -739,6 +746,7 @@ def main() -> int:
                         ["bash", str(probe), str(proj / ".build/catalog/d"), "one"],
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
                     ).stdout.strip()
                     body1 = ""
                     if q1:
@@ -860,6 +868,7 @@ def main() -> int:
             env=env_ids,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         lines = r.stdout.splitlines()
         check(
@@ -890,6 +899,7 @@ def main() -> int:
             env=env_ids,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         made = json.loads(r.stdout)["result"]["values"]["runs"] if r.returncode == 0 else []
         check(
@@ -917,10 +927,12 @@ def main() -> int:
         # argv[0] at the command's script, so .env was never loaded (the 0.6.0 newcomer scenario, B1).
         launcher = tmp / "bin" / "evh"
         launcher.parent.mkdir()
-        launcher.write_text("import sys\nfrom evaluation_harness.cli import main\nsys.exit(main())\n")
+        launcher.write_text(
+            "import sys\nfrom evaluation_harness.cli import main\nsys.exit(main())\n", encoding="utf-8"
+        )
         dotenv = proj / ".env"
-        kept = dotenv.read_text() if dotenv.is_file() else None
-        dotenv.write_text("EVAL_MAX_COST_USD=0.37\n")
+        kept = dotenv.read_text(encoding="utf-8") if dotenv.is_file() else None
+        dotenv.write_text("EVAL_MAX_COST_USD=0.37\n", encoding="utf-8")
         try:
             r = subprocess.run(
                 [sys.executable, str(launcher), "env-check"],
@@ -928,11 +940,12 @@ def main() -> int:
                 env=env,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             )
         finally:
             dotenv.unlink()
             if kept is not None:
-                dotenv.write_text(kept)
+                dotenv.write_text(kept, encoding="utf-8")
         check(
             "the installed evh reads the project's .env (a cost cap set only there is in force)",
             "loaded 1 var(s)" in r.stdout and "0.37" in r.stdout,

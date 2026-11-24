@@ -30,7 +30,7 @@ for scorer_id in ("judge-summ-v1", "judge-summ-pick-v1"):
     sc = js.load_scorer(DATA / "scorers" / f"{scorer_id}.yaml", DATA)
     base = js.prompt_text(sc)
     for set_dir in sorted((DATA / "judge-verdicts" / scorer_id).iterdir()):
-        man = json.loads((DATA / "judging-sets" / f"{set_dir.name}.json").read_text())
+        man = json.loads((DATA / "judging-sets" / f"{set_dir.name}.json").read_text(encoding="utf-8"))
         items = {it["item_id"]: it for it in man["items"]}
         ds = man["dataset_id"]
         mat = DATA / "materialized" / ds
@@ -38,7 +38,7 @@ for scorer_id in ("judge-summ-v1", "judge-summ-pick-v1"):
         sample = []
         for p in ("primary", "position", "noise"):
             sample += [v for v in verdicts if f".{p}.b" in v.name][:SAMPLE]
-        need = {json.loads(v.read_text())["item_id"] for v in sample}
+        need = {json.loads(v.read_text(encoding="utf-8"))["item_id"] for v in sample}
         articles = {i: (mat / f"{i}.txt").read_text(encoding="utf-8", errors="replace") for i in need}
         arms = [{"run": a["run"], "dir": str(model_runs.run_dir(a["run"], data=DATA))} for a in man["arms"]]
         outputs = {
@@ -47,7 +47,7 @@ for scorer_id in ("judge-summ-v1", "judge-summ-pick-v1"):
         }
         bad = []
         for v in sample:
-            rec = json.loads(v.read_text())
+            rec = json.loads(v.read_text(encoding="utf-8"))
             msg = js.message_for(
                 man, base, articles, outputs, items[rec["item_id"]], rec["pass"], rec["block"]
             )

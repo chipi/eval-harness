@@ -5,9 +5,18 @@
 // wires it, never this repository's data as if it were the project's.
 (() => {
   const WB = window.WB;
-  const LIVE = { on: false, cache: {}, pending: {}, wanted: {}, quiet: new Set(), into: {}, failed: null };
+  const LIVE = { on: false, viewer: false, catalogAt: "/", cache: {}, pending: {}, wanted: {}, quiet: new Set(), into: {}, failed: null };
   window.LIVE = LIVE;
   const esc = WB.esc;
+  // Every amount is written by this one (workbench.js, as scripts/axes.py fmt_usd): "—" unknown, "$0" a known $0.
+  const usd = WB.usd;
+  // Where the catalog is served comes from a response header: used only as a path on this origin, and escaped where it is written.
+  const catalogAt = () => location.origin + (String(LIVE.catalogAt).startsWith("/") ? LIVE.catalogAt : "/");
+  // A round's spend as the server's own line says it (model/rounds.py): unknown when no run recorded a cost, and how many did not.
+  const spentLine = (ev) => {
+    const none = (ev.notes || []).map((n) => /\d+ runs? recorded no cost/.exec(n)).find(Boolean);
+    return `spent ${ev.spent_usd == null ? "unknown" : usd(ev.spent_usd)}${none ? ` (${none[0]})` : ""}`;
+  };
 
   // A server that restarted has a new token: every call of a page left open answers 401 with the server's own words
   // ("no valid token"). The page says what happened and what to do, wherever the answer is shown.
@@ -25,7 +34,23 @@
     el.textContent = RESTARTED;
     document.body.prepend(el);
   }
+  // The reads a public server refuses (RFC-039): the routes of the operations it leaves out (`public_dropped`, with the
+  // registry's own words) and the jobs, the estimate and the session. A viewer's page does not ask for them: it says so
+  // where the read would have shown. tests/test_workbench_viewer.py compares this list with the registry and the server.
+  const NOT_PUBLIC = [["/compare/item", "an item's text and each arm's output are not served publicly"], ["/compare/items", "it shows recorded texts: the outputs, the references and the labels"], ["/datasets/{dataset}/sheet", "the sheet shows the items' outputs and labels"], ["/scorers/{scorer}/verdicts", "the judges' reasons describe the outputs they judged"], ["/datasets/{dataset}/label-coverage", "it reads a rules file by path and the captures, which are this machine's"], ["/exposure", "a held-out side's reads are the project's own"], ["/datasets/{dataset}/sealed-counts", "a held-out side's counts are for the project's own safety watch"], ["/datasets/{dataset}/label-mutants", "it reads a rules file by path and the captures, which are this machine's"], ["/validate", "a public copy is not a whole project: validate fails by design"], ["/data", "the project's files are this machine's (the data page, UXS-004)"], ["/data/file", "a file's text is this machine's: a hidden dataset's items too (the data page, UXS-004)"], ["/jobs", "a viewer runs and starts nothing"], ["/jobs/{id}", "a viewer runs and starts nothing"], ["/jobs/{id}/log", "a viewer runs and starts nothing"], ["/jobs/{id}/files/{name}", "a viewer runs and starts nothing"], ["/jobs/{id}/stop", "a viewer runs and starts nothing"], ["/jobs/{id}/resume", "a viewer runs and starts nothing"], ["/estimate", "a viewer runs and starts nothing"], ["/session", "a viewer runs and starts nothing"]];
+  const NOT_PUBLIC_RE = NOT_PUBLIC.map(([t, why]) => [new RegExp(`^${t.replace(/\{[^}]+\}/g, "[^/]+")}$`), why]);
+  // Why a viewer's page does not ask for this path (a /api/v1 path with its query), or "" when it may. Anything that is not a read is refused here too.
+  const notPublic = (url, method) => {
+    const path = url.slice("/api/v1".length).split("?")[0];
+    const hit = NOT_PUBLIC_RE.find(([re]) => re.test(path));
+    return hit ? hit[1] : method !== "GET" ? "nothing here writes, spends or runs a model" : "";
+  };
   window.fetch = async (...a) => {
+    const asked = String(a[0] && a[0].url || a[0]);
+    if (LIVE.viewer && asked.startsWith("/api/v1")) {
+      const why = notPublic(asked, String((a[1] && a[1].method) || "GET").toUpperCase());
+      if (why) return new Response(JSON.stringify({ error: `Not shown publicly: ${why}.`, kind: "not-public" }), { status: 403, headers: { "Content-Type": "application/json" } });
+    }
     const r = await realFetch(...a);
     if (r.status === 401 && String(a[0] && a[0].url || a[0]).startsWith("/api/v1")) {
       if (LIVE.on) noteRestarted(); // before the project answered (LIVE.on), a 401 is the first visit: the Sign-in screen says so
@@ -63,7 +88,7 @@
         .then(async (r) => {
           const body = await r.json().catch(() => ({}));
           // An optional read with nothing to show (the server answers 200 and why, `empty`) reads as one that refused.
-          LIVE.cache[key] = r.ok && body.empty != null ? { error: body.empty, empty: true } : r.ok ? (raw ? body : body.result) : { error: body.error || `${r.status}` };
+          LIVE.cache[key] = r.ok && body.empty != null ? { error: body.empty, empty: true } : r.ok ? (raw ? body : body.result) : { error: body.error || `${r.status}`, kind: body.kind };
         })
         .catch((e) => { LIVE.cache[key] = { error: String(e) }; })
         .finally(() => {
@@ -87,7 +112,7 @@
     return undefined;
   }
   const loading = (what) => `<p class="muted" role="status">Reading ${esc(what)}…</p>`;
-  const failed = (x) => `<p class="note" role="alert"><b>Could not read it.</b> ${esc(x.error)}</p>`;
+  const failed = (x) => (x.kind === "not-public" ? `<p class="note" role="note">${esc(x.error)}</p>` : `<p class="note" role="alert"><b>Could not read it.</b> ${esc(x.error)}</p>`);
 
   // ── home: every goal and where it stands; what is running ───────────────────
   function screenHome() {
@@ -114,7 +139,7 @@
       ${goals.goals.length ? `<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>goal</th><th>decides</th><th>datasets</th><th class="num">rounds</th><th>next</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
         : `<div class="answer" style="margin-top:18px"><p><b>What should this project help you decide?</b></p><p>An evaluation starts with a goal: the decision you need to make, and how you will know which system is better for it.</p></div>`}
       ${WB.cmd("evh goal-list\nevh goal-status <goal>\nevh jobs-status --state queued,running", "the commands that show this")}
-      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#prompts">Prompts</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}/">The catalog ↗</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#prompts">Prompts</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${esc(catalogAt())}">The catalog ↗</a></div></div>`;
   }
 
   // ── a goal: where it stands, and the next step ─────────────────────────────
@@ -182,7 +207,7 @@
   const UNSENT = new Map();
   WB.unsent = () => [...UNSENT.values()];
   WB.forgetUnsent = () => UNSENT.clear();
-  window.addEventListener("beforeunload", (e) => { if (UNSENT.size) { e.preventDefault(); e.returnValue = ""; } });
+  window.addEventListener("beforeunload", (e) => { if (UNSENT.size && !LIVE.viewer) { e.preventDefault(); e.returnValue = ""; } });
   const mark = '<span class="unsent" data-unsent-mark hidden>not saved yet</span>';
   function holds(form, what) {
     const root = document.querySelector(`[data-form="${form}"]`);
@@ -696,8 +721,8 @@
     const v = r.values || {}, pj = v.projection || {};
     // A check is kept on a model's deployment (RFC-032): a system naming no model record has none to keep it on.
     const unkept = sysRec && !sysRec.error && sysRec.record && !sysRec.record.model_record;
-    return `<p><span class="status ${v.status === "pass" ? "ok" : "warn"}">${esc(v.status || "?")}</span> · ${v.calls ?? 0} call(s) · spent $${Number(v.spent_usd || 0).toFixed(5)}
-      · all ${esc(pj.items ?? "?")} items ≈ $${esc(pj.usd ?? "?")}, about ${esc(pj.minutes ?? "?")} min</p>
+    return `<p><span class="status ${v.status === "pass" ? "ok" : "warn"}">${esc(v.status || "?")}</span> · ${v.calls ?? 0} call(s) · spent ${usd(v.spent_usd)}
+      · all ${esc(pj.items ?? "?")} items ≈ ${typeof pj.usd === "number" ? usd(pj.usd) : "?"}, about ${esc(pj.minutes ?? "?")} min</p>
       ${unkept ? '<p class="muted">not kept: this system names no model record, and a check is kept on a model\'s deployment. Set the cap from the cost above.</p>' : ""}
       ${(v.flags || []).length ? `<ul>${v.flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
       ${(v.items || []).map((it) => `<details><summary class="mono">${esc(it.item)}</summary><pre class="reply">${esc(it.reply || "")}</pre>${artifactLink(it.artifact)}</details>`).join("")}`;
@@ -962,7 +987,7 @@
     return `<div class="screen wide">${head}${tabs}
       <h2>${esc(r.hypothesis || "(no question)")}</h2>
       ${byField("ev-by")}
-      <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.study ? ` · opened by study <a href="#study/${enc(goal)}/${enc(r.study)}">${esc(r.study)}</a>` : ""}${r.budget_usd != null ? ` · budget $${esc(r.budget_usd)}` : ""} · spent $${num(ev.spent_usd, 4)}</p>
+      <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.study ? ` · opened by study <a href="#study/${enc(goal)}/${enc(r.study)}">${esc(r.study)}</a>` : ""}${r.budget_usd != null ? ` · budget ${usd(r.budget_usd)}` : ""} · ${spentLine(ev)}</p>
       ${r.conclusion ? `<div class="answer"><div class="kicker">its conclusion</div><p>${esc(typeof r.conclusion === "string" ? r.conclusion : r.conclusion.text || JSON.stringify(r.conclusion))}</p></div>` : ""}
       <section class="part"><div class="parthead"><h2>The evidence</h2><span class="grow"></span><span class="muted">${esc(ev.metric || "")} · each arm against the leader, Holm</span></div><div class="body">
         ${chartBox("gain-cost", { goal, round: cur }, !ev.leader)}
@@ -977,7 +1002,7 @@
         ${isOpen && carryable.length ? `<div class="inline"><label class="name" for="cy-arm">Carry in</label><select id="cy-arm">${carryable.map((x) => `<option>${esc(x)}</option>`).join("")}</select>
           <button class="btn" type="button" id="cy-go">Carry it in</button><span class="muted">an arm of an earlier round, or a system already measured on ${esc(r.dataset_id)}: unchanged, not run again</span></div><div id="cy-out" data-out></div>` : ""}</div></section>
       ${baseline}
-      ${isOpen ? `<section class="part"><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
+      ${isOpen ? `<section class="part" data-acts><div class="parthead"><h2>Run arms in it</h2></div><div class="body">
         ${toRun.length ? `<p class="muted">This screen wrote files into the project (a system, a round, an arm carried in). Commit them before a paid run: a run on uncommitted files is recorded <b>dirty</b>, and its commit then does not identify what ran. <code>git status</code> lists them.</p>
           <div class="choices">${toRun.map((x) => `<label class="choice"><input type="checkbox" data-run="${esc(x.system)}"> <span class="mono">${esc(x.system)}</span>${x.model ? ` <small>model ${esc(x.model)}</small>` : ""}</label>`).join("")}</div>
           <div class="inline"><label class="name" for="rn-cap">spend at most (USD)</label><input type="number" id="rn-cap" min="0.01" step="0.01" value="1" inputmode="decimal" style="width:7rem">
@@ -1045,7 +1070,21 @@
       const b = await r.json().catch(() => ({}));
       const fromBlocks = ((b.result || {}).blocks || []).flatMap((x) => x.lines || []);
       const all = [...fromBlocks, ...String(b.text || "").split("\n")];
-      const lines = fromBlocks.filter((l) => /\$|estimat|items|calls|cost|MEASURED/i.test(l));
+      // The figure a person decides on is the per-arm ESTIMATE and the cap, and the dry run is long (the .reply box scrolls at 252px and they
+      // sit below its fold): each arm's ESTIMATE line and the cap are lifted out above it, the whole dry run kept under a fold. A sweep's
+      // own blocks hold only its header and trailer, each arm's text is its child's, on stderr: so the lines are read from both, in order.
+      // The cap shown is the field's, the one Run them sends: the dry run's own "cap" line is the estimate's, which runs with none.
+      let arm = "";
+      const figures = [];
+      for (const l of [...new Set(fromBlocks), ...String(b.text || "").split("\n")]) {
+        const h = /^── \[\d+\/\d+\] (\S+)/.exec(l);
+        if (h) arm = h[1];
+        else if (/^\s*ESTIMATE\s/.test(l)) figures.push(`${arm ? arm + ": " : ""}${l.trim().replace(/\s{2,}\(.*$/, "")}`);
+      }
+      const typed = Number(v("rn-cap"));
+      const capLine = typed > 0 ? `spend at most $${typed}: Run them stops there, or sooner if the round's budget runs out` : "no cap set: Run them needs one";
+      const whole = b.text || fromBlocks.join("\n") || "no cost to estimate";
+      const summary = figures.length ? `<div class="mono" id="rn-figures">${[...figures, capLine].map((l) => `<p>${esc(l)}</p>`).join("")}</div><details><summary>the whole dry run</summary><pre class="reply">${esc(whole)}</pre></details>` : `<pre class="reply">${esc(whole)}</pre>`;
       // An arm never smoked has no measured cost to cap from: the check on three items is on "Choose the systems". A system that names no
       // model record has nowhere to keep a check (RFC-032: a smoke is kept on a model's deployment), so it is never "recorded": its note says so.
       const unsmoked = new Map(all.map((l) => /MEASURED\s+none for (\S+?): (.*)/.exec(l)).filter(Boolean).map((m) => [m[1], /names no model record/.test(m[2])]));
@@ -1054,7 +1093,7 @@
       const kept = [...unsmoked].filter(([, noRecord]) => !noRecord).map(([n]) => n), unkept = [...unsmoked].filter(([, noRecord]) => noRecord).map(([n]) => n);
       const smoke = (kept.length ? `<p class="note">No arm-smoke is recorded for ${names(kept)}: check it on three items first (<code>evh arm-smoke</code>), on ${link}.</p>` : "")
         + (unkept.length ? `<p class="note">${names(unkept)} ${unkept.length > 1 ? "name" : "names"} no model record, so a check on three items (<code>evh arm-smoke</code>) is not kept and its cost stays unmeasured here: run it on ${link}, and set the cap from the "all N items ≈" line it shows.</p>` : "");
-      out.innerHTML = r.ok ? `<pre class="reply">${esc((fromBlocks.length ? lines.join("\n") : "") || b.text || "no cost to estimate")}</pre>${smoke}` : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
+      out.innerHTML = r.ok ? `${summary}${smoke}` : `<p class="note" role="alert">${esc(b.error || b.text || r.status)}</p>`;
     });
     document.getElementById("rn-go")?.addEventListener("click", async (ev) => {
       const out = document.getElementById("rn-out"), by = byOr("ev-by"), cap = Number(v("rn-cap"));
@@ -1068,7 +1107,7 @@
         for (;;) {
           const jr = await fetch(`/api/v1/jobs/${enc(j.id)}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
           const pg = jr.progress ? ` · ${jr.progress.done} of ${jr.progress.total}` : "";
-          out.innerHTML = `<p class="muted">sweep ${esc(jr.state || "…")}${pg}${jr.spent_usd ? ` · spent $${Number(jr.spent_usd).toFixed(4)}` : ""}</p>`;
+          out.innerHTML = `<p class="muted">sweep ${esc(jr.state || "…")}${pg}${jr.spent_usd != null ? ` · spent ${usd(jr.spent_usd)}` : ""}</p>`;
           if (!["queued", "running", "running (unsupervised)"].includes(jr.state)) {
             if (jr.state !== "succeeded") out.innerHTML = await jobRefusal(jr);
             else again(null, out);
@@ -1462,7 +1501,7 @@
   }
 
   // ── step 3: prepare a dataset (UXS-005 step 3): fetch it, look inside, its reference set ────────────────────────
-  const catalogPage = (ds) => `${location.origin}/d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
+  const catalogPage = (ds) => `${catalogAt()}d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
   async function runJob(path, body, box, what) {
     const j = await send("POST", path, body);
     const done = await watchJob(j.id, box, what);
@@ -1489,7 +1528,7 @@
         ${fetched ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-fetch">Fetch them</button></div>`}<div id="pp-fetch-out" data-out></div></div></section>
       <section class="part"><div class="parthead"><span class="letter">b</span><h2>Look inside</h2><span class="grow"></span>${looked ? done(true) : '<span class="status">optional</span>'}</div><div class="body">
         <p class="muted">How many items, how long, each field's values: most surprises show here, before anything runs.</p>
-        ${looked ? `<p><a href="${catalogPage(ds)}">Open its page in the catalog ↗</a></p>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-look" ${fetched ? "" : "disabled"}>Profile it</button>${fetched ? "" : '<span class="muted">after it is fetched</span>'}</div>`}
+        ${looked ? `<p><a href="${esc(catalogPage(ds))}">Open its page in the catalog ↗</a></p>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-look" ${fetched ? "" : "disabled"}>Profile it</button>${fetched ? "" : '<span class="muted">after it is fetched</span>'}</div>`}
         <div id="pp-look-out" data-out></div></div></section>
       <section class="part"><div class="parthead"><span class="letter">c</span><h2>Its reference set</h2><span class="grow"></span>${done(refs.length)}</div><div class="body">
         <p class="muted">The expected answer for each item, that outputs are scored against. Gold is checked by people; silver is a model's answers, enough to rank systems. Who and why are recorded.</p>
@@ -1730,7 +1769,7 @@
       const vr = one.validation_runs || [];
       const vruns = vr.length ? `<p class="muted" style="margin-bottom:4px">Its judges on rated datasets:</p><div class="tablewrap"><table><thead><tr><th>judge</th><th>dataset</th><th>metric</th><th class="num">value</th><th class="num">items</th><th>not validated</th><th>run</th></tr></thead><tbody>${vr.map((x) => `<tr><td class="mono">${esc(x.judge)}</td><td class="mono">${esc(x.dataset)}</td><td>${esc(x.metric)}</td><td class="num">${fx(x.value)}</td><td class="num">${esc(x.n_items)}</td><td>${(x.not_validated || []).map((d) => esc(`${d}: not validated on ${x.dataset}`)).join("<br>") || '<span class="muted">none</span>'}</td><td class="mono">${esc(x.run)}</td></tr>`).join("")}</tbody></table></div>` : "";
       shown = `<section class="part"><div class="parthead"><span class="letter">b</span><h2>How ${esc(cur)} judges</h2></div><div class="body">
-          <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · ${r.explain === true ? "each judge says why" : "no reasons asked"} · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most $${esc(r.cost_cap_usd ?? "—")} a pass</p>
+          <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · ${r.explain === true ? "each judge says why" : "no reasons asked"} · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most ${usd(r.cost_cap_usd)} a pass</p>
           <p class="muted">${guards}</p>
           <div class="tablewrap"><table><thead><tr><th>judge</th><th>model or system</th><th>family</th></tr></thead><tbody>${(one.judges || []).map((j) => `<tr><td class="mono">${esc(j.judge)}</td><td class="mono">${esc(j.model || j.system || "")}</td><td>${esc(j.family || "—")}</td></tr>`).join("")}</tbody></table></div>
           ${one.problem ? `<p class="note" role="alert">${md(one.problem)}</p>` : ""}${edit}</div></section>
@@ -2024,12 +2063,11 @@
   // The label is the server's (`state_label`: exit 6 is "checked, flagged", the command's answer, not a failure): one definition.
   const stateTagOf = (st, label) => `<span class="verdict ${st === "succeeded" ? "v-lead" : RUNNING.includes(st) ? "v-ns" : label && label !== st ? "v-ns" : "v-worse"}">${esc(label || st)}</span>`;
   const progressOf = (p) => (p ? `${p.done ?? p.n ?? "?"} / ${p.total ?? "?"}${p.unit ? ` ${esc(p.unit)}` : ""}` : "—");
-  // What a job spent, one way on the list and on its page. A job nobody asked for is the server's own: the catalog's
-  // rebuild when the data changes (catalog_serve starts it with no one named).
-  const usd = (x) => (x ? `$${Number(x).toFixed(4)}` : "$0");
+  // What a job spent, one way on the list and on its page. A catalog job nobody asked for is the server's own, from before
+  // 0.8.1: it rebuilt the pages when the data changed; since RFC-040 it renders them on request and starts none.
   const SERVER_JOBS = ["catalog"];
   const sameLines = (a, b) => { const n = (t) => String(t).split("\n").map((x) => x.trim()).filter(Boolean).join("\n"); return n(a) === n(b); };
-  const askedBy = (j) => (j.by ? `asked by <span class="mono">${esc(j.by)}</span>` : SERVER_JOBS.includes(j.operation) ? "started by the server, which rebuilds the catalog when the data changes" : "asked by nobody recorded");
+  const askedBy = (j) => (j.by ? `asked by <span class="mono">${esc(j.by)}</span>` : SERVER_JOBS.includes(j.operation) ? "started by the server, which rebuilt the catalog when the data changed (before 0.8.1)" : "asked by nobody recorded");
   function screenJobs(param) {
     const id = String(param || "");
     if (id) return screenJob(id);
@@ -2050,7 +2088,7 @@
     const opt = (xs, sel, none) => `<option value="">${esc(none)}</option>` + xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
     const from = (f.offset || 0) + 1, to = (f.offset || 0) + js.jobs.length;
     const rows = js.jobs.map((j) => `<tr><td class="mono"><a href="#jobs/${enc(j.id)}">${esc(j.id)}</a></td><td class="mono">${esc(j.operation)}</td><td>${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` <small class="muted">waits for ${esc(j.waiting_for)}</small>` : ""}</td>
-      <td class="mono">${esc(j.by || (SERVER_JOBS.includes(j.operation) ? "the server" : "—"))}</td><td class="num">${esc((j.created_at || "").replace("T", " ").slice(0, 16))}</td><td class="num">${progressOf(j.progress)}</td><td class="num">${j.spent_usd == null ? "—" : usd(j.spent_usd)}</td></tr>`).join("");
+      <td class="mono">${esc(j.by || (SERVER_JOBS.includes(j.operation) ? "the server" : "—"))}</td><td class="num">${esc((j.created_at || "").replace("T", " ").slice(0, 16))}</td><td class="num">${progressOf(j.progress)}</td><td class="num">${usd(j.spent_usd)}</td></tr>`).join("");
     return `<div class="screen wide">${head}
       <div class="inline"><select id="jf-state" aria-label="state">${STATE_SETS.map(([v, t]) => `<option value="${esc(v)}" ${v === f.state ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>
         <select id="jf-op" aria-label="operation">${opt(ops, f.operation, "every operation")}</select><select id="jf-goal" aria-label="goal">${opt(goalIds, f.goal, "every goal")}</select></div>
@@ -2084,7 +2122,7 @@
       <p class="lead">${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · ${askedBy(j)} · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
       <div class="tablewrap"><table><tbody>
         <tr><th>progress</th><td>${progressOf(j.progress)}</td></tr>
-        <tr><th>spent</th><td>${usd(j.spent_usd)}${cap ? ` of at most $${Number(cap).toFixed(2)}` : ""}</td></tr>
+        <tr><th>spent</th><td>${usd(j.spent_usd)}${cap ? ` of at most ${usd(Number(cap))}` : ""}</td></tr>
         <tr><th>holds</th><td class="mono">${(j.locks || []).map(([k, ex]) => `${esc(k)}${ex ? " (alone)" : ""}`).join(", ") || "—"}</td></tr>
         ${j.run_id ? `<tr><th>its run</th><td class="mono">${esc(j.run_id)}</td></tr>` : ""}
         <tr><th>inputs</th><td><pre class="reply">${esc(JSON.stringify(j.inputs || {}, null, 2))}</pre></td></tr>
@@ -2338,6 +2376,7 @@
     document.getElementById("hr-go")?.addEventListener("click", async (ev) => {
       const box = document.getElementById("hr-out"), who_ = by(), cap = Number(v("hr-cap"));
       if (!who_) return needWho(box);
+      if (!(cap > 0)) { box.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>'; return; }
       const u = (((LIVE.cache[`dataset:${theSide()}`] || {}).record || {}).unsealed || []).slice(-1)[0] || {};
       ev.target.disabled = true;
       try {
@@ -2411,7 +2450,7 @@
     if (!sid) {
       const draft = (WB._study || {})[goal] || specOf(vals[0] || "<dataset>", blSys || "<system>", measure, "grid");
       return `<div class="screen wide">${head}${byField("st6-by")}
-        ${list.studies.length ? tbl(["study", "state", "on", "from", "trials", "kept", "spent", "confirmed"], list.studies.map((x) => `<tr><td class="mono"><a href="#study/${enc(goal)}/${enc(x.study.split("/").pop())}">${esc(x.study)}</a></td><td>${esc(x.status)}</td><td class="mono">${esc(x.dataset)}</td><td class="mono">${esc(x.baseline)}</td><td class="num">${x.trials}</td><td class="num">${x.kept}</td><td class="num">$${Number(x.spent_usd || 0).toFixed(4)}</td><td class="num">${x.confirms}</td></tr>`)) : '<p class="muted">No study yet.</p>'}
+        ${list.studies.length ? tbl(["study", "state", "on", "from", "trials", "kept", "spent", "confirmed"], list.studies.map((x) => `<tr><td class="mono"><a href="#study/${enc(goal)}/${enc(x.study.split("/").pop())}">${esc(x.study)}</a></td><td>${esc(x.status)}</td><td class="mono">${esc(x.dataset)}</td><td class="mono">${esc(x.baseline)}</td><td class="num">${x.trials}</td><td class="num">${x.kept}</td><td class="num">${usd(x.spent_usd)}</td><td class="num">${x.confirms}</td></tr>`)) : '<p class="muted">No study yet.</p>'}
         ${part("a", "A new study", `<div data-form="study-new"><div class="inline"><input type="text" id="sn6-id" placeholder="its id: s1" autocapitalize="off" spellcheck="false">
             <select id="sn6-ds" aria-label="the validation dataset">${opt(vals)}</select><select id="sn6-base" aria-label="the system it starts from">${opt(sysIds, blSys)}</select>
             <select id="sn6-sampler" aria-label="how it chooses"><option value="grid">grid: every value in turn</option><option value="agent">agent: proposals asked and told</option></select>
@@ -2433,9 +2472,9 @@
     const agent = sp.sampler === "agent", open = one.status !== "ended";
     return `<div class="screen wide">${head}<span id="st6-cur" data-study="${esc(goal)}/${esc(sid)}" hidden></span>${byField("st6-by")}
       ${part(1, "What it searches", `<div class="stats"><div><b>${esc(one.baseline || "")}</b><span>from</span></div><div><b>${esc(sp.sampler || "")}</b><span>how it chooses</span></div><div><b>${(one.trials || []).length}</b><span>trials</span></div><div><b>${esc(one.status || "")}</b><span>its state</span></div></div>
-        <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent $${Number(one.spent_usd || 0).toFixed(4)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
+        <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent ${usd(one.spent_usd)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
         <details><summary>Its spec</summary><pre class="reply">${esc(JSON.stringify(sp, null, 2))}</pre></details>`)}
-      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.change && x.hypothesis.startsWith(x.change) ? x.hypothesis.slice(x.change.length).trim() : x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">$${Number(x.cost_usd || 0).toFixed(4)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
+      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.change && x.hypothesis.startsWith(x.change) ? x.hypothesis.slice(x.change.length).trim() : x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">${usd(x.cost_usd)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
         <p class="note">Best so far: <span class="mono">${esc(one.best || one.baseline || "")}</span>. Research on validation items: no evidence until it is confirmed.</p>
         ${open ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="so-stop">Stop it</button>${agent ? "" : '<label>at most (USD) <input type="number" id="so-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn" type="button" id="so-resume">Continue it</button>'}</div><div id="so-out" data-out></div>` : ""}`)}
       ${agent && open ? part(3, "Propose the next trial", `<p class="muted">The agent sampler: ask for the study's state (its weakest items, what was tried), then tell a proposal, which runs as the next trial.</p>
@@ -2464,6 +2503,12 @@
       try {
         const b = body();
         if (b === null) { ev.target.disabled = false; return; }
+        // An empty box is Number("") = 0, which the server refuses with "above 0": say what is missing instead.
+        if ("max_cost_usd" in b && !(b.max_cost_usd > 0)) {
+          box.innerHTML = '<p class="note" role="alert">Say the most it may spend first.</p>';
+          ev.target.disabled = false;
+          return;
+        }
         const done = await runJob(typeof path === "function" ? path() : path, { ...b, by: who_ }, box, what);
         if (done) {
           if (form) sent(form);
@@ -2544,6 +2589,8 @@
 
   // ── prompts (RFC-028): every prompt with its versions, the runs that sent each, two versions' diff; a version recorded
   // or written out. A manual eval's systems and a study's trials both make versions; this is where their history is read ──
+  // A server that does not publish prompts sends no text (`text_hidden` on a diff, no `text` on a version): said, not an empty box.
+  const TEXT_HIDDEN = "the text is not published here (--publish prompts)";
   function screenPrompts(param) {
     const name = String(param || "");
     const head = `<div class="kicker">Prompts${name ? ` · ${esc(name)}` : ""}</div><h1>${name ? esc(name) : "Prompts"}</h1>
@@ -2564,11 +2611,11 @@
     return `<div class="screen wide">${head}${byField("pp6-by")}
       <section class="part"><div class="parthead"><span class="letter">1</span><h2>Its versions</h2></div><div class="body">
         ${vs.map((x) => `<details class="version" ${x === last ? "open" : ""}><summary><b>v${x.n}</b> <span class="mono">${esc(x.id)}</span> · ${esc(String(x.created_at || "").slice(0, 16).replace("T", " "))} · by ${esc(actorSaid(x.actor))}${x.parent ? ` · from <span class="mono">${esc(x.parent)}</span>` : ""} · ${x.runs.length} run(s)</summary>
-          <p class="muted">${esc(x.note || "")}</p><pre class="reply">${esc(x.text || "")}</pre>
+          <p class="muted">${esc(x.note || "")}</p>${"text" in x ? `<pre class="reply">${esc(x.text)}</pre>` : `<p class="muted">${TEXT_HIDDEN}</p>`}
           ${x.runs.length ? tbl(["run", "measure", "score"], x.runs.map((r) => `<tr><td class="mono">${idw(r.run_id)}</td><td>${esc(r.metric || "")}</td><td class="num">${typeof r.score === "number" ? r.score.toFixed(4) : esc(r.score ?? "")}</td></tr>`)) : '<p class="muted">No run sent it yet.</p>'}</details>`).join("")}</div></section>
       <section class="part"><div class="parthead"><span class="letter">2</span><h2>What changed between two</h2></div><div class="body">
         ${ids.length > 1 ? `<div class="inline"><select id="pd-a" aria-label="from">${opt((df || {}).a || ids[ids.length - 2])}</select><span class="muted">to</span><select id="pd-b" aria-label="to">${opt((df || {}).b || ids[ids.length - 1])}</select><button class="btn" type="button" id="pd-go">Compare</button></div>
-          <div id="pd-out" data-out>${df && df.diff ? `<pre class="reply diff">${esc(df.diff)}</pre>` : ""}</div>` : '<p class="muted">One version: nothing to compare yet.</p>'}</div></section>
+          <div id="pd-out" data-out>${df && df.hidden ? `<p class="muted">${TEXT_HIDDEN}</p>` : df && df.diff ? `<pre class="reply diff">${esc(df.diff)}</pre>` : ""}</div>` : '<p class="muted">One version: nothing to compare yet.</p>'}</div></section>
       <section class="part"><div class="parthead"><span class="letter">3</span><h2>A new version</h2></div><div class="body" data-form="prompt-new">
         <p class="muted">Made from ${esc(last.id)}. A system points at it once it is recorded (step 4: clone a system, change its prompt).</p>
         <textarea id="pn-text" rows="5" style="width:100%" aria-label="its text">${esc(last.text || "")}</textarea>
@@ -2590,7 +2637,7 @@
       const b = await r.json().catch(() => ({}));
       if (!r.ok) { box.innerHTML = `<p class="note" role="alert">${esc(b.error || r.status)}</p>`; return; }
       const res = b.result || {};
-      WB._pdiff = { name, a: v("pd-a"), b: v("pd-b"), diff: (res.diff || []).join ? (res.diff || []).join("") : String(res.diff || "") || "(the same text)" };
+      WB._pdiff = { name, a: v("pd-a"), b: v("pd-b"), hidden: !!res.text_hidden, diff: (res.diff || []).join ? (res.diff || []).join("") : String(res.diff || "") || "(the same text)" };
       WB.render();
     });
     holds("prompt-new", () => `Record a new version of ${name}`);
@@ -2875,6 +2922,91 @@
   new MutationObserver(queueHints).observe(document.body, { childList: true, subtree: true });
   window.addEventListener("resize", queueHints);
 
+  // ── the viewer (RFC-039, UXS-005 "The viewer") ────────────────────────────────────────────────
+  // A public server answers the reads and nothing else, and says so in a header of every /api/v1 answer: that is how this
+  // page knows it is a viewer, with no sign-in call and no setting. What is shown is the same screens over the same reads;
+  // what acts is not drawn. This is a courtesy to the reader: the server refuses every write whatever this page sends.
+  const VIEWER_NOTE = `This is a read-only view of a published project. To run your own: <code>pip install evaluation-harness</code>, <code>evh init</code>, <code>evh catalog-serve</code> (<a href="${(window.DOCS_BASE || "https://evals.humancopilot.eu/docs/")}GUIDE/" target="_blank" rel="noopener">getting started ↗</a>).`;
+  // The screens whose only job is to act: the menu leaves them out and their address says so, with the command.
+  const ACTION_ONLY = {
+    jobs: ["Jobs", "The jobs this machine runs: started, followed and stopped from the page.", "evh jobs-status\nevh jobs-logs <job>"],
+    settings: ["Settings", "Moving the project's data, checking it and editing its settings files.", "evh validate\nevh data-migrate --to sqlite"],
+    "model-new": ["Bring in a model", "Making a model's record and its first deployment.", "evh model-new <id> --set name=... --set kind=llm\nevh deployment-new <model> <deployment> --set where=..."],
+    "goal-new": ["Set the goal", "The form that makes a goal.", "evh goal-new <id> --set title=... --set statement=... --set decision=..."],
+    "goal-edit": ["The goal", "The form that edits a goal.", "evh goal-set <goal> --set KEY=VALUE"],
+    dataset: ["Add a dataset", "Choosing or making the examples a goal is tested on.", "evh dataset-create --dataset-id <id> --source-dir <dir>\nevh goal-set <goal> --set 'datasets.0.dataset_id=<id>'"],
+    label: ["Label it here", "Labelling a dataset's items by hand.", "evh label-sheet --dataset-id <dataset>\nevh label-import --sheet <dir> --dataset-id <dataset> --set <set>"],
+    reference: ["Change the reference set", "Seeing what another reference set moves, and promoting one.", "evh reference-promote --dataset-id <dataset> --labels <set> --tier gold --reason \"...\""],
+    review: ["Review the outputs", "The sheet puts each item's output and label side by side: outputs and labels are not shown publicly.", "evh sheet-show <dataset> --runs <arm>,<arm>"],
+  };
+  const screenViewerOnly = (route) => () => {
+    const [title, what, command] = ACTION_ONLY[route];
+    return `<div class="screen"><div class="kicker">Read-only view</div><h1>${esc(title)}</h1>
+      <p class="lead">${esc(what)} A read-only view does not show it: <b>not shown publicly</b>.</p>
+      ${WB.cmd(command)}<div class="actions"><a class="btn" href="#home">Your goals</a></div></div>`;
+  };
+  // What is left out of a screen is what acts: a form, a button that sends, a field that feeds one, a link to a screen
+  // that only acts. `data-view` marks a control that only changes what is shown; the help's ? and the rail's fold stay.
+  const ACT_LINKS = Object.keys(ACTION_ONLY).map((k) => `a[href^="#${k}"]`).join(", ");
+  const KEEP = ".q, .railtoggle, [data-view]";
+  const SHELLS = ".field, .inline, .choices, label.choice, .row-form";
+  function viewerize() {
+    const mine = [document.getElementById("main"), document.getElementById("rail")].filter(Boolean);
+    for (const root of mine) {
+      // a form, and what it said: its command stays (UXS-005: every screen shows the command, as text)
+      root.querySelectorAll("[data-form], [data-acts]").forEach((el) => {
+        if (!el.isConnected) return;
+        el.after(...el.querySelectorAll("details.cmd"));
+        el.remove();
+      });
+      root.querySelectorAll("[data-out]").forEach((el) => el.remove());
+      root.querySelectorAll(ACT_LINKS).forEach((a) => a.remove());
+      const shells = new Set();
+      root.querySelectorAll("button, input, select, textarea, datalist, form").forEach((el) => {
+        if (el.matches(KEEP) || el.closest("[data-view]")) return;
+        const shell = el.closest(SHELLS);
+        if (shell) shells.add(shell);
+        const bar = el.closest(".actions");
+        if (bar) shells.add(bar);
+        el.remove();
+      });
+      // a row of controls goes whole; a bar of buttons goes unless a link is left in it (the way back)
+      shells.forEach((el) => { if (el.isConnected && !(el.matches(".actions") && el.querySelector("a"))) el.remove(); });
+      root.querySelectorAll("label[for]").forEach((l) => { if (!document.getElementById(l.htmlFor)) l.remove(); });
+      for (let again = true; again;) {
+        again = false;
+        root.querySelectorAll(".actions, .inline, .choices").forEach((el) => { if (!el.children.length && !el.textContent.trim()) { el.remove(); again = true; } });
+        root.querySelectorAll(".part").forEach((part) => {
+          const body = part.querySelector(".body");
+          if (body && !body.textContent.trim() && !body.querySelector("table, svg, img, pre, ul, ol, dl, details")) { part.remove(); again = true; }
+        });
+        // a heading whose control is gone and with nothing after it
+        root.querySelectorAll("h3").forEach((h) => { const nx = h.nextElementSibling; if (!nx || /^H[1-3]$/.test(nx.tagName)) { h.remove(); again = true; } });
+      }
+    }
+    // where the deployment serves the catalog (catalog-serve --catalog-at, sent as X-EVH-Catalog)
+    document.querySelectorAll('#main a[href="/"], #nav a[href="/"]').forEach((a) => { a.setAttribute("href", LIVE.catalogAt); });
+  }
+  function viewerMode() {
+    LIVE.viewer = true;
+    document.body.classList.add("viewer");
+    const note = document.createElement("div");
+    note.id = "wb-viewer";
+    note.className = "viewer-note";
+    note.setAttribute("role", "note");
+    note.innerHTML = VIEWER_NOTE;
+    document.querySelector("header.bar").after(note);
+    document.querySelectorAll('#nav a[href="#jobs"], #nav a[href="#settings"]').forEach((a) => a.remove());
+    // nothing is typed here, so nothing is unsent: no guard on leaving a screen or the page
+    WB.unsent = () => [];
+    for (const k of Object.keys(ACTION_ONLY)) WB.routes[k] = [screenViewerOnly(k)];
+    let busy = false;
+    const keep = () => { if (busy) return; busy = true; viewerize(); busy = false; };
+    new MutationObserver(keep).observe(document.getElementById("main"), { childList: true, subtree: true });
+    new MutationObserver(keep).observe(document.getElementById("rail"), { childList: true, subtree: true });
+    keep();
+  }
+
   function goLive() {
     LIVE.on = true;
     document.body.classList.add("live");
@@ -2883,6 +3015,7 @@
     for (const [k, v] of Object.entries(WIRED)) if (v) WB.routes[k] = v;
     Object.assign(WB.routes, OWN);
     WB.routes.start = [screenHome];
+    if (LIVE.viewer) viewerMode();
     if (!location.hash || location.hash === "#start") location.hash = "#home";
     WB.render();
   }
@@ -2902,7 +3035,13 @@
   else {
     fetch("/api/v1/goals", { credentials: "same-origin" }).then((r) => {
       if (r.status === 404) noProject();
-      else if (r.status !== 401) goLive();
+      else if (r.status !== 401) {
+        if (r.headers.get("X-EVH-Viewer") === "1") LIVE.viewer = true; // before the first screen is drawn: the fetch above asks nothing a viewer may not
+        // A deployment serves the catalog under a path of its own (/catalog/); the local server, at its root.
+        LIVE.catalogAt = r.headers.get("X-EVH-Catalog") || "/";
+        document.querySelectorAll("#nav a[href='/']").forEach((a) => a.setAttribute("href", LIVE.catalogAt));
+        goLive();
+      }
       else {
         // A route, not a write into #main: workbench.js draws the routes again when the page finishes loading, and on a slow
         // machine that came after this answer and put "Opening this project…" back over the sign-in screen.

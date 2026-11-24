@@ -58,7 +58,7 @@ OPS = (
            "disagree": {"type": "boolean", "description": "only the items the runs decided differently from the first"},
            "baseline": {"type": "string", "description": "the arm the others are compared to: it goes first"},
            "label": _LABEL,
-           "metric": {"type": "string", "description": "the measure (default: the arms' primary metric)"},
+           "metric": {"type": "string", "description": "the measure (default: the metric that decides on the dataset: its goal's measure, else the arms' primary metric)"},
            "where": _WHERE,
            "max_chars": {"type": "integer", "description": "characters of each output the command prints (default 300, 0 = all); the answer keeps them whole"},
        }, required=("runs",), public_dropped="it shows recorded texts: the outputs, the references and the labels"),
@@ -66,7 +66,7 @@ OPS = (
        "GET", "/datasets/{dataset}/sheet", f"{_I}:sheet_show", f"{_I}:say_blocks", output=legacy.BLOCKS, printer=f"{_I}:print_sheet_show",
        inputs={
            "runs": _RUNS,
-           "metric": {"type": "string", "description": "the measure, or SCORER/METRIC (default: the arms' primary metric)"},
+           "metric": {"type": "string", "description": "the measure, or SCORER/METRIC (default: the metric that decides on the dataset: its goal's measure, else the arms' primary metric)"},
            "label": _LABEL,
            "where": _WHERE,
            "by": {"type": "string", "description": "also count the shown rows by this field"},
@@ -75,6 +75,7 @@ OPS = (
            "wrong_against": {"type": "string", "description": "only the items where the first run's decision is not this label set's (SET or DATASET/SET)"},
            "new_vs": {"type": "string", "description": "only the items with a field value this dataset has never had"},
            "unlabelled": {"type": "boolean", "description": "only the items no label set labels yet"},
+           "judge_disagrees": {"type": "boolean", "description": "only the items where a judge on a validation disagrees with the people's ratings (its term of the validation figure is under chance)"},
            "scores_only": {"type": "boolean", "description": "leave the runs' outputs out, keep their scores"},
        }, required=("runs",), public_dropped="the sheet shows the items' outputs and labels"),
 )  # fmt: skip
@@ -115,7 +116,7 @@ def _comparison_crosstab_body(
     from evaluation_harness import _visibility, catalog_views  # noqa: PLC0415
     from evaluation_harness._common import die  # noqa: PLC0415
 
-    if _visibility.public_env() and group:
+    if _visibility.public() and group:
         # A recorded field can hold text; the counts of two scores are numbers and ids.
         die("group shows recorded texts: not served publicly", "not-public")
     if group_match and not group:
@@ -146,7 +147,7 @@ def _comparison_items_body(
     from evaluation_harness import _visibility, catalog_views  # noqa: PLC0415
     from evaluation_harness._common import die  # noqa: PLC0415
 
-    if _visibility.public_env():
+    if _visibility.public():
         die("items shows recorded texts: not served publicly", "not-public")
     catalog_views._items_out(
         _adapter(),
@@ -177,6 +178,7 @@ def _sheet_show_body(dataset: str, runs: str, **given: Any) -> int:
         wrong_against=given.get("wrong_against"),
         new_vs=given.get("new_vs"),
         unlabelled=bool(given.get("unlabelled")),
+        judge_disagrees=bool(given.get("judge_disagrees")),
         scores_only=bool(given.get("scores_only")),
     )
     return catalog_views.sheet_view(_adapter(), args)

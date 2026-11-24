@@ -66,10 +66,12 @@ try:
     check("setup: the tutorial dataset", r.returncode == 0, out(r)[-300:])
     (data / "goals").mkdir()
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     for arm in ("lead1", "author"):
-        text = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+        text = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8")
         _runstore.write_text(proj, f"systems/tickets_{arm}_v1.yaml", text)
         r = evh(
             "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
@@ -78,7 +80,7 @@ try:
     author = next(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_"))
     r = evh("label-from-run", "--run", author, "--set", "author_v1")
     check("setup: a model's label set", r.returncode == 0, out(r)[-300:])
-    with (proj / "sheet.csv").open("w", newline="") as f:
+    with (proj / "sheet.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["item_id", "label"])
         w.writerows(
@@ -124,7 +126,7 @@ try:
         }
         for n in range(1, 4)
     ]
-    (proj / "prod.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
+    (proj / "prod.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows), encoding="utf-8")
     r = evh(
         "capture",
         "--importer",
@@ -347,6 +349,7 @@ try:
         env={**env, "PYTHONPATH": str(HERE.parent)},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "the adapter's deploy_sheet: none for an arm never promoted, one for the promoted arm",
@@ -421,6 +424,7 @@ try:
             env={**env, "PYTHONPATH": str(HERE.parent)},
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         try:
             return json.loads(r.stdout.strip().splitlines()[-1])

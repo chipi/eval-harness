@@ -18,7 +18,7 @@ Pin it into your project, and start the project's folders:
 
 ```bash
 cd /path/to/your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.1#subdirectory=harness"
 evh init --store files   # config.yaml, data/sources, data/systems, data/goals, data/fields, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt; --store sqlite is its equal
 ```
 
@@ -57,6 +57,9 @@ def call_system(text: str, params: dict) -> Result:
                   tokens_in=out.usage.prompt_tokens,
                   tokens_out=out.usage.completion_tokens)
 ```
+
+[Tutorial 9](../../docs/tutorials/9-custom-adapter.md) writes one end to end, offline, and runs the loop through it
+(`make guide-check` runs it).
 
 That is the integration. Everything else — freezing the dataset, hashing it,
 recording which build ran, timing the call, aggregating, refusing bad
@@ -287,7 +290,8 @@ should do against which system, committed before the run so a test of it counts 
 by name), `prompt_root`, `code`, `replay`, and `expect_identical_to` (the system whose output this run
 must match exactly); the schema is `schemas/system.schema.json`, and any other key is refused by `evh validate` (V1). What a system is
 run for is the run's: `--dataset`, `--goal` (what the evaluation is for, `data/goals/<goal_id>.yaml`)
-and `--round` (an eval round of that goal, `rN`).
+and `--round` (an eval round of that goal, `rN`). To make `--goal` required, write `required_from: YYYY-MM-DD` in
+`data/goals/policy.yaml` ([RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)); without that file it is optional.
 
 `adapter:` names a file, or one of the package's own adapters by the id a run records: the bundled
 `scripts/adapter.py`, and `scripts/judge_validation.py`, the adapter of `evh judge-validate`. The
@@ -441,7 +445,7 @@ which references exist, what one arm wrote for one item.
   when it names them (`--publish outputs`, `--publish references`, or both), and never the item
   itself. An output can quote its input (an extractive arm returns the article's own sentences),
   and a reference can be text a project may not redistribute, so a public deployment publishes
-  neither until it says so.
+  neither until it says so. A system's `params.prompt` and a recorded prompt file's text are prompts: they are shown only with `--publish prompts` (public MCP and catalog: `catalog: {publish: [prompts]}`); a reference's promotion reason and a prompt version's note are public (owner, 2026-11-23).
 
   A private deployment for a team behind its own proxy (a tailnet's Caddy, a VPN) is the local
   inspector, not a public one: `evh catalog-serve --behind-proxy HOST[,HOST] --bind 0.0.0.0` in a
@@ -551,7 +555,7 @@ them answers in seconds after the first.
 
 ```bash
 cd your-project && python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.1#subdirectory=harness"
 evh init --store files                        # folders, config.yaml, .gitignore, AGENTS.md for an agent, an example judge prompt
 export EVAL_MAX_COST_USD=2                    # a run stops when it has spent this; with none, no cap
 

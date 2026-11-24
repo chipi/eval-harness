@@ -65,12 +65,13 @@ def pins_for(lines: list[str], env: dict) -> list[str]:
 
 def audit(pins: list[str]) -> dict[str, int]:
     """{"name version": advisory count} for the vulnerable pins."""
-    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as fh:
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as fh:
         fh.write("\n".join(pins) + "\n")
     r = subprocess.run(
         [str(AUDIT), "-r", fh.name, "--no-deps", "--disable-pip", "--progress-spinner", "off", "-f", "json"],
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     Path(fh.name).unlink()
     deps = json.loads(r.stdout or "{}").get("dependencies", [])
@@ -96,6 +97,7 @@ def main() -> int:
             capture_output=True,
             text=True,
             check=True,
+            encoding="utf-8",
         ).stdout.splitlines()
         for name, env in PLATFORMS.items():
             found = audit(pins_for(exported, env))
@@ -108,4 +110,13 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _sys.path.insert(
+        0, str(_Path(__file__).resolve().parents[1] / "harness")
+    )  # the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

@@ -108,14 +108,16 @@ try:
                 f"Ticket{i} " + " ".join(WORDS[(i + j * 3 + w) % len(WORDS)] for w in range(5)) + "."
                 for j in range(4)
             ]
-            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n")
-            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n")
+            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n", encoding="utf-8")
+            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n", encoding="utf-8")
     ids = [f"t{i:02d}" for i in range(24)]
     (proj / "cat_a.csv").write_text(
-        "item_id,label\n" + "".join(f"{x},{'a' if k % 3 else 'b'}\n" for k, x in enumerate(ids))
+        "item_id,label\n" + "".join(f"{x},{'a' if k % 3 else 'b'}\n" for k, x in enumerate(ids)),
+        encoding="utf-8",
     )
     (proj / "cat_b.csv").write_text(
-        "item_id,label\n" + "".join(f"{x},{'a' if k % 4 else 'b'}\n" for k, x in enumerate(ids))
+        "item_id,label\n" + "".join(f"{x},{'a' if k % 4 else 'b'}\n" for k, x in enumerate(ids)),
+        encoding="utf-8",
     )
     (proj / "data" / "systems").mkdir(parents=True)
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
@@ -185,11 +187,13 @@ try:
     spec = proj / "grid.yaml"
     spec.write_text("dataset: tk_val\nbaseline: {system: s1_v1}\nmeasure: overlap_f1\nsampler: grid\n"
                     "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n"
-                    "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 4]}}\n")  # fmt: skip
+                    "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2, 4]}}\n", encoding="utf-8")  # fmt: skip
     st = r if r.returncode else evh("study-run", "--study", "g/s1", "--spec", str(spec))
     (proj / "tutorial").mkdir(exist_ok=True)
     shutil.copy2(KIT / "judge_prompt.txt", proj / "tutorial" / "judge_prompt.txt")
-    sc = yaml.safe_load((KIT / "scorers" / "tickets-judge-v1.yaml").read_text()) | {"dataset_id": "tk_val"}
+    sc = yaml.safe_load((KIT / "scorers" / "tickets-judge-v1.yaml").read_text(encoding="utf-8")) | {
+        "dataset_id": "tk_val"
+    }
     _runstore.write_text(
         proj, "scorers/judge-v1.yaml", yaml.safe_dump(sc | {"scorer_id": "judge-v1"}, sort_keys=False)
     )
@@ -386,7 +390,7 @@ try:
         {k: (x.returncode, x.stderr[-160:]) for k, x in refused.items()},
     )
     words = evh("chart", "intervals", "--goal", "g", "--svg", str(proj / "iv.svg"))
-    drawn = (proj / "iv.svg").read_text() if (proj / "iv.svg").is_file() else ""
+    drawn = (proj / "iv.svg").read_text(encoding="utf-8") if (proj / "iv.svg").is_file() else ""
     check(
         "in words: the title, the table, the caption; --svg writes the drawing as a file an SVG reader opens",
         words.returncode == 0 and got["intervals"]["title"] in words.stdout and "95% interval" in words.stdout
@@ -419,7 +423,7 @@ try:
             except OSError:
                 time.sleep(0.1)
         time.sleep(0.5)
-        token = (proj / ".build" / "api-token").read_text().strip()
+        token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
         req = urllib.request.Request(
             f"http://127.0.0.1:{port}/api/v1/charts/intervals?goal=g&dataset=tk_val",
             headers={"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"},
@@ -439,12 +443,12 @@ try:
         srv.wait(timeout=20)
 
     goal_page = (
-        (proj / ".build" / "catalog" / "g" / "g.html").read_text()
+        (proj / ".build" / "catalog" / "g" / "g.html").read_text(encoding="utf-8")
         if (proj / ".build" / "catalog" / "g" / "g.html").is_file()
         else ""
     )
     ds_pages = list((proj / ".build" / "catalog").rglob("*tk_val*.html"))
-    ds_page = "".join(p.read_text() for p in ds_pages)
+    ds_page = "".join(p.read_text(encoding="utf-8") for p in ds_pages)
     check(
         "the catalog's goal page draws the goal over time, the evidence per dataset and the study's trials",
         goal_page.count('class="chart evidence"') >= 5 and "The evidence, drawn" in goal_page

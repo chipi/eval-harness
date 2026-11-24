@@ -112,7 +112,8 @@ summary_path.write_text(
                 "j1~j3": {"n_items": 20, "arm_mean_spearman": 0.8, "mean_item_tau": 0.6},
             },
         }
-    )
+    ),
+    encoding="utf-8",
 )
 model_scorers.judging_sets_of = lambda scorer_id, data=None: ["s1"]
 model_scorers.summary_file = lambda scorer_id, set_id, data=None: summary_path

@@ -20,6 +20,7 @@ from typing import Any
 from evaluation_harness import _coderec, _fields, _jsonout, _outputs, _runs
 from evaluation_harness._adapter import same_of
 from evaluation_harness._common import die, load_dataset
+from evaluation_harness.model import runs as _model_runs
 
 
 def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
@@ -29,13 +30,13 @@ def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
     by_id = [(d, m) for d, m in runs if m["run_id"] == name]
     if by_id:
         return by_id[0]
-    of_config = [(d, m) for d, m in runs if m.get("system_id") == name]
-    if not of_config:
+    newest = _model_runs.latest([(d, m) for d, m in runs if m.get("system_id") == name])
+    if newest is None:
         die(
             f"no run of {name} on {dataset_id}, by run id or system id: run it first (evh run --system …)",
             "not-found",
         )
-    return of_config[-1]
+    return newest
 
 
 def window_of(rec: dict, period: int | None, start: str | None, end: str | None) -> tuple[Any, Any, str]:
@@ -96,13 +97,7 @@ def body(system: str, dataset: str, candidate: str, **given: Any) -> int:
         die(f"no item of {ds['dataset_id']} falls in {called}", "not-enough")
     rd, rm = _latest(ds["dataset_id"], cfg["system_id"])
     cd, cm = _latest(ds["dataset_id"], args.candidate)
-    metric = (
-        args.metric
-        or rm.get("primary_metric")
-        or _runs.default_metric(ds["dataset_id"], match=cfg["system_id"])
-    )
-    if not metric:
-        die("--metric: the replay run names no primary metric", "bad-argument")
+    metric = args.metric or _runs.deciding_metric(ds["dataset_id"], runs=[(rd, rm)])
     same = same_of(rm.get("adapter"))
     counts = True
     disagree: list[str] = []

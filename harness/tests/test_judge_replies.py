@@ -83,7 +83,7 @@ def run(td, call, sc=SC, retry=False):
 
 def only_record(td):
     recs = sorted(Path(td).glob("ja/*.json"))
-    return recs, [json.loads(r.read_text()) for r in recs]
+    return recs, [json.loads(r.read_text(encoding="utf-8")) for r in recs]
 
 
 # 1. An empty reply at the token limit is withheld like any other unparsed reply, and V12 passes.
@@ -175,7 +175,7 @@ with tempfile.TemporaryDirectory() as tmp:
     recs, vs = only_record(tmp)
     old = {**vs[0], "output": "", "output_withheld": False}
     old.pop("withheld_reason", None)
-    recs[0].write_text(json.dumps(old))
+    recs[0].write_text(json.dumps(old), encoding="utf-8")
     check("recovery setup: the old-style record fails V12", vt.reply_problems(old) != [])
     st, _ = run(tmp, judge(good, "stop", 20), retry=True)
     _, vs = only_record(tmp)
@@ -266,7 +266,8 @@ with tempfile.TemporaryDirectory() as td:
         (vd / jid).mkdir()
         for k in range(2):
             (vd / jid / f"i{k}.primary.b0.json").write_text(
-                json.dumps({"cost_known": True, "cost_usd": cost / 2, "tokens_in": 1000, "tokens_out": 250})
+                json.dumps({"cost_known": True, "cost_usd": cost / 2, "tokens_in": 1000, "tokens_out": 250}),
+                encoding="utf-8",
             )
     prices = {"usd_per_mtok_in": 0.5, "usd_per_mtok_out": 2.0}  # 2 x (1000 x 0.5 + 250 x 2.0) / 1e6 = $0.002
     drift = js.price_drift(
@@ -283,15 +284,15 @@ with tempfile.TemporaryDirectory() as td:
 kit = Path(__file__).resolve().parents[1] / "tutorial"
 import yaml  # noqa: E402
 
-kit_sc = yaml.safe_load((kit / "scorers" / "tickets-judge-v1.yaml").read_text())
+kit_sc = yaml.safe_load((kit / "scorers" / "tickets-judge-v1.yaml").read_text(encoding="utf-8"))
 grade = {"task": {"dimensions": ["faithfulness", "coverage"]}}
 check(
     "a grade prompt that does not name a dimension is caught; a pick needs none; the tutorial kit's prompt names its own",
     js.unnamed_dimensions(grade, "Rate faithfulness from 1 to 5.") == ["coverage"]
     and js.unnamed_dimensions(grade, 'JSON: {"Faithfulness": [...], "Coverage": [...]}') == []
     and js.unnamed_dimensions({**grade, "mode": "pick"}, "Pick the best.") == []
-    and js.unnamed_dimensions(kit_sc, (kit / "judge_prompt.txt").read_text()) == [],
-    js.unnamed_dimensions(kit_sc, (kit / "judge_prompt.txt").read_text()),
+    and js.unnamed_dimensions(kit_sc, (kit / "judge_prompt.txt").read_text(encoding="utf-8")) == [],
+    js.unnamed_dimensions(kit_sc, (kit / "judge_prompt.txt").read_text(encoding="utf-8")),
 )
 
 # The 0.8.0 newcomer run (080d): a reply that was JSON stopped before its closing brace said only "not JSON, 536 chars".

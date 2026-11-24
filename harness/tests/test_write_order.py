@@ -70,7 +70,7 @@ try:
     (proj / "data" / "systems").mkdir(parents=True)
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
-    (proj / "adapter.py").write_text(ADAPTER)
+    (proj / "adapter.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
     r = (
@@ -133,14 +133,15 @@ try:
         "rp.write_manifest = broken\n"
         "from evaluation_harness import ops\n"
         "from evaluation_harness.ops import cli\n"
-        "raise SystemExit(cli.main(ops.OPS['reference-promote'], sys.argv[1:]))\n"
+        "raise SystemExit(cli.main(ops.OPS['reference-promote'], sys.argv[1:]))\n",
+        encoding="utf-8",
     )
     r = subprocess.run(
         [
             sys.executable, str(breaker), "--dataset-id", "tk_v1", "--labels", "g2", "--tier", "silver",
             "--reason", "promoted to fail partway", "--by", "t",
         ],
-        cwd=proj, env={**env, "PYTHONPATH": str(HERE.parent)}, capture_output=True, text=True,
+        cwd=proj, env={**env, "PYTHONPATH": str(HERE.parent)}, capture_output=True, text=True, encoding="utf-8",
     )  # fmt: skip
     leftovers = (
         [p.name for p in (proj / "data" / "references" / "silver").glob(".*")]

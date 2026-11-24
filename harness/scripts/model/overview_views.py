@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from evaluation_harness import _common
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_periods as cp
 from evaluation_harness.model import goal_views as gv
@@ -21,7 +22,7 @@ def overview(A, by_ds: dict, period: str = cp.DEFAULT, today: date | None = None
     w = cb.window(A, by_ds)
     rounds_fn = getattr(A, "rounds", None)
     data = cp.home_data(A, by_ds, w["spend"], A.goals(), rounds_fn() if callable(rounds_fn) else [])
-    today = today or date.today()
+    today = today or _common.today()
     p = period_views.span(period, today, data["first"])
     since, until = p["since"], p["until"]
     out: dict[str, Any] = {

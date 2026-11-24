@@ -39,10 +39,10 @@ def project(name: str, config: str) -> Path:
     p = base / name
     (p / "data" / "models").mkdir(parents=True)
     (p / "projects" / "x" / "configs").mkdir(parents=True)
-    (p / "config.yaml").write_text("store: files\nconfigs:\n  - projects/x/configs\n")
-    (p / "data" / "project.yaml").write_text("format: 1\nwritten_by: 0.8.0\n")
-    (p / "data" / "models" / "m1.yaml").write_text(MODEL)
-    (p / "projects" / "x" / "configs" / "arm_a_v1.yaml").write_text(config)
+    (p / "config.yaml").write_text("store: files\nconfigs:\n  - projects/x/configs\n", encoding="utf-8")
+    (p / "data" / "project.yaml").write_text("format: 1\nwritten_by: 0.8.0\n", encoding="utf-8")
+    (p / "data" / "models" / "m1.yaml").write_text(MODEL, encoding="utf-8")
+    (p / "projects" / "x" / "configs" / "arm_a_v1.yaml").write_text(config, encoding="utf-8")
     return p
 
 
@@ -65,9 +65,9 @@ try:
         "a config in a folder config.yaml names is found: its smoke becomes a check of the deployment it names",
         r.returncode == 0
         and dep_b.is_file()
-        and "kind: smoke" in dep_b.read_text()
+        and "kind: smoke" in dep_b.read_text(encoding="utf-8")
         and dep_a.is_file()
-        and "kind: smoke" not in dep_a.read_text(),
+        and "kind: smoke" not in dep_a.read_text(encoding="utf-8"),
         (r.returncode, r.stdout[-300:], r.stderr[-400:]),
     )
 

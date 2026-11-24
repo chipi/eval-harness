@@ -121,7 +121,8 @@ try:
         "def call_system(text, params):\n"
         '    return Result(output=text.split(".")[0] + ".", cost_usd=0.0, extra={"my_extra": 1.0})\n'
         "def score(output, reference):\n"
-        '    return {"overlap_f1": 0.5} if reference is not None else {"output_words": 1.0}\n'
+        '    return {"overlap_f1": 0.5} if reference is not None else {"output_words": 1.0}\n',
+        encoding="utf-8",
     )
     for f in files:
         _runstore.write_bytes(proj, f"{gold}/{f.name}", f.read_bytes())
@@ -134,7 +135,10 @@ try:
     r = evh("run", "--system", "own_v1", "--dataset", "tickets_v1", "--run-id", "own")
     # A scorer that gives other numbers: the same scorer on the same references would be the score the run has.
     (proj / "adapter.py").write_text(
-        (proj / "adapter.py").read_text().replace('{"overlap_f1": 0.5}', '{"overlap_f1": 0.75}')
+        (proj / "adapter.py")
+        .read_text(encoding="utf-8")
+        .replace('{"overlap_f1": 0.5}', '{"overlap_f1": 0.75}'),
+        encoding="utf-8",
     )
     r2 = evh("rescore", "--dataset-id", "tickets_v1", "--match", "own_v1")
     # a re-score is a score under the run, read as "rescored <8 characters of the scorer>" (RFC-022)

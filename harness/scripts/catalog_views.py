@@ -22,13 +22,14 @@ import re
 import statistics
 import textwrap
 
-from evaluation_harness import _jsonout, _outputs, _sheet, _visibility
+from evaluation_harness import _common, _jsonout, _outputs, _runs, _sheet, _visibility
 from evaluation_harness import catalog_arms as ca
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_periods as cp
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die
+from evaluation_harness.axes import with_coverage
 from evaluation_harness.model import arm_views as av
 from evaluation_harness.model import metric_views as mviews
 from evaluation_harness.model.entity import Problem
@@ -144,7 +145,16 @@ def print_goal(r: dict) -> None:
 
     print(f"{r['title']}\n")
     print(textwrap.fill(r["statement"], width=96))
-    print(f"\n  decision   {r['decision']}\n  decides    {r['measure']}, {r['direction']} is better")
+    better = (
+        f"{r['direction']} is better"
+        if r["direction"] != "mixed"
+        else _runs.better_word("mixed", r.get("direction_on"))
+    )
+    print(f"\n  decision   {r['decision']}\n  decides    {r['measure']}, {better}")
+    if r["measure"] and (
+        own := _common.load_goals().get(r["goal"])
+    ):  # the line that printed "higher" is the goal's own
+        _runs.note_assumed(r["measure"], goals={r["goal"]: own})
     print(f"  strategy   {r['strategy']}: {r['strategy_about']}")
     print(f"  tie-break  {', '.join(r['tie_break'])}")
     for gr in r["guardrails"]:
@@ -532,9 +542,9 @@ def print_metrics(d: dict) -> None:
         print(d["period"] + "\n")
     for m in d["metrics"]:
         print(
-            f"{m['metric']}  ({m['better']} is better)"
-            if m["better"] != "neutral"
-            else f"{m['metric']}  (neutral: a description)"
+            f"{m['metric']}  ({_runs.better_word(m['better'], m.get('better_on'))})"
+            if m["better"] in ("neutral", "mixed")
+            else f"{m['metric']}  ({m['better']} is better)"
         )
         print(
             textwrap.fill(
@@ -546,9 +556,9 @@ def print_metrics(d: dict) -> None:
         )
         print("    recorded on: " + ", ".join(f"{ds} ({n} arms)" for ds, n in sorted(m["datasets"].items())))
         if m["decides"]:
-            print("    decides: " + ", ".join(m["decides"]))
+            print("    decides: " + cb.decides_phrase(m["decides"]))
         if m["weighs"]:
-            print("    weighed by: " + ", ".join(m["weighs"]))
+            print(f"    {cb.WEIGHED_LABEL}: " + ", ".join(m["weighs"]))
         if m["period"]:
             p = m["period"]
             print(
@@ -565,8 +575,8 @@ def print_metric(d: dict) -> None:
             print(textwrap.fill(text, width=96, initial_indent="  ", subsequent_indent="  ") + "\n")
     print(f"  better       {d['better']}")
     print(f"  kind         {d['kind']}")
-    print("  decides      " + (", ".join(d["decides"]) or "no goal"))
-    print("  weighed by   " + (", ".join(d["weighs"]) or "no goal"))
+    print("  decides      " + cb.decides_phrase(d["decides"]))
+    print(f"  {cb.WEIGHED_LABEL}  " + (", ".join(d["weighs"]) or "no goal"))
     for ds in d["datasets"]:
         print(f"\non {ds['dataset']}:")
         _table(
@@ -708,7 +718,7 @@ def print_arms(d: dict) -> None:
                     c["provider"] or "—",
                     ", ".join(c["datasets"]),
                     c["arms"],
-                    cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—",
+                    cb.fmt_spend(c["usd"]),
                     "; ".join(f"{r['goal']} #{r['rank']} of {r['of']}" for r in c["ranks"]) or "—",
                     *(_pcells(per[f"c:{c['system']}"], flows) if per else []),
                 ]
@@ -763,7 +773,11 @@ def print_arms(d: dict) -> None:
                     f"{r['measure']} {_fmt(r['value'])} {'↓' if r['lower'] else '↑'}"
                     if r["measure"]
                     else "—",
-                    "—" if r["cost"] is None else "$0" if r["cost"] == 0 else f"${r['cost']:.4f}",
+                    "—"
+                    if r["cost"] is None
+                    else with_coverage(
+                        "$0" if r["cost"] == 0 else f"${r['cost']:.4f}", r.get("cost_coverage")
+                    ),
                     "—"
                     if not r["latency"]
                     else f"{r['latency'] / 1000:.1f} s"
@@ -825,7 +839,9 @@ def print_arm(d: dict) -> None:
                     r["run"],
                     r["made"][:16].replace("T", " "),
                     r["items"] if r["items"] is not None else "—",
-                    f"${r['cost_usd']:.6f}" if r["cost_usd"] is not None else "—",
+                    with_coverage(f"${r['cost_usd']:.6f}", r.get("cost_coverage"))
+                    if r["cost_usd"] is not None
+                    else "—",
                     r["how"],
                 ]
                 for r in d["run_list"]
@@ -988,10 +1004,10 @@ def _show(heads: list, rows: list) -> None:
 
 def sheet_view(A, args) -> int:
     """The dataset's items down, a column per run, printed (RFC-023, _sheet); `args`: dataset_id, runs, metric, label, where,
-    by, disagree, split, wrong_against, new_vs, unlabelled, scores_only."""
+    by, disagree, split, wrong_against, new_vs, unlabelled, judge_disagrees, scores_only."""
     from evaluation_harness import _picks  # noqa: PLC0415
 
-    if _visibility.public_env():
+    if _visibility.public():
         die("--sheet shows the items' outputs and labels: not served publicly", "not-public")
     if not args.dataset_id:
         die("--sheet: name the dataset with --dataset-id", "bad-argument")
@@ -1023,6 +1039,7 @@ def sheet_view(A, args) -> int:
             ("split", args.split),
             ("new", args.new_vs),
             ("unlabelled", args.unlabelled),
+            ("judge", args.judge_disagrees),
         )
         if on
     ]

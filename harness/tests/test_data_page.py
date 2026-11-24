@@ -68,7 +68,7 @@ def setup(store: str) -> tuple[Path, dict]:
 
     def evh(*args: str) -> None:
         r = subprocess.run([sys.executable, "-m", "evaluation_harness", *args], cwd=proj, env=env,
-                           capture_output=True, text=True, stdin=subprocess.DEVNULL)  # fmt: skip
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8")  # fmt: skip
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
 
@@ -85,7 +85,9 @@ def setup(store: str) -> tuple[Path, dict]:
     shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
     # a page that landed under data/ (a fetched source, a capture record): served, never as this server's own page
     (proj / "data/sources").mkdir(parents=True, exist_ok=True)
-    (proj / "data/sources/page.html").write_text("<script>fetch('/api/data/store')</script>")
+    (proj / "data/sources/page.html").write_text(
+        "<script>fetch('/api/data/store')</script>", encoding="utf-8"
+    )
     if store == "sqlite":
         runs = proj / "data/runs"
         ON_DISK.update({
@@ -93,7 +95,7 @@ def setup(store: str) -> tuple[Path, dict]:
             for f in runs.rglob("*") if f.name in ("outputs.jsonl", "predictions.jsonl")
         })  # fmt: skip
         ON_DISK["runs/ files"] = str(sum(1 for f in runs.rglob("*") if f.is_file()))
-        (proj / "config.yaml").write_text("store: sqlite\n")
+        (proj / "config.yaml").write_text("store: sqlite\n", encoding="utf-8")
         env["EVAL_STORE"] = "sqlite"
         evh("data-migrate", "--to", "sqlite")
     evh("catalog")
@@ -102,7 +104,7 @@ def setup(store: str) -> tuple[Path, dict]:
 
 def cli(proj: Path, env: dict, *args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, "-m", "evaluation_harness", *args], cwd=proj, env=env,
-                          capture_output=True, text=True, input=stdin)  # fmt: skip
+                          capture_output=True, text=True, input=stdin, encoding="utf-8")  # fmt: skip
 
 
 #: Each local server's token, by port (`serve` reads it; `http` sends it).
@@ -123,11 +125,11 @@ def serve(proj: Path, env: dict, *extra: str) -> tuple:
             break
         except Exception:  # noqa: BLE001 - not up yet
             if p.poll() is not None:
-                raise SystemExit(f"catalog-serve exited:\n{log.read_text()}") from None
+                raise SystemExit(f"catalog-serve exited:\n{log.read_text(encoding='utf-8')}") from None
             time.sleep(0.1)
     tok = proj / ".build" / "api-token"
     if tok.is_file():
-        TOKEN[port] = tok.read_text().strip()
+        TOKEN[port] = tok.read_text(encoding="utf-8").strip()
     return p, port
 
 
@@ -388,7 +390,7 @@ def run_case(store: str) -> None:
         # what the server still does with the data tree is checked here.
         check(f"{store}: the catalog has no Configure page or scripts",
               not (proj / ".build/catalog/data.html").exists() and not (proj / ".build/catalog/assets/data.js").exists()
-              and ">Configure<" not in (proj / ".build/catalog/index.html").read_text())  # fmt: skip
+              and ">Configure<" not in (proj / ".build/catalog/index.html").read_text(encoding="utf-8"))  # fmt: skip
         p, port = serve(proj, env)
         try:
             gone = [
@@ -426,7 +428,7 @@ def run_case(store: str) -> None:
             odd = next(((rt, c, str(b)[:300]) for rt, c, b in got if c != 200), None)
             alive = http(port, "GET", "/api/health")[0]
             check(f"{store}: {len(routes)} requests at once all answered, the server still up",
-                  codes == [200] * len(routes) and alive == 200, (sorted(set(codes)), odd, odd and (proj / "serve.log").read_text()[-1800:]))  # fmt: skip
+                  codes == [200] * len(routes) and alive == 200, (sorted(set(codes)), odd, odd and (proj / "serve.log").read_text(encoding="utf-8")[-1800:]))  # fmt: skip
         finally:
             os.killpg(p.pid, 15)
             p.wait(timeout=30)
@@ -490,7 +492,7 @@ def public_case() -> None:
                 except urllib.error.URLError:
                     pass  # not up yet
                 if p.poll() is not None:
-                    raise SystemExit(f"catalog-serve --public exited:\n{log.read_text()}")
+                    raise SystemExit(f"catalog-serve --public exited:\n{log.read_text(encoding='utf-8')}")
                 time.sleep(0.1)
             code, _b = http(port, "GET", "/api/data/store")
             check("public: GET /api/data/store is 404", code == 404, code)
@@ -498,7 +500,7 @@ def public_case() -> None:
             check("public: PUT form is 404", code == 404, code)
             code, _b = http(port, "DELETE", "/api/data/file?path=goals/tickets_summary.yaml", None, W)
             r = subprocess.run([sys.executable, "-m", "evaluation_harness", "data-show", "goals/tickets_summary.yaml"],
-                               cwd=proj, env=env, capture_output=True, text=True, check=False)  # fmt: skip
+                               cwd=proj, env=env, capture_output=True, text=True, check=False, encoding="utf-8")  # fmt: skip
             check("public: DELETE is 404, the goal untouched", code == 404 and r.returncode == 0, code)
         finally:
             os.killpg(p.pid, 15)

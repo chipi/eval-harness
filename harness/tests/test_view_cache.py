@@ -34,7 +34,7 @@ from evaluation_harness.model import view_cache as vc  # noqa: E402
 STORE = os.environ["EVAL_STORE"]
 data = proj / "data"
 data.mkdir()
-(proj / "config.yaml").write_text("catalog: {}\n")
+(proj / "config.yaml").write_text("catalog: {}\n", encoding="utf-8")
 _store.write_text(data / "a.txt", "one")
 
 
@@ -61,7 +61,7 @@ def other_process_writes(name: str, text: str) -> None:
         c.commit()
         c.close()
     else:
-        (data / name).write_text(text)
+        (data / name).write_text(text, encoding="utf-8")
 
 
 # ── a value is kept ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@ if STORE == "files":
         vc._print = real_print
 
 # ── the project's own files that decide what is read ───────────────────────────────────────────────────────────────
-(proj / "config.yaml").write_text("catalog: {}\n# changed\n")
+(proj / "config.yaml").write_text("catalog: {}\n# changed\n", encoding="utf-8")
 vc.begin()
 vc.get("k", c)
 check("config.yaml changed: the next look drops what was kept", c.n == 7, c.n)
@@ -323,7 +323,7 @@ check(
 
 
 class Day:
-    """date.today() as another day."""
+    """_common.today() as another day."""
 
     n = 1
 
@@ -335,8 +335,8 @@ class Day:
         return Day.n
 
 
-real_date = vc.date
-vc.date = Day  # type: ignore[assignment,misc]
+real_today = vc._common.today if hasattr(vc._common, "today") else None
+vc._common.today = Day.today  # type: ignore[assignment]
 try:
     runs[0] = 0
     vc.result("daily", {}, answer)
@@ -344,7 +344,7 @@ try:
     Day.n = 2
     vc.result("daily", {}, answer)
 finally:
-    vc.date = real_date  # type: ignore[misc]
+    vc._common.today = real_today  # type: ignore[assignment]
 check(
     "a view that counts back from today is another view tomorrow: kept for the day it was computed",
     runs[0] == 2,

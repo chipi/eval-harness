@@ -18,6 +18,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
@@ -129,6 +130,65 @@ def add_run(data: Path, src: Path, new_id: str | None = None, first_only: bool =
     return dst
 
 
+#: What each test file and each in-process test took: (name, wall seconds, CPU seconds), printed slowest first at the end.
+TIMINGS: list[tuple[str, float, float]] = []
+
+
+def _run_timed(script: str, env: dict) -> subprocess.CompletedProcess:
+    """`run`, with the file's wall and CPU time (its own and its children's, from wait4) put in TIMINGS. Its output goes
+    to files, not pipes, so the child can be reaped here, where the rusage is."""
+    out_path, err_path = Path(env["TMPDIR"]) / "stdout", Path(env["TMPDIR"]) / "stderr"
+    started = time.perf_counter()
+    with out_path.open("wb") as out, err_path.open("wb") as err:
+        proc = subprocess.Popen(
+            [PY, script],
+            cwd=ROOT,
+            stdout=out,
+            stderr=err,
+            env={**os.environ, **env},
+            stdin=subprocess.DEVNULL,
+        )
+        _, status, usage = os.wait4(proc.pid, 0)
+    wall = time.perf_counter() - started
+    TIMINGS.append((script, wall, usage.ru_utime + usage.ru_stime))
+    code = os.waitstatus_to_exitcode(status)
+    return subprocess.CompletedProcess(
+        [PY, script],
+        code,
+        out_path.read_text(encoding="utf-8", errors="replace"),
+        err_path.read_text(encoding="utf-8", errors="replace"),
+    )
+
+
+#: The files that take longest (CPU seconds, 2026-11-24, under taskset -c 0-3), started first: a pool that begins with
+#: the long ones ends with the short ones, where one started last leaves three of four CPUs idle for its whole length.
+LONGEST_FIRST = (
+    "test_scores_once.py",
+    "test_data_mutations.py",
+    "check_commands.py",
+    "check_report_claims.py",
+    "test_charts.py",
+    "check_shown_commands.py",
+    "test_study.py",
+    "test_arm_membership.py",
+    "test_reader_agreement.py",
+    "test_judge_validate.py",
+    "test_fingerprint_v5.py",
+    "test_stats_edges.py",
+    "test_installed_commands.py",
+)
+
+
+def print_timings(top: int = int(os.environ.get("SELF_TEST_TOP", "15"))) -> None:
+    """The slowest test files and in-process tests, with the sums: where a suite that grew spent its time."""
+    if not TIMINGS:
+        return
+    print(f"\nslowest of {len(TIMINGS)} timed (wall s, cpu s):")
+    for name, wall, cpu in sorted(TIMINGS, key=lambda t: -t[1])[:top]:
+        print(f"  {wall:8.1f} {cpu:8.1f}  {name}")
+    print(f"  {'':8} {'':8}  sum of cpu: {sum(t[2] for t in TIMINGS):.0f} s")
+
+
 def run_own_tmp(script: str) -> subprocess.CompletedProcess:
     """A test file run with a TMPDIR of its own, removed when it ends, whatever the file leaves there: temporary
     projects test files did not remove filled /tmp's inodes, shared by every session on a machine (6,762 projects,
@@ -141,7 +201,7 @@ def run_own_tmp(script: str) -> subprocess.CompletedProcess:
     own = Path.home() / ".cache" / "evh-tests" / secrets.token_hex(3)
     own.mkdir(parents=True)
     try:
-        return run(script, env={"TMPDIR": str(own)})
+        return _run_timed(script, {"TMPDIR": str(own)})
     finally:
         shutil.rmtree(own, ignore_errors=True)
 
@@ -152,7 +212,7 @@ def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
     import os  # noqa: PLC0415
 
     e = {**os.environ, **(env or {})}
-    return subprocess.run([PY, *args], cwd=ROOT, capture_output=True, text=True, env=e)
+    return subprocess.run([PY, *args], cwd=ROOT, capture_output=True, text=True, env=e, encoding="utf-8")
 
 
 def test_dotenv_does_not_override_exported() -> None:
@@ -161,7 +221,7 @@ def test_dotenv_does_not_override_exported() -> None:
 
     from evaluation_harness._common import load_dotenv  # noqa: PLC0415
 
-    with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as fh:
+    with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False, encoding="utf-8") as fh:
         fh.write("EVAL_SELFTEST_A=from_file\nEVAL_SELFTEST_B=from_file\n")
         path = Path(fh.name)
     os.environ["EVAL_SELFTEST_A"] = "from_shell"
@@ -200,6 +260,7 @@ def test_import_reads_no_env_and_no_paths() -> None:
             capture_output=True,
             text=True,
             timeout=60,
+            encoding="utf-8",
         )
         check(
             "import: a library import reads no .env and resolves paths on first use",
@@ -212,6 +273,7 @@ def test_import_reads_no_env_and_no_paths() -> None:
             capture_output=True,
             text=True,
             timeout=60,
+            encoding="utf-8",
         )
         check(
             "import: a harness command reads the project's .env",
@@ -396,6 +458,7 @@ def test_no_absolute_home_path_in_committed_data() -> None:
             text=True,
             timeout=30,
             check=True,
+            encoding="utf-8",
         ).stdout.split("\0")
         tracked = [ROOT / f for f in listed if f.endswith(".json")]
     except Exception:  # noqa: BLE001 -- no git available: fall back to scanning everything
@@ -444,7 +507,7 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
     baselines = sorted((ROOT / "data" / "baselines").glob("*/*/*.json"))  # RFC-027: <goal>/<dataset>/<n>.json
     check("consistency: a baseline ships", bool(baselines), "none found")
     for b in baselines:
-        promoted_from = json.loads(b.read_text()).get("promoted_from")
+        promoted_from = json.loads(b.read_text(encoding="utf-8")).get("promoted_from")
         if not promoted_from:
             continue
         run_dir = ROOT / "data" / "runs" / promoted_from
@@ -471,6 +534,7 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
         cwd=ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     ).stdout.split()
     tracked_ref_ids = {pathlib.Path(f).parent.name for f in tracked_refs}
     needs_fetch = set()
@@ -587,6 +651,13 @@ def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
         "dirty: an untracked file outside the runs directories still is",
         len(filter_dirt("?? harness/scripts/new_scorer.py\n?? harness/data/datasets/x.json", d)) == 2,
     )
+    check(
+        "dirty: nor a prompt version recorded by a run (RFC-028), untracked only",
+        filter_dirt("?? harness/data/prompts/summary/ab12cd.json", d) == []
+        and len(filter_dirt(" M harness/data/prompts/summary/ab12cd.json", d)) == 1,
+    )
+    # Runs live in `runs/` only since migration m0004 folded format 3's runs-linux, runs-pair and runs-repeats into it
+    # (purpose retime, pair, repeat): the first rule matched `runs*` (RFC-028's wording), the code now matches `runs/` only.
     check(
         "dirty: a runs-* folder is not the runs directory (format 3's layout is no run output)",
         len(filter_dirt("?? harness/data/runs-linux/cnn_bart_s_n200_v1_X/", d)) == 1,
@@ -867,6 +938,14 @@ def test_example_scorer_suites_pass() -> None:
         ("test_importers.py", "tsv, github (events with their comments), langfuse: offline stand-ins"),
         ("test_split.py", "dataset-split: the share, stable across versions, groups kept whole, by time"),
         ("test_hidden_text.py", "text: hidden: none of a hidden dataset's text on any public surface"),
+        (
+            "test_public_leak.py",
+            "a sentinel in every field that may carry private text, searched in every public read, page and export under each --publish; RFC-041 F4's public env with no hosts",
+        ),
+        (
+            "test_stats_edges.py",
+            "the statistics on one item, all items failed, identical arms, disjoint items, singleton and single clusters, 3 items, half of 22, a nan or None score: a named verdict, no traceback, no nan",
+        ),
         ("test_models.py", "model records: the weights facts, and what V18 catches"),
         ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
         (
@@ -901,6 +980,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_site_releases.py",
             "the site's release notes: nested bullets, bold holding code and italics, code never emphasis",
+        ),
+        (
+            "test_site_build_atomic.py",
+            "the site build is swapped in whole: a failure part-way leaves site/public as it was; no store is refused",
         ),
         (
             "test_parallel_projects.py",
@@ -1027,6 +1110,10 @@ def test_example_scorer_suites_pass() -> None:
             "jobs (RFC-026): locks, queue, stop, resume, unsupervised and lost; catalog as a swap, a migration's 503",
         ),
         (
+            "test_job_stop_race.py",
+            "a stop while a job's command is starting (its group not yet recorded, a slow fsync) stops the command: no orphan under a cancelled job",
+        ),
+        (
             "test_op_declarations.py",
             "what a decision or a work operation declares (RFC-032 step 9 P3): locks, route, why, a word on every file input, no two routes alike, each rule failing on its planted defect; the command line made from the schema, a positional refused, the old parsers' parity",
         ),
@@ -1075,12 +1162,116 @@ def test_example_scorer_suites_pass() -> None:
             "resampled tests drawn at once in child processes: the same p's bit for bit, capped by a container's CPU quota",
         ),
         (
+            "test_stats_threads.py",
+            "the tests a page collects are its thread's own: a server rendering on two threads gets each one's p",
+        ),
+        (
+            "test_metric_direction.py",
+            "a measure only a goal names goes the goal's way on metric-list, metric-show and the catalog, not 'higher'",
+        ),
+        (
+            "test_direction.py",
+            "which way is better, answered once (_runs.direction): its precedence, every reader agreeing on one project, V14",
+        ),
+        (
+            "test_arm_membership.py",
+            "which runs make up an arm: a repeat with the same fingerprint joins its original's, a set is what the record says, the latest run, one reference",
+        ),
+        (
+            "test_repeat_dry_run.py",
+            "evh run --purpose repeat --dry-run says where the repeat is read, and what differs with its value then and now; a dry run refuses an unmaterialized dataset; --items is a subset",
+        ),
+        (
+            "test_store_matrix_shard.py",
+            "the store matrix's --shard I/N is a split: every test file in exactly one part, the parts balanced, the same every time",
+        ),
+        (
+            "test_cap_shown.py",
+            "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
+        ),
+        (
+            "test_goal_block_direction.py",
+            "a goal that leaves its direction out is read as every other reader reads it: the goal's block, page and decides line",
+        ),
+        (
+            "test_dry_run_label.py",
+            "evh run --dry-run says what runs: the project's adapter, or the provider the system names",
+        ),
+        (
+            "test_deciding_metric.py",
+            "the metric that decides on a dataset is answered once (_runs.deciding_metric)",
+        ),
+        (
+            "test_metric_show_wording.py",
+            "metric-show says a goal that decides and a goal that weighs a metric as two facts",
+        ),
+        (
+            "test_goal_baseline_per_goal.py",
+            "a goal's baseline is its own: every place that names it names the arm the goal promoted",
+        ),
+        (
+            "test_leaderboard_neutral.py",
+            "a leaderboard ranked on a descriptive metric says it is neutral, as every other reader does",
+        ),
+        (
+            "test_direction_assumed.py",
+            "a measure nobody declares is read as higher-is-better, and the readers say so",
+        ),
+        (
+            "test_one_source.py",
+            "no reader works out which way is better, which runs make an arm, an unknown cost, the public gate, the day or a goal's baseline itself: each is asked of its owner, and each check bites on a probe",
+        ),
+        (
+            "test_reader_agreement.py",
+            "every reader says the same of a fact (CLI, API, MCP, catalog export, inspector) on the tutorial and three look-alikes of the beta projects; a reader that works one out itself is caught",
+        ),
+        (
+            "test_foreign_projects.py",
+            "three look-alike projects of the beta projects' shapes (an import with prose goals, a fleet's repeat set, a zero-price bake-off): every read command and RFC-041's facts, asserted by hand",
+        ),
+        (
+            "test_data_mutations.py",
+            "real-looking data changed (no goal, cost 0 or none, dirty null, unicode ids, _r1 names, missing and extra fields, two baselines, far time zones, a public environment, a gone reference, an unrecorded measure) on the tutorial and the three look-alikes: no traceback, every reader agrees, validate names it",
+        ),
+        (
+            "test_writers_refuse.py",
+            "every writer records the fact or refuses by name (an id with a path or unicode, a repeat with no of, a reference not there, a goal the policy requires, a cost some items did not report), and validate names each broken link with its file",
+        ),
+        (
+            "test_v30_links.py",
+            "V30 fails only a reference a harness-scored run lacks: a goal entry that names no dataset (an id, prose, a glob, a range) is a note, an imported run's reference outside data/ a note that the harness cannot find it, and validate exits 0",
+        ),
+        (
+            "test_nan_fallback.py",
+            "a failed item whose fallback score is not a number either counts 0 on that measure: the mean is over every item",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),
         (
             "test_items_paged.py",
             "a dataset's catalog page at 10,000 items: its items paged, every item on one page",
+        ),
+        (
+            "test_unknown_and_zero.py",
+            "unknown, none and zero kept apart: a build git could not read, a $0 spend, a study's stop of $0",
+        ),
+        (
+            "test_no_nan_shown.py",
+            "a ratio or a correlation nobody could work out is a dash, never nan or inf; a nan or an infinity only where a source check lists it",
+        ),
+        (
+            "test_leaderboard_prose_measure.py",
+            "a goal whose measure no arm records does not stop a dataset being ranked: evh leaderboard reads each arm on its own headline and says so; --goal refuses, saying what the arms record; the goal's own views say why they are empty",
+        ),
+        (
+            "test_public_gate.py",
+            "whether a call is public is one function: an in-process public call is refused an item's text, an unreadable dataset is hidden",
+        ),
+        (
+            "test_today.py",
+            "which day it is is the UTC date from one function: staleness, the page cache and the view cache, no date.today() elsewhere",
         ),
         (
             "test_why_lines.py",
@@ -1128,7 +1319,19 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_catalog_fresh.py",
-            "the catalog never goes stale: a write refreshes the server and rebuilds the pages, one rebuild waiting at most",
+            "the catalog never goes stale: each page rendered when asked for, a write on the next read, no rebuild job",
+        ),
+        (
+            "test_catalog_warm.py",
+            "the slowest pages rendered ahead after a change: a reader waits for at most the one render under way",
+        ),
+        (
+            "test_catalog_render.py",
+            "one renderer, two drivers (RFC-040): every page rendered on its own is the exported file, on threads too",
+        ),
+        (
+            "test_catalog_served.py",
+            "what a catalog server serves is the export of one state (RFC-040): over HTTP, cache off and on, and across edits, the recorded badge on every page",
         ),
         (
             "test_catalog_scorers.py",
@@ -1325,6 +1528,11 @@ def test_example_scorer_suites_pass() -> None:
             "test_rounds.py",
             "eval rounds: open, run, suggest, retire, close, the next, validate, the page",
         ),
+        ("test_round_spend.py", "a round's spend: the known sum, the runs that recorded none, never $0"),
+        (
+            "test_tests_exit.py",
+            "every test file exits with its tally: a bare summary() could not fail a gate",
+        ),
         (
             "test_pair_versions.py",
             "pair-test --b-dataset: one arm on two versions of a dataset; the refusals (reference, ids, direction)",
@@ -1361,8 +1569,20 @@ def test_example_scorer_suites_pass() -> None:
             "a project's stats.py or adapter.py never replaces the harness's, nor the reverse",
         ),
         (
+            "test_encoding_explicit.py",
+            "every text read, write and text-mode subprocess names its encoding (no locale's default)",
+        ),
+        (
+            "test_locale_independent.py",
+            "under a non-UTF-8 locale a command prints escapes, not a traceback; text is read back exactly",
+        ),
+        (
             "test_hf_rows.py",
             "the examples' Hub reader through the huggingface source: pages, pinned commit, rows map",
+        ),
+        (
+            "test_check_hf_source.py",
+            "the /rows comparison: a 5xx or a dropped connection is retried, a 4xx is not, never a difference",
         ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading"),
@@ -1378,8 +1598,11 @@ def test_example_scorer_suites_pass() -> None:
         ("check_model_facts.py", "model facts vs the evidence capture"),
     )
     present = [script for script, _ in suites if (ROOT / at(script)).is_file()]
+    started = sorted(
+        present, key=lambda s: LONGEST_FIRST.index(s) if s in LONGEST_FIRST else len(LONGEST_FIRST)
+    )
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
-        ran = dict(zip(present, pool.map(lambda script: run_own_tmp(at(script)), present)))
+        ran = dict(zip(started, pool.map(lambda script: run_own_tmp(at(script)), started)))
     for script, subject in suites:
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
         # test_retrieval_scorer.py removed it from `make ci` silently -- the suite went
@@ -1401,7 +1624,7 @@ def test_example_scorer_suites_pass() -> None:
             continue
         # Show the FAIL lines, not the tail. The tail is the summary footer, so a
         # second failure below the first was invisible.
-        fails = [ln for ln in out.splitlines() if "FAIL" in ln][:3]
+        fails = [ln for ln in out.splitlines() if _printed_fail(ln)][:3]
         detail = " | ".join(f.strip() for f in fails) or out.strip()[-160:]
         check(f"{subject}: all assertions pass", r.returncode == 0, detail)
         # AND THE EXIT CODE MUST AGREE WITH WHAT IT PRINTED. A checker that prints FAIL
@@ -1410,9 +1633,38 @@ def test_example_scorer_suites_pass() -> None:
         # sys.exit(0) turned a red baseline green.
         check(
             f"{subject}: exits non-zero if it printed FAIL",
-            not (any("FAIL" in ln for ln in out.splitlines()) and r.returncode == 0),
+            not (any(_printed_fail(ln) for ln in out.splitlines()) and r.returncode == 0),
             "printed FAIL and exited 0",
         )
+
+
+#: A failure line as the checkers print one: `FAIL label` (`_check`), a `FAILED` footer, `MATRIX: FAIL`. A label
+#: or note that names the word ("validate: no FAIL line", "0 FAIL, 0 warning") is not one: the bare substring read
+#: test_foreign_projects' passing run as a failure.
+_FAIL_LINE = re.compile(r"^\s*FAIL(?:ED)?\b|\bFAILED\b|:\s*FAIL\b")
+
+
+def _printed_fail(line: str) -> bool:
+    return bool(_FAIL_LINE.search(line))
+
+
+def test_a_failure_line_is_told_from_a_label_naming_fail() -> None:
+    for line in (
+        "  FAIL x",
+        "FAIL  no assertions ran at all",
+        "3 FAILED: a, b",
+        "STORE MATRIX: FAIL",
+        "UPGRADE-INSTALL: FAIL (2)",
+        "VALIDATION FAILED — 1 check(s)",
+        "FAILED:",
+    ):
+        check(f"printed FAIL: {line!r} is a failure line", _printed_fail(line))
+    for line in (
+        "  ok   now: imported: validate: no FAIL line and no warning",
+        "      imported: validate exit 0: 0 FAIL, 0 warning, 7 note",
+        "118/118 assertions passed",
+    ):
+        check(f"printed FAIL: {line!r} is not a failure line", not _printed_fail(line))
 
 
 def test_fingerprint_version_is_read_somewhere() -> None:
@@ -1423,7 +1675,7 @@ def test_fingerprint_version_is_read_somewhere() -> None:
     reporting a bare hash mismatch and sending a reader hunting for a change that is
     not there.
     """
-    src = (HERE / "compare_runs.py").read_text()
+    src = (HERE / "compare_runs.py").read_text(encoding="utf-8")
     check(
         "compare_runs notices a fingerprint version mismatch", 'fa.get("version") != fb.get("version")' in src
     )
@@ -1668,8 +1920,8 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     # test_run_reports.py).
     _runstore.put_partial_text(crash, "".join(f"{_json.dumps(x)}\n" for x in _runstore.run_rows(crash)))
     shutil.rmtree(crash / "scores", ignore_errors=True)
-    rec = _json.loads((crash / "run.json").read_text())
-    (crash / "run.json").write_text(_json.dumps({**rec, "run_id": crash.name}))
+    rec = _json.loads((crash / "run.json").read_text(encoding="utf-8"))
+    (crash / "run.json").write_text(_json.dumps({**rec, "run_id": crash.name}), encoding="utf-8")
     check(
         "resume: a crashed run still carries its identity (run.json) and no score",
         (crash / "run.json").is_file() and not model_runs.scores_of(crash),
@@ -1731,13 +1983,15 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
         "    out = {'words': float(len(output.split()))}\n"
         "    if PASS == 1.0:\n"
         "        out['old_metric'] = 1.0\n"
-        "    return out\n"
+        "    return out\n",
+        encoding="utf-8",
     )
     # The fixture system beside the project's own for the test, removed with its runs (a system is found by its id).
     fx_system = HERE.parent / "data" / "systems" / "fx_extra_v1.yaml"
     fx_system.write_text(
         "system_id: fx_extra_v1\nadapter: ../../.build/scratch/selftest-resume-fixture/fx_adapter.py\n"
-        "params:\n  provider: fixture\n"
+        "params:\n  provider: fixture\n",
+        encoding="utf-8",
     )
     try:
         fx_arm = ("--system", "fx_extra_v1", "--dataset", "smoke_v1", *scratch)
@@ -1864,7 +2118,7 @@ def test_writes_leave_no_partial_file() -> None:
 
     with _tf.TemporaryDirectory() as td:
         target = pathlib.Path(td) / "out.txt"
-        target.write_text("the original, complete content")
+        target.write_text("the original, complete content", encoding="utf-8")
 
         # WINDOW 1: death DURING the write. A lone surrogate cannot be encoded to
         # utf-8, so the write raises partway -- the same shape as running out of disk.
@@ -1874,8 +2128,8 @@ def test_writes_leave_no_partial_file() -> None:
             pass
         check(
             "atomic write: a write that dies partway leaves the original intact",
-            target.read_text() == "the original, complete content",
-            f"file now: {target.read_text()[:60]!r}",
+            target.read_text(encoding="utf-8") == "the original, complete content",
+            f"file now: {target.read_text(encoding='utf-8')[:60]!r}",
         )
 
         # WINDOW 2: death AFTER the temp file is complete, BEFORE the rename. This is
@@ -1893,8 +2147,8 @@ def test_writes_leave_no_partial_file() -> None:
             _os.replace = real_replace
         check(
             "atomic write: a death before the rename leaves the original intact",
-            target.read_text() == "the original, complete content",
-            f"file now: {target.read_text()[:60]!r}",
+            target.read_text(encoding="utf-8") == "the original, complete content",
+            f"file now: {target.read_text(encoding='utf-8')[:60]!r}",
         )
 
         leftovers = [f.name for f in pathlib.Path(td).iterdir() if f.name != "out.txt"]
@@ -1903,8 +2157,8 @@ def test_writes_leave_no_partial_file() -> None:
         write_text_atomic(target, "the new content")
         check(
             "atomic write: a successful write still replaces the file",
-            target.read_text() == "the new content",
-            target.read_text()[:60],
+            target.read_text(encoding="utf-8") == "the new content",
+            target.read_text(encoding="utf-8")[:60],
         )
         from evaluation_harness._common import write_bytes_atomic  # noqa: PLC0415
 
@@ -1921,15 +2175,15 @@ def test_writes_leave_no_partial_file() -> None:
         # file. Without this the test would pass against any implementation that
         # happens to exist, including a broken one.
         naive = pathlib.Path(td) / "naive.txt"
-        naive.write_text("the original, complete content")
+        naive.write_text("the original, complete content", encoding="utf-8")
         try:
             naive.write_text("good start \ud800 bad", encoding="utf-8")
         except Exception:  # noqa: BLE001
             pass
         check(
             "atomic write: and the plain write_text it replaces DOES lose the file",
-            naive.read_text() != "the original, complete content",
-            f"write_text somehow preserved it: {naive.read_text()[:40]!r}",
+            naive.read_text(encoding="utf-8") != "the original, complete content",
+            f"write_text somehow preserved it: {naive.read_text(encoding='utf-8')[:40]!r}",
         )
 
 
@@ -1963,9 +2217,9 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
     with _tf.TemporaryDirectory() as td:
         data = shadow_data(Path(td))
         dst = add_run(data, src)
-        j = _json.loads((dst / "run.json").read_text())
+        j = _json.loads((dst / "run.json").read_text(encoding="utf-8"))
         j["fingerprint"]["data"]["references_sha256"] = "0" * 64  # cannot match
-        (dst / "run.json").write_text(_json.dumps(j))
+        (dst / "run.json").write_text(_json.dumps(j), encoding="utf-8")
 
         before = {p.name for p in model_runs.scores_of(dst)}
         r = run(
@@ -2094,10 +2348,10 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
         # Swap two items' source_path. The files still exist; each item now points at the
         # other's text, so any scorer that reads the source must produce different numbers.
         ds_copy = data / "datasets" / "cnn_dailymail_200.json"
-        ds = _json.loads(ds_copy.read_text())
+        ds = _json.loads(ds_copy.read_text(encoding="utf-8"))
         items = [i for i in ds.get("items", []) if i.get("source_path")]
         items[0]["source_path"], items[1]["source_path"] = (items[1]["source_path"], items[0]["source_path"])
-        ds_copy.write_text(_json.dumps(ds))
+        ds_copy.write_text(_json.dumps(ds), encoding="utf-8")
         swapped = run(*args, env=env)
         b = rescored_scores()
 
@@ -2252,9 +2506,9 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
         dst = add_run(data, src)
         first = model_runs.first_score(dst)
         assert first is not None
-        m = _json.loads((first / "metrics.json").read_text())
+        m = _json.loads((first / "metrics.json").read_text(encoding="utf-8"))
         m.setdefault("metric_kinds", {})["llm_named_unknown"] = "quality"  # the stale state
-        (first / "metrics.json").write_text(_json.dumps(m))
+        (first / "metrics.json").write_text(_json.dumps(m), encoding="utf-8")
         dataset_id = (model_runs.record(first) or {}).get("dataset_id")
 
         # --wide: every metric column, so the order of the kinds is what is read, not the terminal's width.
@@ -2407,7 +2661,9 @@ def test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check() -> No
         body = b"an item"
         item = {"item_id": "a", "source_path": "a.txt", "source_sha256": _h.sha256(body).hexdigest()}
         for ds in ("here_v1", "absent_v1"):
-            (tmp / "datasets" / f"{ds}.json").write_text(json.dumps({"dataset_id": ds, "items": [item]}))
+            (tmp / "datasets" / f"{ds}.json").write_text(
+                json.dumps({"dataset_id": ds, "items": [item]}), encoding="utf-8"
+            )
         mat = tmp / "materialized" / "here_v1"
         mat.mkdir(parents=True)
         (mat / "a.txt").write_bytes(body)
@@ -2574,11 +2830,17 @@ def test_two_runs_sharing_a_system_id_are_refused() -> None:
         "    print(json.dumps({'raised': 'claim system_id' in str(exc), 'runs': 0, 'got': str(exc)}))\n"
     )
 
-    def asked(names: list[str]) -> dict:
+    def asked(names: list[str], as_set: bool = False) -> dict:
         with _tf.TemporaryDirectory() as td:
             data = shadow_data(Path(td))
-            for name in names:
-                add_run(data, src, name)
+            for i, name in enumerate(names, 1):
+                dst = add_run(data, src, name)
+                if as_set:
+                    # A set is what `--repeat N` records (`repeat_index`, RFC-041 F2), not the `_rN` in a name.
+                    rec = json.loads((dst / "run.json").read_text(encoding="utf-8"))
+                    (dst / "run.json").write_text(
+                        json.dumps({**rec, "repeat_index": i}, indent=2) + "\n", encoding="utf-8"
+                    )
             r = run("-c", probe, env={"EVAL_DATA_DIR": str(data)})
         try:
             return _json.loads((r.stdout or "").strip().splitlines()[-1])
@@ -2593,10 +2855,16 @@ def test_two_runs_sharing_a_system_id_are_refused() -> None:
     )
 
     # The control: a --repeat set shares a system_id BY DESIGN and must still load.
-    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)])
+    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)], as_set=True)
     check(
         "duplicate runs: but a --repeat set still loads as one arm",
         not got["raised"] and got["runs"] == 3,
+        got["got"][:150],
+    )
+    got = asked([f"{src.name}_r{i}" for i in (1, 2, 3)])
+    check(
+        "duplicate runs: three runs named _r1.._r3 that record no repeat_index are not a set, and are refused",
+        got["raised"],
         got["got"][:150],
     )
 
@@ -2655,7 +2923,7 @@ def test_the_reports_significance_counts_are_real() -> None:
         )
         return
     sep, fam = int(m.group(1)), int(m.group(2))
-    report = (HERE.parents[1] / "research" / "REPORT_RETRIEVAL.md").read_text()
+    report = (HERE.parents[1] / "research" / "REPORT_RETRIEVAL.md").read_text(encoding="utf-8")
 
     # A RANGE IS AN ACCEPTABLE ANSWER, AND HERE IT IS THE HONEST ONE. This count is not
     # stable: two arms sit on their Holm thresholds (gemma_s 0.0045 vs 0.0042,
@@ -2780,9 +3048,9 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
         # Point the copy at a reference_id that cannot exist. Equivalent to a fresh clone,
         # where the real one is absent because the corpus is gitignored -- and it does not
         # touch the real references, so a crash here cannot damage them.
-        m = _json.loads((dst / "run.json").read_text())
+        m = _json.loads((dst / "run.json").read_text(encoding="utf-8"))
         m["fingerprint"]["data"]["reference_id"] = "gold/_selftest_absent_reference"
-        (dst / "run.json").write_text(_json.dumps(m))
+        (dst / "run.json").write_text(_json.dumps(m), encoding="utf-8")
 
         before = {p.name for p in model_runs.scores_of(dst)}
         r = run(
@@ -2886,6 +3154,7 @@ def test_rank_stability_ranks_the_right_way_up() -> None:
             capture_output=True,
             text=True,
             env={**os.environ, "EVAL_HOME": str(tmp), "EVAL_DATA_DIR": "data"},
+            encoding="utf-8",
         )
         check(
             "rank-stability: on a lower-is-better metric the leader is the lowest",
@@ -2981,9 +3250,9 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
         # A regression guard (fleet feedback 28): the same code at another commit declares
         # `expect_identical_to`, so the identical pair is what was asked for, not an inert knob; and a
         # guard that does NOT reproduce its config fails.
-        m = json.loads((root / "arm_b" / "run.json").read_text())
+        m = json.loads((root / "arm_b" / "run.json").read_text(encoding="utf-8"))
         m["expect_identical_to"] = "arm_a"
-        (root / "arm_b" / "run.json").write_text(json.dumps(m))
+        (root / "arm_b" / "run.json").write_text(json.dumps(m), encoding="utf-8")
         dupes = vt._v5_in("runs", arm_scores())
         n, bad = vt._v5_guards("runs", arm_scores())
         check(
@@ -3016,9 +3285,9 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
 
     base = HERE.parent / "data"
     # The worked example the repository ships: the run its demo baseline was promoted from.
-    shipped = _json.loads((base / "baselines" / "_dataset" / "smoke_v1" / "1.json").read_text())[
-        "promoted_from"
-    ]
+    shipped = _json.loads(
+        (base / "baselines" / "_dataset" / "smoke_v1" / "1.json").read_text(encoding="utf-8")
+    )["promoted_from"]
     src = base / "runs" / shipped
     check("rescore/reference-id: the committed fixture run exists", src.is_dir())
     if not src.is_dir():
@@ -3133,10 +3402,10 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     import yaml  # noqa: PLC0415
 
     ex = ROOT.parent / "examples"
-    table = json.loads((ex / "models.json").read_text())["aliases"]
+    table = json.loads((ex / "models.json").read_text(encoding="utf-8"))["aliases"]
     used = set()
     for cfg in ex.glob("*/systems/*.yaml"):
-        model = ((yaml.safe_load(cfg.read_text()) or {}).get("params") or {}).get("model", "")
+        model = ((yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}).get("params") or {}).get("model", "")
         if str(model).startswith("eval-"):
             used.add(model)
     check(
@@ -3151,7 +3420,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     )
     proxy = {
         m["model_name"]: m["litellm_params"]["model"]
-        for m in yaml.safe_load((ex / "litellm.config.yaml").read_text())["model_list"]
+        for m in yaml.safe_load((ex / "litellm.config.yaml").read_text(encoding="utf-8"))["model_list"]
     }
     check("litellm.config.yaml serves exactly models.json", proxy == table)
     wrong = []
@@ -3161,7 +3430,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
             wrong.append(model_runs.run_of(sd).name)
     check("models.json: agrees with every upstream id a committed run resolved", not wrong, f"{wrong[:3]}")
 
-    reg = json.loads((ex / "evals.json").read_text())["evals"]
+    reg = json.loads((ex / "evals.json").read_text(encoding="utf-8"))["evals"]
     sys.path.insert(0, str(ex))
     import reproduce  # noqa: PLC0415
 
@@ -3193,7 +3462,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     # revision REFERENCE.md cites.
     import re  # noqa: PLC0415
 
-    pins = json.loads((ex / "local_models.json").read_text())["revisions"]
+    pins = json.loads((ex / "local_models.json").read_text(encoding="utf-8"))["revisions"]
     clash = []
     for sd, m in real_scores(None):
         sut = _declared_identity(m)
@@ -3202,7 +3471,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
             if sut.get("id") in pins and pins[sut["id"]] != got:
                 clash.append(f"{model_runs.run_of(sd).name}: {str(got)[:12]}")
     check("local_models.json: agrees with every revision a committed run recorded", not clash, f"{clash[:3]}")
-    ref = (ROOT.parent / "docs" / "REFERENCE.md").read_text()
+    ref = (ROOT.parent / "docs" / "REFERENCE.md").read_text(encoding="utf-8")
     off = [
         k
         for k, v in pins.items()
@@ -3445,7 +3714,10 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     if made.returncode != 0:
         shutil.rmtree(proj, ignore_errors=True)
         return
-    ids = [i["item_id"] for i in _json.loads((data / "datasets" / "proj_v1.json").read_text())["items"]]
+    ids = [
+        i["item_id"]
+        for i in _json.loads((data / "datasets" / "proj_v1.json").read_text(encoding="utf-8"))["items"]
+    ]
     # A git project with gold references under the moved data root: the fingerprint read
     # `<root>/data`, so it recorded references_sha256 None and every run after the first
     # made the tree dirty (its own untracked run output under data/eval/stats/runs).
@@ -3485,7 +3757,7 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     )
     git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false"]
     for argv in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "project"]):
-        subprocess.run([*git, *argv], cwd=proj, capture_output=True, text=True)
+        subprocess.run([*git, *argv], cwd=proj, capture_output=True, text=True, encoding="utf-8")
 
     def scores(name: str, base: float, rows=None) -> Path:
         f = Path(tempfile.gettempdir()) / f"{proj.name}-{name}.jsonl"  # outside the project: not tree dirt
@@ -3667,7 +3939,7 @@ def test_hints_name_the_command_the_user_has() -> None:
         site = _wheel.install(tmp / "site-packages")
         proj = tmp / "project"
         (proj / "data" / "sources" / "h_v1").mkdir(parents=True)
-        (proj / "data" / "sources" / "h_v1" / "a.txt").write_text("One. Two.\n")
+        (proj / "data" / "sources" / "h_v1" / "a.txt").write_text("One. Two.\n", encoding="utf-8")
         env = {
             **os.environ,
             "EVAL_HOME": str(proj),
@@ -3679,7 +3951,12 @@ def test_hints_name_the_command_the_user_has() -> None:
 
         def evh(*args: str) -> str:
             r = subprocess.run(
-                [PY, "-m", "evaluation_harness", *args], cwd=proj, capture_output=True, text=True, env=env
+                [PY, "-m", "evaluation_harness", *args],
+                cwd=proj,
+                capture_output=True,
+                text=True,
+                env=env,
+                encoding="utf-8",
             )
             return r.stdout + r.stderr
 
@@ -3731,16 +4008,19 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         (data / "systems").mkdir(parents=True)
         from evaluation_harness import _format  # noqa: PLC0415
 
-        (data / "project.yaml").write_text(f"format: {_format.FORMAT}\n")  # as evh init stamps it
+        (data / "project.yaml").write_text(
+            f"format: {_format.FORMAT}\n", encoding="utf-8"
+        )  # as evh init stamps it
         for i in ("t1", "t2", "t3"):
             (data / "sources" / "rs_v1" / f"{i}.txt").write_text(
-                f"Ticket {i} cannot log in. It fails twice. The user reset the password. Support replied.\n"
+                f"Ticket {i} cannot log in. It fails twice. The user reset the password. Support replied.\n",
+                encoding="utf-8",
             )
         # Four arms: silver-calibrate needs three to rank plus the one authoring the silver.
         for n in (1, 2, 3, 4):
             name = "arm_echo" if n == 1 else f"arm_echo{n}"
             (data / "systems" / f"{name}_v1.yaml").write_text(
-                f"system_id: {name}_v1\nparams:\n  provider: echo\n  sentences: {n}\n"
+                f"system_id: {name}_v1\nparams:\n  provider: echo\n  sentences: {n}\n", encoding="utf-8"
             )
         env = {
             **os.environ,
@@ -3753,7 +4033,12 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
 
         def evh(*args: str) -> subprocess.CompletedProcess:
             return subprocess.run(
-                [PY, "-m", "evaluation_harness", *args], cwd=proj, capture_output=True, text=True, env=env
+                [PY, "-m", "evaluation_harness", *args],
+                cwd=proj,
+                capture_output=True,
+                text=True,
+                env=env,
+                encoding="utf-8",
             )
 
         steps = [
@@ -3813,7 +4098,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         answers = data.parent / "rs_gold"
         answers.mkdir(parents=True)
         for i in ("t1", "t2", "t3"):
-            (answers / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
+            (answers / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n", encoding="utf-8")
         r = evh(
             "label-import",
             "--sheet",
@@ -3880,7 +4165,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         # ...while the same set's files changing under a run is still called out: the score it was scored by is
         # not written over with other rows, and the refusal says why.
         kept = echo_scores("gold/rs_v1")
-        (gold / "t1.txt").write_text("Ticket t1: login fails twice.\n")
+        (gold / "t1.txt").write_text("Ticket t1: login fails twice.\n", encoding="utf-8")
         again = evh("rescore", "--dataset-id", "rs_v1", "--reference-id", "gold/rs_v1")
         check(
             "rescore against the same reference after its files changed: refused, the stored score kept",
@@ -3940,6 +4225,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                     capture_output=True,
                     text=True,
                     check=True,
+                    encoding="utf-8",
                 ).stdout.strip()
             )
 
@@ -3952,7 +4238,9 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         (data / "sources" / "jds_v1").mkdir(parents=True)
         ids = ["ep_1", "ep_2", "ep_3"]
         for i in ids:
-            (data / "sources" / "jds_v1" / f"{i}.txt").write_text(f"Article {i}. It has a few sentences.\n")
+            (data / "sources" / "jds_v1" / f"{i}.txt").write_text(
+                f"Article {i}. It has a few sentences.\n", encoding="utf-8"
+            )
         env = {
             "EVAL_HOME": str(proj),
             "EVAL_DATA_DIR": "data",
@@ -3970,6 +4258,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                 capture_output=True,
                 text=True,
                 env={**os.environ, **env},
+                encoding="utf-8",
             )
 
         made = evh(
@@ -4034,7 +4323,8 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                     "arms_match": "arm_",
                     "cost_cap_usd": 1.0,
                 }
-            )
+            ),
+            encoding="utf-8",
         )
 
         def judged_scores(scorer: str) -> list[Path]:
@@ -4100,6 +4390,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             capture_output=True,
             text=True,
             env={**os.environ, **env},
+            encoding="utf-8",
         )
         check(
             "installed judge-score: leaderboard reads the scored runs",
@@ -4129,7 +4420,8 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         # A scorer that declares its own task: labels, dimensions, a 0-3 scale, `{n}` prompt.
         (proj / "prompts" / "answers.txt").write_text(
             "Rate each of the {n} numbered answers to the question, 0 to 3, on correctness "
-            "and completeness. Reply as JSON: one list of {n} integers per dimension.\n"
+            "and completeness. Reply as JSON: one list of {n} integers per dimension.\n",
+            encoding="utf-8",
         )
         (data / "scorers" / "judge-task-v1.yaml").write_text(
             _json.dumps(
@@ -4157,7 +4449,8 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                     },
                     "cost_cap_usd": 1.0,
                 }
-            )
+            ),
+            encoding="utf-8",
         )
         task_ran = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-task-v1", "--unvalidated")
         tvals = [
@@ -4166,9 +4459,12 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             if _outputs.has_rows(d)
             for r in _runstore.rows(d)
         ]
-        tsets = [_json.loads(f.read_text()) for f in (data / "judging-sets").glob("jds_v1-*.json")]
+        tsets = [
+            _json.loads(f.read_text(encoding="utf-8")) for f in (data / "judging-sets").glob("jds_v1-*.json")
+        ]
         tverd = [
-            _json.loads(f.read_text()) for f in (data / "judge-verdicts").glob("judge-task-v1/*/fa/*.json")
+            _json.loads(f.read_text(encoding="utf-8"))
+            for f in (data / "judge-verdicts").glob("judge-task-v1/*/fa/*.json")
         ]
         check(
             "installed judge-score: a declared task runs end to end, scores on its own scale",
@@ -4187,6 +4483,14 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _cpu_now() -> float:
+    """CPU seconds this process and the children it has waited for have used so far."""
+    import resource  # noqa: PLC0415
+
+    own, kids = resource.getrusage(resource.RUSAGE_SELF), resource.getrusage(resource.RUSAGE_CHILDREN)
+    return own.ru_utime + own.ru_stime + kids.ru_utime + kids.ru_stime
 
 
 def main() -> int:
@@ -4212,6 +4516,7 @@ def main() -> int:
         test_cli_help_works,
         test_family_test_cache_never_serves_a_stale_answer,
         test_example_scorer_suites_pass,
+        test_a_failure_line_is_told_from_a_label_naming_fail,
         test_fingerprint_version_is_read_somewhere,
         test_verdict_honours_declared_kinds,
         test_fingerprint_covers_reference_bytes,
@@ -4247,6 +4552,7 @@ def main() -> int:
         # at that point and every later test simply never ran, silently, while the
         # output looked like a normal early exit. That is the same shape as every
         # other "reported green for checking nothing" bug in this repo.
+        began, cpu0, timed0 = time.perf_counter(), _cpu_now(), len(TIMINGS)
         try:
             fn()
         except Exception as exc:  # noqa: BLE001 — a crashing test is a failing test
@@ -4254,6 +4560,10 @@ def main() -> int:
 
             check(f"{fn.__name__} ran without raising", False, f"{type(exc).__name__}: {exc}")
             traceback.print_exc()
+        # The files a test ran through _run_timed are already counted, each by itself: not again in the test's.
+        own_cpu = _cpu_now() - cpu0 - sum(t[2] for t in TIMINGS[timed0:])
+        TIMINGS.append((fn.__name__, time.perf_counter() - began, own_cpu))
+    print_timings()
     failures = [label for label, passed in results if not passed]
     if failures or not results:
         print(f"\n{len(failures)} FAILED: {', '.join(failures)}" if failures else "\nFAIL  no self-test ran")

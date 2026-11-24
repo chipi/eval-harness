@@ -76,23 +76,25 @@ def metrics_of(prefix):
 
 
 def git(path, *args):
-    return subprocess.run(["git", "-C", str(path), *args], capture_output=True, text=True, check=False)
+    return subprocess.run(
+        ["git", "-C", str(path), *args], capture_output=True, text=True, check=False, encoding="utf-8"
+    )
 
 
 try:
     (proj / "data" / "systems").mkdir(parents=True)
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tickets")
-    (proj / "echo.py").write_text(ECHO)
+    (proj / "echo.py").write_text(ECHO, encoding="utf-8")
     (proj / "prompts").mkdir()
-    (proj / "prompts" / "user.txt").write_text("Summarise in one line.\n")
+    (proj / "prompts" / "user.txt").write_text("Summarise in one line.\n", encoding="utf-8")
     root = proj / "lib_prompts"
     (root / "sub").mkdir(parents=True)
-    (root / "a.txt").write_text("unvaried\n")
-    (root / "sub" / "b.txt").write_text("system v1\n")
+    (root / "a.txt").write_text("unvaried\n", encoding="utf-8")
+    (root / "sub" / "b.txt").write_text("system v1\n", encoding="utf-8")
     (root / "__pycache__").mkdir()
     (root / "__pycache__" / "x.pyc").write_bytes(b"\0")
-    (proj / ".gitignore").write_text(".build/\n")
+    (proj / ".gitignore").write_text(".build/\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
     check("setup: a dataset and an adapter that answers with its prompts", r.returncode == 0, r.stderr[-300:])
@@ -111,9 +113,9 @@ try:
     fp = (m[-1].get("fingerprint") or {}) if m else {}
     s = fp.get("settings") or {}
     seen_out = proj / ".build" / "seen_output.txt"
-    out_rows = seen_out.read_text() if seen_out.exists() else ""
+    out_rows = seen_out.read_text(encoding="utf-8") if seen_out.exists() else ""
     seen = proj / ".build" / "seen_root.txt"
-    seen_root = seen.read_text() if seen.exists() else ""
+    seen_root = seen.read_text(encoding="utf-8") if seen.exists() else ""
     check(
         "a run records each declared prompt, gives the adapter the text and a copy of the root, removed after",
         r.returncode == 0
@@ -142,7 +144,7 @@ try:
 
     # The same bytes reuse the version; an edit is a new one; the two runs differ only in that prompt.
     r = evh("run", "--system", c1, "--dataset", "tk_v1")
-    (proj / "prompts" / "user.txt").write_text("Summarise in one short line.\n")
+    (proj / "prompts" / "user.txt").write_text("Summarise in one short line.\n", encoding="utf-8")
     r2 = evh("run", "--system", c1, "--dataset", "tk_v1")
     m = metrics_of("p1_v1")
     vers = evh("prompt-show", "--name", "summary/user", "--json")
@@ -176,7 +178,7 @@ try:
     )  # fmt: skip
 
     # Eight runs recording the same new bytes at once: one version.
-    (proj / "prompts" / "user.txt").write_text("A third wording.\n")
+    (proj / "prompts" / "user.txt").write_text("A third wording.\n", encoding="utf-8")
     with ThreadPoolExecutor(8) as ex:
         codes = list(ex.map(lambda _: evh("run", "--system", c1, "--dataset", "tk_v1").returncode, range(8)))
     vers = evh("prompt-show", "--name", "summary/user", "--json")
@@ -190,13 +192,13 @@ try:
     # code: a checkout's commit and changed files; its path is provenance.
     sysrepo = proj / "system"
     sysrepo.mkdir()
-    (sysrepo / "app.py").write_text("x = 1\n")
+    (sysrepo / "app.py").write_text("x = 1\n", encoding="utf-8")
     git(sysrepo, "init", "-q")
     git(sysrepo, "-c", "user.email=t@t", "-c", "user.name=t", "add", "-A")
     git(sysrepo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "one")
     c2 = system("code", "code_v1", "code: {path: system}\n")
     r = evh("run", "--system", c2, "--dataset", "tk_v1")
-    (sysrepo / "app.py").write_text("x = 2\n")
+    (sysrepo / "app.py").write_text("x = 2\n", encoding="utf-8")
     r2 = evh("run", "--system", c2, "--dataset", "tk_v1")
     git(sysrepo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "two")
     r3 = evh("run", "--system", c2, "--dataset", "tk_v1")
@@ -243,16 +245,24 @@ try:
     bad = evh("prompt-export", "--id", vid, "--to", str(proj / "venv/lib/site-packages/p.txt"))
     check(
         "prompt-export writes the bytes; a path inside an installed package is refused",
-        ex.returncode == 0 and (proj / "exported.txt").read_text() == "A fourth wording.\n"
+        ex.returncode == 0 and (proj / "exported.txt").read_text(encoding="utf-8") == "A fourth wording.\n"
         and bad.returncode != 0 and "installed package" in bad.stderr,
         (ex.stderr[-200:], bad.stderr[-200:]),
     )  # fmt: skip
     # The catalog's prompts page: names and versions always; the text only when the project publishes it.
     r = evh("catalog")
-    page = (proj / ".build" / "catalog" / "prompts.html").read_text() if r.returncode == 0 else ""
-    (proj / "config.yaml").write_text("catalog: {publish: [prompts]}\n")
+    page = (
+        (proj / ".build" / "catalog" / "prompts.html").read_text(encoding="utf-8")
+        if r.returncode == 0
+        else ""
+    )
+    (proj / "config.yaml").write_text("catalog: {publish: [prompts]}\n", encoding="utf-8")
     r2 = evh("catalog")
-    page2 = (proj / ".build" / "catalog" / "prompts.html").read_text() if r2.returncode == 0 else ""
+    page2 = (
+        (proj / ".build" / "catalog" / "prompts.html").read_text(encoding="utf-8")
+        if r2.returncode == 0
+        else ""
+    )
     (proj / "config.yaml").unlink()
     check(
         "the prompts page: names and versions; the text and diffs only with catalog: {publish: [prompts]}",
@@ -282,8 +292,8 @@ def fingerprint(params):
 def prompts(params):
     return {"tickets/line": TEXT}
 """
-    (proj / "hooked.py").write_text(hooked.replace("SENT", "TEXT"))
-    (proj / "wrong.py").write_text(hooked.replace("SENT", '"another text"'))
+    (proj / "hooked.py").write_text(hooked.replace("SENT", "TEXT"), encoding="utf-8")
+    (proj / "wrong.py").write_text(hooked.replace("SENT", '"another text"'), encoding="utf-8")
     for cid, adapter in (("hooked_v1", "hooked.py"), ("wrong_v1", "wrong.py")):
         _runstore.write_text(
             proj, f"systems/{cid}.yaml", f"system_id: {cid}\nadapter: {adapter}\nparams:\n  provider: echo\n"

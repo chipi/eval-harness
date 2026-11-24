@@ -89,13 +89,15 @@ try:
     check("setup: the tutorial dataset", r.returncode == 0, out(r)[-300:])
     (data / "goals").mkdir()
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     for arm in ("lead1", "author"):
         _runstore.write_text(
             proj,
             f"systems/tickets_{arm}_v1.yaml",
-            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         r = evh(
             "run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary"
@@ -109,7 +111,7 @@ try:
     lead = runs_named("tickets_lead1_v1_")[0]
 
     # ── label-from-run ──────────────────────────────────────────────────────────────────────
-    (proj / "author_prompt.txt").write_text("Summarise the ticket for the support lead.\n")
+    (proj / "author_prompt.txt").write_text("Summarise the ticket for the support lead.\n", encoding="utf-8")
     r = evh("label-from-run", "--run", author, "--set", "author_v1", "--guideline", "author_prompt.txt")
     doc = lab_doc("tickets_v1/author_v1/labels.json") if r.returncode == 0 else {}
     with _runstore._InProject(proj):
@@ -215,8 +217,8 @@ try:
     )
     answers = proj / "answers"
     answers.mkdir()
-    (answers / "t01_login.txt").write_text("Login fails after SSO change.\n")
-    (answers / "t04_api.txt").write_text("Rate limit lower than documented.\n")
+    (answers / "t01_login.txt").write_text("Login fails after SSO change.\n", encoding="utf-8")
+    (answers / "t04_api.txt").write_text("Rate limit lower than documented.\n", encoding="utf-8")
     r = evh(
         "label-import",
         "--sheet",
@@ -253,7 +255,7 @@ try:
         and not any(n.startswith(".half_set") for n in _runstore.listdir(proj, f"{LABELS}/tickets_v1")),
         out(r)[-300:],
     )
-    (proj / "guide.md").write_text("Summarise the ticket's problem in one sentence.\n")
+    (proj / "guide.md").write_text("Summarise the ticket's problem in one sentence.\n", encoding="utf-8")
     r = evh(
         "label-import", "--sheet", "answers", "--dataset-id", "tickets_v1", "--set", "half_set", "--by", "owner",
         "--guideline", "guide.md",
@@ -355,7 +357,8 @@ try:
 
     # ── an item with more than one right answer (owner, 2026-11-02: a label can accept several) ───────────────────
     (proj / "several.csv").write_text(
-        "item_id,label,also right,note\nt01_login,file,escalate | file,\nt02_invoice,dismiss,,\n"
+        "item_id,label,also right,note\nt01_login,file,escalate | file,\nt02_invoice,dismiss,,\n",
+        encoding="utf-8",
     )
     r = evh(
         "label-import",
@@ -376,7 +379,7 @@ try:
         and lab_text(f"{several}/t02_invoice.txt") == "dismiss\n",
         out(r)[-300:],
     )
-    (answers / "t01_login.txt").write_text('{"accept": ["file", "escalate", "file"]}\n')
+    (answers / "t01_login.txt").write_text('{"accept": ["file", "escalate", "file"]}\n', encoding="utf-8")
     (answers / "t04_api.txt").unlink()
     r = evh(
         "label-import",
@@ -395,7 +398,9 @@ try:
         and lab_text("tickets_v1/several_files/t01_login.txt") == lab_text(f"{several}/t01_login.txt"),
         out(r)[-300:],
     )
-    (proj / "notalist.csv").write_text('item_id,label\nt01_login,"{""accept"": ""file""}"\n')
+    (proj / "notalist.csv").write_text(
+        'item_id,label\nt01_login,"{""accept"": ""file""}"\n', encoding="utf-8"
+    )
     r = evh(
         "label-import",
         "--sheet",
@@ -412,7 +417,7 @@ try:
         refused(r, "not a list of answers") and not _runstore.exists(proj, f"{LABELS}/tickets_v1/bad_accept"),
         out(r)[-300:],
     )
-    (proj / "one.csv").write_text("item_id,label\nt01_login,escalate\nt02_invoice,file\n")
+    (proj / "one.csv").write_text("item_id,label\nt01_login,escalate\nt02_invoice,file\n", encoding="utf-8")
     evh(
         "label-import", "--sheet", "one.csv", "--dataset-id", "tickets_v1", "--set", "one_v1", "--by", "owner"
     )
@@ -509,7 +514,7 @@ try:
     _runstore.rmtree(
         proj, f"{LABELS}/tickets_v1/owner_files"
     )  # the later checks count the sets on tickets_v1
-    (proj / "bad.csv").write_text("id,answer\nt01_login,x\n")
+    (proj / "bad.csv").write_text("id,answer\nt01_login,x\n", encoding="utf-8")
     r = evh(
         "label-import", "--sheet", "bad.csv", "--dataset-id", "tickets_v1", "--set", "bad_v1", "--by", "owner"
     )
@@ -518,7 +523,7 @@ try:
         refused(r, "item_id and label"),
         out(r)[-200:],
     )
-    (proj / "ghost.csv").write_text("item_id,label\nno_such_item,x\n")
+    (proj / "ghost.csv").write_text("item_id,label\nno_such_item,x\n", encoding="utf-8")
     r = evh(
         "label-import",
         "--sheet",
@@ -581,7 +586,7 @@ try:
     edited = proj / "tutorial" / "tickets_edited"
     shutil.copytree(proj / "tutorial" / "tickets", edited)
     first = sorted(edited.iterdir())[0]
-    first.write_text(first.read_text() + "\nEdited.\n")
+    first.write_text(first.read_text(encoding="utf-8") + "\nEdited.\n", encoding="utf-8")
     evh(
         "dataset-create",
         "--dataset-id",
@@ -867,18 +872,30 @@ try:
     )
 
     # ── agreement: --disagree keeps the items the arms decided differently (step 5) ──────────────
-    # the same run once more, as a repeat of it (its own arm): two of one system that decided differently
-    alt_id = lead + "_alt"
+    # the same run once more, as `evh run --purpose repeat --of` of it with a setting changed (a temperature the echo
+    # provider ignores: the fingerprint's settings hash differs, so it is read under `repeats`, its own arm; a repeat
+    # of the same measurement joins its original's arm, test_arm_membership): two of one system that decided differently
+    lead_yaml = _runstore.read_text(proj, "systems/tickets_lead1_v1.yaml")
+    before_ids = set(runs_named("tickets_lead1_v1_"))
+    _runstore.write_text(proj, "systems/tickets_lead1_v1.yaml", lead_yaml + "  temperature: 0.7\n")
+    r = evh(
+        "run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--purpose", "repeat", "--of", lead
+    )
+    _runstore.write_text(proj, "systems/tickets_lead1_v1.yaml", lead_yaml)
+    made = sorted(set(runs_named("tickets_lead1_v1_")) - before_ids)
+    check(
+        "setup: the repeat with another temperature runs", r.returncode == 0 and len(made) == 1, out(r)[-300:]
+    )
+    alt_id = made[0]
     alt = data / "runs" / alt_id
     with _runstore._InProject(proj):
-        src_first = _R.first_score(data / "runs" / lead)
-        assert src_first is not None, f"{lead} has no first score"
-        _runstore.copy_run(data / "runs" / lead, alt)
-        _runstore.copy_run(src_first, alt / "scores" / src_first.name)
-        alt_rec = _R.run(alt)
-        assert alt_rec is not None, f"{alt_id} was not copied"
-        _R.write_run(alt_id, {**alt_rec, "run_id": alt_id, "purpose": "repeat", "of": lead})
+        joined = _R.same_measurement(_R.run(data / "runs" / lead) or {}, _R.run(alt) or {})
         changed = sorted(_outputs.outputs(alt))[:2]
+    check(
+        "the repeat does not join its original: the harness wrote another settings hash",
+        joined[0] is False and "settings" in joined[1],
+        joined,
+    )
     for i in changed:
         _set_output(alt, i, "a different decision")
 
@@ -985,6 +1002,7 @@ try:
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     made = sorted(lab_runs() - before_lab)
     run_m: dict = _runview.record_of(proj, made[-1])[1] if made else {}
@@ -1050,10 +1068,10 @@ try:
     for side in ("twins", "twins2"):
         (proj / side).mkdir()
         for name, text in (("a", "the same alert\n"), ("b", "the same alert\n"), ("c", "another alert\n")):
-            (proj / side / f"{name}.txt").write_text(text)
+            (proj / side / f"{name}.txt").write_text(text, encoding="utf-8")
     (proj / "twin_labels").mkdir()
     for name, text in (("a", "create\n"), ("b", "comment\n"), ("c", "none\n")):
-        (proj / "twin_labels" / f"{name}.txt").write_text(text)
+        (proj / "twin_labels" / f"{name}.txt").write_text(text, encoding="utf-8")
     steps = [
         ("dataset-create", "--dataset-id", "twins_v1", "--source-dir", "twins"),
         ("dataset-materialize", "--dataset-id", "twins_v1"),

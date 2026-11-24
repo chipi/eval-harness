@@ -91,9 +91,9 @@ cp -a "$ROOT/infra/mcp/hooks.py" "$OUT/inspector/mcp_hooks.py"
 cp -a "$ROOT/infra/mcp/probe_error.py" "$OUT/inspector/mcp_probe.py"   # GlitchTip error-path probe (infra/README)
 # Its Umami events go to the site's own website (the id is public, site/analytics.json); where to
 # send them (UMAMI_SEND_URL, on the tailnet) is in observability.env, rendered by the deploy.
-python3 - "$ROOT/site/analytics.json" > "$OUT/inspector/mcp_umami.json" <<'PY'
+PYTHONIOENCODING=utf-8 python3 - "$ROOT/site/analytics.json" > "$OUT/inspector/mcp_umami.json" <<'PY'
 import json, sys
-print(json.dumps({"website_id": json.load(open(sys.argv[1])).get("website_id") or ""}))
+print(json.dumps({"website_id": json.load(open(sys.argv[1], encoding="utf-8")).get("website_id") or ""}))
 PY
 # The data the catalog and the inspector read, with nothing a `text: hidden` dataset's text gave
 # (RFC-019) and no text git does not track: _release.py refuses such a release before copying. In SQLite it is then
@@ -117,9 +117,9 @@ python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$S
 cp -a "$ROOT/examples" "$OUT/inspector/examples"
 # This deployment's analytics in the catalog's pages (the harness adds none): the site's Umami tag,
 # from the same site/analytics.json, through catalog_build's --head.
-python3 - "$ROOT/site/analytics.json" > "$OUT/catalog-head.html" <<'PY'
+PYTHONIOENCODING=utf-8 python3 - "$ROOT/site/analytics.json" > "$OUT/catalog-head.html" <<'PY'
 import html, json, sys
-c = json.load(open(sys.argv[1]))
+c = json.load(open(sys.argv[1], encoding="utf-8"))
 if c.get("umami_src") and c.get("website_id"):
     d = f' data-domains="{html.escape(c["domains"])}"' if c.get("domains") else ""
     print(f'<script defer src="{html.escape(c["umami_src"])}" data-website-id="{html.escape(c["website_id"])}"{d}></script>')
@@ -131,7 +131,7 @@ mkdir -p "$OUT/inspector/cache"
 EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" \
   EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/cli.py" catalog \
   --out "$OUT/sites/$SITE/public/catalog" \
-  --link "Harness=https://$SITE/" --link "Catalog=." --link "Docs=https://$SITE/docs/" --link "MCP=https://$SITE/#mcp" \
+  --link "Harness=https://$SITE/" --link "Catalog=." --link "Workbench=https://$SITE/workbench/" --link "Docs=https://$SITE/docs/" --link "MCP=https://$SITE/#mcp" \
   --mcp "https://$SITE/mcp" --card "https://$SITE/assets/social.png" --mcp-howto "https://$SITE/docs/harness/INTEGRATION/#for-an-agent-evh-mcp" --brand eval-harness --api /catalog/api/ \
   --head "$OUT/catalog-head.html" --about "$ROOT/infra/catalog/about.html" \
   --repo "https://github.com/${GITHUB_REPOSITORY:-chipi/eval-harness}/blob/main/"

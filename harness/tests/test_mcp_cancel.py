@@ -51,7 +51,8 @@ patched = tmp / "slow.started.patched"
     "        time.sleep(SLOW)\n"
     "        return real(*a, **k)\n"
     "    records.licences = slow\n"
-    "    open(os.environ['EVH_TEST_SLOW'] + '.patched', 'w').close()\n"
+    "    open(os.environ['EVH_TEST_SLOW'] + '.patched', 'w').close()\n",
+    encoding="utf-8",
 )
 env = dict(
     os.environ,

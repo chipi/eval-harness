@@ -2,7 +2,8 @@
 
 The changelog is the one record of what each release shipped. The GitHub Release for a tag
 takes its notes from the same section (harness-release.yml), the docs site shows the file
-itself, and this page shows it on the harness site, so the three cannot disagree.
+itself, and this page shows it on the harness site, so the three cannot disagree. A section is short
+(`check_sections`); a release with more to say links its full notes, docs/releases/<version>.md.
 
 Only the Markdown the changelog uses is rendered: `##`/`###` headings, `- ` bullets nested by
 their indent (two spaces a level; wrapped lines continue them), paragraphs, **bold** (which may
@@ -104,6 +105,45 @@ def releases(text: str) -> list:
     return out
 
 
+#: A release's section is short: its full notes are a page in docs/releases/ and the section links to it. GitHub
+#: caps a Release body at 125,000 characters (harness-release.yml cuts at 120,000, as a backstop only), and a
+#: section nobody can read in one sitting is not release notes. Releases before 0.8.0 keep their long sections.
+SECTION_LIMIT = 4000
+SHORT_FROM = (0, 8, 0)
+NOTES_DIR = ROOT / "docs" / "releases"
+_NOTES_LINK = re.compile(
+    r"\]\((https://github\.com/chipi/eval-harness/blob/main/docs/releases/([\d.]+)\.md)\)"
+)
+
+
+def check_sections(text: str, notes_dir: Path = NOTES_DIR) -> list:
+    """What is wrong with a release section: over SECTION_LIMIT characters (from 0.8.0 on), a link to a
+    notes page that does not exist, or a notes page in docs/releases/ its section does not link to."""
+    problems, sections = [], {}
+    for part in re.split(r"(?m)^(?=## )", text):
+        m = _RELEASE.match(part.split("\n", 1)[0].rstrip())
+        if m:
+            sections[m.group(1)] = part.split("\n", 1)[1] if "\n" in part else ""
+    for v, body in sections.items():
+        if tuple(int(x) for x in v.split(".")) < SHORT_FROM:
+            continue
+        if len(body.strip()) > SECTION_LIMIT:
+            problems.append(
+                f"harness/CHANGELOG.md: {v} is {len(body.strip()):,} characters; a section is at most {SECTION_LIMIT:,}. "
+                f"Move the full notes to docs/releases/{v}.md and link to it from a short section"
+            )
+        linked = {n for _, n in _NOTES_LINK.findall(body)}
+        for n in sorted(linked):
+            if not (notes_dir / f"{n}.md").is_file():
+                problems.append(f"harness/CHANGELOG.md: {v} links docs/releases/{n}.md, which does not exist")
+        if (notes_dir / f"{v}.md").is_file() and v not in linked:
+            problems.append(
+                f"harness/CHANGELOG.md: {v} has docs/releases/{v}.md but its section does not link to it "
+                f"(https://github.com/chipi/eval-harness/blob/main/docs/releases/{v}.md)"
+            )
+    return problems
+
+
 def release_html(H, rel: dict, blob: str, repo: str) -> str:
     parts: list[str] = []
     depth = 0  # how many lists are open; an item at depth d sits in the d+1-th
@@ -151,7 +191,7 @@ def releases_page(H) -> str:
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Release notes</b> · the harness, version by version</div>
   <h1>What each release <em>shipped.</em></h1>
-  <p class="dek">The harness is installed by pinning a release tag. Each release below is its changelog section, the same text its GitHub Release carries. A change that can move a result is listed under Changed, in words a project pinning the harness can act on.</p>
+  <p class="dek">The harness is installed by pinning a release tag. Each release below is its changelog section, the same text its GitHub Release carries; a release with more to say links its full notes. A change that can move a result is listed under Changed, in words a project pinning the harness can act on.</p>
   <nav class="toc">{toc}</nav>
   <div class="btns"><a class="btn primary" href="{H.REPO}/releases">GitHub Releases ↗</a><a class="btn" href="docs/harness/RELEASING/">How releases are cut</a><a class="btn" href="docs/harness/UPGRADING/">Upgrading</a></div>
 </div></section>

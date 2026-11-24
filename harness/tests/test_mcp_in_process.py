@@ -41,7 +41,8 @@ starts = tmp / "starts.log"
 (site / "sitecustomize.py").write_text(
     "import os, sys\n"
     "with open(os.environ['EVH_TEST_STARTS'], 'a') as f:\n"
-    "    f.write(f'{os.getpid()} {os.getppid()} {\" \".join(sys.argv[:3])}\\n')\n"
+    "    f.write(f'{os.getpid()} {os.getppid()} {\" \".join(sys.argv[:3])}\\n')\n",
+    encoding="utf-8",
 )
 env = dict(
     os.environ,
@@ -101,7 +102,7 @@ async def session():
 
 try:
     anyio.run(session)
-    lines = [ln for ln in starts.read_text().splitlines() if ln.strip()]
+    lines = [ln for ln in starts.read_text(encoding="utf-8").splitlines() if ln.strip()]
     check(
         "no process was started for a read: the server's interpreter is the only one that ran",
         len(lines) == 1 and "cli.py" in lines[0] and " mcp" in lines[0],

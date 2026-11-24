@@ -70,7 +70,10 @@ _COMPARE = {
         "type": "string",
         "description": "the arm the others are tested against (default: a round's leader, else the first)",
     },
-    "metric": {"type": "string", "description": "the metric compared (default: the arms' primary metric)"},
+    "metric": {
+        "type": "string",
+        "description": "the metric compared (default: the metric that decides on the dataset: its goal's measure, else the arms' primary metric)",
+    },
     "where": {
         "type": "array",
         "items": {"type": "string"},
@@ -576,7 +579,7 @@ def label_coverage(
     from evaluation_harness.label_coverage import coverage  # noqa: PLC0415
     from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
-    if _visibility.public_env():  # a public MCP server's call: the captures and the rules are this machine's
+    if _visibility.public():  # a public MCP server's call: the captures and the rules are this machine's
         raise Problem(
             "label coverage reads a rules file and the captures, which are this machine's", "not-allowed"
         )

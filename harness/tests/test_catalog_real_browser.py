@@ -28,6 +28,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import signal
 import socket
 import subprocess
@@ -38,6 +39,8 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _slow
+import _slow  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 PAGES = (
@@ -71,10 +74,10 @@ def serve(cat: Path, log: Path) -> tuple:
             start_new_session=True,
         )
     for _ in range(300):
-        if "catalog:" in log.read_text():
+        if "catalog:" in log.read_text(encoding="utf-8"):
             break
         if p.poll() is not None:
-            raise SystemExit(f"catalog-serve exited:\n{log.read_text()}")
+            raise SystemExit(f"catalog-serve exited:\n{log.read_text(encoding='utf-8')}")
         time.sleep(0.1)
     return p, f"http://127.0.0.1:{port}/{cat.resolve().relative_to(HARNESS).as_posix()}/"
 
@@ -507,7 +510,7 @@ def drive(cat: Path, base: str) -> None:
         next(iter(sorted((cat / "m").glob("*.html")))).relative_to(cat).as_posix(),
     ]
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = _slow.launch(pw)
         errors: list = []
         phone = browser.new_page(viewport={"width": 390, "height": 844})
         phone.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
@@ -1011,7 +1014,11 @@ def drive(cat: Path, base: str) -> None:
         differ = []
         for gp in sorted((cat / "g").glob("*.html")):
             shown = dict(
-                re.findall(r"<b>(r\d+)</b>.*?<span data-v=\"(\d+)\">\d+ arms</span>", gp.read_text(), re.S)
+                re.findall(
+                    r"<b>(r\d+)</b>.*?<span data-v=\"(\d+)\">\d+ arms</span>",
+                    gp.read_text(encoding="utf-8"),
+                    re.S,
+                )
             )
             if not shown:
                 continue
@@ -1020,6 +1027,7 @@ def drive(cat: Path, base: str) -> None:
                 cwd=HARNESS,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             ).stdout
             said = dict(re.findall(r"^\s*(r\d+)\s+\S+\s+\S+\s+(\d+) arm\(s\)", cli, re.M))
             differ += [
@@ -1090,7 +1098,11 @@ def drive(cat: Path, base: str) -> None:
             from evaluation_harness._common import system_now  # noqa: PLC0415
 
             # the author by the id its system has now (a migration renamed systems; the manifest keeps the old one)
-            who = system_now(json.loads(m.read_text()).get("authored_by")) if m.is_file() else None
+            who = (
+                system_now(json.loads(m.read_text(encoding="utf-8")).get("authored_by"))
+                if m.is_file()
+                else None
+            )
             arm = f"silver/{ds}/{who}"
             return (
                 q.replace("runs=" + ",".join(runs), "runs=" + ",".join([*runs, arm]), 1)
@@ -1132,6 +1144,25 @@ def drive(cat: Path, base: str) -> None:
         browser.close()
 
 
+def sqlite_copy(cat: Path) -> Path:
+    """This repository's data as a SQLite store (a copy: the tracked files stay as they are), and the catalog built over
+    it, in .build/real-sqlite/. The process then reads it: a SQLite store is not the repository's files, so serving
+    the files' catalog on it left every comparison with no runs to answer from."""
+    root = HARNESS / ".build" / "real-sqlite"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    shutil.copytree(HARNESS / "data", root / "data")
+    os.environ.update(EVAL_DATA_DIR=str(root / "data"), EVAL_STORE="sqlite")
+    cli = [sys.executable, str(HARNESS / "scripts" / "cli.py")]
+    for args in (["data-migrate", "--to", "sqlite"], ["catalog", "--out", str(root / "catalog")]):
+        r = subprocess.run(
+            cli + args, cwd=HARNESS, capture_output=True, text=True, check=False, encoding="utf-8"
+        )  # nosec B603
+        if r.returncode:
+            raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
+    return root / "catalog"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--catalog", type=Path, default=HARNESS / ".build" / "budget-catalog")
@@ -1145,6 +1176,8 @@ def main() -> int:
         print("  FAIL Playwright is not installed: `make browser-install` (requirements-browser.txt)")
         return 1
     cat = args.catalog.resolve()
+    if os.environ.get("EVAL_STORE", "").strip() == "sqlite":
+        cat = sqlite_copy(cat)
     if not (cat / "index.html").is_file():
         print(f"  FAIL no catalog at {cat}: `make browser-real-check` builds one")
         return 1
@@ -1155,7 +1188,7 @@ def main() -> int:
             from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
             with sync_playwright() as pw:
-                browser = pw.chromium.launch()
+                browser = _slow.launch(pw)
                 check_display(browser, base, cat)
                 browser.close()
         else:

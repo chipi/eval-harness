@@ -58,7 +58,7 @@ try:
     # A runs-* folder is format 3 data (RFC-032 step 4): validate names it (V23), and the command that moves it.
     f3 = base / "format3"
     evh(base, "init", str(f3), "--store", "files")
-    (f3 / "data" / _format.NAME).write_text("format: 3\nwritten_by: 0.8.0\n")
+    (f3 / "data" / _format.NAME).write_text("format: 3\nwritten_by: 0.8.0\n", encoding="utf-8")
     (f3 / "data" / "runs-linux").mkdir()
     r = evh(f3, "validate")
     check(
@@ -88,7 +88,7 @@ try:
         cp = subprocess.run(
             [sys.executable, str(HERE / "_release.py"), "copy-data", str(files / "data"), str(rel / "data"), "--store", "files"],
             cwd=files, env=dict(os.environ, EVAL_HOME=str(files), EVAL_STORE="files"), capture_output=True,
-            text=True, timeout=300,
+            text=True, timeout=300, encoding="utf-8",
         )  # fmt: skip
         g = evh(rel, "migrate", "--check")
         gates.append((cp.returncode, (rel / "data" / _format.NAME).is_file(), g.returncode))
@@ -117,21 +117,21 @@ try:
     check(
         "migrate runs the steps and stamps the format",
         r.returncode == 0
-        and f"format: {_format.FORMAT}" in stamp.read_text()
+        and f"format: {_format.FORMAT}" in stamp.read_text(encoding="utf-8")
         and evh(files, "migrate", "--check").returncode == 0,
         (r.returncode, r.stdout[-300:], r.stderr[-300:]),
     )
     r = evh(files, "migrate")
     check("a second migrate does nothing", r.returncode == 0 and "nothing to do" in r.stdout, r.stdout[-200:])
 
-    stamp.write_text(f"format: {_format.FORMAT + 1}\nwritten_by: 9.9.9\n")
+    stamp.write_text(f"format: {_format.FORMAT + 1}\nwritten_by: 9.9.9\n", encoding="utf-8")
     r1, r2 = evh(files, "migrate", "--check"), evh(files, "migrate")
     check(
         "data a later release wrote is refused, naming it, by --check and by migrate",
         all(x.returncode == 1 and "ERROR (mismatch)" in x.stderr and "9.9.9" in x.stderr for x in (r1, r2)),
         (r1.stderr[-200:], r2.stderr[-200:]),
     )
-    stamp.write_text("format: one\n")
+    stamp.write_text("format: one\n", encoding="utf-8")
     r = evh(files, "migrate", "--check")
     check(
         "a malformed stamp is an invalid file",
@@ -209,7 +209,9 @@ try:
         evh(proj, "dataset-materialize", "--dataset-id", "tickets_v1")
         lb = evh(proj, "leaderboard", "tickets_v1", "--json")
         want = (
-            board(json.loads((fx / "leaderboard-0.7.2.json").read_text()), "config_id") if old == 0 else None
+            board(json.loads((fx / "leaderboard-0.7.2.json").read_text(encoding="utf-8")), "config_id")
+            if old == 0
+            else None
         )
         got = board(json.loads(lb.stdout)) if lb.returncode == 0 else None
         # step 4: every run in data/runs with its record, each with a first score; no folder of the old layout left

@@ -192,7 +192,7 @@ def _unpack(rec: dict[str, Any], commit: str, dest: Path) -> None:
             tar.extractall(tmp, members=safe, filter="data")  # nosec B202 - members checked above
         else:  # pragma: no cover - a Python before 3.10.12
             tar.extractall(tmp, members=safe)  # noqa: S202  # nosec B202 - members checked above
-    (tmp / ".evh-commit").write_text(commit + "\n")
+    (tmp / ".evh-commit").write_text(commit + "\n", encoding="utf-8")
     shutil.rmtree(dest, ignore_errors=True)
     os.replace(tmp, dest)
 

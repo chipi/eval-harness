@@ -9,10 +9,11 @@ from __future__ import annotations
 
 from collections import Counter
 from functools import lru_cache
+from pathlib import Path
 
-from evaluation_harness import _fields, stats
+from evaluation_harness import _fields, _visibility, stats
 from evaluation_harness._common import SPEED_KEYS
-from evaluation_harness.catalog_adapter import Adapter, item_fields
+from evaluation_harness.catalog_adapter import Adapter, direction_on, item_fields
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
 STATES = ("compared", "average only", "no shared metric", "not scorable")
@@ -20,13 +21,6 @@ STATES = ("compared", "average only", "no shared metric", "not scorable")
 A: Adapter = None  # type: ignore[assignment]  # set by set_adapter()
 #: Set by the server's main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
 LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": (), "proxy_hosts": ()}
-
-
-def public() -> bool:
-    """Whether this comparison is a public server's: the inspector's --public, or an MCP call made for a public server."""
-    from evaluation_harness import _visibility  # noqa: PLC0415
-
-    return bool(LIMITS["hosts"]) or _visibility.public_env()
 
 
 def set_adapter(adapter: Adapter) -> None:
@@ -134,14 +128,28 @@ def _metric_rows(counts: Counter, per_arm: dict, baseline: str, dataset: str | N
         {
             "name": k,
             "arms": n,
-            "lower_is_better": A.lower_is_better(k, dataset),
-            "neutral": A.is_neutral(k, dataset or None),
+            "lower_is_better": direction_on(A, k, dataset or None) == "lower",
+            "neutral": direction_on(A, k, dataset or None) == "neutral",
             "baseline_has": k in per_arm.get(baseline, {}),
             "format": A.reference_format(_ref_of(k)) if _ref_of(k) else "",
             "archived": bool(_ref_of(k) and A.reference_archived(_ref_of(k))),
         }
         for k, n in counts.most_common()
     ]
+
+
+def _deciding(counts: Counter, arms: list, dataset: str, everyone: int) -> str | None:
+    """The metric that decides on `dataset` among the arms compared (`_runs.deciding_metric`), by its plain name, else
+    None: no dataset, or nothing that every arm scores (a measure one arm alone records leaves nothing to compare)."""
+    if not dataset:
+        return None
+    from evaluation_harness import _runs  # noqa: PLC0415
+
+    recorded = dict.fromkeys(k.split(" vs ")[0] for k, n in counts.items() if n == everyone)
+    seen = Counter(p for a in arms if (p := (A.describe(a) or {}).get("primary")) in recorded)
+    runs = [(Path(), {"scores": recorded, "primary_metric": next(iter(seen.most_common(1)), (None,))[0]})]
+    goals = {g["goal_id"]: g for g in getattr(A, "goals", list)()}
+    return _runs.deciding_metric(dataset, runs=runs, goals=goals, refuse=False)
 
 
 def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, dataset: str = "") -> str:
@@ -173,10 +181,13 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, data
     # metric all share, and left nothing to test (review, 2026-11-19).
     primaries = Counter(p for a in arms if (p := (A.describe(a) or {}).get("primary")))
     everyone = len(per_arm)
+    # The metric that decides on the dataset (`_runs.deciding_metric`: its goal's measure, else the arms' primary) first.
+    decided = _deciding(counts, arms, dataset, everyone)
 
     return min(
         pool,
         key=lambda k: (
+            k.split(" vs ")[0] != decided,
             k in A.shape_metrics,
             A.is_neutral(k, dataset or None),
             _reference_free(k),  # the bill and the clock: only when nothing is scored
@@ -356,7 +367,7 @@ def _fields_of(dataset: str) -> tuple:
     show, the public API may show, and a filter on a hidden field would leak it through counts."""
     fl = item_fields(A, dataset) if dataset else {"fieldset": None, "values": {}}
     decl = {f["name"]: f for f in (fl["fieldset"] or {}).get("fields") or []}
-    if public():
+    if _visibility.public():
         decl = {n: f for n, f in decl.items() if f.get("public")}
     values = {i: {n: v for n, v in vs.items() if n in decl} for i, vs in fl["values"].items()}
     return decl, values
@@ -381,7 +392,7 @@ def _filter(series: dict, decl: dict, values: dict, wheres: list):
     for w in wheres:
         name, _, want = w.partition(":")
         if name not in decl:
-            return None, f"no field {name!r} to filter by" + (" here" if public() else "")
+            return None, f"no field {name!r} to filter by" + (" here" if _visibility.public() else "")
         try:
             keep = {i for i, vs in values.items() if _fields.matches(decl[name], vs.get(name), want)}
         except ValueError as exc:
@@ -541,7 +552,8 @@ def compare(params: dict) -> dict:
         clusters = {i: v[cluster] for i, v in every.items() if v.get(cluster) not in (None, "")}
     else:
         clusters, cluster = goal_clusters_on(dataset)
-    higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
+    which = direction_on(A, metric, dataset or None)
+    higher, neutral = which != "lower", which == "neutral"
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
     # allows), would turn "not significant" into "significant" by editing a link.

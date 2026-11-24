@@ -50,7 +50,6 @@ from evaluation_harness import catalog_serve as cs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
-from evaluation_harness.model import compare as compare_model  # noqa: E402
 from evaluation_harness.model.entity import Problem  # noqa: E402
 from evaluation_harness.ops import cli as ops_cli  # noqa: E402
 from evaluation_harness.ops import legacy, registry, views  # noqa: E402
@@ -287,6 +286,11 @@ try:
         and next(m for m in mets["metrics"] if m["metric"] == "acc")["datasets"] == {"ds1": 2, "ds2": 1}
         and {m["metric"] for m in NEW["metric-list"].call(dataset="ds2")["metrics"]} == {"acc", "words"},
     )
+    check(
+        "metric-list: better_on gives each dataset's answer",
+        next(m for m in mets["metrics"] if m["metric"] == "acc")["better_on"]
+        == {"ds1": "higher", "ds2": "higher"},
+    )
     met = NEW["metric-show"].call(metric="acc", dataset="ds1")
     check(
         "metric-show: the arms recording it on a dataset, best first",
@@ -345,13 +349,13 @@ try:
         {"id": f"d{i}", "body": "x", "created_at": "2026-01-01T00:00:00Z", "outcome": {"verdict": v}}
         for i, v in enumerate(["y", "n", "y"])
     ]
-    (proj / "dec.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    (proj / "dec.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     made = evh(
         "capture", "--importer", "jsonl", "--query", json.dumps({"path": "dec.jsonl"}), "--capture", "dec"
     )
     check("setup: a capture of three decisions", made.returncode == 0, (made.stdout + made.stderr)[-300:])
     (proj / "rules.yaml").write_text(
-        "- {when: {verdict: y}, label: file}\n- {when: {verdict: n}, label: dismiss}\n"
+        "- {when: {verdict: y}, label: file}\n- {when: {verdict: n}, label: dismiss}\n", encoding="utf-8"
     )
     lc = NEW["label-coverage-show"]
     cov = lc.call(dataset="dec_v1", capture="dec", map="rules.yaml")
@@ -391,10 +395,10 @@ try:
     with _visibility.public_call(True):
         public = refused(lc.call, dataset="dec_v1", capture="dec", map="rules.yaml")[0]
         NEW["comparison-show"].call(runs="runs/ds1/arm_a,runs/ds1/arm_b")
-        limited = compare_model.public()
+        limited = _visibility.public()
     check(
         "on a public call label coverage is refused, and a comparison is held to the public rules; a local call is not",
-        public == "not-allowed" and limited and not compare_model.public(),
+        public == "not-allowed" and limited and not _visibility.public(),
         (public, limited),
     )
 

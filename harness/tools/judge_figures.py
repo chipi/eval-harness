@@ -245,6 +245,9 @@ def compute(scorer: str = SCORER) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     print(
         json.dumps(
             compute(), indent=1, default=lambda o: None if isinstance(o, float) and math.isnan(o) else str(o)

@@ -59,6 +59,7 @@ TUTORIALS = [
         "5-catalog-and-inspector.md",
         "6-datasets-from-production.md",
         "8-the-workbench.md",
+        "9-custom-adapter.md",
     )
 ]
 FENCE = re.compile(r"^```(\w*)\s*$")
@@ -166,11 +167,17 @@ def run(cmd: str, proj: Path, env: dict, background: bool) -> tuple:
     """Execute a command and return (return_code, output)."""
     if not background:
         r = subprocess.run(
-            ["bash", "-c", cmd], cwd=proj, env=env, capture_output=True, text=True, timeout=900
+            ["bash", "-c", cmd],
+            cwd=proj,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=900,
+            encoding="utf-8",
         )
         return r.returncode, r.stdout + r.stderr
     log = proj.parent / "background.log"
-    with open(log, "w") as fh:
+    with open(log, "w", encoding="utf-8") as fh:
         p = subprocess.Popen(
             ["bash", "-c", f"exec {cmd}"],
             cwd=proj,
@@ -180,13 +187,13 @@ def run(cmd: str, proj: Path, env: dict, background: bool) -> tuple:
             start_new_session=True,
         )
     for _ in range(80):
-        if log.read_text().strip():
+        if log.read_text(encoding="utf-8").strip():
             break
         time.sleep(0.25)
     time.sleep(0.5)
     os.killpg(p.pid, signal.SIGTERM)
     p.wait(timeout=10)
-    return 0, log.read_text()
+    return 0, log.read_text(encoding="utf-8")
 
 
 def run_page(page: Path, proj: Path, env: dict, verbose: bool) -> tuple:

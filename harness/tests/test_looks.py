@@ -82,7 +82,7 @@ def evh(*args, extra=None):
 
 def git(*args):
     return subprocess.run(["git", "-C", str(proj), "-c", "user.email=t@t", "-c", "user.name=t", *args],
-                          capture_output=True, text=True, check=False)  # fmt: skip
+                          capture_output=True, text=True, check=False, encoding="utf-8")  # fmt: skip
 
 
 def system(name, sentences, against=None):
@@ -113,7 +113,7 @@ try:
     shutil.copytree(KIT / "tickets", proj / "tickets")
     git("init", "-q")
     (proj / ".gitignore").write_text(
-        ".build/\n"
+        ".build/\n", encoding="utf-8"
     )  # as evh init writes it: locks and jobs are not the project's
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
@@ -322,7 +322,11 @@ try:
     # The goal's page and `evh goal-list` say the test set's looks.
     gv = evh("goal-leaderboard", "g")
     cat = evh("catalog")
-    page = (proj / ".build" / "catalog" / "g" / "g.html").read_text() if cat.returncode == 0 else ""
+    page = (
+        (proj / ".build" / "catalog" / "g" / "g.html").read_text(encoding="utf-8")
+        if cat.returncode == 0
+        else ""
+    )
     line = "test set: 4 look(s) of 2; a decision here is look 5"
     check(
         "the goal's page and evh goal-list: the test set's looks, its limit and the next look's level",

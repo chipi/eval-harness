@@ -27,6 +27,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from evaluation_harness import catalog_charts as cc
+from evaluation_harness._number import counted, is_scored
 from evaluation_harness.axes import fmt_ms
 from evaluation_harness.model.entity import Problem
 
@@ -88,7 +89,19 @@ def _goal(A, goal: str) -> dict[str, Any]:
 
 
 def _values(A, arm: str, metric: str) -> dict[str, float]:
+    """The arm's per-item values of the metric, as every reader counts them (`_number`): a NaN, an infinity or a None (an
+    adapter's own, or a run from before RFC-041 F7) is a failed item's 0; a boolean or text is no score and is left out
+    (`_values_dropped` counts them)."""
+    return {i: counted(v) for i, v in _raw_values(A, arm, metric).items() if is_scored(v)}
+
+
+def _raw_values(A, arm: str, metric: str) -> dict:
     return dict((A.scores(arm).get(metric) or {}).get("values") or {})
+
+
+def _values_dropped(A, arm: str, metric: str) -> int:
+    """How many of the arm's values of the metric are not numbers, so not in `_values`."""
+    return sum(1 for v in _raw_values(A, arm, metric).values() if not is_scored(v))
 
 
 def _mean(xs) -> float | None:
@@ -338,6 +351,8 @@ def items(goal: str, dataset: str | None = None, href=None) -> dict:
     A = _adapter()
     grp = _group(goal, dataset)
     m = grp["measure"]
+    dropped = sum(_values_dropped(A, a["arm"], m) for a in grp["arms"])
+    left_out = f" {dropped} value(s) that are no scores (a boolean, text) are left out." if dropped else ""
     series = {a["label"]: _values(A, a["arm"], m) for a in grp["arms"]}
     series = {k: v for k, v in series.items() if v}
     if len(series) < 2:
@@ -364,7 +379,7 @@ def items(goal: str, dataset: str | None = None, href=None) -> dict:
     caption = (
         f"{m} per {A.item_word} and arm on {grp['dataset']}, the darker the higher ({'lower' if lower else 'higher'} "
         f"is better). The {len(shown)} of {len(shared)} {A.item_word}s where the arms differ most, most first: where "
-        "to read outputs side by side." + _through(grp["scorer"])
+        "to read outputs side by side." + _through(grp["scorer"]) + left_out
     )
     svg = cc.heatmap(
         list(series), shown, cells, f"{m} by arm and {A.item_word}", lo, hi, caption=cc._e(caption)
@@ -417,7 +432,7 @@ def _tokens(A, arm: str) -> dict[str, float]:
 def _claim(filled: bool, y: float, x: float | None) -> str:
     """What a point may be called (RFC-034 §3): a quadrant only for a significant difference."""
     if not filled:
-        return "no gain shown, costs more" if (x or 0) > 0 else "not separated"
+        return "no gain shown, costs more" if x is not None and x > 0 else "not separated"
     up = y > 0
     # A cost no different from the base's is not "cheaper": named as the same cost (review, 2026-11-19: arms with no
     # cost at all were called "better and cheaper"), and a cost not recorded on the items both share as that.
@@ -436,7 +451,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
     A = _adapter()
     g = _goal(A, goal)
     prim = (g.get("success_criteria") or {}).get("primary") or {}
-    metric, lower = str(prim.get("measure", "")), prim.get("direction") == "lower"
+    metric = str(prim.get("measure", ""))
     rows: list[dict] = []
 
     def row(name: str, r: dict, flip: float, filled: bool, **extra: Any) -> dict:
@@ -464,6 +479,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         from evaluation_harness.ops.rounds import _round  # noqa: PLC0415
 
         rnd = _round(goal, round)
+        lower = A.lower_is_better(metric, rnd["dataset_id"])
         ev = model_rounds.evidence(goal, rnd, A)
         base = ev.get("baseline_arm") or ev.get("leader")
         if not base:
@@ -486,7 +502,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         # A study decides on its own measure, in that measure's direction (as study-progress draws it): drawn on the
         # goal's primary instead, a trial better on the study's measure was plotted down and called worse.
         metric = str(spec.get("measure") or metric)
-        lower = ms_lower(goal, metric)
+        lower = ms_lower(goal, metric, spec)
         flip = -1.0 if lower else 1.0
         base = _arm_of(A, ds, st["baseline"])
         if base is None:
@@ -528,17 +544,26 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             f"{round or study}: no arm or trial shares an {A.item_word} with {base_name}: nothing to compare",
             "not-enough",
         )
-    priced = any((r["cost_delta_per_item"] or 0) != 0 for r in drawn)
-    by_tokens = not priced and any((r["tokens_delta_per_item"] or 0) != 0 for r in drawn)
+    # The axis: cost where some arm's cost moves; else tokens where any arm's difference is known (a known zero is a
+    # value: two arms with the same tokens); else a cost that is known and zero everywhere.
+    priced = any(r["cost_delta_per_item"] not in (None, 0) for r in drawn)
+    by_tokens = not priced and any(r["tokens_delta_per_item"] is not None for r in drawn)
     x_key = "tokens_delta_per_item" if by_tokens else "cost_delta_per_item"
     for r in drawn:  # the quadrant named on the axis drawn: cost, else tokens
         r["claim"] = _claim(r["_significant"], r["quality_delta"], r[x_key])
     for r in rows:
         r.pop("_significant", None)
+    known = [r for r in drawn if r[x_key] is not None]
+    if not known:
+        raise Problem(
+            f"{round or study}: no arm has a known cost (nor tokens) per {A.item_word} to set against {base_name}: "
+            "an unknown cost is not drawn as 0",
+            "not-enough",
+        )
     points = []
-    for r in drawn:
+    for r in known:
         filled = not r["claim"].startswith(("not separated", "no gain"))
-        x = r[x_key] if r[x_key] is not None else 0.0
+        x = r[x_key]
         cost = f"{x:+.0f} tokens" if by_tokens else f"{x:+.6f} USD"
         points.append(
             {
@@ -553,6 +578,7 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             }
         )
     left_out = [r["arm"] for r in rows if r["quality_delta"] is None]
+    unknown = [r["arm"] for r in drawn if r[x_key] is None]
     flipped = " (lower is better: flipped, so up is better)" if lower else ""
     caption = (
         f"Against {base_name} ({against}) on {ds}: up is better on {metric}{flipped}, with the 95% interval as a "
@@ -568,6 +594,11 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
         + (
             f" Not drawn, sharing no {A.item_word} with the baseline: {', '.join(left_out)}."
             if left_out
+            else ""
+        )
+        + (
+            f" Not drawn, its {'tokens' if by_tokens else 'cost'} unknown: {', '.join(unknown)}."
+            if unknown
             else ""
         )
         + _through(scorer)
@@ -650,7 +681,7 @@ def study_progress(goal: str, study: str) -> dict:
             best.append((float(t["k"]), y))
     if not points:
         raise Problem(f"study {study}: no trial measured yet", "not-enough")
-    lower = ms_lower(goal, metric)
+    lower = ms_lower(goal, metric, spec)
     caption = (
         f"{metric} on {ds} per trial ({'lower' if lower else 'higher'} is better): filled kept, hollow dropped, a cross "
         "for no effect or a trial that did not decide. The line is the best so far, from the baseline at 0; a trial is "
@@ -667,11 +698,13 @@ def study_progress(goal: str, study: str) -> dict:
     )
 
 
-def ms_lower(goal: str, metric: str) -> bool:
-    """Whether the study's measure is better lower, as the study decides it."""
+def ms_lower(goal: str, metric: str, spec: dict | None = None) -> bool:
+    """Whether the study's measure is better lower, as the study decides it: the rule's answer, or the direction the
+    study itself declares."""
     from evaluation_harness import _study  # noqa: PLC0415
 
-    return bool(_study.lower_is_better(goal, metric))
+    spec = spec or {}
+    return bool(_study.lower_is_better(goal, metric, spec.get("dataset")) or spec.get("direction") == "lower")
 
 
 # ── datasets ─────────────────────────────────────────────────────────────────

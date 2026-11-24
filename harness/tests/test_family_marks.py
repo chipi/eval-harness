@@ -65,6 +65,7 @@ try:
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     out = r.stdout + r.stderr
     small = next((ln for ln in out.splitlines() if ln.strip().startswith("arm_small")), "")
@@ -112,7 +113,7 @@ try:
     )
     err = io.StringIO()
     with contextlib.redirect_stderr(err), _runstore._InProject(proj):
-        _runs.default_metric("ds")
+        _runs.deciding_metric("ds")
     check(
         "runs that declare different primary metrics are named",
         "different primary metrics" in err.getvalue(),

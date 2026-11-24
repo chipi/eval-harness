@@ -128,7 +128,7 @@ def take_locks(
         except BlockingIOError:
             holder = ""
             with contextlib.suppress(OSError):
-                holder = f.with_suffix(".holder").read_text().strip()
+                holder = f.with_suffix(".holder").read_text(encoding="utf-8").strip()
             if waiting is None:
                 for x in (*fds, fd):
                     os.close(x)
@@ -136,7 +136,7 @@ def take_locks(
             waiting(key, holder)
             fcntl.flock(fd, mode)
         if exclusive:
-            f.with_suffix(".holder").write_text(job_id + "\n")
+            f.with_suffix(".holder").write_text(job_id + "\n", encoding="utf-8")
         fds.append(fd)
     return fds
 
@@ -199,12 +199,13 @@ def new_id() -> str:
     return time.strftime("%Y%m%dT%H%M%S", time.gmtime()) + "-" + secrets.token_hex(3)
 
 
-def spent(job_id: str) -> float:
-    """What a job's command counted as spent, as it went (0 when it made no paid call)."""
+def spent(job_id: str) -> float | None:
+    """What a job's command counted as spent, as it went; None when it recorded nothing (RFC-041 F3: not $0)."""
     try:
-        return float(_read_json(job_dir(job_id) / "spent.json").get("spent_usd") or 0)
+        v = _read_json(job_dir(job_id) / "spent.json").get("spent_usd")
+        return None if v is None else float(v)
     except (OSError, ValueError, TypeError):
-        return 0.0
+        return None
 
 
 def create(
@@ -267,7 +268,7 @@ def start(job_id: str) -> int:
                 ),
             },
         )
-    (d / "supervisor.pid").write_text(f"{p.pid}\n")
+    (d / "supervisor.pid").write_text(f"{p.pid}\n", encoding="utf-8")
     return p.pid
 
 
@@ -277,10 +278,10 @@ def _starting(d: Path, st: dict[str, Any]) -> bool:
     if st.get("supervisor_pid"):
         return False
     try:
-        pid = int((d / "supervisor.pid").read_text().strip())
+        pid = int((d / "supervisor.pid").read_text(encoding="utf-8").strip())
         stat = Path(f"/proc/{pid}/stat")
         if stat.exists():
-            return stat.read_text().rsplit(")", 1)[1].split()[0] != "Z"
+            return stat.read_text(encoding="utf-8").rsplit(")", 1)[1].split()[0] != "Z"
         os.kill(pid, 0)
     except (OSError, ValueError):
         return False
@@ -327,9 +328,11 @@ def _ended(pid: int) -> bool:
     stat = Path(f"/proc/{pid}/stat")
     if stat.exists():
         with contextlib.suppress(OSError, IndexError):
-            return stat.read_text().rsplit(")", 1)[1].split()[0] == "Z"
+            return stat.read_text(encoding="utf-8").rsplit(")", 1)[1].split()[0] == "Z"
         return False
-    out = subprocess.run(["ps", "-o", "stat=", "-p", str(pid)], capture_output=True, text=True, check=False)
+    out = subprocess.run(
+        ["ps", "-o", "stat=", "-p", str(pid)], capture_output=True, text=True, check=False, encoding="utf-8"
+    )
     return not out.stdout.strip() or out.stdout.strip().startswith("Z")
 
 
@@ -424,7 +427,11 @@ def stop(job_id: str, grace: float = STOP_GRACE_S) -> dict[str, Any]:
     j = read(job_id)
     if j["state"] in ("succeeded", "failed", "cancelled", "lost"):
         return j
-    (d / "stop").write_text(_common.now() + "\n")
+    (d / "stop").write_text(_common.now() + "\n", encoding="utf-8")
+    # Read after the stop file is written: a supervisor that recorded the command's group before it looked for the file
+    # has that group in this read, and one that looks later sees the file and stops the command itself. The read above
+    # is from before the file: its group may be one the supervisor recorded since, and acting on it left the command running.
+    j = read(job_id)
     st0 = _read_json(d / "state.json")
     spid = st0.get("supervisor_pid")
     if not st0.get("pgid") and st0.get("state") == "queued" and spid:

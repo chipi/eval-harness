@@ -30,7 +30,7 @@ import _tmp  # noqa: E402
 
 tmp = Path(_tmp.mkdtemp(prefix="evh-pcache-"))
 script = tmp / "p.py"
-script.write_text(SNIPPET.format(root=str(ROOT)))
+script.write_text(SNIPPET.format(root=str(ROOT)), encoding="utf-8")
 
 
 def run(cache: str | None, shift: float = 0.0) -> tuple[str, float, str]:
@@ -39,7 +39,12 @@ def run(cache: str | None, shift: float = 0.0) -> tuple[str, float, str]:
     if cache:
         env["EVH_P_CACHE"] = cache
     out = subprocess.run(
-        [sys.executable, str(script), str(shift)], env=env, capture_output=True, text=True, check=True
+        [sys.executable, str(script), str(shift)],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+        encoding="utf-8",
     ).stdout
     p, s, k = out.split()
     return p, float(s), k
@@ -51,29 +56,29 @@ first = run(str(cache))[0]
 check("a stored p is the computed one", first == plain, (first, plain))
 check(
     "the cache file is written (its directory made)",
-    cache.is_file() and len(cache.read_text().splitlines()) == 1,
+    cache.is_file() and len(cache.read_text(encoding="utf-8").splitlines()) == 1,
 )
 second = run(str(cache))[0]
 check("a fresh process reads it back exactly", second == plain, (second, plain))
-with cache.open("a") as fh:
+with cache.open("a", encoding="utf-8") as fh:
     fh.write('{"k": "torn')  # an interrupted writer's last line
 third = run(str(cache))[0]
 check("a torn line is skipped, the stored p still read", third == plain)
 other, _secs, okey = run(str(cache), 0.25)
-lines = cache.read_text().splitlines()
+lines = cache.read_text(encoding="utf-8").splitlines()
 check(
     "other deltas are another key; after a torn line the next record starts a line of its own",
     okey != key and other != plain and any(okey in ln and ln.startswith("{") for ln in lines),
     lines,
 )
 # The read path, proven: a p planted under the key is what a fresh process answers.
-cache.write_text(json.dumps({"k": key, "p": (0.123).hex()}) + "\n")
+cache.write_text(json.dumps({"k": key, "p": (0.123).hex()}) + "\n", encoding="utf-8")
 planted = run(str(cache))[0]
 check("the stored p is read, not recomputed", planted == (0.123).hex(), planted)
 cache.write_bytes(b"\xff\xfe not utf-8\n")
 bad = run(str(cache))[0]
 check("a file that is not UTF-8 is no cache: the p is computed", bad == plain, bad)
-cache.write_text("")
+cache.write_text("", encoding="utf-8")
 cache.chmod(0)
 if not os.access(cache, os.R_OK):  # (as root every file is readable)
     unread = run(str(cache))[0]

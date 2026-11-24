@@ -42,11 +42,14 @@ nav:
       - 6 · Datasets from production: tutorials/6-datasets-from-production.md
       - 7 · Set up a model before you test it: tutorials/7-set-up-a-model.md
       - 8 · The Workbench: tutorials/8-the-workbench.md
+      - "9 · Your own system, a custom adapter": tutorials/9-custom-adapter.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md
       - Runbook: harness/RUNBOOK.md
       - Release notes: harness/CHANGELOG.md
+      - "Release 0.8.1, in full": releases/0.8.1.md
+      - "Release 0.8.0, in full": releases/0.8.0.md
       - Releasing: harness/RELEASING.md
       - Newcomer scenario: harness/SCENARIO.md
       - Upgrading: harness/UPGRADING.md
@@ -102,6 +105,9 @@ nav:
           - "RFC-036: Agentic scenarios, tools, stations and the path (draft, 0.9.0)": rfc/RFC-036-agentic-scenarios.md
           - "RFC-037: Conversational scenarios, a user who talks back (draft)": rfc/RFC-037-conversational-scenarios.md
           - "RFC-038: Call once, artifact links, judge validation and a Harbor example (accepted, 0.8.0)": rfc/RFC-038-call-once-artifacts-judge-validation-harbor.md
+          - "RFC-039: The Workbench as a read-only viewer for visitors (accepted, 0.8.1)": rfc/RFC-039-workbench-read-only-for-visitors.md
+          - "RFC-040: The catalog rendered on request, and exported (accepted, 0.8.1)": rfc/RFC-040-catalog-rendered-on-request.md
+          - "RFC-041: One source for each fact a reader works out (accepted, 0.8.1)": rfc/RFC-041-one-source-for-each-fact.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

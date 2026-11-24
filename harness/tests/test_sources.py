@@ -65,10 +65,10 @@ def own_source(name, text):
     named by path (RFC-025); in the files store it is data/dataset_sources/NAME.py, named by NAME."""
     if _runstore.sqlite():
         (proj / "own_sources").mkdir(exist_ok=True)
-        (proj / "own_sources" / f"{name}.py").write_text(text)
+        (proj / "own_sources" / f"{name}.py").write_text(text, encoding="utf-8")
         return f"own_sources/{name}.py:Source"
     (proj / "data" / "dataset_sources").mkdir(parents=True, exist_ok=True)
-    (proj / "data" / "dataset_sources" / f"{name}.py").write_text(text)
+    (proj / "data" / "dataset_sources" / f"{name}.py").write_text(text, encoding="utf-8")
     return name
 
 
@@ -80,8 +80,8 @@ try:
     raw = proj / "raw"
     raw.mkdir()
     for n in "abc":
-        (raw / f"{n}.txt").write_text(f"item {n}\n")
-    (raw / "README.md").write_text("not an item\n")
+        (raw / f"{n}.txt").write_text(f"item {n}\n", encoding="utf-8")
+    (raw / "README.md").write_text("not an item\n", encoding="utf-8")
     r1 = evh("dataset-create", "--dataset-id", "dir_v1", "--source-dir", "raw")
     r2 = evh(
         "dataset-create",
@@ -125,7 +125,8 @@ try:
         r.stderr[-200:],
     )
     (proj / "m.csv").write_text(
-        "item_id,source_url,source_sha256,row\nu1,https://example.org/u1.txt," + "a" * 64 + ",5\n"
+        "item_id,source_url,source_sha256,row\nu1,https://example.org/u1.txt," + "a" * 64 + ",5\n",
+        encoding="utf-8",
     )
     r = evh(
         "dataset-create", "--dataset-id", "man_v1", "--source", "manifest", "--query", '{"path": "m.csv"}'

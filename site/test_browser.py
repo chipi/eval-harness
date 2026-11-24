@@ -30,6 +30,9 @@ from typing import ClassVar
 from urllib.parse import urldefrag, urljoin, urlparse
 
 SITE = Path(__file__).resolve().parent
+sys.path.insert(0, str(SITE.parent / "harness" / "tests"))  # _slow: the test font on every page
+import _slow  # noqa: E402
+
 PUBLIC = SITE / "public"
 HEADERS_CONF = SITE.parent / "infra" / "nginx" / "snippets" / "evals.humancopilot.eu-headers.conf"
 ok: list = []
@@ -44,7 +47,9 @@ def prod_headers() -> dict:
     """The headers the deploy adds, as nginx would send them (the CSP report target, rendered at
     deploy time, left out)."""
     out = {}
-    for name, value in re.findall(r'^add_header\s+(\S+)\s+"([^"]*)"', HEADERS_CONF.read_text(), re.M):
+    for name, value in re.findall(
+        r'^add_header\s+(\S+)\s+"([^"]*)"', HEADERS_CONF.read_text(encoding="utf-8"), re.M
+    ):
         out[name] = value.replace("__CSP_REPORT__", "").strip()
     if "Content-Security-Policy" not in out:
         raise SystemExit(f"no Content-Security-Policy in {HEADERS_CONF}")
@@ -64,7 +69,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 def pages() -> list:
-    locs = re.findall(r"<loc>([^<]+)</loc>", (PUBLIC / "sitemap.xml").read_text())
+    locs = re.findall(r"<loc>([^<]+)</loc>", (PUBLIC / "sitemap.xml").read_text(encoding="utf-8"))
     return [urlparse(u).path.lstrip("/") or "index.html" for u in locs] + ["404.html"]
 
 
@@ -72,7 +77,7 @@ def drive(base: str) -> None:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = _slow.launch(pw)
         ctx = browser.new_context()
         # Other hosts (the analytics scripts) answer locally and empty: no network, no noise.
         ctx.route(

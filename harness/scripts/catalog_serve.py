@@ -4,15 +4,16 @@
     evh catalog-serve [--port N] [--adapter path/to/file.py:Class]
     make catalog-serve
 
-Builds nothing at start: run `evh catalog` first. Static files are the built catalog and the data tree
-(its "files" links open run folders). Three JSON endpoints feed the inspector page (and GET /api/health says the
+Builds nothing, and needs nothing built: the catalog's pages are rendered when they are asked for (RFC-040), the same
+pages `evh catalog` writes. Static files are the data tree (its "files" links open run folders) and any page a project's
+own builder wrote into the catalog's folder. Three JSON endpoints feed the inspector page (and GET /api/health says the
 server is up); a local server also answers the API (/api/v1/, RFC-026):
 
-The catalog never goes stale (RFC-032 step 8). A write through the API, or a job it started that wrote, refreshes what
-the server has read and starts a rebuild of the pages (a `catalog` job); any other change to the data (the command
-line in another terminal, an editor, git) is noticed on the next read and does the same. The pages that were there are
-served until the new ones are whole (a read never waits), and a rebuild that fails leaves them and says so: on
-GET /api/health (`catalog`: building or failed, when the pages were built) and in the server's log.
+The catalog never goes stale (RFC-032 step 8, RFC-040). A page is rendered from one model of the data, kept until the
+data changes: a write through the API, or a job it started that wrote, refreshes what the server has read and the next
+page is rendered from the new data; any other change (the command line in another terminal, an editor, git) is noticed
+on the next read and does the same. The slowest pages (home, goals) are rendered ahead in the background after a change.
+A page that cannot be rendered answers 500 and says why: on GET /api/health (`catalog`: failed) and in the server's log.
 
   GET /api/compare?runs=<arm|path>,...[&baseline=<arm>][&metric=<name>][&rescore=0]
       [&family=<m>][&threshold=<t>]
@@ -123,7 +124,8 @@ def item(params: dict) -> dict:
     it = params.get("item", [""])[0]
     refs = _known()[1]
     # No arm chosen, a dataset named (the sheet, RFC-023; the local inspector only): the item, its fields, labels.
-    alone = params.get("dataset", [""])[0] if not arms and not LIMITS["hosts"] else ""
+    public = _visibility.public()
+    alone = params.get("dataset", [""])[0] if not arms and not public else ""
     if alone:
         from evaluation_harness._common import DATASETS  # noqa: PLC0415
 
@@ -137,12 +139,11 @@ def item(params: dict) -> dict:
     # can quote its input (an extractive arm returns the article's own sentences) and a reference
     # can be a dataset's licensed text, so a public server serves numbers unless the deployment
     # has decided to publish them. The local inspector shows everything, on this machine.
-    public = bool(LIMITS["hosts"])
-    published = LIMITS.get("publish") or ()
+    published = _visibility.published()
     dataset = alone or A.describe(A.arms_of(arms[0])[0]).get("dataset", "")
     if not _visibility.text_shown(dataset, public=public):
         # `text: hidden` (RFC-019): nothing that comes from this dataset's text, whatever is published.
-        published = ()
+        published = frozenset()
     if not public or "outputs" in published:
         from evaluation_harness import _exposure  # noqa: PLC0415
 
@@ -158,11 +159,16 @@ def item(params: dict) -> dict:
     else:
         out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
         if public:  # an artifact is never public: its directory quotes the items (RFC-038)
+            # Nor is the judge's agreement with the gold unless the references are published too: it compares the
+            # verdict, which is served, with the reference, which is not, and says which of the two it sides with.
+            from evaluation_harness import judge_validation  # noqa: PLC0415
+
+            drop = {"artifact"} | (set() if "references" in published else {judge_validation.MARK})
             out["views"] = {
                 a: {
                     **{k: v for k, v in view.items() if k != "artifact"},
                     **(
-                        {"info": {k: v for k, v in view["info"].items() if k != "artifact"}}
+                        {"info": {k: v for k, v in view["info"].items() if k not in drop}}
                         if "info" in view
                         else {}
                     ),
@@ -195,16 +201,16 @@ def item(params: dict) -> dict:
     # the local inspector shows it: a public deployment never serves a dataset's inputs, which a
     # project may not be free to redistribute.
     src = getattr(A, "item_text", None)
-    if callable(src) and not LIMITS["hosts"]:
+    if callable(src) and not public:
         out["source"] = src(dataset, it)
     # Every label the item has (RFC-023), and which output is production's recorded one: the local inspector only.
     lab = getattr(A, "item_labels", None)
-    if callable(lab) and not LIMITS["hosts"]:
+    if callable(lab) and not public:
         out["labels"] = lab(dataset, it)
     out["recorded"] = {a: rec for a in arms if (rec := A.describe(A.arms_of(a)[0]).get("recorded"))}
     # What the judges said of this item and why (RFC-034 §5): the local inspector only, as the reasons describe the
     # outputs they judged.
-    if not LIMITS["hosts"]:
+    if not public:
         out["verdicts"] = _judged(dataset, it)
     return out
 
@@ -262,7 +268,7 @@ def _error(exc: SystemExit) -> dict:
 def sheet_csv(query: str) -> tuple[int, bytes, str]:
     """The sheet as a download (RFC-023): the CSV `evh sheet-export --csv` writes, built in memory by the same
     code, so the page still writes nothing. The local inspector only: a sheet carries item text and outputs."""
-    if LIMITS["hosts"]:
+    if _visibility.public():
         return 403, b"the sheet shows item text and outputs: not served publicly", "text/plain; charset=utf-8"
     from evaluation_harness import _sheet  # noqa: PLC0415
     from evaluation_harness._sheets import write_csv  # noqa: PLC0415
@@ -290,7 +296,7 @@ def sheet(params: dict) -> dict:
     """The sheet (RFC-023, UXS-002 05): one dataset's items down, a column per arm across (the first stands for
     production): outputs and scores, a column per label set, the winners, the signals, the footer per arm;
     `evh sheet-show D` in the browser. The local inspector only: it carries outputs and labels."""
-    if LIMITS["hosts"]:
+    if _visibility.public():
         return {"error": "the sheet shows outputs and labels: not served publicly"}
     from evaluation_harness import _picks, _sheet  # noqa: PLC0415
     from evaluation_harness._common import DATASETS  # noqa: PLC0415
@@ -397,10 +403,8 @@ def answer(path: str, query: str) -> tuple:
     if len(query) > MAX_QUERY:
         return 400, json.dumps({"error": f"the question is over {MAX_QUERY} characters"}).encode()
     key = f"{path}?{'&'.join(sorted(query.split('&')))}"
-    with _CACHE_LOCK:
-        if key in _CACHE:
-            _CACHE.move_to_end(key)
-            return _CACHE[key]
+    if (kept := _kept(key)) is not None:
+        return kept
     params = parse_qs(query)
     with _COMPUTE:
         try:
@@ -413,11 +417,25 @@ def answer(path: str, query: str) -> tuple:
             )
             code = 400 if "error" in body else 200
         except Exception as exc:  # noqa: BLE001 — report, don't kill the server
-            body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
+            body = {"error": "internal error" if _visibility.public() else f"{type(exc).__name__}: {exc}"}
             code = 500
     data = json.dumps(body).encode()
-    # Only answers are kept: a refusal (4xx) costs nothing to repeat, and keeping it let distinct
-    # junk questions fill the cache by their keys (an independent review, 2026-10-29).
+    _keep(key, code, data)
+    return code, data
+
+
+def _kept(key: str) -> tuple | None:
+    """The answer kept for this question, (status, bytes), or None."""
+    with _CACHE_LOCK:
+        if key in _CACHE:
+            _CACHE.move_to_end(key)
+            return _CACHE[key]
+    return None
+
+
+def _keep(key: str, code: int, data: bytes) -> None:
+    """Keep an answer, within the cache's bounds. Only answers are kept: a refusal (4xx) costs nothing to repeat, and
+    keeping it let distinct junk questions fill the cache by their keys (an independent review, 2026-10-29)."""
     if code == 200 and len(data) <= _CACHE_BYTES // 4:
         with _CACHE_LOCK:
             if key not in _CACHE:
@@ -425,7 +443,6 @@ def answer(path: str, query: str) -> tuple:
                 _cache_size[0] += len(data)
             while _CACHE and (len(_CACHE) > _CACHE_MAX or _cache_size[0] > _CACHE_BYTES):
                 _cache_size[0] -= len(_CACHE.popitem(last=False)[1][1])
-    return code, data
 
 
 def client_key(header: str | None, peer: str) -> str:
@@ -560,6 +577,12 @@ WORKBENCH_TYPES = {
     ".css": "text/css; charset=utf-8",
     ".svg": "image/svg+xml",
 }
+#: The catalog's rendered pages and its assets are the same four kinds (RFC-040).
+SITE_TYPES = WORKBENCH_TYPES
+#: What a public server (a viewer's, RFC-039) says to a call that writes, spends or runs.
+VIEWER_REFUSES = (
+    "this is a read-only view of a published project: nothing here writes, spends or runs a model"
+)
 API_MAX_JOB_BODY = 70 * 1024 * 1024  # 50 MB of files, base64 (RFC-026: owner, 2026-11-08)
 
 
@@ -613,14 +636,14 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     p = unquote(urlparse(path).path)
     if ".." in p.split("/"):
         return 404
-    if p.startswith(
-        "/api/v1/"
-    ):  # RFC-026: this machine's only, never behind a proxy or public (owner, 2026-11-09)
-        return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
+    if p.startswith("/api/v1/"):
+        # RFC-026: this machine's, with its token; never behind a proxy. A public server serves its reads to a viewer,
+        # with no token (RFC-039, owner, 2026-11-23): `_viewer` refuses the rest.
+        return 0 if LIMITS["hosts"] else 404 if LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     if p.startswith("/api/"):
         return 0 if p in API_ROUTES else 404
-    if p == "/workbench" or p.startswith("/workbench/"):  # as the API's: this machine's only, with a token
-        return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
+    if p == "/workbench" or p.startswith("/workbench/"):  # as the API's
+        return 0 if LIMITS["hosts"] else 404 if LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
         return 404
@@ -673,27 +696,26 @@ FRESH_EVERY_S = 0.25
 #: How often a job (a rebuild, or one of the server's writes) is looked at while it runs.
 FRESH_POLL_S = 0.2
 _ENDED = ("succeeded", "failed", "cancelled", "lost")
-#: What the server knows of its pages and of the data under them. `on` only for a server that has pages of its own (not
-#: --public: its pages and data are a deployment's copy, which the deploy rebuilds); `seen` is the data's state last
-#: looked at, `job` the rebuild running, `pending` why one more waits (never more than one), `jobs` the writes of this
-#: server's jobs still running (their end looks at the data once: a long run would otherwise rebuild the pages with
-#: every file it writes), `deferred` that a look found a change while one ran.
-FRESH: dict[str, Any] = {
-    "on": False,
-    "seen": None,
-    "looked": 0.0,
-    "build_dir": None,
-    "adapter": None,
-    "job": None,
-    "since": "",
-    "pending": "",
-    "built_at": "",
-    "failed": None,
-    "jobs": set(),
-    "deferred": False,
-}
+#: What the server knows of the data under its pages. `on` only for a server that has pages of its own (not --public:
+#: its pages and data are a deployment's copy, which the deploy rebuilds); `seen` is the data's state last looked at.
+FRESH: dict[str, Any] = {"on": False, "seen": None, "looked": 0.0}
 _FRESH_LOCK = threading.Lock()
-_REBUILD_LOCK = threading.RLock()
+#: The catalog's pages, rendered when asked for from one model of the data (RFC-040, catalog_build.Site). `gen` counts
+#: the changes the server has seen; `site` is the newest model and `site_gen` the change it was prepared after, so a
+#: request is answered by a model prepared from the data as it was when the request came, or later: a write is on the
+#: next page, and the requests that wait for one model get that one, not one each. `day`: the day it was prepared (a
+#: model's "stale" mark is against today); `prepared` how many were; `failed` the last failure, until a page renders.
+SITE: dict[str, Any] = {"site": None, "site_gen": -1, "gen": 0, "day": "", "prepared": 0, "failed": None}
+_SITE_LOCK = threading.Lock()  # SITE's fields
+_PREPARE_LOCK = threading.Lock()  # one model prepared at a time
+_WARM = threading.Event()
+#: After a change, the pages are rendered ahead once the data has been still this long: a run in another terminal
+#: writes for minutes, and rendering ahead for each of its writes renders pages nobody reads.
+WARM_QUIET_S = 1.0
+#: The requests waiting for a page: rendering ahead starts no page while one waits. The renders' lock is not fair, and
+#: under load the thread rendering ahead took it again before the request (7 goal pages ahead of it, in the test).
+_ASKING = {"n": 0}
+_ASKING_CV = threading.Condition()
 
 
 def data_state(first: bool = False) -> tuple[tuple, int]:
@@ -725,18 +747,16 @@ def refresh() -> None:
 
 
 def catalog_status() -> dict:
-    """What GET /api/health says of the pages: `state` building (a rebuild runs, `since` when), failed (the last
-    rebuild did, `failed` says why, and the pages are the earlier ones) or idle; when the pages were built; whether
-    one more rebuild waits."""
-    with _REBUILD_LOCK:
-        f = FRESH
+    """What GET /api/health says of the pages: rendered on request; `state` failed (the last model or page could not be
+    made, `failed` says why) or idle; when the model the pages are rendered from was made, and how many have been."""
+    with _SITE_LOCK:
+        site = SITE["site"]
         return {
-            "state": "building" if f["job"] else "failed" if f["failed"] else "idle",
-            "built_at": f["built_at"],
-            "building_since": f["since"] if f["job"] else None,
-            "job": f["job"],
-            "queued": bool(f["pending"]),
-            "failed": f["failed"],
+            "mode": "on request",
+            "state": "failed" if SITE["failed"] else "idle",
+            "built_at": site.built if site is not None else None,
+            "prepared": SITE["prepared"],
+            "failed": SITE["failed"],
         }
 
 
@@ -754,78 +774,101 @@ def _wait_job(job_id: str) -> dict:
         time.sleep(FRESH_POLL_S)
 
 
-def _rebuild_failed(job_id: str | None, why: str) -> None:
-    with _REBUILD_LOCK:
-        FRESH["failed"] = {"job": job_id, "at": _common.now(), "why": why}
-    shown = f" (job {job_id})" if job_id else ""
-    say(
-        f"catalog: the rebuild FAILED{shown}: {why}; the pages built {FRESH['built_at'] or 'earlier'} are served as they were",
-        err=True,
-    )
+def current_site():
+    """A model of the data at least as new as it was when this was called: the one kept, the one another request was
+    preparing meanwhile, or one prepared now (one at a time). Raises what preparing it raised."""
+    from evaluation_harness import catalog_build  # noqa: PLC0415
+
+    day = _common.today().isoformat()
+
+    def kept(asked: int):
+        s = SITE["site"]
+        return s if s is not None and SITE["site_gen"] >= asked and SITE["day"] == day else None
+
+    with _SITE_LOCK:
+        asked = SITE["gen"]
+        if (got := kept(asked)) is not None:
+            return got
+    with _PREPARE_LOCK:
+        with _SITE_LOCK:
+            if (got := kept(asked)) is not None:
+                return got
+            gen = SITE["gen"]
+        site = catalog_build.prepare(A, once=False)  # the server's adapter holds its scores itself
+        with _SITE_LOCK:
+            SITE["prepared"] += 1
+            if gen >= SITE["site_gen"]:
+                SITE.update(site=site, site_gen=gen, day=day)
+        return site
 
 
-def _start_rebuild(why: str) -> None:
-    """Start the `catalog` job that builds the pages beside the served ones and swaps them in (build_beside), and a
-    thread that waits for it. Called with _REBUILD_LOCK held and no rebuild running."""
-    from evaluation_harness import _jobs, ops  # noqa: PLC0415
-    from evaluation_harness.ops import locks as op_locks  # noqa: PLC0415
-
-    inputs = {"out": str(FRESH["build_dir"]), **({"adapter": FRESH["adapter"]} if FRESH["adapter"] else {})}
+def site_page(rel: str) -> tuple[Any, str | None]:
+    """(the model, the catalog's page at `rel` rendered from it, None for none). A failure is said, in the log and on
+    health, and raised."""
+    with _ASKING_CV:
+        _ASKING["n"] += 1
     try:
-        job_id = _jobs.create("catalog", inputs, None, op_locks.locks_for(ops.OPS["catalog"], inputs))
-        _jobs.start(job_id)
-    except Exception as exc:  # noqa: BLE001 -- a project that cannot start a job (read-only, no space) is said, not fatal
-        _rebuild_failed(None, f"the job could not be started: {type(exc).__name__}: {exc}")
-        return
-    FRESH.update(job=job_id, since=_common.now())
-    say(
-        f"catalog: {why}: rebuilding the pages (job {job_id}); the pages built {FRESH['built_at']} are served until it ends"
-    )
-    threading.Thread(target=_watch_rebuild, args=(job_id,), daemon=True).start()
+        site = current_site()
+        got = site.page(rel)
+    except Exception as exc:
+        why = f"{type(exc).__name__}: {exc}"
+        with _SITE_LOCK:
+            SITE["failed"] = {"at": _common.now(), "why": why}
+        say(f"catalog: {rel} could not be rendered: {why}", err=True)
+        raise
+    finally:
+        with _ASKING_CV:
+            _ASKING["n"] -= 1
+            _ASKING_CV.notify_all()
+    if got is not None:
+        with _SITE_LOCK:
+            SITE["failed"] = None
+    return site, got
 
 
-def _watch_rebuild(job_id: str) -> None:
-    j = _wait_job(job_id)
-    with _REBUILD_LOCK:
-        FRESH.update(job=None, since="")
-        if j["state"] == "succeeded":
-            FRESH.update(built_at=_common.now(), failed=None)
-            cache_clear()
-            say(f"catalog: rebuilt (job {job_id}); the pages are built {FRESH['built_at']}")
-        else:
-            from evaluation_harness import _jobs  # noqa: PLC0415
-
-            try:
-                tail = [
-                    x for x in _jobs.log_from(job_id)[0].decode("utf-8", "replace").splitlines() if x.strip()
-                ]
-            except (FileNotFoundError, ValueError, OSError):
-                tail = []
-            raised = re.compile(r"^[\w.]*(Error|Exception)\b")  # a traceback's last line says what broke
-            line = next(
-                (x for x in reversed(tail) if raised.match(x) or x.startswith("ERROR")),
-                tail[-1] if tail else "no output",
-            )
-            _rebuild_failed(job_id, f"the job {j['state']}: {line.strip()}")
-        if FRESH["pending"]:
-            why, FRESH["pending"] = FRESH["pending"], ""
-            _start_rebuild(why)
+def renew(why: str) -> None:
+    """The data changed: the next page is rendered from it, and the slowest pages again in the background."""
+    with _SITE_LOCK:
+        SITE["gen"] += 1
+    say(f"catalog: {why}: the pages are rendered from the data as it is now")
+    _WARM.set()
 
 
-def request_rebuild(why: str) -> None:
-    """A rebuild of the pages now, or, while one runs, one more after it: a write during a rebuild may not be in what it
-    read, and a third write changes nothing about that, so never more than one waits."""
-    with _REBUILD_LOCK:
-        if FRESH["job"]:
-            FRESH["pending"] = why
-        else:
-            _start_rebuild(why)
+def _pages_warmer() -> None:
+    """Prepare the model and render the pages that take longest (the home page, the goals and each goal's page, 0.3-2 s
+    each) once the data is still, so the first person to open one does not wait; a request that comes first renders it
+    itself. A change while it runs starts it again. It starts no page while a request waits for one."""
+    from evaluation_harness import catalog_build  # noqa: PLC0415
+
+    def render_ahead(site, path: str) -> None:
+        while True:
+            with _ASKING_CV:
+                _ASKING_CV.wait_for(lambda: _ASKING["n"] == 0)
+            with catalog_build._RENDER_LOCK:
+                if _ASKING["n"] == 0:  # looked at under the lock: a request that came meanwhile goes first
+                    site.page(path)
+                    return
+
+    while True:
+        _WARM.wait()
+        while True:
+            _WARM.clear()
+            if not _WARM.wait(WARM_QUIET_S):
+                break
+        try:
+            site = current_site()
+            for path in ("index.html", "goals.html", *(catalog_build.goal_page(g) for g in site.goals)):
+                if _WARM.is_set():
+                    break
+                render_ahead(site, path)
+        except Exception as exc:  # noqa: BLE001 -- said; a request renders what it asks for and says the same
+            say(f"catalog: the pages could not be rendered ahead: {type(exc).__name__}: {exc}", err=True)
 
 
 def fresh_check(force: bool = False, why: str = "") -> bool:
-    """Look at the data's state and, when it is not the one last seen, refresh what the server read and rebuild the
-    pages. Called before every request, at most every FRESH_EVERY_S; `force`: now, whatever the last look. While a job
-    of this server writes, a change refreshes and waits for the job's end (`jobs`). True when the data had changed."""
+    """Look at the data's state and, when it is not the one last seen, refresh what the server read and render the pages
+    from it. Called before every request, at most every FRESH_EVERY_S; `force`: now, whatever the last look. True when
+    the data had changed."""
     if not FRESH["on"] or not _FRESH_LOCK.acquire(blocking=force):
         return False
     try:
@@ -834,15 +877,11 @@ def fresh_check(force: bool = False, why: str = "") -> bool:
             return False
         FRESH["looked"] = now
         state, _newest = data_state()
-        if state == FRESH["seen"] and not (force and FRESH["deferred"]):
+        if state == FRESH["seen"]:
             return False
         FRESH["seen"] = state
         refresh()
-        if FRESH["jobs"] and not force:
-            FRESH["deferred"] = True
-            return True
-        FRESH["deferred"] = False
-        request_rebuild(why or "the data changed")
+        renew(why or "the data changed")
         return True
     finally:
         _FRESH_LOCK.release()
@@ -850,30 +889,25 @@ def fresh_check(force: bool = False, why: str = "") -> bool:
 
 def data_changed(why: str) -> None:
     """A write this server made (an edit of the model through the API): its answer is read from fresh data at once, and
-    the pages are rebuilt."""
+    so is the next page."""
     if not FRESH["on"]:
         return
     with _FRESH_LOCK:
-        FRESH["seen"] = data_state()[
-            0
-        ]  # after the write, before the rebuild starts: a later change differs from it
-        FRESH["deferred"] = False
+        FRESH["seen"] = data_state()[0]  # after the write: a later change differs from it
         refresh()
-        request_rebuild(why)
+        renew(why)
 
 
 def watch_write_job(job: dict) -> None:
-    """A job this server started (any but the rebuild itself): when it ends, look at the data once and rebuild if it
-    wrote."""
+    """A job this server started: when it ends, look at the data at once (the looks before requests see its writes as
+    they come; this one does not wait for the next request)."""
 
     name = job["operation"]
-    if not FRESH["on"] or name == "catalog":
+    if not FRESH["on"]:
         return
-    FRESH["jobs"].add(job["id"])
 
     def end() -> None:
         _wait_job(job["id"])
-        FRESH["jobs"].discard(job["id"])
         try:
             fresh_check(force=True, why=f"job {job['id']} ({name}) ended")
         except Exception as exc:  # noqa: BLE001 -- the look failed; the next read looks again
@@ -893,22 +927,13 @@ def _look() -> None:
         say(f"catalog: could not look at the data: {type(exc).__name__}: {exc}", err=True)
 
 
-def start_fresh(build_dir: Path, adapter: str | None) -> None:
-    """Begin keeping the pages current (a server with pages of its own): note when they were built and what the data is
-    now, and rebuild at once when the data is newer than the pages (changed while no server ran)."""
-    index = build_dir / "index.html"
-    built = _store.stat(index).st_mtime_ns if _store.is_file(index) else 0
-    FRESH.update(
-        on=True,
-        build_dir=build_dir,
-        adapter=adapter,
-        built_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(built / 1e9)),
-        looked=time.monotonic(),
-    )
-    state, newest = data_state(first=True)
-    FRESH["seen"] = state
-    if newest > built:
-        request_rebuild("the data is newer than the pages")
+def start_fresh() -> None:
+    """Begin keeping the pages current (a server with pages of its own, RFC-040): they are rendered when asked for from
+    the data as it is, so nothing waits for a build, not even the first. The slowest are rendered ahead."""
+    FRESH.update(on=True, looked=time.monotonic())
+    FRESH["seen"] = data_state(first=True)[0]
+    threading.Thread(target=_pages_warmer, daemon=True).start()
+    _WARM.set()
 
 
 #: A deployment's hooks (--hooks), or None. The harness calls them and knows nothing of what they
@@ -1069,7 +1094,8 @@ class Handler(SimpleHTTPRequestHandler):
                 )
 
     def _refuse(self) -> bool:
-        if urlparse(self.path).path in ("", "/") and self.prefixes:
+        # The server's root, and the catalog's address without its slash, open the catalog.
+        if self.prefixes and urlparse(self.path).path in ("", "/", self.prefixes[0].rstrip("/")):
             self.send_response(302)
             self.send_header("Location", self.prefixes[0])
             self.end_headers()
@@ -1110,8 +1136,13 @@ class Handler(SimpleHTTPRequestHandler):
             return
         port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
         origin = self.headers.get("Origin")
-        if origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+        own: tuple[str, ...] = (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
+        if LIMITS["hosts"]:  # a viewer's page is on the site's own origin
+            own = tuple(f"{scheme}://{h}" for h in LIMITS["hosts"] for scheme in ("https", "http"))
+        if origin is not None and origin not in own:
             return self._json(403, {"error": "a call from another origin is refused"}, cache=False)
+        if LIMITS["hosts"]:
+            return self._viewer(method, url)
         if method == "GET" and url.path == "/api/v1/session":
             # The Workbench's first load trades the token in its address for a cookie (HttpOnly, SameSite=Strict).
             import hmac  # noqa: PLC0415
@@ -1163,18 +1194,56 @@ class Handler(SimpleHTTPRequestHandler):
             )
         return self._json(404, {"error": f"no API route {method} {url.path}"}, cache=False)
 
+    def _viewer(self, method: str, url) -> None:
+        """/api/v1/ on a public server (RFC-039): no token, nothing written. Counted by the rate limit as the inspector's
+        reads are. Only a GET is answered; the jobs' routes, the estimate (it starts a child process) and the session (there
+        is no token to trade) are refused, and `_model_route` answers a read operation a public server offers and refuses
+        every other. The page's viewer mode is a courtesy: this is what holds."""
+        hdr = LIMITS.get("client_header")
+        if over_rate(client_key(self.headers.get(hdr) if hdr else None, self.client_address[0])):
+            return self._json(429, {"error": f"more than {LIMITS['rate']} requests a minute; wait a moment"})
+        if len(url.query) > MAX_QUERY:
+            return self._json(400, {"error": f"the question is over {MAX_QUERY} characters"})
+        fixed = url.path in ("/api/v1/session", "/api/v1/estimate", "/api/v1/jobs") or url.path.startswith(
+            "/api/v1/jobs/"
+        )
+        if method != "GET" or fixed:
+            return self._json(403, {"error": VIEWER_REFUSES, "kind": "not-public"}, cache=False)
+        if url.path == "/api/v1/openapi.json":
+            key = f"v1:{url.path}"
+            code, data = _kept(key) or (200, json.dumps(openapi.document()).encode())
+            _keep(key, code, data)
+            return self._json(code, data, cache=False)
+        if self._model_route(method, url):
+            return None
+        return self._json(404, {"error": f"no API route {method} {url.path}"}, cache=False)
+
     def _model_route(self, method: str, url) -> bool:
         """The model's resources (RFC-032): the operation whose method and route match the path, run in this process.
         A read takes its inputs from the query; a write needs the data header, its inputs as a JSON object and `by`
-        (who acted, RFC-027; an agent names `for`, the person it acts for). None when no operation's route matches."""
+        (who acted, RFC-027; an agent names `for`, the person it acts for). None when no operation's route matches.
+        On a public server (a viewer's) only a read the public MCP server offers is run, as a public call, with only the
+        inputs it takes there, its answers kept and at most two computed at once; anything else is refused."""
         import jsonschema  # noqa: PLC0415
-        from evaluation_harness import ops  # noqa: PLC0415
+        from evaluation_harness import _jsonout, mcp_server, ops  # noqa: PLC0415
         from evaluation_harness._version import __version__  # noqa: PLC0415
         from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
-        def say(code: int, body: dict) -> bool:
+        public = _visibility.public()
+
+        def say(code: int, body: dict | bytes) -> bool:
             self._json(code, body, cache=False)
             return True
+
+        def words(text: str) -> str:
+            """What a refusal says: on a public server with no path of this machine in it."""
+            from evaluation_harness import _cmdline  # noqa: PLC0415
+
+            return (
+                _cmdline.public_error("ERROR: " + " ".join(text.split()), ROOT)[len("ERROR: ") :]
+                if public
+                else text
+            )
 
         parts = url.path[len("/api/v1") :].strip("/").split("/")
         for op in ops.OPS.values():
@@ -1189,6 +1258,19 @@ class Handler(SimpleHTTPRequestHandler):
             bad = next(((k, v) for k, v in params.items() if _api.id_problem(v)), None)
             if bad:
                 return say(400, {"error": f"{op.name}: {bad[0]} {bad[1]!r}: {_api.id_problem(bad[1])}"})
+            key = ""
+            if public:
+                if op.kind != "read" or op.public_dropped:
+                    return say(
+                        404,
+                        {
+                            "error": f"{op.name} is not served publicly: {op.public_dropped or 'it is not a read'}",
+                            "kind": "not-public",
+                        },
+                    )
+                key = f"v1:{url.path}?{'&'.join(sorted(url.query.split('&')))}"
+                if (kept := _kept(key)) is not None:
+                    return say(*kept)
             if op.is_job():
                 self._job_route(op, params)
                 return True
@@ -1200,6 +1282,17 @@ class Handler(SimpleHTTPRequestHandler):
                 # may not have), so a read with nothing to show is answered 200 with why (`empty`), as the command
                 # says it, not as an error (a browser logs every 4xx in its console).
                 optional = q.pop("optional", ["0"])[-1] == "1"
+                # An input a public server does not take is refused, not ignored: a caller who asked for an item's text
+                # or a rendered file is told, and never answered as if the input had been given.
+                refused = sorted(k for k in q if k in op.inputs and k not in op.schema(public)["properties"])
+                if public and refused:
+                    return say(
+                        400,
+                        {
+                            "error": f"{op.name}: {', '.join(refused)} not taken on a public server",
+                            "kind": "not-public",
+                        },
+                    )
                 try:
                     inputs = query_inputs(op.inputs, q)
                 except ValueError as exc:
@@ -1226,9 +1319,14 @@ class Handler(SimpleHTTPRequestHandler):
                 inputs = body
                 inputs["by"] = by.strip() + (f" for {for_.strip()}" if by.startswith("agent:") else "")
             try:
-                jsonschema.validate({k: v for k, v in inputs.items() if k != "by"}, op.schema())
+                if public:  # as the public MCP server checks a call: the tool's own schema, and the sizes
+                    mcp_server.check_arguments(op, {**params, **inputs}, public=True)
+                else:
+                    jsonschema.validate({k: v for k, v in inputs.items() if k != "by"}, op.schema())
             except jsonschema.ValidationError as exc:
                 return say(400, {"error": f"{op.name}: {registry.input_problem(exc)}"})
+            except ValueError as exc:
+                return say(400, {"error": f"{op.name}: {exc}"})
 
             def nothing(kind: str, why: str, optional: bool = optional, name: str = op.name) -> bool | None:
                 """A read asked as optional with nothing to show, answered 200 with why; None for any other refusal."""
@@ -1238,22 +1336,39 @@ class Handler(SimpleHTTPRequestHandler):
                     200, {"command": name, "version": __version__, "result": None, "empty": why, "kind": kind}
                 )
 
+            def call(op=op, params=params, inputs=inputs):
+                if not public:
+                    return op.call(**params, **inputs)
+                with (
+                    _COMPUTE,
+                    _visibility.public_call(True),
+                ):  # two at once; what it reads, it reads as a public call
+                    return op.call(**params, **inputs)
+
             try:
-                result = op.call(**params, **inputs)
+                result = call()
             except Problem as exc:
-                return nothing(exc.kind, str(exc)) or say(
+                return nothing(exc.kind, words(str(exc))) or say(
                     REFUSAL_STATUS.get(exc.kind, 400),
-                    {"error": str(exc), "kind": exc.kind, "problems": exc.problems},
+                    {"error": words(str(exc)), "kind": exc.kind, "problems": [] if public else exc.problems},
                 )
             except (
                 SystemExit
             ) as exc:  # a body that refuses as a command does (die): ended the thread, no answer
                 m = re.match(r"ERROR \(([a-z-]+)\): (.*)", str(exc), re.S)
                 kind = m.group(1) if m else "failed"
-                why = (m.group(2) if m else str(exc)).strip()
+                why = words((m.group(2) if m else str(exc)).strip())
                 return nothing(kind, why) or say(REFUSAL_STATUS.get(kind, 400), {"error": why, "kind": kind})
             if op.kind != "read":
                 data_changed(f"{op.name} through the API")
+            if (
+                public
+            ):  # as the MCP server answers: a NaN or an infinity is null, which a browser's JSON.parse reads
+                data = json.dumps(
+                    _jsonout.plain({"command": op.name, "version": __version__, "result": result})
+                ).encode()
+                _keep(key, 200, data)
+                return say(200, data)
             return say(200, {"command": op.name, "version": __version__, "result": result})
         return False
 
@@ -1430,8 +1545,10 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_error(404)
 
     def do_HEAD(self):
-        """Handle HEAD requests with access checks."""
-        if not self._refuse():
+        """Handle HEAD requests with access checks. A public server has no file to serve (its pages are nginx's)."""
+        if LIMITS["hosts"]:
+            self.send_error(404)
+        elif not self._refuse() and not self._from_site(urlparse(self.path).path, head=True):
             super().do_HEAD()
 
     def do_GET(self):
@@ -1487,6 +1604,8 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.prefixes:  # public mode: the API only, never a file
             self.send_error(404)
             return
+        if self._from_site(url.path):
+            return
         if self._from_store(url.path):
             return
         super().do_GET()
@@ -1513,6 +1632,44 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(data)
+
+    def _from_site(self, url_path: str, head: bool = False) -> bool:
+        """A page of the catalog, rendered from the data as it is (RFC-040): under the catalog's address, on a server
+        that has pages of its own; `head`: its headers only. A page the catalog's own (Site.claims) that the data does
+        not have is 404, whatever an older export left on disk. False for anything else: a page a project's builder wrote
+        beside them is then read from the folder, as it always was."""
+        prefix = self.prefixes[0] if self.prefixes else ""
+        if not FRESH["on"] or not prefix or not url_path.startswith(prefix):
+            return False
+        rel = unquote(url_path[len(prefix) :])
+        if rel == "" or rel.endswith("/"):
+            rel += "index.html"
+        if ".." in Path(rel).parts or rel.startswith("/"):
+            return False
+        kind = SITE_TYPES.get(Path(rel).suffix)
+        if kind is None:
+            return False
+        try:
+            site, text = site_page(rel)
+        except Exception as exc:  # noqa: BLE001 -- said in the log and on health (site_page); the next request tries again
+            self._json(
+                500, {"error": f"the page could not be rendered: {type(exc).__name__}: {exc}"}, cache=False
+            )
+            return True
+        if text is None:
+            if not site.claims(rel):
+                return False
+            self.send_error(404)
+            return True
+        data = text.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", kind)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        if not head:
+            self.wfile.write(data)
+        return True
 
     def _from_store(self, url_path: str) -> bool:
         """With the sqlite store (RFC-025) a file of the data tree is a row of the project's database: served from
@@ -1558,6 +1715,12 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store" if code >= 400 or not cache else "public, max-age=300")
+        if LIMITS["hosts"] and urlparse(self.path).path.startswith("/api/v1/"):
+            # How the Workbench's page knows it is a viewer (RFC-039): the server says so with every answer, so the page
+            # needs no sign-in call and no setting of its own. It is a courtesy: the refusals are the server's.
+            self.send_header("X-EVH-Viewer", "1")
+            # Where the catalog is: the deployment serves it under a path of its own, the local server at its root.
+            self.send_header("X-EVH-Catalog", LIMITS.get("catalog_at") or "/")
         self.end_headers()
         self.wfile.write(data)
 
@@ -1610,7 +1773,7 @@ def main() -> int:
         "--publish",
         default="",
         metavar="WHAT",
-        help="public mode: text to serve besides the numbers, comma-separated: outputs, references "
+        help="public mode: text to serve besides the numbers, comma-separated: outputs, references, prompts "
         "(default: none; the item itself is never served publicly)",
     )
     ap.add_argument(
@@ -1618,6 +1781,13 @@ def main() -> int:
         metavar="NAME",
         help="public mode: the header that names the client (e.g. CF-Connecting-IP), only behind a proxy "
         "that sets it and an origin no one else can reach; default: the TCP peer",
+    )
+    ap.add_argument(
+        "--catalog-at",
+        default="/",
+        metavar="PATH",
+        help="public mode: where the deployment serves the built catalog (e.g. /catalog/), for the Workbench's links "
+        "to it; default /",
     )
     ap.add_argument("--max-arms", type=int, default=40, help="most arms in one comparison")
     ap.add_argument(
@@ -1631,9 +1801,35 @@ def main() -> int:
         metavar="CATALOG_DIR",
         help="answer every comparison this built catalog links to, in the background",
     )
+    # The pages' own options, as `evh catalog` takes them (RFC-040): the server renders the pages it would write.
+    pages = ap.add_argument_group("the pages (as evh catalog takes them)")
+    pages.add_argument("--brand", default="eval catalog", help="the name beside the logo")
+    pages.add_argument(
+        "--api", default="/api/", help="where the inspector's API answers, for pages served under a path"
+    )
+    pages.add_argument("--head", metavar="FILE", help="HTML added to every page's <head> (none by default)")
+    pages.add_argument("--about", metavar="FILE", help="HTML shown on the overview, under its description")
+    pages.add_argument(
+        "--repo", metavar="URL", help="where the project's files can be read: a project path links there"
+    )
+    pages.add_argument(
+        "--mcp", metavar="URL", help="the deployment's MCP server, named in every page's footer"
+    )
+    pages.add_argument("--mcp-howto", metavar="URL", help="--mcp: where to read how to connect an agent")
+    pages.add_argument("--card", metavar="URL", help="the image a shared link's card shows (1200x630)")
+    pages.add_argument(
+        "--link",
+        action="append",
+        default=[],
+        metavar="LABEL=URL",
+        help="a part of the publication, for the header",
+    )
     args = ap.parse_args()
     if args.public and args.behind_proxy:
         die("--public and --behind-proxy are two deployments: one at a time", "bad-argument")
+    from evaluation_harness import catalog_build  # noqa: PLC0415
+
+    catalog_build.SECTIONS = catalog_build.configure(args)
     if args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 
@@ -1650,9 +1846,17 @@ def main() -> int:
         LIMITS["rate"] = args.rate
         LIMITS["client_header"] = args.client_header
         LIMITS["publish"] = tuple(x.strip() for x in args.publish.split(",") if x.strip())
-        bad = set(LIMITS["publish"]) - {"outputs", "references"}
+        bad = set(LIMITS["publish"]) - {"outputs", "references", "prompts"}
         if bad:
-            die(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}", "bad-argument")
+            die(
+                f"--publish takes outputs, references and/or prompts, not {', '.join(sorted(bad))}",
+                "bad-argument",
+            )
+        if not (args.catalog_at.startswith("/") and args.catalog_at.endswith("/")):
+            die(
+                f"--catalog-at is a path that starts and ends with /, not {args.catalog_at!r}", "bad-argument"
+            )
+        LIMITS["catalog_at"] = args.catalog_at
         Handler.prefixes = ()
     else:
         if args.behind_proxy:
@@ -1665,10 +1869,10 @@ def main() -> int:
                 "--bind other than 127.0.0.1 needs --public or --behind-proxy (and a proxy in front)",
                 "not-allowed",
             )
-        if not _store.is_file(args.build_dir / "index.html"):
-            die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
+        # No catalog needs building first: its pages are rendered when asked for (RFC-040). The folder is still where
+        # its address points, and where a page a project's own builder adds beside them is read from.
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
-        start_fresh(args.build_dir, args.adapter)
+        start_fresh()
     migration_check()
     threading.Thread(target=watch_migrations, daemon=True).start()
     if args.warm:
@@ -1735,7 +1939,7 @@ def main() -> int:
         )
         print(f"  the project {ROOT}, on a port of its own", flush=True)
         print(
-            "  the pages are rebuilt when the data changes: a write through the API at once, any other on the next read",
+            "  each page is rendered when it is asked for, from the data as it is then: a write shows on the next read",
             flush=True,
         )
     try:
@@ -1746,4 +1950,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main())

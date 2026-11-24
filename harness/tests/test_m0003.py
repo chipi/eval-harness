@@ -33,28 +33,30 @@ def project(name: str, policy: str | None) -> Path:
     (p / "data" / "datasets").mkdir(parents=True)
     (p / "projects" / "x" / "configs" / "v2").mkdir(parents=True)
     (p / "config.yaml").write_text(
-        "store: files\nconfigs:\n  - projects/x/configs\n  - projects/x/configs/v2\n"
+        "store: files\nconfigs:\n  - projects/x/configs\n  - projects/x/configs/v2\n", encoding="utf-8"
     )
-    (p / "data" / "project.yaml").write_text("format: 2\nwritten_by: 0.8.0\n")
+    (p / "data" / "project.yaml").write_text("format: 2\nwritten_by: 0.8.0\n", encoding="utf-8")
     (p / "data" / "datasets" / "ds1.json").write_text(
-        json.dumps({"dataset_id": "ds1", "items": [{"item_id": "t01"}]})
+        json.dumps({"dataset_id": "ds1", "items": [{"item_id": "t01"}]}), encoding="utf-8"
     )
     (p / "projects" / "x" / "configs" / "arm_a_v1.yaml").write_text(
-        "config_id: arm_a_v1\ndataset_id: ds1\nadapter: echo\n"
+        "config_id: arm_a_v1\ndataset_id: ds1\nadapter: echo\n", encoding="utf-8"
     )
     (p / "projects" / "x" / "configs" / "v2" / "arm_b_v1.yaml").write_text(
-        "config_id: arm_b_v1\ndataset_id: ds1\nadapter: echo\n"
+        "config_id: arm_b_v1\ndataset_id: ds1\nadapter: echo\n", encoding="utf-8"
     )
     run = p / "data" / "runs" / "arm_a_v1_20261101T000000Z"
     (run / "outputs").mkdir(parents=True)
-    (run / "outputs" / "t01.txt").write_text("one")
-    (run / "predictions.jsonl").write_text(json.dumps({"item_id": "t01", "acc": 1.0}) + "\n")
+    (run / "outputs" / "t01.txt").write_text("one", encoding="utf-8")
+    (run / "predictions.jsonl").write_text(
+        json.dumps({"item_id": "t01", "acc": 1.0}) + "\n", encoding="utf-8"
+    )
     (run / "metrics.json").write_text(
         json.dumps({"run_id": run.name, "dataset_id": "ds1", "config_id": "arm_a_v1",
-                    "fingerprint": {"instrument": {"adapter": {"sha256": "a" * 64}}}})
+                    "fingerprint": {"instrument": {"adapter": {"sha256": "a" * 64}}}}), encoding="utf-8"
     )  # fmt: skip
     if policy is not None:
-        (p / "data" / "validate.json").write_text(policy)
+        (p / "data" / "validate.json").write_text(policy, encoding="utf-8")
     return p
 
 
@@ -72,7 +74,7 @@ try:
     none = project("none", None)
     r = evh(none, "migrate")
     policy = none / "data" / "validate.json"
-    doc = json.loads(policy.read_text()) if policy.is_file() else {}
+    doc = json.loads(policy.read_text(encoding="utf-8")) if policy.is_file() else {}
     check(
         "no validate.json: the migration reaches the last step, none of the moved systems is 'not a system'",
         r.returncode == 0 and "brought the data to format" in r.stdout,
@@ -82,13 +84,13 @@ try:
         "no validate.json: it is written with a `systems` glob for each folder the configs moved to",
         doc == {"systems": ["projects/x/systems/*.yaml", "projects/x/systems/v2/*.yaml"]}
         and (none / "projects" / "x" / "systems" / "arm_a_v1.yaml").is_file()
-        and "configs:" not in (none / "config.yaml").read_text(),
+        and "configs:" not in (none / "config.yaml").read_text(encoding="utf-8"),
         (doc, r.stderr[-200:]),
     )
 
     has = project("has", json.dumps({"ignore": ["V5"], "configs": ["elsewhere/*.yaml"]}, indent=2) + "\n")
     r = evh(has, "migrate")
-    doc = json.loads((has / "data" / "validate.json").read_text())
+    doc = json.loads((has / "data" / "validate.json").read_text(encoding="utf-8"))
     check(
         "validate.json present: its other keys stay, `configs` becomes `systems`, the config.yaml folders are added",
         r.returncode == 0

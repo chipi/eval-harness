@@ -102,8 +102,10 @@ try:
         cfg = proj / "config.yaml"
         check(
             f"init --store {store}: exit 0, config.yaml says `store: {store}`",
-            r.returncode == 0 and cfg.is_file() and cfg.read_text().startswith(f"store: {store}"),
-            (r.returncode, r.stderr[-300:], cfg.read_text() if cfg.is_file() else None),
+            r.returncode == 0
+            and cfg.is_file()
+            and cfg.read_text(encoding="utf-8").startswith(f"store: {store}"),
+            (r.returncode, r.stderr[-300:], cfg.read_text(encoding="utf-8") if cfg.is_file() else None),
         )
         r = evh(proj, "dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
         check(
@@ -129,17 +131,17 @@ try:
     )
     check(
         "the .gitignore leaves data/project.sqlite out of git",
-        "data/project.sqlite*" in (made["sqlite"] / ".gitignore").read_text(),
+        "data/project.sqlite*" in (made["sqlite"] / ".gitignore").read_text(encoding="utf-8"),
     )
 
     # init again
-    before = (made["files"] / "config.yaml").read_text()
+    before = (made["files"] / "config.yaml").read_text(encoding="utf-8")
     r = evh(base, "init", str(made["files"]), "--store", "files")
     check(
         "init again with the same store: exit 0, config.yaml kept",
         r.returncode == 0
         and "config.yaml" in r.stdout
-        and (made["files"] / "config.yaml").read_text() == before,
+        and (made["files"] / "config.yaml").read_text(encoding="utf-8") == before,
         (r.returncode, r.stdout[-300:]),
     )
     r = evh(base, "init", str(made["files"]), "--store", "sqlite")
@@ -148,14 +150,14 @@ try:
         r.returncode == 1
         and r.stderr.startswith("ERROR (mismatch)")
         and "data-migrate" in r.stderr
-        and (made["files"] / "config.yaml").read_text() == before,
+        and (made["files"] / "config.yaml").read_text(encoding="utf-8") == before,
         (r.returncode, r.stderr[-300:]),
     )
     other = base / "other"
     other.mkdir()
-    (other / "config.yaml").write_text("catalog:\n  publish: [prompts]\n")
+    (other / "config.yaml").write_text("catalog:\n  publish: [prompts]\n", encoding="utf-8")
     r = evh(base, "init", str(other), "--store", "sqlite")
-    text = (other / "config.yaml").read_text()
+    text = (other / "config.yaml").read_text(encoding="utf-8")
     check(
         "init in a project whose config.yaml names no store: its settings kept, the store line added",
         r.returncode == 0
@@ -171,7 +173,7 @@ try:
     for store in ("files", "sqlite"):
         plain = base / f"plain-{store}"
         r = evh(base, "init", str(plain), "--store", store)
-        text = (plain / example).read_text() if (plain / example).is_file() else ""
+        text = (plain / example).read_text(encoding="utf-8") if (plain / example).is_file() else ""
         dims = ["correctness", "completeness"]
         check(
             f"plain init --store {store}: writes {example}, which names its dimensions",
@@ -180,11 +182,11 @@ try:
             and "{n}" in text,
             (r.returncode, r.stderr[-300:], text[:200]),
         )
-        (plain / example).write_text("mine\n")
+        (plain / example).write_text("mine\n", encoding="utf-8")
         r = evh(base, "init", str(plain), "--store", store)
         check(
             f"plain init --store {store} again: the example prompt that is there is kept",
-            r.returncode == 0 and (plain / example).read_text() == "mine\n",
+            r.returncode == 0 and (plain / example).read_text(encoding="utf-8") == "mine\n",
             (r.returncode, r.stdout[-300:]),
         )
 
@@ -196,7 +198,7 @@ try:
         proj = base / ("none-" + str(len(label)))
         (proj / "data").mkdir(parents=True)
         if cfgtext is not None:
-            (proj / "config.yaml").write_text(cfgtext)
+            (proj / "config.yaml").write_text(cfgtext, encoding="utf-8")
         r = evh(proj, "data-ls")
         check(
             f"a project with {label}: a data command is ERROR (not-configured) with the explanation",
@@ -235,7 +237,7 @@ try:
         r.stderr[-200:],
     )
     (base / "badcfg" / "data").mkdir(parents=True)
-    (base / "badcfg" / "config.yaml").write_text("store: tape\n")
+    (base / "badcfg" / "config.yaml").write_text("store: tape\n", encoding="utf-8")
     r = evh(base / "badcfg", "dataset-list")
     check(
         "a config.yaml naming a store that is none: ERROR (invalid-file)",
@@ -283,18 +285,24 @@ try:
         subprocess.run(["git", *git_args], cwd=src, env=git, check=True, capture_output=True, timeout=60)
     copy = [sys.executable, str(HERE / "_release.py"), "copy-data", str(src / "data"), str(base / "rel/data")]
     env = {**CLEAN, "EVAL_HOME": str(src)}
-    r = subprocess.run(copy, cwd=src, env=env, capture_output=True, text=True, timeout=300)
+    r = subprocess.run(copy, cwd=src, env=env, capture_output=True, text=True, timeout=300, encoding="utf-8")
     check(
         "copy-data without --store: usage error",
         r.returncode == 2 and "--store" in r.stderr,
         (r.returncode, r.stderr[-200:]),
     )
     r = subprocess.run(
-        [*copy, "--store", "files"], cwd=src, env=env, capture_output=True, text=True, timeout=300
+        [*copy, "--store", "files"],
+        cwd=src,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=300,
+        encoding="utf-8",
     )
     check(
         "copy-data --store files: the release's config.yaml says `store: files`",
-        r.returncode == 0 and (base / "rel/config.yaml").read_text() == "store: files\n",
+        r.returncode == 0 and (base / "rel/config.yaml").read_text(encoding="utf-8") == "store: files\n",
         (r.returncode, r.stderr[-300:]),
     )
 finally:

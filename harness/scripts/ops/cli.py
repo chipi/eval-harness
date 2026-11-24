@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness._console import dump_json
 from evaluation_harness.ops.registry import Op
 
 
@@ -232,7 +233,7 @@ def main(op: Op, argv: list[str] | None = None) -> int:
     except Problem as exc:
         _common.die(str(exc), exc.kind)
     if args.json:
-        print(json.dumps({"command": op.name, "version": __version__, "result": result}, ensure_ascii=False))
+        print(dump_json({"command": op.name, "version": __version__, "result": result}))
     else:
         print(op.say(result))
     return op.exit_code(result)

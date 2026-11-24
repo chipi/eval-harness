@@ -417,6 +417,50 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     return {**out, **_score_pairs(v, ratings, raters)}
 
 
+#: The figure's chance level for an item, per mode: what a judge that knew nothing of the people's ratings gets. tau is
+#: 0 for unrelated orders and pair_agreement 0.5 for a coin; a pick's is the item's own `top1_chance`.
+CHANCE = {"tau": 0.0, "pair_agreement": 0.5}
+
+
+def agreement(scores: dict[str, float]) -> dict[str, Any] | None:
+    """Whether the judge agreed with the people on one item: the item's own term of the validation figure (`tau`,
+    `top1` or `pair_agreement`, whichever `score` gave) against its chance level (`CHANCE`; a pick's `top1_chance`).
+    {metric, value, chance, agrees}: an item under chance disagrees with the gold. None for an item the judge gave no
+    readable verdict (`score` gives only `parsed` then) or a score of another kind. It reads the item's scores, the
+    numbers the run stores, so a page or the terminal need not read the ratings."""
+    for metric in ("tau", "top1", "pair_agreement"):
+        if metric in scores:
+            chance = scores.get("top1_chance") if metric == "top1" else CHANCE[metric]
+            if chance is None:
+                return None
+            value = float(scores[metric])
+            return {
+                "metric": metric,
+                "value": value,
+                "chance": float(chance),
+                "agrees": value >= float(chance),
+            }
+    return None
+
+
+#: The label of the line an item view gives (info) for an item of a validation run, and what it says.
+MARK = "judge vs gold"
+
+
+def mark_of(scores: dict[str, float]) -> str | None:
+    """The item view's line for an item's scores: "agrees (top1 1, chance 0.25)", "disagrees (…)"; None when there is no
+    agreement to say (`agreement`)."""
+    a = agreement(scores)
+    if a is None:
+        return None
+    return f"{'agrees' if a['agrees'] else 'disagrees'} ({a['metric']} {a['value']:.3g}, chance {a['chance']:.3g})"
+
+
+def is_validation(adapter: Any) -> bool:
+    """Whether a run's adapter is this one (`evh judge-validate` writes the systems that name it)."""
+    return str(adapter or "").endswith("judge_validation.py")
+
+
 def _tau_rho(a: list[float], b: list[float]) -> tuple[float, float]:
     return judging.kendall_tau_b(a, b), judging.spearman(a, b)
 

@@ -331,6 +331,98 @@ check(
     (alltext(sc)[:200], cut(s)),
 )
 
+
+# -- a crowded corner: a name lies over no dot; with no clear place it goes to a leader line or the legend (0.8.1 S2) ---
+def dots_of(s: ET.Element) -> list:
+    return [
+        (float(c.get("cx", 0)), float(c.get("cy", 0)), float(c.get("r", 0))) for c in s.iter(NS + "circle")
+    ]
+
+
+def over_dots(s: ET.Element, prefix: str) -> list:
+    """The names (`prefix...`) with a dot under their drawn box."""
+    out = []
+    for x0, x1, y0, y1, txt in boxes(s):
+        if not txt.startswith(prefix):
+            continue
+        for cx, cy, r in dots_of(s):
+            if x0 - r < cx < x1 + r and y0 - r < cy < y1 + r:
+                out.append((txt, round(cx), round(cy)))
+    return out
+
+
+LEADS = ("briefs_lead1", "briefs_top")
+
+
+def crowded(xs: list, ys: list) -> str:
+    """lead1 (the cheapest) and a top arm on the frontier; a grid of dots, each beaten by the top arm, across xs x ys."""
+    pts = [(0.0, 3.0, "briefs_lead1_v1", "t"), (0.000001, 5.0, "briefs_top_v1", "t")]
+    return cc.scatter(
+        pts + [(x, y, f"briefs_g{i}_{j}", "t") for i, x in enumerate(xs) for j, y in enumerate(ys)],
+        "cost (USD per item)",
+        "judge_score",
+        fmt_x=axes.fmt_usd,
+        width=520,
+    )
+
+
+def named_ok(sc: str) -> bool:
+    s = svg_of(sc)
+    legend = re.sub(r"<[^>]+>", "", sc.split("<figcaption")[1])
+    return (
+        not over_dots(s, "briefs_")
+        and not overlaps(boxes(s))
+        and not cut(s)
+        and all(any(b_[4].startswith(n) for b_ in boxes(s)) or n in legend for n in LEADS)
+    )
+
+
+# a block of dots right of lead1 (a name beside it would lie over them), open ground further right: a leader line
+sc = crowded([0.00002 * k for k in range(1, 16)], [3.0 + 0.12 * k for k in range(15)])
+check(
+    "scatter: in a crowded corner no name lies over a dot; with no clear place beside its dot it goes to a leader line",
+    named_ok(sc) and 'class="leader"' in sc,
+    (over_dots(svg_of(sc), "briefs_"), sc.count('class="leader"')),
+)
+# dots everywhere: no clear ground at all, so the names go to the caption
+sc = crowded([0.00005 * k for k in range(1, 55)], [3.0 + 2 * k / 24 for k in range(25)])
+check(
+    "scatter: with no clear ground at all the names go to the legend (the caption), over no dot",
+    named_ok(sc)
+    and "No clear place on the chart for" in sc
+    and "briefs_lead1_v1" in sc.split("<figcaption")[1],
+    (over_dots(svg_of(sc), "briefs_"), sc.split("<figcaption")[1][-200:]),
+)
+
+# Two names on one line never touch: a real font is wider than LABEL_W, so a name ending where the next begins is drawn over
+# it (the goal page of news_topic_ag, speed chart, whose points these are as fractions of the axes).
+AG = [
+    (0.8166, 1.0, "ag_anthropic_l_v1"), (0.784, 0.9933, "ag_openai_m_v1"), (0.7937, 0.9866, "ag_openai_l_v1"),
+    (0.8119, 0.9732, "ag_anthropic_m_v1"), (0.8388, 0.9732, "ag_llama_m_v1"), (0.7847, 0.9671, "ag_gemma_s_v1"),
+    (0.7746, 0.9671, "ag_qwen_m_v1"), (0.7996, 0.9671, "ag_qwen_s_v1"), (0.8145, 0.9604, "ag_deepseek_l_v1"),
+    (0.798, 0.9604, "ag_gemma_l_v1"), (0.8462, 0.9604, "ag_qwen_l_v1"), (1.0, 0.9537, "ag_mistral_l_v1"),
+    (0.8445, 0.947, "ag_glm_l_v1"), (0.8684, 0.947, "ag_glm_m_v1"), (0.746, 0.947, "ag_mistral_m_v1"),
+    (0.7708, 0.947, "ag_openai_s_v1"), (0.7741, 0.9404, "ag_gemma_m_v1"), (0.8041, 0.9342, "ag_glm_s_v1"),
+    (0.7769, 0.9275, "ag_mistral_s_v1"), (0.7767, 0.9208, "ag_anthropic_s_v1"), (0.7904, 0.9208, "ag_deepseek_m_v1"),
+    (0.8386, 0.9208, "ag_deepseek_s_v1"), (0.7921, 0.9208, "ag_llama_l_v1"), (0.7904, 0.9142, "ag_llama_s_v1"),
+    (0.6408, 0.8946, "ag_bert_base_fy_v1"), (0.6387, 0.8946, "ag_bert_base_ta_v1"), (0.5069, 0.8946, "ag_bert_mini_v1"),
+    (0.8164, 0.6973, "ag_bart_mnli_v1"), (0.2216, 0.5853, "ag_keyword_v1"), (0.0, 0.0, "ag_constant_v1"),
+]  # fmt: skip
+sc = cc.scatter([(x, y, n, "t") for x, y, n in AG], "speed", "correct", width=560)
+s = svg_of(sc)
+bs = [b_ for b_ in boxes(s) if b_[4].startswith("ag_")]
+close = [
+    (a[4], b[4])
+    for i, a in enumerate(bs)
+    for b in bs[i + 1 :]
+    if a[0] < b[1] + 2 and b[0] < a[1] + 2 and a[2] < b[3] and b[2] < a[3]
+]
+check(
+    "scatter: two names on one line keep a gap (none within 2 units of another), and none lies over a dot",
+    not close and not over_dots(s, "ag_"),
+    (close, over_dots(s, "ag_")[:3]),
+)
+
 # -- arm pages: no reference, rounds of a re-read arm ----------------------------------------------------------------
 a0 = {
     "arm": "runs/briefs_v2/briefs_lead1_v1",

@@ -54,6 +54,7 @@ def tool(script: str, data: Path | None, *args: str) -> subprocess.CompletedProc
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
 
 
@@ -102,6 +103,7 @@ def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = Tr
         capture_output=True,
         text=True,
         env={**env, "EVAL_DATA_DIR": str(data)},
+        encoding="utf-8",
     )
     if r.returncode or not _runstore.is_file(data.parent, f"{ref}/manifest.json"):
         raise SystemExit(f"setup: reference-manifest gold/{dataset} failed\n{r.stdout}{r.stderr}")
@@ -331,6 +333,7 @@ def test_goal_decisions() -> None:
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     # Columns are separated by two or more spaces (a dataset list has single ones inside it).
     lines = [re.split(r"\s{2,}", ln.strip()) for ln in g.stdout.splitlines()]

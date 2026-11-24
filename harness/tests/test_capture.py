@@ -58,7 +58,7 @@ rows = [
     },
     {"id": "a4", "body": "untimed", "kind": "x"},
 ]
-(proj / "rows.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+(proj / "rows.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
 
 
 def ids(query):
@@ -104,7 +104,7 @@ check("importer-check: a good file passes", r.returncode == 0 and r.stdout.rstri
 
 
 def bad_file(name, lines):
-    (proj / name).write_text("".join(json.dumps(x) + "\n" for x in lines))
+    (proj / name).write_text("".join(json.dumps(x) + "\n" for x in lines), encoding="utf-8")
     return evh("importer-check", "--importer", "jsonl", "--query", json.dumps({"path": name}))
 
 
@@ -123,7 +123,8 @@ for label, lines, says in (
     "class Importer:\n"
     "    def __init__(self, options): pass\n"
     "    def records(self, query):\n"
-    "        yield {'id': 'f', 'body': str(random.random())}\n"
+    "        yield {'id': 'f', 'body': str(random.random())}\n",
+    encoding="utf-8",
 )
 r = evh("importer-check", "--importer", "flaky.py:Importer", "--query", "{}")
 check(
@@ -203,7 +204,8 @@ check(
     "    def records(self, query):\n"
     "        for i, t in (('a0', '2026-10-03T10:00:00Z'), ('a1', '2026-10-01T10:00:00Z'),"
     " ('a2', '2026-10-05T10:00:00Z'), ('a3', '2026-10-09T10:00:00Z')):\n"
-    "            yield {'id': i, 'body': i, 'created_at': t}\n"
+    "            yield {'id': i, 'body': i, 'created_at': t}\n",
+    encoding="utf-8",
 )
 r = evh("importer-check", "--importer", "deaf.py:Importer", "--query", "{}")
 check(
@@ -251,7 +253,7 @@ _runstore.rmtree(proj, "captures/c4")
 # ── dataset-from-capture ────────────────────────────────────────────────────────────────────
 more = [{"id": f"m{i}", "body": f"Same  text {i % 3}", "kind": "abc"[i % 3]} for i in range(12)]
 more.append({"id": "m_dup", "body": "same text 0", "kind": "a"})
-(proj / "more.jsonl").write_text("".join(json.dumps(x) + "\n" for x in more))
+(proj / "more.jsonl").write_text("".join(json.dumps(x) + "\n" for x in more), encoding="utf-8")
 evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "more.jsonl"}), "--capture", "m")
 (proj / "data" / "fields").mkdir(exist_ok=True)
 _runstore.write_text(
@@ -348,7 +350,7 @@ logs = [
     {"id": f"l{i}", "body": f"line {i}", "created_at": f"2026-10-{1 + i % 20:02d}T00:00:00Z"}
     for i in range(2000)
 ]
-(proj / "logs.jsonl").write_text("".join(json.dumps(x) + "\n" for x in logs))
+(proj / "logs.jsonl").write_text("".join(json.dumps(x) + "\n" for x in logs), encoding="utf-8")
 lq = json.dumps({"path": "logs.jsonl", "until": "2026-10-11"})
 want = sorted(x["id"] for x in logs if x["created_at"] < "2026-10-11" and _importers.sampled(x["id"], 0.1, 7))
 
@@ -382,7 +384,8 @@ check(
     "            x = json.loads(line)\n"
     "            if x['created_at'] >= '2026-10-11': continue\n"
     "            if self.sample and not _importers.sampled(x['id'], **self.sample): continue\n"
-    "            yield x\n"
+    "            yield x\n",
+    encoding="utf-8",
 )
 r = evh(
     "capture",
@@ -477,7 +480,9 @@ check(
 )
 # 2026-11-04, the triage v2 (a beta agent): a version made --from the last one, from a capture whose records
 # correct an item's body, kept the old body and reported "0 changed".
-(proj / "fix.jsonl").write_text(json.dumps({"id": "a1", "body": "The corrected body of a1."}) + "\n")
+(proj / "fix.jsonl").write_text(
+    json.dumps({"id": "a1", "body": "The corrected body of a1."}) + "\n", encoding="utf-8"
+)
 evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "fix.jsonl"}), "--capture", "c_fix")
 r = evh("dataset-from-capture", "--capture", "c_fix", "--dataset-id", "cap_fixed", "--from", "cap_v1")
 lin = ds("cap_fixed").get("derived_from", {}) if r.returncode == 0 else {}
@@ -578,7 +583,8 @@ for name, content in aside.items():
     "    if isinstance(r.get('body'), str) and 'Same' in r['body']:\n"
     "        r['body'] = r['body'].replace('Same', '<redacted>')\n"
     "        f.write_text(json.dumps(r))\n"
-    "print('scrubbed what it found')\n"
+    "print('scrubbed what it found')\n",
+    encoding="utf-8",
 )
 before = _runstore.read_json(proj, "captures/m/capture.json")
 r = evh("capture-scrub", "m", "--command", f"{sys.executable} scrub.py {{records}}")
@@ -600,7 +606,8 @@ check(
 r = evh("validate")
 check("capture-scrub: V17 passes on the scrubbed capture", r.returncode == 0, out(r)[-300:])
 (proj / "bad_scrub.py").write_text(
-    "import pathlib, sys\nfor f in pathlib.Path(sys.argv[1]).glob('*.json'):\n    f.write_text('not json')\n"
+    "import pathlib, sys\nfor f in pathlib.Path(sys.argv[1]).glob('*.json'):\n    f.write_text('not json')\n",
+    encoding="utf-8",
 )
 snap = {
     n: _runstore.read_text(proj, f"captures/m/records/{n}")
@@ -689,7 +696,7 @@ from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 site = proj / "catalog"
 with _runstore._InProject(proj):
     cb.build(HarnessAdapter(proj / "data"), site)
-page = (site / "captures.html").read_text() if (site / "captures.html").exists() else ""
+page = (site / "captures.html").read_text(encoding="utf-8") if (site / "captures.html").exists() else ""
 check(
     "catalog: a Captures page lists each capture, what continues what, and links the datasets made from it",
     all(f'id="capture-{c}"' in page for c in ("c1", "c2", "m"))
@@ -697,7 +704,7 @@ check(
     and 'cap_v1 <small class="muted">no runs yet</small>' in page
     and 'href="d/cap_v1.html"' not in page
     and "evh capture-list" in page
-    and 'href="captures.html"' in (site / "index.html").read_text(),
+    and 'href="captures.html"' in (site / "index.html").read_text(encoding="utf-8"),
     page[-600:],
 )
 # Only datasets with runs have a catalog page, so the origin's link is checked on the helper the page uses.
@@ -748,7 +755,8 @@ check(
     "    def __init__(self, options=None):\n        pass\n"
     "    def records(self, query):\n"
     "        yield {'id': 'x1', 'body': 'one', 'fields': {}, 'created_at': '2026-10-01T00:00:00Z',\n"
-    "               'source': {'system': 's'}, 'outcome': {}}\n"
+    "               'source': {'system': 's'}, 'outcome': {}}\n",
+    encoding="utf-8",
 )
 r = subprocess.run(
     [
@@ -764,6 +772,7 @@ r = subprocess.run(
     env=env,
     capture_output=True,
     text=True,
+    encoding="utf-8",
 )
 check(
     "importer: a path relative to the project is found from a subdirectory too",

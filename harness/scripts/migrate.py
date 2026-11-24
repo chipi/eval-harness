@@ -65,6 +65,7 @@ def _backup(have: int) -> None:
             timeout=60,
             check=False,
             cwd=_common.DATA,
+            encoding="utf-8",
         )
     except (OSError, subprocess.TimeoutExpired):
         print("backup: git not found; the files have no undo but a copy you make", file=sys.stderr)
@@ -147,6 +148,7 @@ def _dry_run(todo: list[Any]) -> None:
             "EVAL_DATA_DIR": str(rel),
             "EVAL_STORE": _common.store(),
             SCRATCH_MARK: str(scratch),
+            "PYTHONIOENCODING": "utf-8",
         }
         done = subprocess.run(  # nosec B603 - this script again, fixed arguments, on the copy
             [sys.executable, str(_Path(__file__).resolve())],
@@ -157,6 +159,9 @@ def _dry_run(todo: list[Any]) -> None:
             stdin=subprocess.DEVNULL,
             timeout=None,
             check=False,
+            # the child is told to write UTF-8 (PYTHONIOENCODING); replacement keeps a stray byte from crashing here
+            encoding="utf-8",
+            errors="replace",
         )
         out, err = (t.replace(str(scratch), str(root)) for t in (done.stdout, done.stderr))
         sys.stdout.write(out)
@@ -226,4 +231,7 @@ def _steps_on_copy() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(_steps_on_copy())

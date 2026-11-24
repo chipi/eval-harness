@@ -423,7 +423,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "noise pass sends the primary pass's prompt (the same message, repeated)",
         js.message_for(m1, BASE, ARTICLES, OUTPUTS, m1["items"][0], "noise", 0) == pm,
     )
-    stored = json.loads((Path(td) / "ja" / "itemA.primary.b0.json").read_text())
+    stored = json.loads((Path(td) / "ja" / "itemA.primary.b0.json").read_text(encoding="utf-8"))
     check(
         "a stored verdict keeps the raw reply and the bill",
         stored["output"].startswith("{")
@@ -520,7 +520,7 @@ with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
     st = run_all(td, call=no_cost_judge(), cap=0.0004)
     one_call = (100 * 1.0 + 20 * 2.0) / 1e6
-    v_ = json.loads(next(Path(td).glob("ja/*.json")).read_text())
+    v_ = json.loads(next(Path(td).glob("ja/*.json")).read_text(encoding="utf-8"))
     check(
         "cost None with token counts: counted at the price table, flagged cost_known false",
         abs(v_["cost_usd"] - one_call) < 1e-12 and v_["cost_known"] is False,
@@ -546,10 +546,10 @@ with tempfile.TemporaryDirectory() as tmp:
     sc_scores = js.load_scores(m1, sc, Path(td))
     check(
         "an unparseable reply is stored with scores null, and the item is not scored",
-        json.loads(next(Path(td).glob("ja/*.json")).read_text())["scores"] is None
+        json.loads(next(Path(td).glob("ja/*.json")).read_text(encoding="utf-8"))["scores"] is None
         and js.project(sc, sc_scores, ITEMS) == {},
     )
-    first = json.loads(next(Path(td).glob("ja/*.json")).read_text())
+    first = json.loads(next(Path(td).glob("ja/*.json")).read_text(encoding="utf-8"))
     check(
         "a reply that is not bare JSON is stored as its hash, not its text",
         first["output"] is None
@@ -562,15 +562,15 @@ with tempfile.TemporaryDirectory() as tmp:
     check(
         "a withheld reply's text is kept beside it, out of git, so its cause can be read",
         wtext.is_file()
-        and wtext.read_text() == "I cannot do this."
-        and (wrec.parent / ".withheld" / ".gitignore").read_text().strip() == "*",
+        and wtext.read_text(encoding="utf-8") == "I cannot do this."
+        and (wrec.parent / ".withheld" / ".gitignore").read_text(encoding="utf-8").strip() == "*",
     )
     good = fake_judge()
     st2 = run_all(td, call=good)
     check("resume does not re-pay for unparsed replies unless asked", st2["calls"] == 0)
     st3 = run_all(td, call=good, retry=True)
     check("--retry-unparsed calls them again", st3["calls"] == 2 * N_TASKS)
-    again = json.loads(next(Path(td).glob("ja/*.json")).read_text())
+    again = json.loads(next(Path(td).glob("ja/*.json")).read_text(encoding="utf-8"))
     check(
         "a retried block keeps the earlier call's cost: 0.01 + 0.01, attempt 2",
         abs(again["cost_usd"] - 0.02) < 1e-12
@@ -586,7 +586,7 @@ with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
     quote = " ".join(ARTICLES["itemA"].split()[:8])
     run_all(td, call=fake_judge(reply=json.dumps({"note": quote})))
-    recs = [json.loads(f.read_text()) for f in Path(td).glob("*/itemA.*.json")]
+    recs = [json.loads(f.read_text(encoding="utf-8")) for f in Path(td).glob("*/itemA.*.json")]
     check(
         "a bare-JSON reply that repeats 8 words of the article is stored as its hash",
         recs and all(r["output"] is None and r["withheld_reason"] == "repeats the source" for r in recs),
@@ -744,15 +744,15 @@ with tempfile.TemporaryDirectory() as tmp:
     for r_ in real["validation"]["runs"]:
         shutil.copytree(real_runs / r_["run"], rd / r_["run"])
     mf = rd / real["validation"]["runs"][0]["run"] / "run.json"
-    mj_ = json.loads(mf.read_text())
+    mj_ = json.loads(mf.read_text(encoding="utf-8"))
     mj_["fingerprint"]["settings"]["declared"]["prompt_sha256"] = "0" * 64
-    mf.write_text(json.dumps(mj_))
+    mf.write_text(json.dumps(mj_), encoding="utf-8")
     check(
         "gate: a validation run that used a different prompt: refused",
         any("used prompt" in p for p in js.validation_problems(real, runs_dir=rd)),
     )
     del mj_["fingerprint"]["settings"]["declared"]["prompt_sha256"]
-    mf.write_text(json.dumps(mj_))
+    mf.write_text(json.dumps(mj_), encoding="utf-8")
     check(
         "gate: a validation run that recorded no prompt sha: refused",
         any("records no prompt sha256" in p for p in js.validation_problems(real, runs_dir=rd)),
@@ -764,7 +764,9 @@ with tempfile.TemporaryDirectory() as tmp:
     pth = Path(td) / "x.yaml"
     import yaml
 
-    pth.write_text(yaml.safe_dump({k: v for k, v in one_family.items() if not k.startswith("_")}))
+    pth.write_text(
+        yaml.safe_dump({k: v for k, v in one_family.items() if not k.startswith("_")}), encoding="utf-8"
+    )
     check("a scorer whose judges share a vendor family is refused", raises_exit(lambda: js.load_scorer(pth)))
     # The controls are not optional (ADR-0001 §4): a forgotten field cannot switch them off.
     clean = {k: v for k, v in real.items() if not k.startswith("_")}
@@ -788,7 +790,7 @@ with tempfile.TemporaryDirectory() as tmp:
         ),
     ):
         pc = Path(td) / "controls.yaml"
-        pc.write_text(yaml.safe_dump(dict(clean, protocol=proto)))
+        pc.write_text(yaml.safe_dump(dict(clean, protocol=proto)), encoding="utf-8")
         check(
             f"controls: {label} {'is refused' if refused else 'is accepted (no order to check)'}",
             raises_exit(lambda p=pc: js.load_scorer(p)) == refused,
@@ -798,7 +800,8 @@ with tempfile.TemporaryDirectory() as tmp:
     pth2.write_text(
         yaml.safe_dump(
             {k: v for k, v in no_val.items() if not k.startswith("_")} | {"scorer_id": "judge-test-unval"}
-        )
+        ),
+        encoding="utf-8",
     )
     old = (js.SCORERS, sys.argv)
     js.SCORERS = Path(td)
@@ -883,7 +886,7 @@ with tempfile.TemporaryDirectory() as tmp:
             mtimes == {p: p.stat().st_mtime_ns for p in r0.rglob("*") if p.is_file()},
         )
         pr = _runstore.rows(r0)
-        mj = json.loads((r0 / "metrics.json").read_text())
+        mj = json.loads((r0 / "metrics.json").read_text(encoding="utf-8"))
         check(
             "predictions carry the primary, per-judge columns and the CARRY fields",
             len(pr) == 3
@@ -923,6 +926,7 @@ with tempfile.TemporaryDirectory() as tmp:
             env=dict(os.environ),
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         check(
             "leaderboard reads the judged scores with --label judged/<scorer> (exit 0, shows judge_score)",
@@ -932,7 +936,7 @@ with tempfile.TemporaryDirectory() as tmp:
             print((lb_run.stdout + lb_run.stderr)[-600:])
         # An unvalidated pass of the same set is the same key: it replaces the score, as the pass run again does.
         js.write_scored_runs(m1, sc, arms, proj, "unvalidated judge", False)
-        mu = json.loads((r0 / "metrics.json").read_text())
+        mu = json.loads((r0 / "metrics.json").read_text(encoding="utf-8"))
         check(
             "--unvalidated: the primary metric and the label say so",
             mu["primary_metric"] == "judge_score_unvalidated"
@@ -1015,15 +1019,15 @@ with tempfile.TemporaryDirectory() as tmp:
         return fake_judge()(message, params)
 
     js.run_judging(m_one, one, BASE, ARTICLES, OUTPUTS, Path(td), slow, None, log=lambda *_: None)
-    lat = [json.loads(f.read_text())["latency_ms"] for f in Path(td).glob("*/*.json")]
+    lat = [json.loads(f.read_text(encoding="utf-8"))["latency_ms"] for f in Path(td).glob("*/*.json")]
     check(
         "latency: every verdict stores the wall-clock of its call, not the judge's own field",
         lat and all(isinstance(x, float) and 25 <= x < 2000 for x in lat),
     )
     f0 = next(Path(td).glob("ja/*.json"))
-    v0 = json.loads(f0.read_text())
+    v0 = json.loads(f0.read_text(encoding="utf-8"))
     v0["latency_ms"] = None
-    f0.write_text(json.dumps(v0))
+    f0.write_text(json.dumps(v0), encoding="utf-8")
     check(
         "latency: an old verdict with latency_ms null is still read, skipped and projected",
         js.run_judging(
@@ -1189,14 +1193,17 @@ with tempfile.TemporaryDirectory() as tmp:
                         "judge_fp": js.judge_fingerprint(j_),
                         "prompt_sha": sha_,
                     }
-                )
+                ),
+                encoding="utf-8",
             )
         check(
             "--no-calls with every record stored: writes the report, calls nothing",
             vg.main() == 0
             and (td / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn" / "report.json").is_file(),
         )
-        f_.write_text(json.dumps({**json.loads(f_.read_text()), "judge_fp": "0" * 16}))
+        f_.write_text(
+            json.dumps({**json.loads(f_.read_text(encoding="utf-8")), "judge_fp": "0" * 16}), encoding="utf-8"
+        )
         try:
             vg.main()
             msg_ = ""
@@ -1380,10 +1387,10 @@ with tempfile.TemporaryDirectory() as tmp:
     try:
         rc = vz.main()
         vroot = td / "judge-validation" / "judge-summ-v1" / "zhang2023-cnndm"
-        rep = json.loads((vroot / "report.json").read_text())
+        rep = json.loads((vroot / "report.json").read_text(encoding="utf-8"))
         f_a1 = vz.record_path(vroot / "gemma_l", "a1", 0)
-        rec_a1 = json.loads(f_a1.read_text())
-        rec_a2 = json.loads(vz.record_path(vroot / "gemma_l", "a2", 0).read_text())
+        rec_a1 = json.loads(f_a1.read_text(encoding="utf-8"))
+        rec_a2 = json.loads(vz.record_path(vroot / "gemma_l", "a2", 0).read_text(encoding="utf-8"))
         check(
             "main: a reply that quotes 8 words of the article is withheld (no text, its hash kept)",
             rc == 0
@@ -1404,20 +1411,21 @@ with tempfile.TemporaryDirectory() as tmp:
         )
         sc_z = js.load_scorer(td / "scorers" / "judge-summ-v1.yaml")
         args_z = (sc_z, js.prompt_text(sc_z), int(sc_z["protocol"]["outputs_per_call"]), synth_z, SYSZ, vroot)
-        orig_a1 = f_a1.read_text()
-        f_a1.write_text(json.dumps({**rec_a1, "judge_fp": "0" * 16}))
+        orig_a1 = f_a1.read_text(encoding="utf-8")
+        f_a1.write_text(json.dumps({**rec_a1, "judge_fp": "0" * 16}), encoding="utf-8")
         check(
             "build_report: a record stored for another judge definition is refused",
             "different judge" in _exit(lambda: vz.build_report(*args_z)),
         )
         # json.dumps writes "café" as "café", so the raw file hides the quote; the
         # decoded reply does not.
-        f_a1.write_text(json.dumps({**rec_a1, "output": f"{QUOTE} {{}}"}))
+        f_a1.write_text(json.dumps({**rec_a1, "output": f"{QUOTE} {{}}"}), encoding="utf-8")
         check(
             "build_report: a stored reply quoting the article is refused even when JSON-escaped",
-            "\\u00e9" in f_a1.read_text() and "repeats 8 words" in _exit(lambda: vz.build_report(*args_z)),
+            "\\u00e9" in f_a1.read_text(encoding="utf-8")
+            and "repeats 8 words" in _exit(lambda: vz.build_report(*args_z)),
         )
-        f_a1.write_text(orig_a1)
+        f_a1.write_text(orig_a1, encoding="utf-8")
         check("build_report: the restored records build again", vz.build_report(*args_z)["articles"] == 3)
     finally:
         vz.DATA, vz.load, vz.call_with_retries, sys.argv = saved_vz
@@ -1441,23 +1449,23 @@ with tempfile.TemporaryDirectory() as tmp:
     )
 
     sf = next(sets_d.glob("*.json"))
-    orig = sf.read_text()
+    orig = sf.read_text(encoding="utf-8")
     man = json.loads(orig)
     # A real edit on any set: reversing a one-summary block (pointwise sets) would change nothing.
     man["items"][0]["article_sha256"] = "0" * 64
-    sf.write_text(json.dumps(man))
+    sf.write_text(json.dumps(man), encoding="utf-8")
     check(
         "V11: a judging set edited after its hash was stored fails",
         any("recomputed" in p for p in vt.judging_set_problems(sets_d)),
     )
     man = json.loads(orig)
     man["judging_set_sha256"] = "0" * 64
-    sf.write_text(json.dumps(man))
+    sf.write_text(json.dumps(man), encoding="utf-8")
     check("V11: a wrong stored hash fails", any("recomputed" in p for p in vt.judging_set_problems(sets_d)))
-    sf.write_text(orig)
+    sf.write_text(orig, encoding="utf-8")
 
     vf = next(ver_d.glob("*/*/*/*.json"))
-    vorig = vf.read_text()
+    vorig = vf.read_text(encoding="utf-8")
     cases = {
         "an unknown item": ("item_id", "no-such-item"),
         "a block index that does not exist": ("block", 99),
@@ -1467,9 +1475,9 @@ with tempfile.TemporaryDirectory() as tmp:
     for what, (k, val) in cases.items():
         v = json.loads(vorig)
         v[k] = val
-        vf.write_text(json.dumps(v))
+        vf.write_text(json.dumps(v), encoding="utf-8")
         check(f"V12: a verdict with {what} fails", vt.verdict_problems(ver_d, sets_d) != [])
-    vf.write_text(vorig)
+    vf.write_text(vorig, encoding="utf-8")
     set_dir = vf.parent.parent
     set_dir.rename(set_dir.with_name("ds-9arms-ffffffffffff"))
     check(
@@ -1480,7 +1488,7 @@ with tempfile.TemporaryDirectory() as tmp:
     check("V12: restored copy is clean again", vt.verdict_problems(ver_d, sets_d) == [])
 
     pf = sc_d / "judge-summ-pointwise-v1.yaml"
-    sorig = pf.read_text()
+    sorig = pf.read_text(encoding="utf-8")
     broken = {
         "a missing judges key": sorig.replace("judges:", "judgez:", 1),
         "a scorer_id that is not its file name": sorig.replace(
@@ -1494,19 +1502,20 @@ with tempfile.TemporaryDirectory() as tmp:
         "invalid yaml": "scorer_id: [unclosed\n",
     }
     for what, text in broken.items():
-        pf.write_text(text)
+        pf.write_text(text, encoding="utf-8")
         try:
             bad_sc = vt.scorer_problems(sc_d)
         except Exception as exc:  # noqa: BLE001 — a crash in the check is not a failing check
             bad_sc = []
             print("   check crashed:", type(exc).__name__, exc)
         check(f"V13: a scorer with {what} fails", bad_sc != [])
-    pf.write_text(sorig)
+    pf.write_text(sorig, encoding="utf-8")
 
 # ── no dependency outside the package: routing, the fake judge, prompt resolution ──
 check(
     "judge_score no longer loads the SummEval adapter",
-    not hasattr(js, "summeval_adapter") and "adapter.py" not in (HERE / "judge_score.py").read_text(),
+    not hasattr(js, "summeval_adapter")
+    and "adapter.py" not in (HERE / "judge_score.py").read_text(encoding="utf-8"),
 )
 fake_sc = scorer(
     judges=[
@@ -1612,7 +1621,7 @@ for _sf in sorted((HERE.parent / "data" / "scorers").glob("*.yaml")):
     _sc = js.load_scorer(_sf)
     _want = {j["id"]: js.judge_fingerprint(j) for j in _sc["judges"]}
     for _vf in (_vroot / _sc["scorer_id"]).glob("*/*/*.json") if (_vroot / _sc["scorer_id"]).is_dir() else []:
-        _v = json.loads(_vf.read_text())
+        _v = json.loads(_vf.read_text(encoding="utf-8"))
         if "judge_fp" in _v and _v.get("judge") in _want and _v["judge_fp"] != _want[_v["judge"]]:
             _bad_fp.append(str(_vf.relative_to(_vroot)))
 check(
@@ -1624,9 +1633,9 @@ check(
 with tempfile.TemporaryDirectory() as td_:
     tdp = Path(td_)
     (tdp / "scorers").mkdir()
-    (tdp / "scorers" / "mine.txt").write_text("beside the scorer\n")
+    (tdp / "scorers" / "mine.txt").write_text("beside the scorer\n", encoding="utf-8")
     (tdp / "scorers" / "sub").mkdir()
-    (tdp / "scorers" / "sub" / "p.txt").write_text("nested\n")
+    (tdp / "scorers" / "sub" / "p.txt").write_text("nested\n", encoding="utf-8")
     here_sc = scorer(prompt={"file": "mine.txt"}, _dir=str(tdp / "scorers"))
     check(
         "prompt.file: relative to the scorer's own directory when the project root has none",
@@ -1743,7 +1752,7 @@ check(
 
 with tempfile.TemporaryDirectory() as td_:
     prompt_ = Path(td_) / "rel.txt"
-    prompt_.write_text(GEN + '\nReply as JSON: {"relevance": [one integer per passage]}\n')
+    prompt_.write_text(GEN + '\nReply as JSON: {"relevance": [one integer per passage]}\n', encoding="utf-8")
     fake_ = {"provider": judging.FAKE, "temperature": 0.0, "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0}
     rel_sc = scorer(
         task=REL,
@@ -1782,8 +1791,8 @@ from evaluation_harness import validate_tree as vt  # noqa: E402
 
 with tempfile.TemporaryDirectory() as td_:
     sdir = Path(td_)
-    (sdir / "good.txt").write_text("Rate each of the {n} numbered answers.\n")
-    (sdir / "bad.txt").write_text("Rate the answers.\n")
+    (sdir / "good.txt").write_text("Rate each of the {n} numbered answers.\n", encoding="utf-8")
+    (sdir / "bad.txt").write_text("Rate the answers.\n", encoding="utf-8")
     base_ = {
         "kind": "judge",
         "dataset_id": "ds",
@@ -1813,7 +1822,7 @@ with tempfile.TemporaryDirectory() as td_:
         "protocol": {"outputs_per_call": 4, "position_check_fraction": 0.25, "noise_check_fraction": 0.25},
         "task": {"dimensions": ["correct"]},
     }
-    (sdir / "s-good.yaml").write_text(json.dumps({**base_, "scorer_id": "s-good"}))
+    (sdir / "s-good.yaml").write_text(json.dumps({**base_, "scorer_id": "s-good"}), encoding="utf-8")
     check("V13: a scorer with a declared task and a {n} prompt passes", vt.scorer_problems(sdir) == [])
     (sdir / "s-bad.yaml").write_text(
         json.dumps(
@@ -1827,9 +1836,12 @@ with tempfile.TemporaryDirectory() as td_:
                     "noise_check_fraction": 0.25,
                 },
             }
-        )
+        ),
+        encoding="utf-8",
     )
-    (sdir / "s-task.yaml").write_text(json.dumps({**base_, "scorer_id": "s-task", "task": {"scale": [3, 1]}}))
+    (sdir / "s-task.yaml").write_text(
+        json.dumps({**base_, "scorer_id": "s-task", "task": {"scale": [3, 1]}}), encoding="utf-8"
+    )
     probs_ = vt.scorer_problems(sdir)
     check(
         "V13: a prompt that cannot be rendered (no {n}, not SummEval's) is reported",
@@ -1915,6 +1927,32 @@ with tempfile.TemporaryDirectory() as td_, _runstore._InProject(Path(td_) / "pro
         and js.config_versions([a for a in found if a["system_id"] != "a_v2"]) == []
         # different arms at different versions are not a mix (the newcomer trial's opus_v2 beside mistral_v1)
         and js.config_versions([{"system_id": "opus_v2"}, {"system_id": "mistral_v1"}]) == [],
+    )
+
+# An arm's latest run is model.runs.latest (created_at first): neither the run id's order nor a created_at that is
+# the prefix of another (a date, then a timestamp of the same day) picks it.
+with tempfile.TemporaryDirectory() as td_, _runstore._InProject(Path(td_) / "proj") as rd:
+    for name, cid, at in (
+        ("z_old", "k_v1", "2026-01-02"),
+        ("a_new", "k_v1", "2026-01-02T08:00:00"),
+        ("b_first", "m_v1", "2026-02-01"),
+        ("a_last", "m_v1", "2026-03-01"),
+    ):
+        _runfix.put_run(
+            rd,
+            {
+                "system_id": cid,
+                "run_id": name,
+                "dataset_id": "ds",
+                "created_at": at,
+                "params": {"family": "x"},
+            },
+        )
+    found_ = {a["system_id"]: a["run"] for a in js.discover_arms("ds", "")}
+    check(
+        "default arms: the latest run is the one created last, not the one whose id sorts last",
+        found_ == {"k_v1": "a_new", "m_v1": "a_last"},
+        str(found_),
     )
 
 # A real judge is never handed the fake judge's task, whatever run_judging does.
@@ -2224,7 +2262,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     def load_with(label, **over):
         pth = td / f"{label}.yaml"
-        pth.write_text(yaml.safe_dump(dict(clean_, **over)))
+        pth.write_text(yaml.safe_dump(dict(clean_, **over)), encoding="utf-8")
         return pth
 
     def refused_with(label, needle, **over):
@@ -2311,16 +2349,20 @@ with tempfile.TemporaryDirectory() as tmp:
                 "file": f"examples/summeval-judging/prompt_{'pick' if mode_ == 'pick' else 'pairwise'}.txt"
             },
         }
-        (sdir / f"{sid_}.yaml").write_text(yaml.safe_dump(body))
-        jsonschema.validate(body, json.loads((SCHEMAS / "scorer.schema.json").read_text()))
+        (sdir / f"{sid_}.yaml").write_text(yaml.safe_dump(body), encoding="utf-8")
+        jsonschema.validate(body, json.loads((SCHEMAS / "scorer.schema.json").read_text(encoding="utf-8")))
     check(
         "V13: a pick and a pairwise scorer are well-formed",
         vt.scorer_problems(sdir) == [],
         str(vt.scorer_problems(sdir)),
     )
-    bad_body = yaml.safe_load((sdir / "judge-mode-pick.yaml").read_text()) | {"mode": "sideways"}
+    bad_body = yaml.safe_load((sdir / "judge-mode-pick.yaml").read_text(encoding="utf-8")) | {
+        "mode": "sideways"
+    }
     try:
-        jsonschema.validate(bad_body, json.loads((SCHEMAS / "scorer.schema.json").read_text()))
+        jsonschema.validate(
+            bad_body, json.loads((SCHEMAS / "scorer.schema.json").read_text(encoding="utf-8"))
+        )
         check("scorer schema: mode outside grade/pick/pairwise is invalid", False)
     except jsonschema.ValidationError:
         check("scorer schema: mode outside grade/pick/pairwise is invalid", True)
@@ -2399,7 +2441,7 @@ check(
     len(mp_["position_items"]) == 3 == len(mw_["noise_items"])
     and mp_["position_items"] == mw_["position_items"],
 )
-sets_schema = json.loads((SCHEMAS / "judging-set.schema.json").read_text())
+sets_schema = json.loads((SCHEMAS / "judging-set.schema.json").read_text(encoding="utf-8"))
 check(
     "judging-set schema: pick and pairwise sets validate",
     all(jsonschema.Draft202012Validator(sets_schema).is_valid(m) for m in (mp_, mw_)),
@@ -2407,7 +2449,7 @@ check(
 check(
     "judging-set schema: a grade set (no mode) still validates",
     jsonschema.Draft202012Validator(sets_schema).is_valid(
-        json.loads(next((HERE.parent / "data" / "judging-sets").glob("*.json")).read_text())
+        json.loads(next((HERE.parent / "data" / "judging-sets").glob("*.json")).read_text(encoding="utf-8"))
     ),
 )
 check(
@@ -2490,7 +2532,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "pick: calls = judges x (items + position items + noise items) = 2 x (6 + 3 + 3)",
         st["calls"] == 2 * 12 == 2 * n_tasks and st["skipped"] == 0 and not st["aborted"],
     )
-    stored = json.loads((td / "ja" / f"{MITEMS[0]}.primary.b0.json").read_text())
+    stored = json.loads((td / "ja" / f"{MITEMS[0]}.primary.b0.json").read_text(encoding="utf-8"))
     check(
         "pick: a verdict stores `best` (1-based, block order) in place of `scores`, with the reply",
         "scores" not in stored
@@ -2587,10 +2629,12 @@ with tempfile.TemporaryDirectory() as tmp:
         js.estimate(man, sc, PICK_BASE, MARTICLES, m_outputs(), td)["ja"]["calls"] == 0,
     )
     # schema and V11/V12 on what the pass wrote
-    vschema = jsonschema.Draft202012Validator(json.loads((SCHEMAS / "verdict.schema.json").read_text()))
+    vschema = jsonschema.Draft202012Validator(
+        json.loads((SCHEMAS / "verdict.schema.json").read_text(encoding="utf-8"))
+    )
     check(
         "verdict schema: stored pick verdicts validate",
-        all(vschema.is_valid(json.loads(f.read_text())) for f in td.glob("*/*.json")),
+        all(vschema.is_valid(json.loads(f.read_text(encoding="utf-8"))) for f in td.glob("*/*.json")),
     )
     root_ = Path(tempfile.mkdtemp(dir=td))
     sets_ = root_ / "judging-sets"
@@ -2615,7 +2659,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "pick: two arms named together share the item: won 1/2 each, 0 for the rest",
         all(proj[i][c]["_mean"] == {MIDS[1]: 0.5, MIDS[2]: 0.5}.get(c, 0.0) for i in MITEMS for c in MIDS),
     )
-    stored = json.loads(next(td.glob("ja/*.primary.b0.json")).read_text())
+    stored = json.loads(next(td.glob("ja/*.primary.b0.json")).read_text(encoding="utf-8"))
     check("pick: the shared verdict stores both numbers", len(stored["best"]) == 2)
     comps = js.item_comparisons("pick", man["items"][0]["primary"], {0: tuple(sorted(MIDS[1:3]))})
     check(
@@ -2688,10 +2732,11 @@ with tempfile.TemporaryDirectory() as tmp:
         return judging.call_judge(m, p)
 
     st = mrun(td, sc, man, call=garbage_first)
-    bad_recs = [f for f in td.glob("ja/*.json") if json.loads(f.read_text())["best"] is None]
+    bad_recs = [f for f in td.glob("ja/*.json") if json.loads(f.read_text(encoding="utf-8"))["best"] is None]
     check(
         "pick: an out-of-range pick is stored unparsed (best null), the reply kept",
-        len(bad_recs) == 2 and all(json.loads(f.read_text())["output"] == '{"best": [9]}' for f in bad_recs),
+        len(bad_recs) == 2
+        and all(json.loads(f.read_text(encoding="utf-8"))["output"] == '{"best": [9]}' for f in bad_recs),
     )
     p_unparsed = mproj(sc, man, td)
     check(
@@ -2700,9 +2745,9 @@ with tempfile.TemporaryDirectory() as tmp:
         == 6
         - len(
             {
-                json.loads(f.read_text())["item_id"]
+                json.loads(f.read_text(encoding="utf-8"))["item_id"]
                 for f in bad_recs
-                if json.loads(f.read_text())["pass"] == "primary"
+                if json.loads(f.read_text(encoding="utf-8"))["pass"] == "primary"
             }
         ),
     )
@@ -2711,7 +2756,7 @@ with tempfile.TemporaryDirectory() as tmp:
     check(
         "pick: --retry-unparsed calls again exactly the unparsed ones",
         st_r["calls"] == 2
-        and all(json.loads(f.read_text())["best"] is not None for f in td.glob("ja/*.json")),
+        and all(json.loads(f.read_text(encoding="utf-8"))["best"] is not None for f in td.glob("ja/*.json")),
     )
     smu = js.summarise(man, sc, MARMS, js.load_scores(man, sc, td), mproj(sc, man, td), st_r, "x", False, td)
     check("pick: the summary counts no unparsed once retried", smu["per_judge"]["ja"]["unparsed"] == 0)
@@ -2746,7 +2791,7 @@ with tempfile.TemporaryDirectory() as tmp:
         st["calls"] == 144 == 2 * n_tasks and not st["aborted"],
     )
     first = man["items"][0]["primary"][0]
-    stored = json.loads((td / "ja" / f"{MITEMS[0]}.primary.b0.json").read_text())
+    stored = json.loads((td / "ja" / f"{MITEMS[0]}.primary.b0.json").read_text(encoding="utf-8"))
     check(
         "pairwise: a verdict stores `better` (1 or 2 = the arm listed first or second), n 2",
         "scores" not in stored
@@ -2825,10 +2870,12 @@ with tempfile.TemporaryDirectory() as tmp:
         est["ja"]["calls"] == est["jb"]["calls"] == 72,
         str(est["ja"]),
     )
-    vschema = jsonschema.Draft202012Validator(json.loads((SCHEMAS / "verdict.schema.json").read_text()))
+    vschema = jsonschema.Draft202012Validator(
+        json.loads((SCHEMAS / "verdict.schema.json").read_text(encoding="utf-8"))
+    )
     check(
         "verdict schema: stored pairwise verdicts validate",
-        all(vschema.is_valid(json.loads(f.read_text())) for f in td.glob("*/*.json")),
+        all(vschema.is_valid(json.loads(f.read_text(encoding="utf-8"))) for f in td.glob("*/*.json")),
     )
     root_ = Path(tempfile.mkdtemp(dir=td))
     js.freeze(man, root_ / "judging-sets")
@@ -2876,7 +2923,7 @@ with tempfile.TemporaryDirectory() as tmp:
     )
     check(
         'pairwise: the content judge\'s tie is stored as better "tie" and is a tie after the swap',
-        any(json.loads(f.read_text())["better"] == "tie" for f in td.glob("ja/*.json")),
+        any(json.loads(f.read_text(encoding="utf-8"))["better"] == "tie" for f in td.glob("ja/*.json")),
     )
     check(
         "pairwise: the judges disagree on some item's winner",
@@ -2977,7 +3024,7 @@ with tempfile.TemporaryDirectory() as tmp:
         written = js.write_scored_runs(man, sc, arms_d, proj, "unvalidated judge", False)
         win_dir = next(sd for sd in written if model_runs.run_of(sd).name == MARMS[3]["run"])
         rows = _runstore.rows(win_dir)
-        mj = json.loads((win_dir / "metrics.json").read_text())
+        mj = json.loads((win_dir / "metrics.json").read_text(encoding="utf-8"))
         check(
             "pick judged runs: the primary is judge_won (judge_won_unvalidated while unvalidated), with per-judge columns",
             mj["primary_metric"] == "judge_won_unvalidated"
@@ -2991,7 +3038,7 @@ with tempfile.TemporaryDirectory() as tmp:
         mv = json.loads(
             next(sd for sd in written if model_runs.run_of(sd).name == MARMS[0]["run"])
             .joinpath("metrics.json")
-            .read_text()
+            .read_text(encoding="utf-8")
         )
         check(
             "pick judged runs: validated, the primary is judge_won and a quality metric; a loser scores 0",
@@ -3013,6 +3060,7 @@ with tempfile.TemporaryDirectory() as tmp:
             env=dict(os.environ),
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         check(
             "pick judged runs: the leaderboard reads them (exit 0, shows judge_won)",
@@ -3030,7 +3078,7 @@ with tempfile.TemporaryDirectory() as tmp:
         gm = json.loads(
             next(sd for sd in gwritten if model_runs.run_of(sd).name == MARMS[0]["run"])
             .joinpath("metrics.json")
-            .read_text()
+            .read_text(encoding="utf-8")
         )
     check(
         "grade judged runs are as before: primary judge_score, no mode in their provenance",
@@ -3044,7 +3092,7 @@ with tempfile.TemporaryDirectory() as tmp:
         and all("winner_agreement" not in v for v in gsm["judge_agreement"].values())
         and "judge_score" in gsm["per_arm"][MIDS[0]],
     )
-    gverdict = json.loads(next(gv.glob("ja/*.json")).read_text())
+    gverdict = json.loads(next(gv.glob("ja/*.json")).read_text(encoding="utf-8"))
     check(
         "grade verdicts keep `scores` and gain neither `best` nor `better`",
         "scores" in gverdict and "best" not in gverdict and "better" not in gverdict,
@@ -3056,26 +3104,29 @@ check(
     "the committed judging sets still recompute to their stored hashes and ids",
     len(committed_sets) >= 2
     and all(
-        js.manifest_hash(json.loads(f.read_text())) == json.loads(f.read_text())["judging_set_sha256"]
-        and f.stem.endswith(js.manifest_hash(json.loads(f.read_text()))[:12])
+        js.manifest_hash(json.loads(f.read_text(encoding="utf-8")))
+        == json.loads(f.read_text(encoding="utf-8"))["judging_set_sha256"]
+        and f.stem.endswith(js.manifest_hash(json.loads(f.read_text(encoding="utf-8")))[:12])
         for f in committed_sets
     ),
 )
 check(
     "the committed grading sets carry no mode; a pick or pairwise set declares its own",
     all(
-        json.loads(f.read_text()).get("mode", "grade") in ("grade", "pick", "pairwise")
+        json.loads(f.read_text(encoding="utf-8")).get("mode", "grade") in ("grade", "pick", "pairwise")
         for f in committed_sets
     )
-    and all(json.loads(f.read_text()).get("mode") != "grade" for f in committed_sets)
-    and sum("mode" not in json.loads(f.read_text()) for f in committed_sets) >= 2,
+    and all(json.loads(f.read_text(encoding="utf-8")).get("mode") != "grade" for f in committed_sets)
+    and sum("mode" not in json.loads(f.read_text(encoding="utf-8")) for f in committed_sets) >= 2,
 )
 for sid_ in ("judge-summ-v1", "judge-summ-v2"):
     sc_ = js.load_scorer(HERE.parent / "data" / "scorers" / f"{sid_}.yaml")
     sdir_ = next((HERE.parent / "data" / "judge-verdicts" / sid_).iterdir())
-    man_ = json.loads((HERE.parent / "data" / "judging-sets" / f"{sdir_.name}.json").read_text())
+    man_ = json.loads(
+        (HERE.parent / "data" / "judging-sets" / f"{sdir_.name}.json").read_text(encoding="utf-8")
+    )
     old_summ = json.loads(
-        (HERE.parent / "data" / "judge-summaries" / f"{sid_}@{sdir_.name}.json").read_text()
+        (HERE.parent / "data" / "judge-summaries" / f"{sid_}@{sdir_.name}.json").read_text(encoding="utf-8")
     )
     st_ = js.run_judging(man_, sc_, js.prompt_text(sc_), {}, {}, sdir_, None, None, log=lambda *_: None)
     got_ = js.load_scores(man_, sc_, sdir_)
@@ -3089,7 +3140,7 @@ for sid_ in ("judge-summ-v1", "judge-summ-v2"):
     # The outputs' lengths, as judge-score reads them, for each judge's length bias.
     found_ = {a["system_id"]: a for a in js.discover_arms(sc_["dataset_id"], sc_.get("arms_match", ""))}
     # the committed summary keeps the ids its arms had; the runs are found under the systems' current ids
-    renamed_ = json.loads((HERE.parent / "data" / "renames.json").read_text())["systems"]
+    renamed_ = json.loads((HERE.parent / "data" / "renames.json").read_text(encoding="utf-8"))["systems"]
     ids_ = [it["item_id"] for it in man_["items"]]
     words_ = {
         c: {i: len(t.split()) for i, t in js.read_outputs(found_[renamed_.get(c, c)], ids_).items()}
@@ -3449,8 +3500,8 @@ with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
     js.run_judging(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, td, explaining_judge(quote_item="itemB"), None,
                    log=lambda *_: None)  # fmt: skip
-    rec_a = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
-    rec_b = json.loads(js.verdict_path(td, "ja", "itemB", "primary", 0).read_text())
+    rec_a = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text(encoding="utf-8"))
+    rec_b = json.loads(js.verdict_path(td, "ja", "itemB", "primary", 0).read_text(encoding="utf-8"))
     check(
         "a verdict stores its reasons, one per output, beside its scores",
         rec_a.get("why") == [f"summary {k} reads cleanly" for k in range(1, rec_a["n"] + 1)]
@@ -3483,7 +3534,7 @@ with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
     js.run_judging(m_why, scorer(explain=True), BASE, ARTICLES, OUTPUTS, td, explaining_judge(drop_why=True), None,
                    log=lambda *_: None)  # fmt: skip
-    rec_c = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
+    rec_c = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text(encoding="utf-8"))
     check(
         "a reply without its reason keeps its scores and says the reason is missing",
         rec_c.get("scores") is not None and rec_c.get("why") is None and rec_c.get("why_missing") is True,
@@ -3498,7 +3549,7 @@ for mode_ in ("pick", "pairwise"):
     with tempfile.TemporaryDirectory() as tmp:
         mrun(tmp, sc_w, man_w)
         it0 = man_w["items"][0]["item_id"]
-        rec_w = json.loads(js.verdict_path(Path(tmp), "ja", it0, "primary", 0).read_text())
+        rec_w = json.loads(js.verdict_path(Path(tmp), "ja", it0, "primary", 0).read_text(encoding="utf-8"))
         n_w = rec_w["n"]
         cells = _verdict_cells(rec_w, [f"arm{k}" for k in range(n_w)])
         said_w = [c["said"] for c in cells]
@@ -3526,7 +3577,7 @@ for mode_ in ("pick", "pairwise"):
 with tempfile.TemporaryDirectory() as tmp:
     td = Path(tmp)
     js.run_judging(m1, scorer(), BASE, ARTICLES, OUTPUTS, td, fake_judge(), None, log=lambda *_: None)
-    rec_d = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text())
+    rec_d = json.loads(js.verdict_path(td, "ja", "itemA", "primary", 0).read_text(encoding="utf-8"))
     check(
         "without explain a verdict has no reason fields at all (its record is as before)",
         not any(k.startswith("why") for k in rec_d),

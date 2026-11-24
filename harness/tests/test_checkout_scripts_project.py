@@ -45,7 +45,7 @@ check(
 env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
 r = subprocess.run(
     [sys.executable, "examples/reproduce.py", "list"], cwd=ROOT, env=env, capture_output=True, text=True,
-    stdin=subprocess.DEVNULL, timeout=120,
+    stdin=subprocess.DEVNULL, timeout=120, encoding="utf-8",
 )  # fmt: skip
 check(
     "reproduce.py run from the repository's root, no EVAL_HOME, finds the project",

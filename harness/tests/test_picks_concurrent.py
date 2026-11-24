@@ -39,8 +39,8 @@ for store in ("files", "sqlite"):
     proj = Path(tempfile.mkdtemp(prefix="evh-picks-"))
     try:
         (proj / "data").mkdir()
-        (proj / "worker.py").write_text(WORKER)
-        (proj / "count.py").write_text(COUNT)
+        (proj / "worker.py").write_text(WORKER, encoding="utf-8")
+        (proj / "count.py").write_text(COUNT, encoding="utf-8")
         env = {k: v for k, v in os.environ.items() if not k.startswith(("EVAL_", "EVH_"))}
         env.update(EVAL_HOME=str(proj), EVAL_STORE=store, PYTHONPATH=str(HARNESS))
 
@@ -53,12 +53,18 @@ for store in ("files", "sqlite"):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                encoding="utf-8",
             )
             for n in range(8)
         ]
         errs = [p.communicate(timeout=120)[1] for p in procs]
         r = subprocess.run(
-            [sys.executable, str(proj / "count.py")], cwd=proj, env=env, capture_output=True, text=True
+            [sys.executable, str(proj / "count.py")],
+            cwd=proj,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         )
         n_lines = int(r.stdout.strip() or 0) if r.returncode == 0 else -1
         check(

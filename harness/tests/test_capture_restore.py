@@ -71,8 +71,8 @@ for f in Path(sys.argv[1]).glob("*.json"):
 try:
     (proj / "data").mkdir()
     (proj / "export").mkdir()
-    (proj / "export" / "rows.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
-    (proj / "scrub.py").write_text(SCRUB)
+    (proj / "export" / "rows.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    (proj / "scrub.py").write_text(SCRUB, encoding="utf-8")
     r = evh(
         "capture",
         "--importer",
@@ -126,7 +126,9 @@ try:
 
     # A source whose content changed: the record's hash no longer matches.
     changed = [dict(rows[0], body="first ticket, edited"), *rows[1:]]
-    (proj / "moved" / "rows.jsonl").write_text("".join(json.dumps(x) + "\n" for x in changed))
+    (proj / "moved" / "rows.jsonl").write_text(
+        "".join(json.dumps(x) + "\n" for x in changed), encoding="utf-8"
+    )
     _runstore.rmtree(proj, f"{cap_rel}/records")
     _runstore.rmtree(proj, src_rel)
     r = evh("capture-restore", "--capture", "c1", "--query", "path=moved/rows.jsonl")
@@ -145,7 +147,7 @@ try:
         names,
     )
     # A records/ that does not match is replaced only with --force.
-    (proj / "moved" / "rows.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
+    (proj / "moved" / "rows.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows), encoding="utf-8")
     evh("capture-restore", "--capture", "c1", "--query", "path=moved/rows.jsonl")
     _runstore.write_text(proj, f"{cap_rel}/records/r1.json", '{"id": "r1", "body": "tampered"}\n')
     r = evh("capture-restore", "--capture", "c1", "--query", "path=moved/rows.jsonl")
@@ -201,7 +203,7 @@ try:
     # The same in a project whose data is in its database (RFC-025): the records are built in a folder on disk (the
     # scrubber runs on real files), then written into the database; nothing is left on disk under data/. The folder
     # used to be made under data/, which does not exist there (advisor review, 2026-11-06).
-    (proj / "config.yaml").write_text("store: sqlite\n")
+    (proj / "config.yaml").write_text("store: sqlite\n", encoding="utf-8")
     env["EVAL_STORE"] = "sqlite"
     r = evh("data-migrate", "--to", "sqlite")
     check("setup: the project moved into its database", r.returncode == 0, out(r)[-300:])

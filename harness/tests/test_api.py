@@ -11,7 +11,7 @@ catalog-serve` in a throwaway tutorial project ($0, offline): no token, a wrong 
 are refused (on a read resource of the model, GET /api/v1/goals); the token works as a bearer and as the cookie the
 session route sets; the operations that list datasets and arms and compare arms answer, through the API, exactly what
 their command answers with --json (parity); a system id that does not exist is refused before anything runs; a
-server started --public or --behind-proxy answers no /api/v1/ call. (RFC-032 step 9 removed POST /api/v1/read/<command>
+server started --behind-proxy answers no /api/v1/ call, and one started --public only the reads (RFC-039). (RFC-032 step 9 removed POST /api/v1/read/<command>
 and GET /api/v1/commands: test_openapi.py checks they answer 404.)
 """
 
@@ -157,7 +157,7 @@ try:
     srv, port, srv_out = serve()
     try:
         tok_file = proj / ".build" / "api-token"
-        token = tok_file.read_text().strip() if tok_file.exists() else ""
+        token = tok_file.read_text(encoding="utf-8").strip() if tok_file.exists() else ""
         check(
             "the token: written to .build/api-token, readable by its owner only",
             bool(token) and (tok_file.stat().st_mode & 0o777) == 0o600,
@@ -304,7 +304,7 @@ try:
         from evaluation_harness import _models
 
         outside = Path(tempfile.mkdtemp(prefix="evh-outside-"))
-        (outside / "m.yaml").write_text("model_id: m\nkind: llm\n")
+        (outside / "m.yaml").write_text("model_id: m\nkind: llm\n", encoding="utf-8")
         check(
             "a model is found by its id only: a path to a record outside the project names none",
             _models.find(proj / "data", str(outside / "m")) is None
@@ -368,7 +368,7 @@ try:
                     shown_tty += os.read(master, 4096).decode(errors="replace")
                 except OSError:
                     break
-        tty_token = (proj / ".build" / "api-token").read_text().strip()
+        tty_token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
         line = next((ln for ln in shown_tty.splitlines() if "Workbench:" in ln), "")
         check(
             "catalog-serve: printed to a terminal, the Workbench link carries this server's token",
@@ -385,7 +385,18 @@ try:
         try:
             host = mode[1]
             st, _b, _h = call(port, "GET", "/api/v1/goals", headers={"Authorization": "Bearer x"}, host=host)
-            check(f"a server started {mode[0]} answers no /api/v1/ call", st == 404, st)
+            if (
+                mode[0] == "--public"
+            ):  # a viewer's: the reads, with no token (RFC-039; test_workbench_viewer.py)
+                check(
+                    "a server started --public answers a read with no token, and none that writes",
+                    st == 200,
+                    st,
+                )
+                st, _b, _h = call(port, "POST", "/api/v1/estimate", {"operation": "run"}, host=host)
+                check("a server started --public refuses POST /estimate", st == 403, st)
+            else:
+                check(f"a server started {mode[0]} answers no /api/v1/ call", st == 404, st)
         finally:
             srv.terminate()
             srv.wait(timeout=10)
@@ -396,7 +407,7 @@ try:
 
     any_port = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", "0"],
-        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     try:
         started = _serve.startup(any_port, [])

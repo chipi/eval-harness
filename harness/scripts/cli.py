@@ -24,6 +24,8 @@ import sys
 import traceback
 from pathlib import Path
 
+from evaluation_harness._console import degrade_unencodable
+
 HERE = Path(__file__).resolve().parent
 
 #: command -> (script, one line of help). Names follow the Makefile targets.
@@ -81,6 +83,7 @@ def _usage() -> str:
 
 def main(argv: list[str] | None = None) -> int:
     """Dispatch evh commands to their scripts."""
+    degrade_unencodable()
     # No script directory on sys.path: the scripts import the package (evaluation_harness.*), and a
     # bare `stats` or `adapter` in a project is the project's own.
     argv = list(sys.argv[1:] if argv is None else argv)
@@ -111,7 +114,12 @@ def main(argv: list[str] | None = None) -> int:
     # process, and without it `goals` right after `catalog` drew every test again (PLAN_0.8.0 S1, 142 s at 1,000
     # items). EVH_P_CACHE names another file; an empty value turns it off.
     use_p_cache()
-    from evaluation_harness._common import EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_REFUSED  # noqa: PLC0415
+    from evaluation_harness._common import (  # noqa: PLC0415
+        EXIT_INTERNAL,
+        EXIT_INTERRUPTED,
+        EXIT_NOTHING,
+        EXIT_REFUSED,
+    )
 
     try:
         runpy.run_path(str(script), run_name="__main__")
@@ -122,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
         if isinstance(code, int):
             return code
         print(code, file=sys.stderr)
-        return EXIT_REFUSED
+        return EXIT_NOTHING if str(code).startswith("ERROR (nothing-measured)") else EXIT_REFUSED
     except KeyboardInterrupt:
         print("\ninterrupted", file=sys.stderr)
         return EXIT_INTERRUPTED

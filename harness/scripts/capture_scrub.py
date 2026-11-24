@@ -74,7 +74,8 @@ def main() -> int:
         def refuse(why: str) -> None:
             die(f"{why}; the records are as they were, nothing recorded", "failed")
 
-        r = subprocess.run(argv, capture_output=True, text=True)
+        # the scrubber is the project's own command, in any encoding: replaced, never a crash here
+        r = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode != 0:
             refuse(f"the scrubber exited {r.returncode}: {(r.stderr or r.stdout).strip()[-300:]}")
         changed = 0
@@ -114,4 +115,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

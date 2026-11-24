@@ -59,7 +59,9 @@ site explains it: a goal, data, arms, a comparison, a choice.
 
 - Replacing the catalog or the inspector: results are read there, linked from here.
 - A public, multi-user service: the Workbench runs on the person's machine (ADR-0027, as RFC-032 amends it). Behind a
-  proxy (`--public`, `--behind-proxy`) the Workbench and `/api/v1` answer 404 (D8).
+  proxy (`--public`, `--behind-proxy`) the Workbench and `/api/v1` answer 404 (D8). *Amended by
+  [RFC-039](../rfc/RFC-039-workbench-read-only-for-visitors.md) (owner, 2026-11-23): on the deployed site a visitor
+  who is not signed in gets a read-only viewer; a service anyone writes to, and several users, stay out.*
 - Making a project: a project names its store at `evh init --store files|sqlite`, on the command line; the
   Workbench opens a project that exists.
 - A general YAML or file editor. The raw file can be shown; it is not the way in. The project's `config.yaml` is not
@@ -214,7 +216,9 @@ The owner's:
 - **D7** `mock.js` (this repository's data) does not ship in the package; the mockup is kept as a frozen design
   reference in `harness/workbench/mockup/` and the live screens are built from UXS-005. The package ships the live
   Workbench's five files, the only ones `/workbench/` serves.
-- **D8** The Workbench is refused behind a proxy.
+- **D8** The Workbench is refused behind a proxy. *Amended by
+  [RFC-039](../rfc/RFC-039-workbench-read-only-for-visitors.md) (owner, 2026-11-23): refused behind `--behind-proxy`;
+  on a `--public` server it is a read-only viewer, with no token.*
 - **D9** `config.yaml` settings (the exposure check's repos, for one) stay out of W8.
 
 ## Related Documents

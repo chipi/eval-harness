@@ -84,6 +84,7 @@ def main() -> int:
                 capture_output=True,
                 text=True,
                 timeout=900,
+                encoding="utf-8",
             )
 
         r = sh(

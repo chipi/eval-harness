@@ -46,9 +46,15 @@ def list_systems() -> dict[str, Any]:
 
 def show_system(system: str) -> dict[str, Any]:
     """The system's record and where its file is."""
+    from evaluation_harness import _visibility  # noqa: PLC0415
     from evaluation_harness.model.systems import SYSTEM, where  # noqa: PLC0415
 
-    return {"system": system, "record": SYSTEM.get(system), "file": where(system)}
+    rec = SYSTEM.get(system)
+    if isinstance(
+        rec.get("params"), dict
+    ):  # a prompt among the params is shown only where prompts are published
+        rec = {**rec, "params": _visibility.without_prompts(rec["params"])}
+    return {"system": system, "record": rec, "file": where(system)}
 
 
 def new_system(system: str, set: dict[str, Any], by: str) -> dict[str, Any]:

@@ -15,7 +15,7 @@ Without one, HarnessAdapter reads the harness's own layout:
     <data>/references/<tier>/<dataset_id>/<item_id>.txt
 
 An ARM is a string id the adapter chooses. HarnessAdapter's is `<label prefix>/<dataset_id>/<system id>`
-(model.runs.arm_id): every score of a system on a dataset read under one label, averaged per item, exactly as
+(model.runs.arm_of): every score of a system on a dataset read under one label, averaged per item, exactly as
 `pair-test` and `family-test` read them, so the inspector and the command line give the same p.
 
 Item text (outputs, references) is only ever returned by item_view / reference_view. The static
@@ -36,7 +36,6 @@ import hashlib
 import importlib.util
 import itertools
 import json
-import re
 import statistics
 import sys
 import threading
@@ -58,14 +57,13 @@ from evaluation_harness import (  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     BOOKKEEPING_PREFIXES,
     ModuleNotLoadable,
-    is_descriptive,
     load_goals,
     load_module,
 )
 from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
 from evaluation_harness._fingerprint import items_digest  # noqa: E402
 from evaluation_harness._record import cut_off_items, derived_with  # noqa: E402
-from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, score_of  # noqa: E402
+from evaluation_harness._runs import combine, direction, item_rows, read_metrics, score_of  # noqa: E402
 from evaluation_harness.model import dataset_views as model_dataset_views  # noqa: E402
 from evaluation_harness.model import datasets as model_datasets  # noqa: E402
 from evaluation_harness.model import goals as model_goals  # noqa: E402
@@ -207,6 +205,12 @@ class Adapter(Protocol):
     def notes(self, arm: str) -> list[str]:
         """Why something could not be scored, or which of its runs were left out, in words."""
 
+    def direction(self, metric: str, dataset: str | None = None) -> str:
+        """Which way is better for this metric on `dataset`: "lower", "higher" or "neutral" (a measurement with no
+        better direction: length, counts). With no dataset, every dataset that records it, combined. The answer
+        `lower_is_better` and `is_neutral` read; `direction_on` asks an adapter that has no `direction` by them."""
+        ...
+
     def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
         """Whether a decrease in this metric is an improvement."""
         ...
@@ -326,6 +330,17 @@ def item_fields(A, dataset: str) -> dict:
     return got if isinstance(got, dict) and got.get("fieldset") else {"fieldset": None, "values": {}}
 
 
+def direction_on(A, metric: str, dataset: str | None = None) -> str:
+    """Which way is better for `metric`, asked of an adapter: its `direction`, or for one written before that existed
+    what its `lower_is_better` and `is_neutral` say. Every page that prints the word asks this."""
+    fn = getattr(A, "direction", None)
+    if callable(fn):
+        return str(fn(metric, dataset))
+    if A.lower_is_better(metric, dataset):
+        return "lower"
+    return "neutral" if A.is_neutral(metric, dataset) else "higher"
+
+
 def _flat_conditions(fp: dict) -> dict[str, str]:
     """A run fingerprint's conditions as {group.field: value} (see HarnessAdapter.conditions)."""
     out: dict[str, str] = {}
@@ -371,20 +386,6 @@ def _flat_conditions(fp: dict) -> dict[str, str]:
     if fp.get("version") is not None:
         out["fingerprint.version"] = str(fp["version"])
     return out
-
-
-def measured(m: dict, first: bool) -> tuple[bool, str]:
-    """(re-scored or re-parsed in place, when it was measured). The score a run made when it ran, re-scored where it
-    lay (its record has `derived`), is still the run that was measured (its calls, its bill), dated when it was, which
-    the run id keeps (created_at was rewritten with the re-score's time). Any other score: (False, its created_at)."""
-    made = m.get("created_at") or ""
-    if not (first and m.get("derived")):
-        return False, made
-    stamp = re.search(r"_(\d{8})T(\d{6})Z$", str(m.get("run_id") or ""))
-    if stamp:
-        day, hms = stamp.groups()
-        made = f"{day[:4]}-{day[4:6]}-{day[6:]}T{hms[:2]}:{hms[2:4]}:{hms[4:]}Z"
-    return True, made
 
 
 def _json(p: Path | None):
@@ -478,13 +479,11 @@ class HarnessAdapter:
     @_memo
     def _index(self) -> dict[str, list[Path]]:
         """{arm id: [score dirs]}: every score of every run, grouped by the label it is read under, its dataset and
-        its system (model.runs.arm_id). A run git ignores is not read: the local catalog shows what a clone, CI and the
+        its system (model.runs.arm_of). A run git ignores is not read: the local catalog shows what a clone, CI and the
         published one show, never runs that exist on this disk only. Outside a git checkout every run is read."""
         out: dict[str, list[Path]] = {}
         runs = [self.runs_root / rid for rid in model_runs.run_ids(base=self.runs_root)]
         skipped = _ignored_runs([r / model_runs.RUN for r in runs])
-        refs: dict[Path, str] = {}
-        made: dict[Path, str] = {}
         # What each score's record says, read once; and the label each arm is read under. Kept on the adapter only
         # when the index is whole (below): a server that refreshes while a request reads them never shows half.
         rec: dict[Path, dict] = {}
@@ -498,13 +497,11 @@ class HarnessAdapter:
                 m = model_runs.record(d)
                 if not m or not m.get("dataset_id") or not m.get("system_id"):
                     continue
-                arm = model_runs.arm_id(d, m)
+                arm = model_runs.arm_of(d, m)
                 rec[d] = m
                 label[arm] = model_runs.label(d, m)
                 every.append((m["dataset_id"], d, m, arm))
                 out.setdefault(arm, []).append(d)
-                refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
-                made[d] = m.get("created_at") or ""
         out = dict(sorted(out.items(), key=lambda kv: (not kv[0].startswith("runs/"), kv[0])))
         for arm, keep in (self._only or {}).items():
             if arm in out:
@@ -512,17 +509,16 @@ class HarnessAdapter:
                 # none of the runs it recorded is of this arm here: in this view it has no run
                 if not out[arm]:
                     del out[arm]
-        # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
+        # ONE REFERENCE PER ARM: the one its latest run was scored against (model.runs.runs_of_arm). An arm's runs were
         # averaged whatever they were scored against, so a run on silver and a run on gold read
         # as two repeats of one measurement. Runs on another reference are left out, and said so.
         stale: dict[str, list[str]] = {}
         for arm, dirs in out.items():
-            # Latest by when it was measured, not by its run id (a --run-id can be anything).
-            ref = refs[max(dirs, key=lambda d: (made[d], rec[d]["run_id"]))]
-            old = [d for d in dirs if refs[d] != ref]
+            kept, old = model_runs.runs_of_arm([(d, rec[d]) for d in dirs])
             if old:
-                out[arm] = [d for d in dirs if refs[d] == ref]
-                was = sorted({refs[d] or "no reference" for d in old})
+                out[arm] = [d for d, _m in kept]
+                ref = model_runs.reference_of(kept[0][1])
+                was = sorted({model_runs.reference_of(m) or "no reference" for _d, m in old})
                 stale[arm] = [
                     (
                         f"{len(old)} earlier run(s) scored against {', '.join(was)} left out: this arm is read "
@@ -614,7 +610,13 @@ class HarnessAdapter:
         # Once per arm, for as long as the index it is read from: an inspector answer read every arm's
         # record again (7,370 reads for 40 answers, a third of each). Callers only read it.
         ds = self._dirs(arm)
-        return self._record(ds[-1]) if ds else {}
+        return self._record(self._latest(ds)) if ds else {}
+
+    def _latest(self, dirs: list[Path]) -> Path:
+        """The latest of an arm's scores (model.runs.latest), not the last the index listed."""
+        found = model_runs.latest([(d, self._record(d)) for d in dirs])
+        assert found is not None
+        return found[0]
 
     def _record(self, d: Path) -> dict:
         """A score's record, as the index read it (read now for a directory it did not list)."""
@@ -680,6 +682,9 @@ class HarnessAdapter:
             "recorded": str(params.get("capture") or "") if params.get("provider") == "recorded" else "",
             # A replay of a system's code (RFC-030): its code record, a candidate's commit, and its faithfulness.
             "replay": _replay_of(m),
+            # Every item of its latest run failed (its `failed` mean is 1): its scores are the failures' own (0 on most
+            # measures), not a result: the goal page says so (a flag; the arm stays as eligible as its scores make it).
+            "failed_every_item": (m.get("scores") or {}).get("failed") == 1.0,
         }
 
     # -- scores -------------------------------------------------------------------------
@@ -757,11 +762,15 @@ class HarnessAdapter:
             return {}
 
     @_memo
-    def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
-        """Whether a decrease in this metric is an improvement, by the rule every command uses
-        (`_runs.lower_is_better_on`: the goal, then the adapter's declaration, then the name
-        table), over the runs on `dataset`. Over every dataset, a declaration on one flipped
-        the metric's direction on another."""
+    def direction(self, metric: str, dataset: str | None = None) -> str:
+        """Which way is better for `metric` ("lower", "higher" or "neutral"), by the rule every reader uses
+        (`_runs.direction`) over the runs on `dataset`: a declaration on one dataset must not flip another's.
+        With no dataset, the answers of the datasets that record it, combined (`_runs.combine`: mixed when they differ); a measure no
+        run records goes by the goals and the name table."""
+        if dataset is None:
+            on = sorted(self._recorded_on(metric))
+            if on:
+                return combine({ds: self.direction(metric, ds) for ds in on})
         runs = [
             (d, m)
             for arm, ds in self._index().items()
@@ -770,7 +779,27 @@ class HarnessAdapter:
             for m in [self._record(d)]
         ]
         goals = {g["goal_id"]: g for g in self.goals()}
-        return lower_is_better_on(runs, metric, goals)
+        return direction(metric, dataset=dataset, runs=runs, goals=goals)
+
+    @_memo
+    def _recorded_on(self, metric: str) -> frozenset:
+        """The datasets where a run records `metric`: a score, a declared kind or a declared direction."""
+        out = set()
+        for arm, ds in self._index().items():
+            for d in ds:
+                m = self._record(d)
+                if any(metric in (m.get(k) or {}) for k in ("scores", "metric_kinds", "metric_directions")):
+                    out.add(arm.rsplit("/", 2)[-2])
+                    break
+        return frozenset(out)
+
+    def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
+        """Whether a decrease in this metric is an improvement: `direction` says "lower"."""
+        return self.direction(metric, dataset) == "lower"
+
+    def is_neutral(self, metric: str, dataset: str | None = None) -> bool:
+        """Whether this metric is neither better nor worse (a description of the output): `direction` says "neutral"."""
+        return self.direction(metric, dataset) == "neutral"
 
     @_memo
     @_memo
@@ -779,7 +808,7 @@ class HarnessAdapter:
         latest run."""
         out: dict = {}
         for arm, ds in self._index().items():
-            m = self._record(ds[-1])
+            m = self._record(self._latest(ds))
             seen = out.setdefault(arm.rsplit("/", 2)[-2], {})
             for k, v in (m.get("metric_kinds") or {}).items():
                 seen[k] = seen.get(k, False) or v == "descriptive"
@@ -787,19 +816,6 @@ class HarnessAdapter:
 
     def _descriptive(self) -> frozenset:
         return frozenset(k for seen in self._descriptive_by_dataset().values() for k, d in seen.items() if d)
-
-    def is_neutral(self, metric: str, dataset: str | None = None) -> bool:
-        """Whether this metric is descriptive (neither better nor worse) on `dataset`, as its
-        runs declare it, else by the harness's names. With no dataset: descriptive on every
-        dataset that declares it. One adapter's declaration made a metric neutral on every other
-        dataset: SummEval's descriptive `parsed` hid the classifiers' quality `parsed`."""
-        if is_descriptive(metric):
-            return True
-        by_ds = self._descriptive_by_dataset()
-        if dataset is not None:
-            return bool(by_ds.get(dataset, {}).get(metric))
-        declared = [seen[metric] for seen in by_ds.values() if metric in seen]
-        return bool(declared) and all(declared)
 
     def arm_of(self, dataset: str, system_id: str) -> str:
         """The arm id of a system's runs on a dataset, read as a goal reads them (the plain label):
@@ -810,7 +826,7 @@ class HarnessAdapter:
     def _kinds(self) -> dict:
         out: dict = {}
         for ds in self._index().values():
-            out.update(self._record(ds[-1]).get("metric_kinds") or {})
+            out.update(self._record(self._latest(ds)).get("metric_kinds") or {})
         return out
 
     def reference_free(self, metric: str) -> bool:
@@ -990,7 +1006,8 @@ class HarnessAdapter:
         if not _plain_name(item):
             return {"kind": "none", "note": "not an item id"}
         dirs = self._dirs(arm)
-        for d in reversed(dirs):  # the latest repeat
+        newest_first = sorted(dirs, key=lambda d: model_runs.latest_key(self._record(d)), reverse=True)
+        for d in newest_first:  # the latest repeat
             text = _outputs.output(d, item)
             if text is not None:
                 info = {"run": self._run_id(d)}
@@ -1011,11 +1028,20 @@ class HarnessAdapter:
                     for k, v in sorted(self.scores(arm).items()):
                         if k.startswith("judge_") and item in v["values"]:
                             info[k.removeprefix("judge_")] = f"{v['values'][item]:.3g}"
+                # A judge on a validation (evh judge-validate): whether it agreed with the people on this item.
+                from evaluation_harness import judge_validation as jva  # noqa: PLC0415
+
+                if jva.is_validation(self._metrics(arm).get("adapter")):
+                    mark = jva.mark_of(
+                        {k: v["values"][item] for k, v in self.scores(arm).items() if item in v["values"]}
+                    )
+                    if mark:
+                        info[jva.MARK] = mark
                 view = {"kind": "text", "text": text, "info": info, "repeats": len(dirs)}
                 self._with_artifact(view, row)
                 return view
         # An item whose call failed has no output, and may have left what a person wants to open (a trial's directory).
-        for d in reversed(dirs):
+        for d in newest_first:
             row = next((r for r in item_rows(d, strict=False) if r["item_id"] == item), None)
             if row and row.get("failed") == 1.0:
                 view = {
@@ -1242,13 +1268,14 @@ class HarnessAdapter:
             m = self._record(d)
             run_id = m.get("run_id") or self._run_id(d)
             frm = (m.get("derived") or {}).get("from", "")
-            in_place, made = measured(m, bool(model_runs.meta(d).get("first")))
+            in_place, made = model_runs.measured(m, bool(model_runs.meta(d).get("first")))
             out.append(
                 {
                     "run_id": run_id,
                     "created_at": made,
                     "items": m.get("n_items"),
                     "cost_usd": (m.get("scores") or {}).get("total_cost_usd"),
+                    "cost_coverage": m.get("cost_coverage"),
                     "derived": (m.get("derived") or {}).get("kind", ""),
                     "from": frm,
                     "in_place": in_place,
@@ -1298,7 +1325,7 @@ class HarnessAdapter:
             usd = number(sc.get("total_cost_usd"))
             tokens = token_total(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
             first = bool(model_runs.meta(d).get("first"))
-            _in_place, at = measured(m, first)
+            _in_place, at = model_runs.measured(m, first)
             if not first or (usd is None and tokens is None):
                 continue
             out.append(

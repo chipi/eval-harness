@@ -43,7 +43,11 @@ def _order(d: Path, items: list[str]) -> list[str]:
     """The dataset's order for these items; any it does not name, after, sorted."""
     ds = _metrics(d).get("dataset_id") or (_metrics(d).get("derived") or {}).get("dataset_id")
     f = _common.DATASETS / f"{ds}.json" if ds else None
-    known = [it["item_id"] for it in json.loads(f.read_text())["items"]] if f and f.is_file() else []
+    known = (
+        [it["item_id"] for it in json.loads(f.read_text(encoding="utf-8"))["items"]]
+        if f and f.is_file()
+        else []
+    )
     have = set(items)
     return [i for i in known if i in have] + sorted(have - set(known))
 

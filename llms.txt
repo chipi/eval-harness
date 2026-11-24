@@ -26,7 +26,7 @@ that lists every document with its status.
 ## Decisions and specs
 
 - [ADRs](docs/adr/index.md): the decisions that shape the architecture; 19 documents, each with its status (16 built, 3 accepted)
-- [RFCs](docs/rfc/index.md): the technical designs, with their alternatives; 27 documents, each with its status (22 built, 3 draft, 1 accepted, 1 superseded)
+- [RFCs](docs/rfc/index.md): the technical designs, with their alternatives; 30 documents, each with its status (24 built, 3 draft, 2 accepted, 1 superseded)
 - [PRDs](docs/prd/index.md): what users need, and why; 11 documents, each with its status (11 built)
 - [UXS](docs/uxs/index.md): what users see and type; 5 documents, each with its status (5 active)
 
@@ -131,6 +131,7 @@ What triage needs for each service that reports errors or logs to the homelab's 
 - [Tutorial 6 · Datasets from production](docs/tutorials/6-datasets-from-production.md): a tutorial, step by step
 - [Tutorial 7 · Set up a model before you test it](docs/tutorials/7-set-up-a-model.md): a tutorial, step by step
 - [Tutorial 8 · The Workbench](docs/tutorials/8-the-workbench.md): a tutorial, step by step
+- [Tutorial 9 · Your own system: a custom adapter](docs/tutorials/9-custom-adapter.md): a tutorial, step by step
 - [Evaluation report — 24 LLMs, four fine-tuned classifiers and a regex on two classification tasks](research/REPORT_CLASSIFICATION.md): a worked eval's report
 - [Evaluation report — 24 LLMs and two NER models on Few-NERD](research/REPORT_NER.md): a worked eval's report
 - [Evaluation report — BM25, four dense retrievers and twelve LLM rerankers on SciFact](research/REPORT_RETRIEVAL.md): a worked eval's report

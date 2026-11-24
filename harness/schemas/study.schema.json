@@ -65,7 +65,7 @@
     },
     "stop": {
       "type": "object",
-      "description": "When the study stops: `trials`, or (to run until stopped) both `usd` and `wall_h`.",
+      "description": "When the study stops: at least one of `trials`, `usd` and `wall_h`; `patience` and `ask_timeout_h` are no bound alone.",
       "additionalProperties": false,
       "properties": {
         "trials": {"type": "integer", "minimum": 1},

@@ -57,7 +57,7 @@ def said(r):
 
 
 def capture(name, rows):
-    (proj / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    (proj / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     query = json.dumps({"path": f"{name}.jsonl"})
     return evh("capture", "--importer", "jsonl", "--query", query, "--capture", name)
 
@@ -120,7 +120,8 @@ try:
     check("setup: two captures", r1.returncode == r2.returncode == 0, said(r1)[-300:] + said(r2)[-300:])
     (proj / "rules.yaml").write_text(
         "- {when: {iss.state_reason: completed}, date: iss.closed_at, under: action, label: file}\n"
-        "- {when: {iss.count: 0}, min_age_days: 14, label: dismiss}\n"
+        "- {when: {iss.count: 0}, min_age_days: 14, label: dismiss}\n",
+        encoding="utf-8",
     )
     r = evh("label-coverage-show", *COVER, "--capture", "dec", *join("iss"), "--json")
     check(
@@ -174,7 +175,8 @@ try:
     (proj / "rules2.yaml").write_text(
         "- {when: {gt.recurred: true}, label: escalate}\n"
         "- {when: {iss.state_reason: completed}, date: iss.closed_at, label: file}\n"
-        "- {when: {iss.count: 0}, min_age_days: 14, label: dismiss}\n"
+        "- {when: {iss.count: 0}, min_age_days: 14, label: dismiss}\n",
+        encoding="utf-8",
     )
     two = [*join("iss"), "--outcomes", "gtrec", "--outcomes-as", "gt", "--join", "fp=fp"]
     r = evh("label-from-capture", "--dataset-id", "tickets_v1", "--map", "rules2.yaml", "--capture", "dec",
@@ -355,7 +357,8 @@ try:
         "def mutants(rules):\n"
         "    out = [dict(r) for r in rules]\n"
         "    out[0] = {**out[0], 'when': {'iss.closed_at': 'completed'}}\n"
-        "    return [('the close reason read from the wrong field', out)]\n"
+        "    return [('the close reason read from the wrong field', out)]\n",
+        encoding="utf-8",
     )
     r = evh("label-mutants", "tickets_v1", "--capture", "dec", "--map", "rules.yaml", *join("iss"),
             "--mutants", "mut.py", "--json")  # fmt: skip
@@ -379,7 +382,8 @@ try:
     # The fleet's beta (F6): a join mutant with a key the harness does not read ran the unchanged join and was
     # reported SURVIVED. Refused now, the key named.
     (proj / "mut_bad.py").write_text(
-        "def join_mutants(join):\n    return [('the item side keyed on the wrong field', {**join, 'item_field': 'ticket'})]\n"
+        "def join_mutants(join):\n    return [('the item side keyed on the wrong field', {**join, 'item_field': 'ticket'})]\n",
+        encoding="utf-8",
     )
     r = evh("label-mutants", "tickets_v1", "--capture", "dec", "--map", "rules.yaml", *join("iss"),
             "--mutants", "mut_bad.py")  # fmt: skip

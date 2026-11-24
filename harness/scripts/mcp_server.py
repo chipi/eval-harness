@@ -851,4 +851,7 @@ async def _plain(send, status: int, body: bytes) -> None:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main())

@@ -8,10 +8,15 @@ references and the baselines say, and the decision is made from that."""
 
 from __future__ import annotations
 
-import statistics
+import copy
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 
+from evaluation_harness import _runs
 from evaluation_harness.axes import strategy_of
 from evaluation_harness.catalog_adapter import item_fields
+from evaluation_harness.model import runs as _runs_model
 
 # -- what every goal view reads ------------------------------------------------------------------------------------
 
@@ -38,12 +43,13 @@ def by_dataset(A, datasets: set[str] | None = None) -> dict:
                 "read_as": read_as(arm) if callable(read_as) else "",
                 "runs": d.get("runs", 1),
                 "metric": head,
-                "mean": statistics.fmean(values.values()) if values else None,
+                "mean": _runs_model.pooled_mean(values.values()),
                 "n": len(values) or max((len(v["values"]) for v in sc.values()), default=0),
                 "lower": A.lower_is_better(head, d["dataset"]) if head else False,
                 "reference": d.get("reference", ""),
                 "judge": d.get("judge", ""),
                 "wrote": bool(d.get("wrote_reference")),
+                "failed_every_item": bool(d.get("failed_every_item")),
                 "labels_source": d.get("labels_source", ""),
                 "recorded": d.get("recorded", ""),
                 "replay": d.get("replay"),
@@ -54,7 +60,7 @@ def by_dataset(A, datasets: set[str] | None = None) -> dict:
                 "last": max((r.get("created_at") or "" for r in runs), default=""),
                 # every metric's mean and item count, for the goal pages (numbers only)
                 "means": {
-                    k: (statistics.fmean(v["values"].values()), len(v["values"]))
+                    k: (_runs_model.pooled_mean(v["values"].values()), len(v["values"]))
                     for k, v in sc.items()
                     if v["values"]
                 },
@@ -173,8 +179,9 @@ def leader(
     means = {}
     for a in comparable(A, goal, arms, retired_in):
         vals = (A.scores(a).get(metric) or {}).get("values") or {}
-        if vals:
-            means[a] = statistics.fmean(vals.values())
+        value = _runs_model.pooled_mean(vals.values())
+        if value is not None:
+            means[a] = value
     if not means:
         return None
     return (min if lower else max)(means, key=lambda a: means[a])
@@ -199,17 +206,30 @@ def _group_key(a: dict) -> str:
     return f"judge {a['judge']}" if a.get("judge") else (a.get("reference") or "no reference")
 
 
-def goal_answers(goal: dict, by_ds: dict) -> list:
+def lower_on(A, goal: dict, measure: str, ds: str) -> bool:
+    """Whether `measure` is better lower on `ds`, for a goal's block: what every reader says (`_runs.direction`: the goal
+    that declares it, the runs, the name table), never the goal's `direction` alone, which a goal may leave out. Without
+    an adapter (a block read from rows alone), the goal and the name table."""
+    if A is not None:
+        return bool(A.lower_is_better(measure, ds))
+    return _runs.direction(measure, dataset=ds, goals={str(goal.get("goal_id", "")): goal}) == "lower"
+
+
+def goal_answers(goal: dict, by_ds: dict, A=None) -> list:
     """[{"dataset", "role", "notes", "groups": [{"key", "rows", "leader"}]}] for one goal: on each
     of its datasets, every arm that records the goal's primary measure, grouped by what it is
     scored against (gold first, then silver, then judges), best first within a group. Arms are
     ranked only against arms on the same dataset scored against the same thing, and a group's
     leader is never a flagged arm: fewer items than min_items, a format the goal does not accept,
-    or the arm that wrote the reference it is scored against."""
-    crit = goal.get("success_criteria") or {}
-    lower = (crit.get("primary") or {}).get("direction") == "lower"
+    or the arm that wrote the reference it is scored against. Each row ranks by its own measure's direction on its
+    dataset (`lower_on`: a judge's group reads on the judge's score)."""
     out = []
     for ds, role, notes, rows in _goal_rows(goal, by_ds):
+        lowers = {m: lower_on(A, goal, m, ds) for m in {r["measure"] for r in rows}}
+
+        def sign(r: dict, lowers: dict = lowers) -> float:
+            return r["mean"] if lowers[r["measure"]] else -r["mean"]
+
         groups: dict = {}
         for r in rows:
             groups.setdefault(_group_key(r), []).append(r)
@@ -226,14 +246,10 @@ def goal_answers(goal: dict, by_ds: dict) -> list:
                         "key": k,
                         "rows": sorted(
                             g,
-                            key=lambda r: (bool(r["flags"]), r["mean"] if lower else -r["mean"], r["label"]),
+                            key=lambda r: (bool(r["flags"]), sign(r), r["label"]),
                         ),
                         "leader": next(
-                            (
-                                r
-                                for r in sorted(g, key=lambda r: r["mean"] if lower else -r["mean"])
-                                if not r["flags"]
-                            ),
+                            (r for r in sorted(g, key=sign) if not r["flags"]),
                             None,
                         ),
                     }
@@ -242,6 +258,19 @@ def goal_answers(goal: dict, by_ds: dict) -> list:
             }
         )
     return out
+
+
+def unrecorded(goal: dict, by_ds: dict, ds: str) -> list[str] | None:
+    """What the arms on `ds` are read on (their own headlines, sorted), when `goal` names a primary measure that no arm
+    there records: V14 warns about it, and the goal decides nothing on `ds` (`_goal_rows` has no row). None when the
+    goal has no measure, the dataset no arm, or an arm records it."""
+    measure = ((goal.get("success_criteria") or {}).get("primary") or {}).get("measure", "")
+    arms = [a for a in (by_ds.get(ds) or {}).get("arms", []) if not a.get("superseded_by")]
+    if not measure or not arms:
+        return None
+    if any(measure in a["means"] or (a.get("judge") and a["metric"] in a["means"]) for a in arms):
+        return None
+    return sorted({a["metric"] for a in arms if a.get("metric")} or {k for a in arms for k in a["means"]})
 
 
 def _goal_rows(goal: dict, by_ds: dict) -> list:
@@ -259,6 +288,9 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
         moved = [
             a for a in arms if a.get("superseded_by") and not any(r.get("derived") for r in a["run_list"])
         ]
+        # The baseline is the goal's own (RFC-041 F6): the arm `baseline_read` gives for this goal, not any arm another goal
+        # on the dataset promoted (`by_dataset` flags an arm for every goal, for the arm's own page).
+        bl, base = baseline_read(by_ds.get(ds) or {}, goal["goal_id"])
         notes = d.get("notes", "")
         if moved:
             notes = (notes.rstrip(". ") + ". " if notes else "") + (
@@ -278,7 +310,24 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
                 use = a["metric"] if a["metric"] in a["means"] else next(iter(sorted(a["means"])), "")
             mean, n = a["means"].get(use, (0.0, a["n"]))
             flags = flags_of(goal, n, a["format"], a["wrote"])
-            rows.append(dict(a, mean=mean, n=n, measure=use, filed=a["goal"] == goal["goal_id"], flags=flags))
+            mine = bl[-1] if bl and a["arm"] == base else None
+            rows.append(
+                dict(
+                    a,
+                    mean=mean,
+                    n=n,
+                    measure=use,
+                    filed=a["goal"] == goal["goal_id"],
+                    flags=flags,
+                    baseline=mine,
+                )
+            )
+        seen = unrecorded(goal, by_ds, ds)
+        if seen is not None:
+            notes = (notes.rstrip(". ") + ". " if notes else "") + (
+                f"No arm records {measure!r}, which this goal reads; the arms record {', '.join(seen)}. "
+                "`evh validate` warns about it (V14); the goal needs a measure the runs record."
+            )
         out.append((ds, d.get("role", ""), notes, rows))
     return out
 
@@ -288,7 +337,7 @@ def decided(A, g: dict, by_ds: dict) -> list:
     (`group_decision`; a group scored against silver beside a gold one is shown, not recommended)."""
     retired_in = retired_in_of(A, g)
     measure = ((g.get("success_criteria") or {}).get("primary") or {}).get("measure", "")
-    answers = goal_answers(g, by_ds)
+    answers = goal_answers(g, by_ds, A)
     for ans in answers:
         tiers = {r["id"]: r["tier"] for r in (by_ds.get(ans["dataset"]) or {}).get("refs", [])}
         for grp in ans["groups"]:
@@ -386,7 +435,54 @@ def goal_clusters(A, g: dict, ds: str) -> tuple[dict | None, str | None]:
     return {i: v[field] for i, v in values.items() if v.get(field) not in (None, "")}, field
 
 
+#: The decisions kept while a catalog Site renders one state of the data (RFC-040): the home page's glance, the goals
+#: page and a goal's own page decide the same groups, 96 decisions on this repository's catalog, 5 of its 30 s.
+_KEPT = threading.local()
+
+
+@contextmanager
+def decisions_kept(memo: dict) -> Iterator[None]:
+    """Within the block, on this thread, a group's decision is made once and kept in `memo`: for one state of the data
+    only (a new state needs a new memo). Each caller gets its own copy, as it would get its own decision."""
+    prev = getattr(_KEPT, "memo", None)
+    _KEPT.memo = memo
+    try:
+        yield
+    finally:
+        _KEPT.memo = prev
+
+
 def group_decision(
+    A,
+    g: dict,
+    ds: str,
+    rows: list,
+    gm: str,
+    retired_in: dict,
+    gold: str | None = None,
+) -> dict:
+    """`_group_decision`, kept within `decisions_kept`: keyed on everything it is given; what it reads from the adapter
+    (the scores, the goal's clusters, a measure's direction) one state of the data fixes."""
+    memo = getattr(_KEPT, "memo", None)
+    if memo is None:
+        return _group_decision(A, g, ds, rows, gm, retired_in, gold)
+    key = (
+        repr(g),
+        ds,
+        tuple(
+            (r["arm"], r["label"], tuple(r["flags"]), r.get("machine", ""), bool(r.get("baseline")))
+            for r in rows
+        ),
+        gm,
+        repr(sorted(retired_in.items())),
+        gold,
+    )
+    if key not in memo:
+        memo[key] = _group_decision(A, g, ds, rows, gm, retired_in, gold)
+    return copy.deepcopy(memo[key])
+
+
+def _group_decision(
     A,
     g: dict,
     ds: str,
@@ -408,7 +504,7 @@ def group_decision(
         own = {k: v for k, v in (crit.get("axes") or {}).items() if k != "quality"}
         goal = {
             **g,
-            "success_criteria": {**crit, "primary": {"measure": gm, "direction": "higher"}, "axes": own},
+            "success_criteria": {**crit, "primary": {"measure": gm}, "axes": own},
         }
     arms = {
         r["arm"]: {
@@ -563,7 +659,7 @@ def leader_vs_baseline(
     leader = next((r for r in rows if dec and r["arm"] == dec["leader"]), None)
     if not (leader and base and leader["arm"] != base):
         return None
-    lower = ((g.get("success_criteria") or {}).get("primary") or {}).get("direction") == "lower"
+    lower = lower_on(A, g, measure, ds)
     cmp = stats.compare(
         {
             leader["arm"]: (A.scores(leader["arm"]).get(measure) or {}).get("values") or {},
@@ -589,10 +685,10 @@ def glance(A, by_ds: dict) -> list[dict]:
     for g in A.goals():
         prim = (g.get("success_criteria") or {}).get("primary") or {}
         measure = prim.get("measure", "")
-        lower = prim.get("direction") == "lower"
         retired_in = retired_in_of(A, g)
-        for ans in goal_answers(g, by_ds):
+        for ans in goal_answers(g, by_ds, A):
             ds = ans["dataset"]
+            lower = lower_on(A, g, measure, ds)
             if not decides_on(g, ds):
                 continue  # a pilot slice or a generalization check: on the goal page, not the glance
             v = by_ds.get(ds) or {}
@@ -665,7 +761,7 @@ def dataset_groups(A, by_ds: dict, ds: str, goal: dict | None = None) -> list[di
     """The groups of one dataset as the goal reads them (`decided`: each with its decision), or, with no goal, every arm
     on its own headline grouped by what it is scored against (no decision): the tables of `evh leaderboard`."""
     if goal is None:
-        answers = goal_answers({"goal_id": "", "datasets": [{"dataset_id": ds}]}, by_ds)
+        answers = goal_answers({"goal_id": "", "datasets": [{"dataset_id": ds}]}, by_ds, A)
     else:
         answers = decided(
             A,
@@ -768,17 +864,22 @@ def leaderboard(
     rounds_of = getattr(A, "rounds", None)
     answer = []
     for d in g.get("datasets") or []:
-        b = [
-            x
-            for x in (by_ds.get(d.get("dataset_id", "")) or {}).get("baselines", [])
-            if x.get("goal") == goal_id
-        ]
+        b, read = baseline_read(by_ds.get(d.get("dataset_id", "")) or {}, goal_id)
         answer.append(
             {
                 "dataset": d.get("dataset_id", ""),
-                "baseline": {k: b[-1].get(k) for k in ("arm", "run", "promoted_at", "reason")} if b else None,
+                "baseline": {k: b[-1].get(k) for k in ("run", "promoted_at", "reason")} | {"arm": read}
+                if b
+                else None,
             }
         )
+    per_ds = {
+        str(d["dataset_id"]): "lower"
+        if lower_on(A, g, str(prim.get("measure", "")), str(d["dataset_id"]))
+        else "higher"
+        for d in g.get("datasets") or []
+        if d.get("dataset_id")
+    }
     return {
         "goal": goal_id,
         "item_word": getattr(A, "item_word", "item"),
@@ -801,7 +902,8 @@ def leaderboard(
         ],
         "answer": answer,
         "measure": prim.get("measure", ""),
-        "direction": "lower" if prim.get("direction") == "lower" else "higher",
+        "direction": _runs.combine(per_ds),
+        "direction_on": per_ds,
         "strategy": strategy_of(g),
         "strategy_about": STRATEGIES[strategy_of(g)],
         "tie_break": list(tie_break_of(g)),

@@ -103,6 +103,7 @@ class Source:
                 text=True,
                 stdin=subprocess.DEVNULL,
                 check=False,
+                encoding="utf-8",
             )
             if r.returncode:
                 raise ValueError(f"harbor dataset download {dataset} failed: {(r.stdout + r.stderr)[-300:]}")

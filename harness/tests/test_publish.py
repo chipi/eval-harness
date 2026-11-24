@@ -124,7 +124,7 @@ def evh(*args):
 try:
     (proj / "src").mkdir()
     for n in "ab":
-        (proj / "src" / f"{n}.txt").write_text(f"item {n}\n")
+        (proj / "src" / f"{n}.txt").write_text(f"item {n}\n", encoding="utf-8")
     evh("dataset-create", "--dataset-id", "p_v1", "--source-dir", "src")
     r = evh("dataset-publish", "--dataset-id", "p_v1", "--to", "huggingface", "--query", '{"repo": "ada/x"}')
     check(

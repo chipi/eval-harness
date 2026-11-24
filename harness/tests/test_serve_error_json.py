@@ -31,7 +31,7 @@ proj = Path(_tmp.mkdtemp(prefix="evh-serve-error-"))
 env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
 init = subprocess.run(
     [sys.executable, str(HERE / "cli.py"), "init", "--store", "files"], cwd=proj, env={**env, "EVAL_HOME": str(proj)},
-    capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=300,
+    capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=300, encoding="utf-8",
 )  # fmt: skip
 os.environ["EVAL_HOME"] = str(proj)
 os.environ.pop("EVAL_STORE", None)

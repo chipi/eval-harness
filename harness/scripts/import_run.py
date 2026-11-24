@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -47,14 +47,19 @@ from evaluation_harness._common import (
     ROOT,
     dataset_id_ok,
     die,
+    goal_required_from,
     imported_scorer_key,
     jsonl_lines,
+    load_goals,
+    missing_reference_note,
     now,
+    plain_id_ok,
     read_json,
+    reference_found,
     sha256,
 )
 from evaluation_harness._fingerprint import build_fingerprint
-from evaluation_harness._record import run_record
+from evaluation_harness._record import non_number, run_record
 from evaluation_harness.model import runs as _model_runs
 from evaluation_harness.ops import legacy
 
@@ -74,9 +79,51 @@ def _rows(path: Path) -> list:
     return rows
 
 
+def _reference_tier(reference_id: str | None, tier: str | None) -> str | None:
+    """The tier recorded for the reference the scores are against: the one given, else the one a `gold/<name>` or
+    `silver/<name>` id names. The id is otherwise free-form (0.8.0 took any, and a project keeps its references where it
+    likes). A tier with no reference is refused: it would say scored against nothing."""
+    if tier and not reference_id:
+        die(f"--reference-tier {tier} names a tier of --reference-id, and none is given", "bad-argument")
+    if not reference_id:
+        return None
+    found, _, name = reference_id.partition("/")
+    if found not in ("gold", "silver") or not name:
+        return tier
+    if tier and tier != found:
+        die(
+            f"--reference-tier {tier} but --reference-id {reference_id} is {found}: a reference's tier is the one its id "
+            "names",
+            "mismatch",
+        )
+    return found
+
+
+def _goal_named(goal: str | None) -> None:
+    """The goal the import answers is one of the project's; with none named, the project's goal policy (data/goals/
+    policy.yaml) must not require one yet, as `evh run` is held to it."""
+    if goal:
+        if goal not in load_goals():
+            die(
+                f"--goal {goal!r} is not in {', '.join(sorted(load_goals())) or 'the project (no goals)'}",
+                "not-found",
+            )
+    elif since := goal_required_from():
+        die(
+            f"goals are required from {since} (data/goals/policy.yaml): name the goal this run answers with --goal "
+            "(evh goal-list)",
+            "bad-argument",
+        )
+
+
 def body(**inputs: Any) -> int:
     """Import external scores as a harness run."""
     args = legacy.namespace(inputs, "import-run")
+    plain_id_ok(args.system_id, "--system-id")
+    if args.run_id:
+        plain_id_ok(args.run_id, "--run-id")
+    _goal_named(args.goal)
+    reference_tier = _reference_tier(args.reference_id, args.reference_tier)
     ds_file = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     if not _store.is_file(ds_file):
         die(
@@ -88,7 +135,8 @@ def body(**inputs: Any) -> int:
     known = {it["item_id"] for it in dataset["items"]}
 
     rows = _rows(args.scores)
-    seen, metrics = set(), set()
+    seen: set[str] = set()
+    metrics: set[str] = set()
     for row in rows:
         iid = row["item_id"]
         if iid in seen:
@@ -96,12 +144,11 @@ def body(**inputs: Any) -> int:
         if iid not in known:
             die(f"item {iid!r} is not in dataset {args.dataset_id}", "not-found")
         seen.add(iid)
-        for k, v in row.items():
-            if k == "item_id" or k.startswith("_"):
-                continue
-            if isinstance(v, bool) or not isinstance(v, (int, float)) or math.isnan(v):
-                die(f"item {iid!r}: {k}={v!r} is not a number", "invalid-file")
-            metrics.add(k)
+        if (
+            bad := non_number(row)
+        ) is not None:  # the one test of every writer (infinity too: the old one let it by)
+            die(f"item {iid!r}: {bad}", "invalid-file")
+        metrics.update(k for k in row if k != "item_id" and not k.startswith("_"))
     if args.primary_metric not in metrics:
         die(
             f"--primary-metric {args.primary_metric!r} is not among the scored metrics: {sorted(metrics)}",
@@ -163,7 +210,7 @@ def body(**inputs: Any) -> int:
         data_dir=DATA,
         dataset=dataset,
         reference_id=args.reference_id,
-        reference_tier=args.reference_tier,
+        reference_tier=reference_tier,
         system_id=args.system_id,
         params=params,
         adapter_id=f"imported:{args.scorer_id}",
@@ -190,7 +237,8 @@ def body(**inputs: Any) -> int:
         primary_metric=args.primary_metric,
         fingerprint=fingerprint,
         imported=imported,
-        reference_tier=args.reference_tier or None,
+        reference_tier=reference_tier,
+        goal=args.goal or None,
     )
     _model_runs.write_run(
         run_id,
@@ -212,5 +260,7 @@ def body(**inputs: Any) -> int:
         f"{args.primary_metric}={scores[args.primary_metric]}"
     )
     print(f"  {run_dir}")
+    if args.reference_id and not reference_found(args.reference_id):
+        print(f"note: {missing_reference_note(args.reference_id, {run_id})}", file=sys.stderr)
     _jsonout.values({"run_id": run_id, "dir": str(run_dir), "items": len(seen), "scores": scores})
     return 0

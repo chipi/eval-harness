@@ -98,7 +98,7 @@ try:
     where.record("x", rows[0])
     where.record("gone", rows[1])  # no file written for it: not in the map
     where.write(root, "ds")
-    doc = json.loads((root / "data" / "sources" / "ds.rows.json").read_text())
+    doc = json.loads((root / "data" / "sources" / "ds.rows.json").read_text(encoding="utf-8"))
     check(
         "the rows map: each written item's row and bytes, the commit as the source's revision",
         doc["rows"] == {"x": {"row": 2, "sha256": hashlib.sha256(b"hello").hexdigest()}}

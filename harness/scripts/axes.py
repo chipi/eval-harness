@@ -67,16 +67,20 @@ TOKENS = ("tokens_in", "tokens_out")
 def axes_of(goal: dict, direction_of: Callable[[str], str | None] | None = None) -> list[dict]:
     """[{"name", "measure", "direction", "stat", "limit", "role", "note", "unit", "builtin"}]:
     quality (the primary measure) first, then cost and speed, then the goal's own, in its order.
-    `direction_of(measure)` names a custom measure's direction when the goal does not."""
+    `direction_of(measure)` names a measure's direction when the goal does not: the primary's too, so a goal that
+    leaves `direction` out ranks its measure as every other reader does (`_runs.direction`)."""
     crit = goal.get("success_criteria") or {}
     prim = crit.get("primary") or {}
     declared = crit.get("axes") or {}
     q = declared.get("quality") or {}
+    said = prim.get("direction")
+    if said not in ("lower", "higher") and direction_of:
+        said = direction_of(prim.get("measure", ""))
     out = [
         {
             "name": "quality",
             "measure": prim.get("measure", ""),
-            "direction": "lower" if prim.get("direction") == "lower" else "higher",
+            "direction": "lower" if said == "lower" else "higher",
             "stat": "mean",
             "limit": q.get("limit"),
             "margin": q.get("margin"),
@@ -314,6 +318,7 @@ def decide(
     )
     # Every axis against the leader, paired per item; Holm across the eligible arms on quality.
     family = max(len(eligible) - 1, 1)
+    shared_of: dict = {}  # arm -> (items it shares with the leader, the clusters they make) on the quality axis
     for ax in axes:
         # Quality decides the contenders, so only the eligible arms are its family; every other axis is
         # shown for every arm.
@@ -325,6 +330,8 @@ def decide(
             series, leader, higher_is_better=ax["direction"] == "higher", family=family, clusters=clusters
         )
         for r in cmp.get("rows") or []:
+            if ax is quality:
+                shared_of[r["arm"]] = (r["n"], r.get("clusters"))
             note = "" if ax["name"] != "speed" or one_machine else "different machines: not compared"
             rows[r["arm"]][ax["name"]]["vs_leader"] = {
                 "delta": r.get("delta"),
@@ -336,8 +343,17 @@ def decide(
     for x in [
         x for x in eligible if (rows[x]["quality"].get("vs_leader") or {}).get("verdict") == "untestable"
     ]:
-        out.setdefault(x, []).append("shares fewer than 2 items with the leader")
-        why.append(f"{arms[x]['label']} is out: shares fewer than 2 items with the leader.")
+        # Untestable is two things: too few shared items, or (tested by a cluster) too few clusters among them; say which.
+        shared_n, groups = shared_of.get(x, (0, None))
+        if clusters is not None and groups is not None and shared_n >= 2:
+            reason = (
+                f"shares {shared_n} items with the leader, in {groups} {cluster_by} cluster{'s' if groups != 1 else ''}: "
+                "the clustered test needs at least 2"
+            )
+        else:
+            reason = "shares fewer than 2 items with the leader"
+        out.setdefault(x, []).append(reason)
+        why.append(f"{arms[x]['label']} is out: {reason}.")
         eligible.remove(x)
     # WHO IS A CONTENDER is the strategy's call (STRATEGIES); the tie-break then picks.
     strategy = strategy_of(goal)
@@ -610,6 +626,14 @@ def fmt_usd(v: float) -> str:
     if abs(v) >= 1:
         return f"${v:,.2f}"
     return f"${v:.{max(4, 1 - math.floor(math.log10(abs(v))))}f}"
+
+
+def with_coverage(text: str, coverage: dict | None) -> str:
+    """A run's total cost as shown, said to be of only some items when the run recorded `cost_coverage` (RFC-041 F3):
+    the one wording of it, for every view that shows a run's cost."""
+    if not coverage:
+        return text
+    return f"{text} (on {coverage['items_with_cost']} of {coverage['items']} items)"
 
 
 def fmt_ms(v: float) -> str:

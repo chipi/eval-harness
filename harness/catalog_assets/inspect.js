@@ -37,6 +37,7 @@
       if (P.get('wrong') && only.includes('wrong')) args.wrong_against = P.get('wrong');
       if (P.get('new') && only.includes('new')) args.new_vs = P.get('new');
       for (const k of ['disagree', 'split', 'unlabelled']) if (only.includes(k)) args[k] = true;
+      if (only.includes('judge')) args.judge_disagrees = true;
       if (P.get('scores') === 'only') args.scores_only = true;
     } else {
       for (const k of ['runs', 'baseline', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
@@ -182,32 +183,31 @@
       const v = document.getElementById('addrun').value.trim(); if (!v) return;
       P.set('runs', [...new Set([...runs(), v])].join(',')); go(); };
   }
-  // An arm's name on the comparison page: its dataset id's prefix dropped ("intents_" of runs/intents_v1), whatever
-  // the number of arms open; the " · reading" tail and the ×N repeat mark always stay; the full name is the tooltip.
-  // `dsOf` maps an id to its dataset; without it (the sheet, whose names are paths) what every name shares is cut.
+  // An arm's name in every view (the comparison, the sheet): its dataset id's prefix dropped ("intents_" of
+  // intents_v1), whatever the number of arms open; the " · reading" tail and the ×N repeat mark always stay; the full
+  // name is the tooltip. A path name (the sheet's: rescored-5f2c057c/orrery_triage_v1_labelled/triage_baseline_pro_v1)
+  // is named by its last segment, the system id, which is where the prefix is; the prefix is the dataset's stem
+  // (orrery_triage) or its trailing words (triage_): a system id is named after the dataset's subject. Two arms left
+  // with one name keep their paths; a prefix is not cut when only a version suffix (v1) or nothing would be left.
+  // `dsOf` maps an id to its dataset.
   function shorten(full, dsOf) {
-    const ids = Object.keys(full), names = ids.map(i => full[i]);
-    if (dsOf) {
-      const out = {};
-      ids.forEach((id, k) => {
-        const pre = String(dsOf[id] || '').replace(/_v\d+$/, '') + '_';
-        out[id] = pre.length > 1 && names[k].startsWith(pre) && names[k].length > pre.length ? names[k].slice(pre.length) : names[k];
-      });
-      return out;
+    const out = {}, kept = {};
+    for (const id of Object.keys(full)) {
+      const name = String(full[id]), tail = name.indexOf(' · ') < 0 ? '' : name.slice(name.indexOf(' · '));
+      const head = name.slice(0, name.length - tail.length), at = head.lastIndexOf('/') + 1;
+      const words = String(dsOf[id] || '').replace(/_v\d+(_.*)?$/, '').split('_').filter(Boolean);
+      let own = head.slice(at);
+      for (let i = 0; i < words.length; i++) {
+        const pre = words.slice(i).join('_') + '_';
+        const rest = own.slice(pre.length);
+        if (own.startsWith(pre) && rest && !/^v\d+/.test(rest)) { own = rest; break; }
+      }
+      kept[id] = head.slice(0, at) + own + tail;
+      out[id] = own + tail;
     }
-    if (names.length < 2) return full;
-    const cut = (a, b) => { let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; };
-    let pre = names.reduce((n, x) => Math.min(n, cut(names[0], x)), Infinity);
-    pre = names[0].slice(0, pre).search(/[_\/·][^_\/·]*$/) + 1;
-    const rev = names.map(x => [...x].reverse().join(''));
-    let suf = rev.reduce((n, x) => Math.min(n, cut(rev[0], x)), Infinity);
-    // A shared tail is cut only at a " · " (what they are scored by), never inside the system
-    // id: "_v1" is the arm's version, and it stays when every arm happens to share it.
-    const tail = suf ? names[0].slice(names[0].length - suf) : '';
-    const at = tail.indexOf(' · ');
-    suf = at >= 0 ? tail.length - at : 0;
-    const out = {};
-    ids.forEach((id, k) => { const s = names[k].slice(Math.max(pre, 0), names[k].length - suf) || names[k]; out[id] = s; });
+    const seen = {};
+    Object.values(out).forEach(n => { seen[n] = (seen[n] || 0) + 1; });
+    for (const id of Object.keys(out)) if (seen[out[id]] > 1) out[id] = kept[id];
     return out;
   }
   const tip = (full, id) => `title="${esc(full[id] || id)}"`;
@@ -746,7 +746,10 @@
 
   // ── 05 sheet (RFC-023): one dataset's items down, a column per arm across: what it wrote, its scores, the labels, the winner ──
   // The page writes nothing: the rows ticked give the evh pick and evh label-sheet commands to copy; the CSV is a read.
-  const SIGNALS = ['wrong', 'disagree', 'split', 'new', 'unlabelled'];
+  const SIGNALS = ['wrong', 'disagree', 'split', 'new', 'unlabelled', 'judge'];
+  // `judge` is a judge on a validation disagreeing with the people's ratings on the item (judge_validation.agreement).
+  const SIGNAME = {judge: 'judge ≠ gold'};
+  const signame = s => SIGNAME[s] || s;
   async function sheetView() {
     const ds = P.get('dataset');
     picker();
@@ -767,14 +770,14 @@
     if (d.error) { app.innerHTML = `<p class="note"><b>${esc(d.error)}</b></p>`; return; }
     const only = P.getAll('only');
     const scoresOnly = P.get('scores') === 'only';
-    const counts = `${d.total} ${ITEMS}` + SIGNALS.filter(s => d.counts[s]).map(s => ` · ${d.counts[s]} ${s}`).join('');
+    const counts = `${d.total} ${ITEMS}` + SIGNALS.filter(s => d.counts[s]).map(s => ` · ${d.counts[s]} ${signame(s)}`).join('');
     const opt = (xs, cur, none) => `<option value="">${none}</option>` + xs.map(x => `<option value="${esc(x)}" ${x === cur ? 'selected' : ''}>${esc(x)}</option>`).join('');
     const mopts = d.metrics.map(m => `<option value="${esc(m)}" ${m === d.metric ? 'selected' : ''}>${esc(m)}</option>`).join('');
     const controls = `<div class="controls">
       ${d.metric ? `<label>read on <select id="smetric">${mopts}</select></label>` : ''}
       <label>wrong against <select id="swrong">${opt(d.sets, d.wrong, 'no label set')}</select></label>
       <label>new against <select id="snew">${opt(d.datasets, d.new, 'no dataset')}</select></label>
-      ${SIGNALS.map(s => `<label class="tick"><input type="checkbox" class="sonly" value="${s}" ${only.includes(s) ? 'checked' : ''}> only ${s}</label>`).join('')}
+      ${SIGNALS.map(s => `<label class="tick"><input type="checkbox" class="sonly" value="${s}" ${only.includes(s) ? 'checked' : ''}> ${s === 'judge' ? 'only where the judge disagrees with the gold' : 'only ' + s}</label>`).join('')}
       <label class="tick"><input type="checkbox" id="sscores" ${scoresOnly ? 'checked' : ''}> scores only</label></div>`
       + fieldControls(d);
     const first = d.runs[0];
@@ -786,10 +789,10 @@
       hasFields = d.rows.some(r => Object.keys(r.fields).length);
     const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start']];
     if (hasSignals) heads.push(['', 'signals']);
-    // An arm by what sets it apart from the others shown (shorten: "baseline_pro_v1", not
+    // An arm by its system id, the dataset's prefix dropped (shorten: "baseline_pro_v1", not
     // "rescored-5f2c057c/orrery_triage_v1_labelled/triage_baseline_pro_v1"), the whole id in its title.
     // A break is offered after each '/' of what is left.
-    const named = shorten(Object.fromEntries(arms.map(a => [a.token, short(a.token)])));
+    const named = shorten(Object.fromEntries(arms.map(a => [a.token, short(a.token)])), Object.fromEntries(arms.map(a => [a.token, d.dataset])));
     const armHead = t => `<span title="${esc(t)}">${esc(named[t] || short(t)).replace(/\//g, '/<wbr>')}</span>`;
     arms.forEach((a, i) => {
       heads.push(['outc', armHead(a.token) + '<br><small>' + (i === 0 ? 'first: production' : 'output') + '</small>']);
@@ -815,7 +818,7 @@
       [r => `<td class="sel"><input type="checkbox" class="ssel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"${picked.has(r.item) ? ' checked' : ''}></td>`, () => ''],
       [r => `<td class="item mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>`, r => r.item],
       [r => `<td class="small start" title="${esc(r.text)}">${esc(r.text.length > 60 ? r.text.slice(0, 59) + '…' : r.text)}</td>`, r => r.text],
-      ...(hasSignals ? [[r => `<td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>`, r => Object.keys(r.signals).join(' ')]] : []),
+      ...(hasSignals ? [[r => `<td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${signame(s)}</span>`).join(' ')}</td>`, r => Object.keys(r.signals).join(' ')]] : []),
       ...arms.flatMap(a => [
         [r => `<td class="small outc"${r.cells[a.token].full ? ` title="${esc(r.cells[a.token].full)}"` : ''}>${dash(r.cells[a.token].output)}</td>`, r => r.cells[a.token].output ?? ''],
         ...a.scores.map(ref => [r => `<td class="num scc${win(r, a.token, ref)}">${fmt(r.cells[a.token].scores[ref])}</td>`, r => fmt(r.cells[a.token].scores[ref])]),
@@ -852,7 +855,7 @@
     if (bf) {
       const g = {};
       for (const r of d.rows) { const k = String(r.fields[bf] ?? '—'); (g[k] = g[k] || []).push(r); }
-      by = `<h3 class="sub">by ${esc(bf)}</h3><div class="scroll-x"><table class="data" data-nopage><thead><tr><th>${esc(bf)}</th><th>rows</th>${SIGNALS.map(s => `<th>${s}</th>`).join('')}</tr></thead><tbody>${Object.entries(g).map(([k, rs]) =>
+      by = `<h3 class="sub">by ${esc(bf)}</h3><div class="scroll-x"><table class="data" data-nopage><thead><tr><th>${esc(bf)}</th><th>rows</th>${SIGNALS.map(s => `<th>${signame(s)}</th>`).join('')}</tr></thead><tbody>${Object.entries(g).map(([k, rs]) =>
         `<tr><td>${esc(k)}</td><td class="num">${rs.length}</td>${SIGNALS.map(s => `<td class="num">${rs.filter(r => s in r.signals).length}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     }
     app.innerHTML = `<p class="eyebrow"><span class="num">05</span>sheet · ${esc(ds)}</p><p class="small" id="scounts">${esc(counts)}${only.length ? ' · ' + d.rows.length + ' shown' : ''}${d.metric ? ' · read on ' + esc(d.metric) + ' (' + way + ' is better)' : ''}</p>`

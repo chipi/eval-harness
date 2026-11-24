@@ -99,9 +99,14 @@ class Op:
     def call(self, **kwargs: Any) -> dict[str, Any]:
         """Run it. A read in CACHED_READS is answered from what the view cache kept of it, when the data is what it was
         computed from and the views read the harness's own layout."""
-        from evaluation_harness import catalog_adapter  # noqa: PLC0415
+        from evaluation_harness import _visibility, catalog_adapter  # noqa: PLC0415
         from evaluation_harness.model import view_cache  # noqa: PLC0415
+        from evaluation_harness.model.entity import Problem  # noqa: PLC0415
 
+        # A read a public server leaves out refuses here too, so an in-process public call (no hosts, EVH_PUBLIC) is
+        # refused as the routes and the tool list refuse it: one gate, not one per read (RFC-041 F4).
+        if self.public_dropped and _visibility.public():
+            raise Problem(f"{self.name} is not served publicly: {self.public_dropped}", "not-allowed")
         if self.is_job():
             raise ValueError(
                 f"{self.name} is a {self.kind}: it runs as a job (`evh {self.name}`, or POST {self.route})"

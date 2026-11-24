@@ -21,8 +21,10 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 
+# The project names its store as `evh init` would; run on its own (no EVAL_STORE), the server refused it (not-configured).
+os.environ.setdefault("EVAL_STORE", store_under_test())
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
@@ -71,7 +73,7 @@ try:
     # The tutorial's fields: area and plan are public, deadline is not.
     (data / "fields").mkdir()
     for f in sorted((KIT / "fields").iterdir()):
-        _runstore.write_text(proj, f"fields/{f.name}", f.read_text())
+        _runstore.write_text(proj, f"fields/{f.name}", f.read_text(encoding="utf-8"))
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -115,10 +117,14 @@ try:
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     _runstore.write_text(
-        proj, "systems/tickets_lead2_v1.yaml", (KIT / "systems" / "tickets_lead2_v1.yaml").read_text()
+        proj,
+        "systems/tickets_lead2_v1.yaml",
+        (KIT / "systems" / "tickets_lead2_v1.yaml").read_text(encoding="utf-8"),
     )
     r = evh("run", "--system", "tickets_lead2_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     check("setup: one run", r.returncode == 0, r.stderr[-300:])
@@ -133,7 +139,7 @@ try:
     _runstore.write_text(
         proj,
         "systems/tickets_lead1_v1.yaml",
-        (KIT / "systems" / "tickets_lead1_v1.yaml").read_text(),
+        (KIT / "systems" / "tickets_lead1_v1.yaml").read_text(encoding="utf-8"),
     )
     lead1 = ("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     dry = evh(*lead1, "--dry-run", "--json")
@@ -424,7 +430,7 @@ try:
                 res.content[0].text,
             )
             # Values are data, never a way past the schema (an independent review's two holes).
-            (proj / "outside.json").write_text('{"secret": "TOPSECRET"}')
+            (proj / "outside.json").write_text('{"secret": "TOPSECRET"}', encoding="utf-8")
             for bad in ["../outside", str(proj / "outside"), "..", "a/b"]:
                 res = await s.call_tool("dataset-items", {"dataset": bad})
                 check(

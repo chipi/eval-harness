@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
-"""The catalog never goes stale (RFC-032 step 8, Q6): catalog-serve refreshes what it read and rebuilds the pages.
+"""The catalog never goes stale (RFC-032 step 8, Q6; RFC-040): catalog-serve renders each page when it is asked for.
 
     python tests/test_catalog_fresh.py
 
-In a throwaway tutorial project ($0, offline), in either store. A server in this process (its handler, adapter and
-rebuild jobs are the real ones) is asked, through its API, to change the data:
+In a throwaway tutorial project ($0, offline), in either store. A server in this process (its handler and adapter are
+the real ones) is asked, through its API, to change the data:
 
-  - an edit over the API: the adapter answers the new data when the answer to the edit has been sent, a `catalog` job
-    is building the pages while the old ones are served, and then the pages show the edit;
-  - two more writes during that rebuild cost one more build, not two;
-  - a rebuild that fails leaves the pages that were there, and says so (health, log), and the next write rebuilds;
-  - a change by another process (the command line) is noticed on the next read, with the same refresh and rebuild;
-  - a job the API starts that writes (a run) is looked at when it ends: the new arm is known and on the pages;
-  - nothing changed, nothing rebuilt: reads, and the rebuild's own effects, leave the data's state as it was.
+  - an edit over the API: the next request for a page shows it, and no `catalog` job runs, then or ever;
+  - two more writes: the next read shows the last; reads that change nothing keep the model they rendered from;
+  - many reads during writes: each answer is one whole page of one state of the data, never a mix;
+  - a render that fails answers 500 and says why; the next request after the fault is gone renders again;
+  - a change by another process (the command line) is noticed on the next read;
+  - a job the API starts that writes (a run) is looked at when it ends: the new arm is on the pages.
 
-Then a real `evh catalog-serve` process: its log names the rebuild instead of telling a person to restart it, a
-change by the command line reaches its pages, and a --public server answers /api/health as it did (no catalog).
+Then a real `evh catalog-serve` process: its log says the pages are rendered when asked for, a change by the command line
+reaches its pages, data that changed while no server ran is on the first page, and a --public server answers
+/api/health as it did (no catalog).
 """
 
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -47,6 +48,7 @@ KIT = HERE.parent / "tutorial"
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
+from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
 from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: E402
@@ -102,20 +104,20 @@ def catalog_jobs() -> list[str]:
     out = []
     for d in sorted(root.iterdir()) if root.is_dir() else []:
         try:
-            if json.loads((d / "job.json").read_text()).get("operation") == "catalog":
+            if json.loads((d / "job.json").read_text(encoding="utf-8")).get("operation") == "catalog":
                 out.append(d.name)
         except (OSError, ValueError, KeyError):
             pass
     return out
 
 
-def settled() -> bool:
-    s = cs.catalog_status()
-    return s["state"] != "building" and not s["queued"]
+def page(port, name: str, prefix: str | None = None) -> tuple[int, str]:
+    return call(port, "GET", (prefix or cs.Handler.prefixes[0]) + name, api=False)
 
 
-def title_of(page: str) -> bool:
-    return (proj / ".build" / "catalog" / "goals.html").read_text(encoding="utf-8").count(page) > 0
+def shows(port, text: str, name: str = "goals.html", prefix: str | None = None) -> bool:
+    st, body = page(port, name, prefix)
+    return st == 200 and text in body
 
 
 def adapter_title() -> str:
@@ -124,6 +126,20 @@ def adapter_title() -> str:
 
 def patch_title(port, title):
     return call(port, "PATCH", f"/api/v1/goals/{GOAL}", {"set": {"title": title}, "by": "person:t"})
+
+
+def health(port) -> dict:
+    return json.loads(call(port, "GET", "/api/health", api=False)[1])
+
+
+def wait_up(port: int) -> bool:
+    for _ in range(600):
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                return True
+        except OSError:
+            time.sleep(0.1)
+    return False
 
 
 try:
@@ -142,12 +158,11 @@ try:
         )
     r = r if r.returncode else evh("run", "--system", "one_v1", "--dataset", "tk_v1")
     r = r if r.returncode else evh("goal-new", GOAL, *(x for s in SETS for x in ("--set", s)))
-    r = r if r.returncode else evh("catalog")
     check(
-        "setup: a project with a goal, a run and its catalog", r.returncode == 0, (r.stdout + r.stderr)[-400:]
+        "setup: a project with a goal and a run, never built", r.returncode == 0, (r.stdout + r.stderr)[-400:]
     )
 
-    # ── a server in this process: the real handler, adapter and jobs ──────────────────────────────────────────────
+    # ── a server in this process: the real handler and adapter ─────────────────────────────────────────────────────
     lines: list[str] = []
     cs.say = lambda line, err=False: lines.append(line)
     cs.FRESH_EVERY_S = 0.0
@@ -155,7 +170,7 @@ try:
     build_dir = proj / ".build" / "catalog"
     cs.Handler.prefixes = cs.served(build_dir, cs.A.data_dir)
     cs.API_TOKEN[:] = [TOKEN]
-    cs.start_fresh(build_dir, None)
+    cs.start_fresh()
     server = ThreadingHTTPServer(
         ("127.0.0.1", 0), partial(cs.Handler, directory=str(cs.ROOT)), bind_and_activate=False
     )
@@ -163,17 +178,30 @@ try:
     server.server_activate()
     port = server.server_address[1]
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    page = f"http://127.0.0.1:{port}{cs.Handler.prefixes[0]}goals.html"
 
     st, body = call(port, "GET", "/api/health", api=False)
-    health = json.loads(body)
+    first = json.loads(body)
     check(
-        "health: ok, the catalog idle, when its pages were built; no rebuild at start (the pages are newer than the data)",
-        st == 200 and health["ok"] is True and health["catalog"]["state"] == "idle"
-        and health["catalog"]["built_at"] and not catalog_jobs() and not lines,
-        (st, body, catalog_jobs(), lines),
+        "health: ok, the catalog rendered on request, nothing prepared before a page is asked for",
+        st == 200 and first["ok"] is True and first["catalog"]["mode"] == "on request"
+        and first["catalog"]["state"] == "idle" and first["catalog"]["prepared"] == 0,
+        first,
     )  # fmt: skip
-    check("the adapter lists the goal as it is", adapter_title() == "Ticket summaries", adapter_title())
+    check(
+        "a project never built: its pages answer at once, from the data",
+        shows(port, "Ticket summaries") and shows(port, "one_v1", "arms.html") and not build_dir.exists(),
+        (page(port, "goals.html")[0], build_dir.exists()),
+    )
+    st, _b = page(port, "")
+    check(
+        "the catalog's own address answers its home page",
+        st == 200 and shows(port, "Ticket summaries", ""),
+        st,
+    )
+    st, css = page(port, "assets/catalog.css")
+    check("an asset is served", st == 200 and len(css) > 100, st)
+    check("an address the data does not name is 404", page(port, "a/no-such-arm.html")[0] == 404)
+    prepared = health(port)["catalog"]["prepared"]
 
     # ── an edit over the API ───────────────────────────────────────────────────────────────────────────────────────
     st, body = patch_title(port, "Fresh one")
@@ -183,131 +211,166 @@ try:
         adapter_title() == "Fresh one",
         adapter_title(),
     )
-    status = cs.catalog_status()
     t0 = time.monotonic()
-    st_page, old_page = call(port, "GET", cs.Handler.prefixes[0] + "goals.html", api=False)
+    fresh_one = shows(port, "Fresh one")
     read_s = time.monotonic() - t0
-    still = cs.catalog_status()["state"] == "building"
     check(
-        "a catalog job is building the pages at once; a read of a page is answered from the old ones, never waits for it",
-        status["state"] == "building" and status["job"] and len(catalog_jobs()) == 1
-        and st_page == 200 and (not still or "Fresh one" not in old_page) and read_s < 5,
-        (status, st_page, read_s, still),
-    )  # fmt: skip
+        "the next request for the goals page shows the edit",
+        fresh_one and read_s < 30,
+        (page(port, "goals.html")[1][:200], read_s),
+    )
     check(
-        "the log says a rebuild started, and for what",
-        any("rebuilding the pages" in x and "goal-set through the API" in x for x in lines),
+        "the log says the data changed, through what, and that the pages are rendered from it",
+        any("goal-set through the API" in x and "rendered" in x for x in lines),
         lines,
     )
-    check("the rebuild is a `catalog` job under the `catalog` lock", any(
-        ["catalog", True] in json.loads((proj / ".build" / "jobs" / j / "job.json").read_text())["locks"]
-        for j in catalog_jobs()
-    ))  # fmt: skip
 
-    # ── two more writes during it ───────────────────────────────────────────────────────────────────────────────────
+    # ── two more writes ─────────────────────────────────────────────────────────────────────────────────────────────
     st2, _b = patch_title(port, "Fresh two")
-    queued = cs.catalog_status()
     st3, _b = patch_title(port, "Fresh three")
-    still = cs.catalog_status()
     check(
-        "two writes during a rebuild: one more waits (never more than one)",
-        st2 == st3 == 200 and queued["state"] == "building" and queued["queued"] and still["state"] == "building",
-        (st2, st3, queued, still),
-    )  # fmt: skip
-    check("the adapter has the last write at once", adapter_title() == "Fresh three", adapter_title())
-    check("the rebuilds end", waiting(settled), cs.catalog_status())
-    jobs = catalog_jobs()
-    check("two writes during a rebuild cost one more build, not two: 2 builds in all", len(jobs) == 2, jobs)
-    check(
-        "the pages show the last write, built when the health says",
-        title_of("Fresh three")
-        and cs.catalog_status()["state"] == "idle"
-        and cs.catalog_status()["built_at"],
-        cs.catalog_status(),
-    )
-    check(
-        "the log says when the pages were built",
-        any("rebuilt" in x and "the pages are built" in x for x in lines),
-        lines,
+        "two more writes: the next read shows the last",
+        st2 == st3 == 200 and shows(port, "Fresh three") and not shows(port, "Fresh two"),
+        (st2, st3),
     )
 
-    # ── nothing changed, nothing rebuilt ────────────────────────────────────────────────────────────────────────────
+    # ── nothing changed, nothing prepared ──────────────────────────────────────────────────────────────────────────
+    before = health(port)["catalog"]["prepared"]
     for _ in range(5):
         call(port, "GET", "/api/health", api=False)
-        call(port, "GET", cs.Handler.prefixes[0] + "index.html", api=False)
-        time.sleep(0.15)
+        page(port, "index.html")
+        page(port, "goals.html")
+        time.sleep(0.05)
     check(
-        "reads that change nothing, and the rebuild's own effects, start no build",
-        len(catalog_jobs()) == 2 and settled(),
-        (catalog_jobs(), cs.catalog_status()),
+        "reads that change nothing render from the model they had: none prepared again",
+        health(port)["catalog"]["prepared"] == before and before > prepared,
+        (before, health(port)["catalog"]),
     )
 
-    # ── a rebuild that fails ────────────────────────────────────────────────────────────────────────────────────────
-    before = (build_dir / "goals.html").read_bytes()
-    index_before = (build_dir / "index.html").read_bytes()
-    built_before = cs.catalog_status()["built_at"]
-    # An adapter that breaks while the pages are being built (after the new ones have been started beside the old).
-    (proj / "breaking_adapter.py").write_text(
-        "from evaluation_harness.catalog_adapter import HarnessAdapter\n\n\n"
-        "class Adapter(HarnessAdapter):\n    def goals(self):\n        raise RuntimeError('the build breaks here')\n"
+    # ── many reads during writes ────────────────────────────────────────────────────────────────────────────────────
+    titles = [f"Burst {k}" for k in range(4)]
+    answers: list[tuple[int, str]] = []
+    stop = threading.Event()
+
+    def reader() -> None:
+        while not stop.is_set():
+            answers.append(page(port, "goals.html"))
+
+    readers = [threading.Thread(target=reader) for _ in range(6)]
+    for t in readers:
+        t.start()
+    for title in titles:
+        patch_title(port, title)
+        time.sleep(0.3)
+    stop.set()
+    for t in readers:
+        t.join(timeout=120)
+    named = [sum(t in body for t in ("Fresh three", *titles)) for _st, body in answers]
+    check(
+        f"{len(answers)} reads during four writes: each is a whole page naming one title of one state",
+        answers and all(st == 200 and body.rstrip().endswith("</html>") for st, body in answers)
+        and all(n == 1 for n in named),
+        ([st for st, _b in answers if st != 200][:3], [n for n in named if n != 1][:3]),
+    )  # fmt: skip
+    check("after them, the last write shows", shows(port, titles[-1]))
+    check("no `catalog` job ran", catalog_jobs() == [], catalog_jobs())
+
+    # ── a burst of reads after one write: one model, not one per reader ─────────────────────────────────────────────
+    time.sleep(2.5)  # the background rendering of the last change is done
+    patch_title(port, "Burst after")
+    before = health(port)["catalog"]["prepared"]
+    burst: list[tuple[int, str]] = []
+    pages = ["goals.html", "index.html", "arms.html", "datasets.html", cb.goal_page(GOAL), "metrics.html"] * 2
+    readers = [threading.Thread(target=lambda p=p: burst.append(page(port, p))) for p in pages]
+    for t in readers:
+        t.start()
+    for t in readers:
+        t.join(timeout=120)
+    made = health(port)["catalog"]["prepared"] - before
+    check(
+        f"{len(pages)} reads at once after one write: all answered from one new model ({made} prepared)",
+        made == 1 and len(burst) == len(pages) and all(st == 200 for st, _b in burst)
+        and shows(port, "Burst after"),
+        (made, [st for st, _b in burst]),
+    )  # fmt: skip
+
+    # ── the catalog's own folders: a page the data no longer has is gone ──────────────────────────────────────────
+    for rel in ("g/removed_goal.html", "a/old-arm.html", "d/gone_v1.html", "goals-old.html"):
+        (build_dir / rel).parent.mkdir(parents=True, exist_ok=True)
+        (build_dir / rel).write_text("<html>an old export</html>", encoding="utf-8")
+    gone = {rel: page(port, rel)[0] for rel in ("g/removed_goal.html", "a/old-arm.html", "d/gone_v1.html")}
+    check(
+        "a file an old export left under the catalog's own folders is not served: 404, the data has no such page",
+        set(gone.values()) == {404},
+        gone,
     )
-    cs.FRESH["adapter"] = "breaking_adapter.py:Adapter"
+    st, extra = page(port, "goals-old.html")
+    check(
+        "a page beside them that the catalog does not render (a project's own builder's) is still served",
+        st == 200 and "an old export" in extra,
+        st,
+    )
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}{cs.Handler.prefixes[0]}goals.html",
+        method="HEAD",
+        headers={"Host": f"127.0.0.1:{port}"},
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310 - the test's own server  # nosec B310
+        head = (r.status, int(r.headers["Content-Length"] or 0), r.read())
+    check(
+        "HEAD on a page: 200, its length, no body",
+        head[0] == 200 and head[1] > 1000 and head[2] == b"",
+        head[:2],
+    )
+    bare = cs.Handler.prefixes[0].rstrip("/")
+    st, body = call(port, "GET", bare, api=False)
+    check(
+        "the catalog's address without its slash opens its home page",
+        st == 200 and "<html" in body.lower(),
+        st,
+    )
+
+    # ── a render that fails ─────────────────────────────────────────────────────────────────────────────────────────
     del lines[:]
+    real_goals = cs.A.goals
+
+    def broken():
+        raise RuntimeError("the render breaks here")
+
+    cs.A.goals = broken  # type: ignore[method-assign]  # an adapter that breaks, for this check only
     patch_title(port, "Fresh four")
-    check("the failing rebuild ends", waiting(settled), cs.catalog_status())
-    status = cs.catalog_status()
+    st, body = page(port, "goals.html")
+    status = health(port)["catalog"]
     check(
-        "a failed rebuild leaves the pages that were there",
-        (build_dir / "goals.html").read_bytes() == before and (build_dir / "index.html").read_bytes() == index_before
-        and call(port, "GET", cs.Handler.prefixes[0] + "goals.html", api=False)[0] == 200,
+        "a render that fails answers 500, says why on health and in the log",
+        st == 500 and status["state"] == "failed" and "the render breaks here" in (status["failed"] or {}).get("why", "")
+        and any("the render breaks here" in x for x in lines),
+        (st, body[:200], status, lines),
     )  # fmt: skip
+    cs.A.goals = real_goals  # type: ignore[method-assign]
     check(
-        "and says so on health (failed, why, since which pages) and in the log",
-        status["state"] == "failed" and status["failed"] and "the build breaks here" in status["failed"]["why"] and status["built_at"] == built_before
-        and json.loads(call(port, "GET", "/api/health", api=False)[1])["catalog"]["state"] == "failed"
-        and any("FAILED" in x and "served as they were" in x for x in lines),
-        (status, lines),
-    )  # fmt: skip
-    check("the adapter still has the data", adapter_title() == "Fresh four", adapter_title())
-    cs.FRESH["adapter"] = None
-    patch_title(port, "Fresh five")
-    check("the next write rebuilds", waiting(settled), cs.catalog_status())
-    status = cs.catalog_status()
-    check(
-        "and the failure is cleared",
-        status["state"] == "idle" and status["failed"] is None and title_of("Fresh five"),
-        status,
+        "the next request after the fault is gone renders again, and the failure is cleared",
+        shows(port, "Fresh four") and health(port)["catalog"]["state"] == "idle",
+        health(port)["catalog"],
     )
 
     # ── a change by another process ─────────────────────────────────────────────────────────────────────────────────
-    n = len(catalog_jobs())
     check(
         "setup: the adapter has read the goal's title (it is kept)",
-        adapter_title() == "Fresh five",
+        adapter_title() == "Fresh four",
         adapter_title(),
     )
     r = evh("goal-set", GOAL, "--set", "title=Fresh six")
     check("setup: the command line changed the goal", r.returncode == 0, r.stderr[-300:])
-    check("no look yet: the server has not read since", adapter_title() == "Fresh five", adapter_title())
-    call(port, "GET", "/api/health", api=False)  # the next read
+    check("no look yet: the server has not read since", adapter_title() == "Fresh four", adapter_title())
     check(
-        "the next read notices it: the adapter has the new data and a rebuild is building the pages",
-        adapter_title() == "Fresh six" and cs.catalog_status()["state"] == "building" and len(catalog_jobs()) == n + 1,
-        (adapter_title(), cs.catalog_status(), len(catalog_jobs()), n),
-    )  # fmt: skip
-    check(
-        "the rebuild ends and the pages show it",
-        waiting(settled) and title_of("Fresh six"),
-        cs.catalog_status(),
+        "the next read notices it, and the page shows it",
+        shows(port, "Fresh six") and adapter_title() == "Fresh six",
+        adapter_title(),
     )
-    check(
-        "the log names it as a change it noticed",
-        any("the data changed" in x and "rebuilding" in x for x in lines),
-        lines,
-    )
+    check("the log names it as a change it noticed", any("the data changed" in x for x in lines), lines)
 
     # ── a job that writes ───────────────────────────────────────────────────────────────────────────────────────────
-    n = len(catalog_jobs())
     check(
         "setup: the server does not know the second arm yet",
         not any(a.endswith("/two_v1") for a in cs.A.arms()),
@@ -320,22 +383,12 @@ try:
     check("the API starts the run job", st == 202, (st, body[:300]))
     job_id = json.loads(body).get("id") if st == 202 else None
     check(
-        "the job ends, and the pages are rebuilt after it",
-        waiting(lambda: job_id and json.loads((proj / ".build" / "jobs" / job_id / "state.json").read_text()).get("state") == "succeeded")
-        and waiting(lambda: len(catalog_jobs()) > n and settled()),
-        (job_id, catalog_jobs(), cs.catalog_status()),
+        "the job ends, and the arms page lists the new arm",
+        waiting(lambda: job_id and json.loads((proj / ".build" / "jobs" / job_id / "state.json").read_text(encoding="utf-8")).get("state") == "succeeded")
+        and waiting(lambda: shows(port, "two_v1", "arms.html")),
+        job_id,
     )  # fmt: skip
-    check(
-        "the adapter knows the new arm, and the arms page lists it",
-        any(a.endswith("/two_v1") for a in cs.A.arms())
-        and "two_v1" in (build_dir / "arms.html").read_text(encoding="utf-8"),
-        cs.A.arms(),
-    )  # fmt: skip
-    check(
-        "the run cost the pages at most the builds it needed, never one per file it wrote",
-        len(catalog_jobs()) <= n + 3,
-        (len(catalog_jobs()), n),
-    )
+    check("still no `catalog` job", catalog_jobs() == [], catalog_jobs())
 
     server.shutdown()
     server.server_close()
@@ -344,76 +397,62 @@ try:
     # ── a real process ──────────────────────────────────────────────────────────────────────────────────────────────
     log_file = proj / "serve.log"
     port2 = free_port()
-    with open(log_file, "w") as logf:
+    with open(log_file, "w", encoding="utf-8") as logf:
         srv = subprocess.Popen(
-            [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port2)],
-            cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+            [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port2), "--brand", "Fresh brand"],
+            cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
         )  # fmt: skip
         try:
-            up = False
-            for _ in range(600):
-                try:
-                    with socket.create_connection(("127.0.0.1", port2), timeout=0.2):
-                        up = True
-                        break
-                except OSError:
-                    time.sleep(0.1)
-            check("setup: catalog-serve started", bool(up), log_file.read_text()[-500:])
-            started = log_file.read_text()
+            check("setup: catalog-serve started", wait_up(port2), log_file.read_text(encoding="utf-8")[-500:])
+            started = log_file.read_text(encoding="utf-8")
+            prefix = re.search(r"catalog: http://127\.0\.0\.1:\d+(\S*)", started)
+            pre = prefix.group(1) if prefix else "/"
             check(
-                "the start-up lines no longer tell a person to restart it",
-                "restart it" not in started and "rebuilt when the data changes" in started,
+                "the start-up lines say the pages are rendered when asked for, never to restart it",
+                "restart it" not in started and "rendered when it is asked for" in started,
                 started,
             )
-            health = json.loads(call(port2, "GET", "/api/health", api=False)[1])
             check(
-                "a real server: health has the catalog's state",
-                health["catalog"]["state"] == "idle" and health["catalog"]["built_at"],
-                health,
+                "a real server: health has the catalog's mode",
+                health(port2)["catalog"]["mode"] == "on request",
             )
-            n = len(catalog_jobs())
+            check(
+                "catalog-serve takes evh catalog's page options: --brand is on its pages",
+                shows(port2, "Fresh brand", "index.html", prefix=pre),
+                page(port2, "index.html", pre)[1][:300],
+            )
             r = evh("goal-set", GOAL, "--set", "title=Fresh seven")
-            time.sleep(0.6)  # past the look interval
-            state = json.loads(call(port2, "GET", "/api/health", api=False)[1])["catalog"]
+            # past the look interval (FRESH_EVERY_S): a read sooner is answered from the last look
+            time.sleep(0.6)
             check(
-                "a change by the command line: the next read starts a rebuild",
-                r.returncode == 0 and state["state"] == "building" and len(catalog_jobs()) == n + 1,
-                (r.stderr, state, catalog_jobs()),
+                "a change by the command line is on the next page",
+                r.returncode == 0 and shows(port2, "Fresh seven", prefix=pre),
+                (r.stderr, log_file.read_text(encoding="utf-8")[-400:]),
             )
             check(
-                "it ends, the pages show the change, and the log says so",
-                waiting(lambda: json.loads(call(port2, "GET", "/api/health", api=False)[1])["catalog"]["state"] == "idle")
-                and title_of("Fresh seven") and "rebuilt (job" in log_file.read_text(),
-                log_file.read_text()[-600:],
-            )  # fmt: skip
+                "and the log says the data changed",
+                "the data changed" in log_file.read_text(encoding="utf-8"),
+            )
         finally:
             srv.terminate()
             srv.wait(timeout=30)
 
     # ── data that changed while no server ran ─────────────────────────────────────────────────────────────────────
     r = evh("goal-set", GOAL, "--set", "title=Fresh eight")
-    n = len(catalog_jobs())
     port4 = free_port()
     log4 = proj / "serve4.log"
-    with open(log4, "w") as logf:
+    with open(log4, "w", encoding="utf-8") as logf:
         srv = subprocess.Popen(
             [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port4)],
-            cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+            cwd=proj, env=env, stdout=logf, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
         )  # fmt: skip
         try:
-            for _ in range(600):
-                try:
-                    with socket.create_connection(("127.0.0.1", port4), timeout=0.2):
-                        break
-                except OSError:
-                    time.sleep(0.1)
+            wait_up(port4)
             check(
-                "a server started on pages older than the data rebuilds them at once, and says why",
-                r.returncode == 0 and len(catalog_jobs()) == n + 1 and "the data is newer than the pages" in log4.read_text()
-                and waiting(lambda: json.loads(call(port4, "GET", "/api/health", api=False)[1])["catalog"]["state"] == "idle")
-                and title_of("Fresh eight"),
-                (r.stderr, log4.read_text()[-400:]),
-            )  # fmt: skip
+                "a server started after the data changed shows it on its first page, with no rebuild",
+                r.returncode == 0 and shows(port4, "Fresh eight", prefix=pre) and catalog_jobs() == [],
+                (r.stderr, log4.read_text(encoding="utf-8")[-400:]),
+            )
         finally:
             srv.terminate()
             srv.wait(timeout=30)
@@ -424,15 +463,10 @@ try:
         cwd=proj, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
     )  # fmt: skip
     try:
-        for _ in range(600):
-            try:
-                with socket.create_connection(("127.0.0.1", port3), timeout=0.2):
-                    break
-            except OSError:
-                time.sleep(0.1)
+        wait_up(port3)
         st, body = call(port3, "GET", "/api/health", api=False, headers={"Host": "localhost"})
         check(
-            "a --public server answers health as it did: ok, no catalog, no rebuilds of its own",
+            "a --public server answers health as it did: ok, no catalog",
             st == 200 and json.loads(body) == {"ok": True},
             (st, body),
         )

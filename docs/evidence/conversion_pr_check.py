@@ -106,11 +106,13 @@ def main() -> int:
     print(f"torch {torch.__version__}  transformers {transformers.__version__}")
     for rel, rev, kind in ARMS:
         cfg_path = EX / rel
-        cfg = yaml.safe_load(cfg_path.read_text())
+        cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
         params = dict(cfg["params"])
         adapter = _adapter((cfg_path.parent / cfg["adapter"]).resolve())
         run = _recorded_run(cfg["config_id"])
-        items = json.loads((HARNESS / "data" / "datasets" / f"{cfg['dataset_id']}.json").read_text())["items"]
+        items = json.loads(
+            (HARNESS / "data" / "datasets" / f"{cfg['dataset_id']}.json").read_text(encoding="utf-8")
+        )["items"]
         if kind == "bart":
             items = items[: args.bart_items]
         mat = HARNESS / "data" / "materialized" / cfg["dataset_id"]
@@ -149,7 +151,7 @@ def main() -> int:
             + ("  (only after an fp32 cast)" if "fp32_cast" in rec else "")
         )
     dest = Path(__file__).with_suffix(".json")
-    dest.write_text(json.dumps(out, indent=2) + "\n")
+    dest.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {dest.relative_to(ROOT)}")
     return 0
 

@@ -95,11 +95,13 @@ def dies(fn, *args) -> str:
 
 try:
     r = subprocess.run([sys.executable, str(HARNESS / "scripts" / "cli.py"), "init", "--store", store_under_test()], cwd=proj, env=env,
-                       capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600)  # fmt: skip
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, encoding="utf-8")  # fmt: skip
     r = (
         r
         if r.returncode
-        else subprocess.run(["git", "-C", str(proj), "init", "-q"], capture_output=True, text=True)
+        else subprocess.run(
+            ["git", "-C", str(proj), "init", "-q"], capture_output=True, text=True, encoding="utf-8"
+        )
     )
     check("setup: a project", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     put("models/code1.yaml", CODE)
@@ -276,7 +278,7 @@ try:
         rows,
     )
     shown = subprocess.run([sys.executable, str(HARNESS / "scripts" / "cli.py"), "periods", "code1", "--json"],
-                           cwd=proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600)  # fmt: skip
+                           cwd=proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=600, encoding="utf-8")  # fmt: skip
     periods = json.loads(shown.stdout)["result"]["values"]["periods"] if shown.returncode == 0 else []
     check(
         "`evh periods` reads each version's faithfulness from the records too",

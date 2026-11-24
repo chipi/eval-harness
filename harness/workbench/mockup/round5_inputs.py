@@ -43,7 +43,7 @@ def project(name: str) -> tuple[Path, dict]:
     p = OUT / "projects" / name
     shutil.rmtree(p, ignore_errors=True)
     (p / "data" / "configs").mkdir(parents=True)
-    (p / "config.yaml").write_text("store: files\n")
+    (p / "config.yaml").write_text("store: files\n", encoding="utf-8")
     env = dict(os.environ, EVAL_HOME=str(p), EVH_ACTOR="person:owner", EVAL_BUILD_REF="workbench-round5")
     env["PYTHONPATH"] = str(H) + os.pathsep + env.get("PYTHONPATH", "")
     for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVAL_STORE"):
@@ -54,7 +54,7 @@ def project(name: str) -> tuple[Path, dict]:
 
 def evh(p: Path, env: dict, *args: str, ok: tuple = (0,)) -> subprocess.CompletedProcess:
     r = subprocess.run([sys.executable, str(CLI), *args], cwd=p, env=env, capture_output=True, text=True,
-                       stdin=subprocess.DEVNULL)  # fmt: skip
+                       stdin=subprocess.DEVNULL, encoding="utf-8")  # fmt: skip
     if r.returncode not in ok:
         raise SystemExit(
             f"evh {' '.join(args)} exited {r.returncode}:\n{r.stdout[-800:]}\n{r.stderr[-1500:]}"
@@ -65,7 +65,7 @@ def evh(p: Path, env: dict, *args: str, ok: tuple = (0,)) -> subprocess.Complete
 def save(name: str, r: subprocess.CompletedProcess) -> dict:
     """A command's --json envelope, saved as build/round5/<name>.json; its result returned."""
     doc = json.loads(r.stdout)
-    (OUT / f"{name}.json").write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n")
+    (OUT / f"{name}.json").write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     return doc.get("result") or {}
 
 
@@ -77,7 +77,8 @@ def commit(p: Path, msg: str) -> None:
 
 def config(p: Path, cid: str, ds: str, sentences: int, extra: str = "") -> None:
     (p / "data" / "configs" / f"{cid}.yaml").write_text(
-        f"config_id: {cid}\ndataset_id: {ds}\ngoal: g\nparams:\n  provider: echo\n  sentences: {sentences}\n{extra}"
+        f"config_id: {cid}\ndataset_id: {ds}\ngoal: g\nparams:\n  provider: echo\n  sentences: {sentences}\n{extra}",
+        encoding="utf-8",
     )
 
 
@@ -102,8 +103,8 @@ def tickets() -> None:
                 f"Ticket{i} " + " ".join(WORDS[(i + j * 3 + w) % len(WORDS)] for w in range(5)) + "."
                 for j in range(4)
             ]
-            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n")
-            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n")
+            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n", encoding="utf-8")
+            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n", encoding="utf-8")
     for ds, side in (("tk_val", "val"), ("tk_test", "test")):
         evh(p, env, "dataset-create", "--dataset-id", ds, "--source-dir", f"src_{side}")
         evh(p, env, "dataset-materialize", "--dataset-id", ds)
@@ -114,7 +115,8 @@ def tickets() -> None:
     (p / "data" / "goals" / "g.yaml").write_text(
         "goal_id: g\ntitle: Ticket summaries\nstatement: A ticket's summary keeps what support needs\n"
         "decision: which summariser support uses\nsuccess_criteria: {primary: {measure: overlap_f1, direction: higher}}\n"
-        "datasets:\n  - {dataset_id: tk_val, role: validation}\n  - {dataset_id: tk_test, role: test}\n"
+        "datasets:\n  - {dataset_id: tk_val, role: validation}\n  - {dataset_id: tk_test, role: test}\n",
+        encoding="utf-8",
     )
     config(p, "one_v1", "tk_val", 1)
     evh(p, env, "run", "--config", "data/configs/one_v1.yaml")
@@ -122,7 +124,8 @@ def tickets() -> None:
     spec.write_text(
         "dataset: tk_val\nbaseline: {config: one_v1}\nmeasure: overlap_f1\nsampler: grid\n"
         "accept: {point: {min_gain: 0}}\nstop: {trials: 5}\n"
-        "space:\n  groups:\n    - {name: length, reason: how much of a ticket to keep, params: {sentences: [2, 3, 4]}}\n"
+        "space:\n  groups:\n    - {name: length, reason: how much of a ticket to keep, params: {sentences: [2, 3, 4]}}\n",
+        encoding="utf-8",
     )
     evh(p, env, "study-run", "g/s1", "--spec", str(spec))
     save("study", evh(p, env, "studies", "--study", "g/s1", "--json"))
@@ -152,12 +155,13 @@ def tickets() -> None:
     (p / "data" / "fields").mkdir(exist_ok=True)
     (p / "data" / "fields" / "t.yaml").write_text(
         "fieldset_id: t\nfields:\n  - name: opened\n    type: date\n    required: true\n"
-        "  - name: kind\n    type: choice\n    values: [bug, question, access]\n  - name: alert\n    type: text\n"
+        "  - name: kind\n    type: choice\n    values: [bug, question, access]\n  - name: alert\n    type: text\n",
+        encoding="utf-8",
     )
     names = sorted(x.stem for x in (p / "tutorial_tickets").glob("*.txt"))
     dates = ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-08", "2026-11-09", "2026-11-10"]
     (p / "f.csv").write_text("item_id,opened,kind,alert\n" + "".join(
-        f"{n},{d},{k},ALERT-{i}\n" for i, (n, d, k) in enumerate(zip(names, dates, kinds))))  # fmt: skip
+        f"{n},{d},{k},ALERT-{i}\n" for i, (n, d, k) in enumerate(zip(names, dates, kinds))), encoding="utf-8")  # fmt: skip
     evh(p, env, "dataset-create", "--dataset-id", "sup_v1", "--source-dir", "tutorial_tickets", "--fieldset", "t",
         "--fields", "f.csv")  # fmt: skip
     evh(p, env, "dataset-split", "sup_v1", "--split-by", "time", "--key", "opened", "--at", "2026-11-02T00:00:00Z",
@@ -170,9 +174,9 @@ def tickets() -> None:
     shutil.rmtree(pub, ignore_errors=True)
     pub.mkdir()
     subprocess.run(["git", "init", "-q"], cwd=pub, check=True)
-    (pub / "plan.md").write_text("we read ALERT-4 while fixing the gate\n")
+    (pub / "plan.md").write_text("we read ALERT-4 while fixing the gate\n", encoding="utf-8")
     commit(pub, "a plan that names a held-out alert")
-    (p / "config.yaml").write_text(f"exposure:\n  public_repos: [{pub}]\n  ids: [alert]\n")
+    (p / "config.yaml").write_text(f"exposure:\n  public_repos: [{pub}]\n  ids: [alert]\n", encoding="utf-8")
     save("exposure_check", evh(p, env, "exposure-check", "--dataset-id", "sup_v1_test", "--out", "leaks.tsv", "--json",
                                ok=(0, 6)))  # fmt: skip
     evh(p, env, "exposure-add", "--dataset-id", "sup_v1_test", "--from", "leaks.tsv")
@@ -183,7 +187,7 @@ def tickets() -> None:
     )
     for cid, n, hyp in (("sup_base_v1", 1, ""), ("sup_cand_v1", 2, hyp2)):
         (p / "data" / "configs" / f"{cid}.yaml").write_text(
-            f"config_id: {cid}\ndataset_id: sup_v1_test\nparams:\n  provider: echo\n  sentences: {n}\n{hyp}")  # fmt: skip
+            f"config_id: {cid}\ndataset_id: sup_v1_test\nparams:\n  provider: echo\n  sentences: {n}\n{hyp}", encoding="utf-8")  # fmt: skip
     commit(p, "the candidate and its hypothesis, before the held-out side is read")
     save("unseal", evh(p, env, "dataset-unseal", "sup_v1_test", "--config", "sup_cand_v1",
                        "--reason", "the two-sentence candidate, frozen before the side is read", "--json"))  # fmt: skip
@@ -244,9 +248,9 @@ def replay() -> None:
     cand_id = cand["result"]["values"]["runs"][0]["run_id"]
     (OUT / "replay_runs.json").write_text(json.dumps({
         "production": prod_id, "replay": hid_id, "candidate": cand_id,
-        "replay_metrics": json.loads((p / "data" / "runs" / hid_id / "metrics.json").read_text()),
-        "candidate_metrics": json.loads((p / "data" / "runs" / cand_id / "metrics.json").read_text()),
-    }, indent=1) + "\n")  # fmt: skip
+        "replay_metrics": json.loads((p / "data" / "runs" / hid_id / "metrics.json").read_text(encoding="utf-8")),
+        "candidate_metrics": json.loads((p / "data" / "runs" / cand_id / "metrics.json").read_text(encoding="utf-8")),
+    }, indent=1) + "\n", encoding="utf-8")  # fmt: skip
     save("periods", evh(p, env, "periods", "--model", "toy_filing", "--config", "data/configs/filing_replay_hidden_v1.yaml",
                         "--json"))  # fmt: skip
     for n in (1, 2, 3):
@@ -280,7 +284,7 @@ def outcomes() -> None:
          "closed_at": iso(t[4] + day)},
     ]  # fmt: skip
     for name, rows in (("decisions", decisions), ("issues", issues)):
-        (p / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        (p / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
         evh(
             p,
             env,
@@ -294,7 +298,8 @@ def outcomes() -> None:
         )
     (p / "rules.yaml").write_text(
         "- {when: {issue.state_reason: completed}, date: issue.closed_at, under: action, label: file}\n"
-        "- {when: {issue.count: 0}, min_age_days: 14, label: dismiss}\n"
+        "- {when: {issue.count: 0}, min_age_days: 14, label: dismiss}\n",
+        encoding="utf-8",
     )
     join = ["--outcomes", "issues", "--outcomes-as", "issue", "--join", "fp=fp", "--within", "-1m,+15m",
             "--identity", "first_seen=first_seen"]  # fmt: skip
@@ -303,8 +308,10 @@ def outcomes() -> None:
     save("label_set", evh(p, env, "label-from-capture", *base, "--set", "outcomes_1", *join, "--action-field", "action",
                           "--json"))  # fmt: skip
     save("label_mutants", evh(p, env, "label-mutants", *base, *join, "--json", ok=(0, 6)))
-    doc = json.loads((p / "data" / "labels" / "decisions_v1" / "outcomes_1" / "labels.json").read_text())
-    (OUT / "label_set_doc.json").write_text(json.dumps(doc, indent=1) + "\n")
+    doc = json.loads(
+        (p / "data" / "labels" / "decisions_v1" / "outcomes_1" / "labels.json").read_text(encoding="utf-8")
+    )
+    (OUT / "label_set_doc.json").write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

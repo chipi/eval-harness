@@ -16,8 +16,8 @@ hit it. This checks, in every fenced block and inline code span of the current d
     (not checked in the
     upgrade notes or the design records, which name variables as they were or as proposed).
 
-History is not checked: the research journal and the CHANGELOG describe commands as they
-were when written. Nor is a proposal: an ADR or RFC whose status is Proposed or Draft describes commands
+History is not checked: the research journal, the CHANGELOG and a release's full notes (docs/releases/, the
+CHANGELOG's long form since 0.8.1) describe commands as they were when written. Nor is a proposal: an ADR or RFC whose status is Proposed or Draft describes commands
 that do not exist yet; it is checked once accepted. Nor is a part of a shipped doc marked planned: a heading,
 list item (with what is indented under it), table row or paragraph that says "(0.6.0, planned" describes work
 still to be built, and is checked once the build takes the marker off. Exits 1 on any problem.
@@ -47,7 +47,7 @@ DOCS = [
     *sorted((REPO / "examples").glob("*/README.md")),
     HARNESS / "project_kit" / "AGENTS.md",
 ]
-SKIP = {HARNESS / "CHANGELOG.md"}
+SKIP = {HARNESS / "CHANGELOG.md", *(REPO / "docs" / "releases").glob("*.md")}
 FENCE = re.compile(r"^```(\w*)")
 PLANNED = re.compile(r"\(\d+\.\d+(?:\.\d+)?, planned\b")
 ITEM = re.compile(r"^(\s*)(?:[-*]|\d+\.)\s")
@@ -86,7 +86,9 @@ ROOT_MK = makefile(REPO / "Makefile")
 @cache
 def flags_of(script: Path) -> frozenset:
     """Extract all --flags from a script's --help output."""
-    r = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True, timeout=120)
+    r = subprocess.run(
+        [sys.executable, str(script), "--help"], capture_output=True, text=True, timeout=120, encoding="utf-8"
+    )
     return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
 
 
@@ -94,7 +96,11 @@ def evh_flags(name: str) -> frozenset:
     """Extract all --flags from `evh <name> --help`: a command made from an operation of the model (RFC-032) shares
     its script with the others, and only evh tells it which it is."""
     r = subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), name, "--help"], capture_output=True, text=True, timeout=120
+        [sys.executable, str(HERE / "cli.py"), name, "--help"],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        encoding="utf-8",
     )
     return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
 

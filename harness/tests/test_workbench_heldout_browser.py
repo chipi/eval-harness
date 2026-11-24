@@ -92,7 +92,7 @@ def serve() -> tuple[subprocess.Popen, int, list[str]]:
         port = s.getsockname()[1]
     p = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     lines: list[str] = []
     assert p.stdout is not None
@@ -129,7 +129,8 @@ try:
     shutil.copytree(KIT / "tickets", proj / "tickets")
     (proj / "data" / "fields" / "t.yaml").write_text(
         "fieldset_id: t\nfields:\n  - name: opened\n    type: date\n    required: true\n"
-        "  - name: kind\n    type: choice\n    values: [bug, question, access]\n  - name: alert\n    type: text\n"
+        "  - name: kind\n    type: choice\n    values: [bug, question, access]\n  - name: alert\n    type: text\n",
+        encoding="utf-8",
     )
     names = sorted(x.stem for x in (proj / "tickets").glob("*.txt"))
     dates = ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-08", "2026-11-09", "2026-11-10"]
@@ -138,7 +139,8 @@ try:
         "item_id,opened,kind,alert\n"
         + "".join(
             f"{n},{d},{k},ALERT-{i}\n" for i, (n, d, k) in enumerate(zip(names, dates, kinds, strict=True))
-        )
+        ),
+        encoding="utf-8",
     )
     for side, rng in (("val", range(12)), ("test", range(12, 24))):
         src, gold = proj / f"src_{side}", proj / f"gold_{side}"
@@ -149,8 +151,8 @@ try:
                 f"Ticket{i} " + " ".join(WORDS[(i + j * 3 + w) % len(WORDS)] for w in range(5)) + "."
                 for j in range(4)
             ]
-            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n")
-            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n")
+            (src / f"t{i:02d}.txt").write_text(" ".join(s) + "\n", encoding="utf-8")
+            (gold / f"t{i:02d}.txt").write_text(" ".join(s[:2]) + "\n", encoding="utf-8")
     for sid, n, hyp in (
         ("sup_base_v1", 1, ""),
         ("sup_cand_v1", 2, ("hypothesis:\n  against: sup_base_v1\n  measure: overlap_f1\n  direction: better\n"
@@ -158,7 +160,8 @@ try:
     ):  # fmt: skip
         (proj / "data" / "systems" / f"{sid}.yaml").write_text(
             f"system_id: {sid}\nparams:\n  provider: echo\n  sentences: {n}\n{hyp}"
-            + (f"prompts:\n  g/prompt: {{version: {base_ver}}}\n" if sid == "sup_base_v1" else "")
+            + (f"prompts:\n  g/prompt: {{version: {base_ver}}}\n" if sid == "sup_base_v1" else ""),
+            encoding="utf-8",
         )
     steps = [
         ("dataset-create", "--dataset-id", "sup_v1", "--source-dir", "tickets", "--fieldset", "t", "--fields", "f.csv"),
@@ -179,7 +182,9 @@ try:
     for step in steps:
         r = r if r.returncode else evh(*step)
     (proj / "config.yaml").write_text(
-        (proj / "config.yaml").read_text() + f"exposure:\n  public_repos: [{pub}]\n  ids: [alert]\n"
+        (proj / "config.yaml").read_text(encoding="utf-8")
+        + f"exposure:\n  public_repos: [{pub}]\n  ids: [alert]\n",
+        encoding="utf-8",
     )
     git(proj, "init", "-q")
     git(proj, "add", "-A")
@@ -191,7 +196,7 @@ try:
         "the project, its candidate and its hypothesis, before any item is held out",
     )
     git(pub, "init", "-q")
-    (pub / "plan.md").write_text("we read ALERT-4 while fixing the gate\n")
+    (pub / "plan.md").write_text("we read ALERT-4 while fixing the gate\n", encoding="utf-8")
     git(pub, "add", "-A")
     git(pub, "commit", "-q", "-m", "a plan that names a held-out alert")
     check(
@@ -253,8 +258,10 @@ try:
             page.wait_for_selector(
                 "#sp-out:has-text('Both sides joined the goal'), #sp-out [role=alert]", timeout=60000
             )
-            goal = yaml.safe_load((proj / "data" / "goals" / "g.yaml").read_text())
-            test_doc = json.loads((proj / "data" / "datasets" / "sup_v1_test.json").read_text())
+            goal = yaml.safe_load((proj / "data" / "goals" / "g.yaml").read_text(encoding="utf-8"))
+            test_doc = json.loads(
+                (proj / "data" / "datasets" / "sup_v1_test.json").read_text(encoding="utf-8")
+            )
             check(
                 "Hold some items out: dataset-split by time, sealed, its counts fixed; both sides join the goal with their roles",
                 {(d["dataset_id"], d["role"]) for d in goal["datasets"]}
@@ -323,9 +330,9 @@ try:
                     e.get("field")
                     for e in (
                         (
-                            json.loads((proj / "data" / "datasets" / "sup_v1_test.json").read_text()).get(
-                                "sealed"
-                            )
+                            json.loads(
+                                (proj / "data" / "datasets" / "sup_v1_test.json").read_text(encoding="utf-8")
+                            ).get("sealed")
                             or {}
                         ).get("count_by_added")
                         or []
@@ -453,11 +460,17 @@ try:
                 and "evh dataset-split --dataset-id uns_v1" in (page.locator("main").text_content() or ""),
                 (r.stderr[-300:], seal_text[:600]),
             )
-            n_before = len(json.loads((proj / "data" / "datasets" / "uns_v1_test.json").read_text())["items"])
+            n_before = len(
+                json.loads((proj / "data" / "datasets" / "uns_v1_test.json").read_text(encoding="utf-8"))[
+                    "items"
+                ]
+            )
             page.fill("#ho-by", "tester")
             page.click("#ho-seal")
             page.wait_for_selector("#ho-seal-out:has-text('Done.'), #ho-seal-out [role=alert]", timeout=60000)
-            sealed_doc = json.loads((proj / "data" / "datasets" / "uns_v1_test.json").read_text())
+            sealed_doc = json.loads(
+                (proj / "data" / "datasets" / "uns_v1_test.json").read_text(encoding="utf-8")
+            )
             check(
                 "Seal it: dataset-split again with the recorded rule and --seal, the same items, the test side sealed",
                 bool(sealed_doc.get("sealed"))
@@ -640,7 +653,7 @@ try:
             tsv = proj / "results.tsv"
             tsv.write_text(
                 "commit\tval_bpb\tmemory_gb\tstatus\tdescription\n"
-                "a1b2c3d\t0.997\t44.0\tkeep\tbaseline\nb2c3d4e\t0.993\t44.2\tkeep\tbigger lr\nc3d4e5f\t1.005\t44.0\tdiscard\tswiglu\n"
+                "a1b2c3d\t0.997\t44.0\tkeep\tbaseline\nb2c3d4e\t0.993\t44.2\tkeep\tbigger lr\nc3d4e5f\t1.005\t44.0\tdiscard\tswiglu\n", encoding="utf-8"
             )  # fmt: skip
             page.goto(f"{base}#study/g")
             page.wait_for_selector("#si-go", timeout=20000)
@@ -664,7 +677,7 @@ try:
             page.reload()
             page.wait_for_selector("main h2", timeout=20000)
             page.wait_for_function("() => !document.body.innerText.includes('Reading')", timeout=30000)
-            r1 = yaml.safe_load((proj / "data" / "rounds" / "g" / "r1.yaml").read_text())
+            r1 = yaml.safe_load((proj / "data" / "rounds" / "g" / "r1.yaml").read_text(encoding="utf-8"))
             check(
                 "a round a study opened says so on its tab (opened by study s1, linked), not as if a person had opened it",
                 r1.get("study") == "s1"

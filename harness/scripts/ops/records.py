@@ -65,7 +65,7 @@ OPS = (
            "period": {"type": "integer", "description": "the code record's deployed period, by number (evh periods)"},
            "from": {"type": "string", "description": "the period's start (ISO, with an offset)"},
            "to": {"type": "string", "description": "its end (default: now)"},
-           "metric": {"type": "string", "description": "the measure (default: the replay run's primary metric)"},
+           "metric": {"type": "string", "description": "the measure (default: the metric that decides on the dataset: its goal's measure, else the replay run's primary metric)"},
        }, required=("dataset", "candidate")),
     Op("faithfulness-show", "read", "a faithfulness record of a code record: its counts, every disagreement and who named which, and its coverage (RFC-030)",
        "GET", "/models/{model}/faithfulness", f"{_R}:faithfulness_show", f"{_R}:say_blocks", output=legacy.BLOCKS,
@@ -410,6 +410,10 @@ def say_baselines(r: dict[str, Any]) -> str:
         out.append(
             f"    run      {b.get('promoted_from')}, promoted {str(b.get('promoted_at') or '')[:10]} by {named}"
         )
+        if b.get("goal_reads"):
+            out.append(
+                f"    the goal reads {b['goal_reads']} as its baseline (the promoted arm, or its re-score)"
+            )
         out.append(f"    why      {b.get('reason', '(none recorded)')}")
         label = f"scores (mean of {b['repeats']} repeats)" if b.get("repeats") else "scores"
         out.append(
@@ -546,31 +550,44 @@ _RUN_COLUMNS = (
 def runs_list(label: str | None = None) -> dict[str, Any]:
     """The runs read under `label` (the plain runs by default), each with its build and its scores; the labels present."""
     from evaluation_harness._common import BOOKKEEPING_PREFIXES, data_rel  # noqa: PLC0415
-    from evaluation_harness._runs import runs_on  # noqa: PLC0415
+    from evaluation_harness._runs import left_out_of  # noqa: PLC0415
     from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
 
     label = label or ""
-    metrics = runs_on(label=label)
+    everything = [(sd, rec, model_runs.label(sd, rec)) for sd, rec in model_runs.scored(label_is=None)]
+    read_as = [(sd, rec) for sd, rec, lab in everything if lab == label]
+    metrics = model_runs.read_arms(read_as)[0]
+    left = left_out_of(read_as)
     return {
         "label": label,
-        "labels": [x for x in model_runs.labels() if x != label],
+        "labels": sorted({lab for _sd, _rec, lab in everything} - {label}, key=lambda x: (x != "", x)),
+        **({"left_out": left} if left else {}),
         "count": len(metrics),
         "runs": [
             {
                 "run_id": m["run_id"],
                 "system_id": m.get("system_id"),
                 "dataset_id": m["dataset_id"],
+                "arm": model_runs.arm_of(d, m),
                 "created_at": m.get("created_at"),
-                "build_ref": m["build"].get("ref"),
-                "dirty": bool(m["build"].get("dirty")),
+                "build_ref": (m.get("build") or {}).get("ref"),
+                "dirty": (m.get("build") or {}).get("dirty"),
                 "directory": data_rel(model_runs.run_of(d)),
                 "scores": {
                     k: v for k, v in sorted(m["scores"].items()) if not k.startswith(BOOKKEEPING_PREFIXES)
                 },
+                **_joined_note(d, m, model_runs),
             }
             for d, m in metrics
         ],
     }
+
+
+def _joined_note(d: Any, m: dict[str, Any], model_runs: Any) -> dict[str, Any]:
+    """`{"joined": {"of": run, "differs": [...]}}` for a repeat read in the arm of the run it repeats, when the harness
+    build it ran on differs from that run's: said where the arm's runs are listed, never a reason to read them apart."""
+    found = model_runs.joined(d, m)
+    return {"joined": {"of": found[0], "differs": found[1]}} if found and found[1] else {}
 
 
 def say_runs_list(r: dict[str, Any]) -> str:
@@ -584,12 +601,23 @@ def say_runs_list(r: dict[str, Any]) -> str:
     out = [f"{'run_id':44} {'dataset_id':18} {'build':14} scores"]
     for m in r["runs"]:
         scores = "  ".join(f"{k}={_num(v)}" for k, v in m["scores"].items())
-        dirty = "*" if m["dirty"] else " "
+        dirty = "?" if m["dirty"] is None else "*" if m["dirty"] else " "
         out.append(f"{m['run_id']:44} {m['dataset_id']:18} {(m['build_ref'] or '?')[:12]}{dirty} {scores}")
     if any(m["dirty"] for m in r["runs"]):
         out.append("\n  * = produced by a dirty tree; its build ref does not describe what ran")
+    if any(m["dirty"] is None for m in r["runs"]):
+        out.append(
+            ("" if any(m["dirty"] for m in r["runs"]) else "\n")
+            + "  ? = the tree was not checked (EVAL_BUILD_REF set, or an imported run); whether it was dirty is unknown"
+        )
     if r["labels"]:
         out.append(f"  also present under --label: {', '.join(repr(x) for x in r['labels'])}")
+    out.extend(
+        f"  {m['run_id']} is read in the arm of {m['joined']['of']}, and its {', '.join(m['joined']['differs'])} differs"
+        for m in r["runs"]
+        if m.get("joined")
+    )
+    out.extend(f"  WARNING: {line}." for line in r.get("left_out") or [])
     return "\n".join(out)
 
 
@@ -800,12 +828,12 @@ def dataset_items(dataset: str, item: str | None = None) -> dict[str, Any]:
 
     with legacy.refusing():
         p = load_profile(dataset)
-    if _visibility.public_env() and _visibility.hidden(dataset):
+    if _visibility.public() and _visibility.hidden(dataset):
         if item:
             raise Problem(f"{dataset} is `text: hidden`: no item is shown here", "not-public")
         p = _visibility.public_profile(p)
     if (
-        _visibility.public_env()
+        _visibility.public()
     ):  # a profile written --with-text carries item text: a public server serves none (L2)
         p = {**p, "rows": [{k: v for k, v in r.items() if k != "text"} for r in p["rows"]]}
     if not item:

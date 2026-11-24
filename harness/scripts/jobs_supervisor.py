@@ -19,9 +19,11 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
+import contextlib
 import fcntl
 import json
 import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -67,6 +69,14 @@ def main(job_id: str) -> int:
     by = job.get("by")
     if by:  # who acted (RFC-027): a job has no terminal, so the actor comes from the call
         env["EVH_ACTOR"] = by if ":" in by else f"person:{by}"
+    # A stop ends the supervisor with SIGTERM while no group is recorded (a queued job's way). One that lands between
+    # the command's start and the write of its group would leave the command running under a `cancelled` job, its
+    # locks held: until the group is recorded the signal is only noted, and the command stopped then.
+    asked: list[bool] = []
+    signal.signal(signal.SIGTERM, lambda *_a: asked.append(True))
+    if asked or (d / "stop").exists():
+        _jobs._write_json(d / "state.json", {**state, "state": "cancelled", "ended_at": _common.now()})
+        return 0
     with open(d / "log", "ab") as log, open(d / "stdout", "wb") as out:
         p = subprocess.Popen(
             cmd,
@@ -82,6 +92,10 @@ def main(job_id: str) -> int:
             os.close(fd)
         state.update(state="running", pgid=p.pid, waiting_for=None, started_at=_common.now())
         _jobs._write_json(d / "state.json", state)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        if asked or (d / "stop").exists():
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(p.pid, signal.SIGTERM)
         code = p.wait()
     text = (d / "stdout").read_text(encoding="utf-8", errors="replace")
     if text.strip():
@@ -109,4 +123,7 @@ def main(job_id: str) -> int:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main(sys.argv[1]))

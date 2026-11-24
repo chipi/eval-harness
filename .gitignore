@@ -49,3 +49,6 @@ docs/papers/*.pdf
 
 # Package builds (python -m build); never committed
 /dist/
+
+# A dev server's pid file, written by an ad-hoc shell line (nothing in the repository writes it)
+/server.pid

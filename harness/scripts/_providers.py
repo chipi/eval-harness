@@ -240,6 +240,17 @@ def billed(usage: Any) -> float | None:
         return None
 
 
+#: The temperature a call is sent at when the system sets none.
+DEFAULT_TEMPERATURE = 0.0
+
+
+def temperature(params: dict[str, Any]) -> float:
+    """The temperature a call is sent at: the system's, else the default (RFC-041 F3: an unset one is this default, read
+    here, not a 0 each reader assumes)."""
+    t = params.get("temperature")
+    return DEFAULT_TEMPERATURE if t is None else float(t)
+
+
 def price(params: dict[str, Any], tin: int | None, tout: int | None) -> float | None:
     """Cost from the per-million-token prices a system declares; None when anything is
     missing (unpriced, never free). The fallback for a call the provider did not bill."""
@@ -317,7 +328,7 @@ def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
             body["allowed_openai_params"] = asked
     resp = OpenAI(api_key=r.key, base_url=r.base_url, **_client_kw(params)).chat.completions.create(
         model=params["model"],
-        temperature=float(params.get("temperature", 0.0)),
+        temperature=temperature(params),
         max_tokens=int(params["max_tokens"]),
         messages=[{"role": "user", "content": prompt}],
         extra_body=body or None,
@@ -355,7 +366,7 @@ def _anthropic(prompt: str, params: dict[str, Any], r: Route) -> Completion:
         messages=[{"role": "user", "content": prompt}],
         # The SDK dropped the `temperature` keyword in 1.x; the body carries it, so the request
         # is the same one every SDK version sends.
-        extra_body={"temperature": float(params.get("temperature", 0.0))},
+        extra_body={"temperature": temperature(params)},
     )
     usage = getattr(msg, "usage", None)
     tin, tout = getattr(usage, "input_tokens", None), getattr(usage, "output_tokens", None)

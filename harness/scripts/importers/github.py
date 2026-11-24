@@ -77,7 +77,7 @@ class Importer:
                 argv += [arg for item in v for arg in ("-f", f"{k}[]={item}")]
             else:
                 argv += ["-f", f"{k}={v}"]
-        r = subprocess.run(argv, capture_output=True, text=True, timeout=120)
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=120, encoding="utf-8")
         if r.returncode != 0:
             raise RuntimeError(f"gh api graphql failed: {r.stderr.strip()[:300]}")
         d = json.loads(r.stdout)

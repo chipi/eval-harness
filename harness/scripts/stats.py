@@ -36,10 +36,14 @@ import random
 import statistics
 import subprocess
 import sys
+import threading
 from collections import OrderedDict
 from collections.abc import Callable
 from itertools import chain, compress
 from typing import Any
+
+from evaluation_harness._number import counted as _counted
+from evaluation_harness._number import is_number, is_scored
 
 PERMUTATIONS = 20000
 SEED = 20260926
@@ -104,8 +108,17 @@ def _signed_sums(xs: list) -> list:
     return sums
 
 
+def counted(xs: list) -> list:
+    """The values as the tests count them (`_number.counted`): a number as it is, a NaN, an infinity or a None as 0, the
+    score of a failed item; a boolean or text is no score and is left out, as `_runs.score_of` leaves it. A run recorded
+    before a score that is not a number became a failed item (RFC-041 F7) can still hold one, and the tests read it as
+    `evh run` records it now, instead of answering a p above 1 or NaN."""
+    return [_counted(x) for x in xs if is_scored(x)]
+
+
 def exact_p(deltas: list) -> float:
     """Exact two-sided sign-flip p: the share of all 2^n sign patterns with |sum| >= |observed|."""
+    deltas = counted(deltas)
     n = len(deltas)
     if n == 0:
         return 1.0
@@ -142,6 +155,7 @@ def sign_flip_p(
     advance: with rng, from LARGE_SAMPLE items, move the stream on as if the signs were drawn (about 2 s at
     10,000 items); a caller with no resampled opponent after this one passes False.
     """
+    deltas = counted(deltas)
     if not deltas:
         return 1.0
     if len(deltas) <= EXACT_UP_TO:
@@ -162,27 +176,23 @@ def sign_flip_p(
         # exact), and fsum is exactly rounded whatever order it reads the values in: the same
         # p, bit for bit, many times faster.
         key = (tuple(deltas), permutations, seed)
-        if key in _P:
-            _P.move_to_end(key)
-            return _P[key]
+        if (hit := _cached(_P, key)) is not _MISS:
+            return hit
         stored = _stored_p(key)
-        if stored is None and _COLLECT:
+        if stored is None and _collecting():
 
             def hold(v: float, key: tuple = key) -> None:
                 _store_p(key, v)
-                _P[key] = v
+                _cache(_P, key, v, _P_MAX)
 
             job = {"kind": "sf", "d": [float(d).hex() for d in deltas], "n": permutations, "s": seed}
-            _COLLECT[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
+            _collecting()[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
             return 1.0  # a stand-in: prefetch() throws away what it collects with
         if stored is None:
             hits = _count_hits(deltas, abs(obs), _signs(len(deltas), permutations, seed))
             stored = (hits + 1) / (permutations + 1)
             _store_p(key, stored)
-        _P[key] = stored
-        while len(_P) > _P_MAX:
-            _P.popitem(last=False)
-        return _P[key]
+        return _cache(_P, key, stored, _P_MAX)
     # The shared stream: the signs fmean(d if rng.random() < 0.5 else -d ...) drew, from _draw,
     # summed as above (fmean is fsum / n). The same p, and the same generator state after, so the
     # next opponent's draws are unchanged too.
@@ -358,6 +368,28 @@ def _as_state(state: Any) -> tuple:
 #: minutes. A dropped table is drawn again from the same seed, so a p never changes, only speed.
 _P: OrderedDict = OrderedDict()
 _P_MAX = 4096
+#: One lock for the in-process caches (_P, _KEPT, _SIGNS): the server reads p's on many threads, and a look-up's
+#: check-then-move raced another thread's eviction (a KeyError, test_stats_threads).
+_CACHES_LOCK = threading.Lock()
+_MISS = object()
+
+
+def _cached(cache: OrderedDict, key: Any) -> Any:
+    with _CACHES_LOCK:
+        v = cache.get(key, _MISS)
+        if v is not _MISS:
+            cache.move_to_end(key)
+        return v
+
+
+def _cache(cache: OrderedDict, key: Any, v: Any, most: int) -> Any:
+    with _CACHES_LOCK:
+        cache[key] = v
+        cache.move_to_end(key)
+        while len(cache) > most:
+            cache.popitem(last=False)
+    return v
+
 
 #: A file of estimated p's that outlives the process: `EVH_P_CACHE=<path>`, one JSON line per p,
 #: {"k": sha256 of the deltas (as float.hex), permutations and seed; "p": the p as float.hex}. Each
@@ -415,9 +447,8 @@ def kept(algo: str, data: str, compute: Callable[[], Any]) -> Any:
     k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
     # Kept in the process too, as the sign-flip p's are (_P): a catalog build decides each goal twice (the glance
     # and its page), and without EVH_P_CACHE every bootstrap-t was drawn again, 9,999 resamples each time.
-    if k in _KEPT:
-        _KEPT.move_to_end(k)
-        return copy.deepcopy(_KEPT[k])
+    if (hit := _cached(_KEPT, k)) is not _MISS:
+        return copy.deepcopy(hit)
     if os.environ.get("EVH_P_CACHE") and (v := _disk().get(k)) is not None:
         _remember(k, v)
         return copy.deepcopy(v)
@@ -431,9 +462,7 @@ _KEPT: OrderedDict = OrderedDict()
 
 
 def _remember(k: str, v: Any) -> None:
-    _KEPT[k] = copy.deepcopy(v)
-    while len(_KEPT) > _P_MAX:
-        _KEPT.popitem(last=False)
+    _cache(_KEPT, k, copy.deepcopy(v), _P_MAX)
 
 
 def _keep(k: str, v: Any) -> None:
@@ -479,20 +508,18 @@ def _signs(n: int, permutations: int, seed: int) -> list:
     order sign_flip_p draws them: one bytes per pass, 1 where a draw below 0.5 keeps the item's
     sign and 0 where it flips. Kept for the last _SIGNS_MAX (n, permutations, seed)."""
     key = (n, permutations, seed)
-    if key in _SIGNS:
-        _SIGNS.move_to_end(key)
-        return _SIGNS[key]
+    if (hit := _cached(_SIGNS, key)) is not _MISS:
+        return hit
     rng = random.Random(seed)
-    _SIGNS[key] = [_draw(rng, n) for _ in range(permutations)]
-    while len(_SIGNS) > _SIGNS_MAX:
-        _SIGNS.popitem(last=False)
-    return _SIGNS[key]
+    return _cache(_SIGNS, key, [_draw(rng, n) for _ in range(permutations)], _SIGNS_MAX)
 
 
-def fmt_p(p: float) -> str:
+def fmt_p(p: float | None) -> str:
     """A p-value as every command prints it: four decimals, and "<0.0001" for what would print
     as 0.0000 (a resampled p is never zero; one from the normal limit can be, ADR-0028). Every other value prints
-    exactly as it always has."""
+    exactly as it always has. None, a pair whose paired differences do not vary (the test has no p), prints "n/a"."""
+    if p is None:
+        return "n/a"
     s = f"{p:.4f}"
     return "<0.0001" if s == "0.0000" else s
 
@@ -521,6 +548,7 @@ def exact_p_one_sided(deltas: list) -> float:
     """Exact one-sided sign-flip p (RFC-029): the share of the 2^n sign patterns whose sum is at least the observed
     one, the deltas taken in the better direction (positive: the arm is better). Computed directly, not by halving
     the two-sided p, which differs from it when the observed sum is negative or the distribution has ties."""
+    deltas = counted(deltas)
     n = len(deltas)
     if n == 0:
         return 1.0
@@ -536,6 +564,7 @@ def exact_p_one_sided(deltas: list) -> float:
 def sign_flip_p_one_sided(deltas: list, permutations: int = PERMUTATIONS, seed: int = SEED) -> float:
     """One-sided paired sign-flip p, H1: the mean difference is above 0 (RFC-029's looks decide one-sided): exact up
     to EXACT_UP_TO items, a seeded estimate below LARGE_SAMPLE, the normal limit from LARGE_SAMPLE."""
+    deltas = counted(deltas)
     if not deltas:
         return 1.0
     if len(deltas) <= EXACT_UP_TO:
@@ -615,6 +644,8 @@ def cluster_ci(totals: list, sizes: list, alpha: float = ALPHA):
     the clusters' residuals, G/(G-1), G-1 degrees of freedom). With one item per cluster both are the
     item-level interval exactly. None below 2 clusters, or when no shift can be rejected (5 clusters
     and fewer, where the smallest attainable p is over alpha)."""
+    kept_ = [(_counted(t), m) for t, m in zip(totals, sizes, strict=True) if is_scored(t)]
+    totals, sizes = [t for t, _ in kept_], [m for _, m in kept_]
     g, n = len(totals), sum(sizes)
     if g < 2 or min_attainable_p(g) > alpha:
         return None
@@ -703,7 +734,7 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
         return 0.5 * math.erfc(t_obs / math.sqrt(2))
     data = _bootstrap_data(totals, sizes, margin)
     algo = f"bootstrap-t-1:{draws}"
-    if _COLLECT and not _known(algo, data):
+    if _collecting() and not _known(algo, data):
         k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
         job = {
             "kind": "bt",
@@ -717,7 +748,7 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
             _keep(k, v)
             _remember(k, v)
 
-        _COLLECT[-1].append((k, g * draws, job, keep))
+        _collecting()[-1].append((k, g * draws, job, keep))
         return 1.0  # a stand-in: prefetch() throws away what it collects with
     return kept(algo, data, lambda: _bootstrap_draw(totals, sizes, margin, draws))
 
@@ -752,8 +783,20 @@ def _bootstrap_draw(totals: list, sizes: list, margin: float, draws: int) -> flo
 
 
 #: While prefetch() runs its calls: one list of the tests they would draw that are not yet kept, each (its key, its
-#: work in units x draws, its job for a child, how to keep its p).
-_COLLECT: list[list] = []
+#: work in units x draws, its job for a child, how to keep its p). Each thread's own: catalog-serve renders pages and
+#: answers its API on several threads at once, and a p asked for on one thread while another collected was the
+#: collector's stand-in, 1.0 (tests/test_stats_threads.py).
+_COLLECT = threading.local()
+
+
+def _collecting() -> list[list]:
+    """This thread's prefetch() stack: empty outside one."""
+    got = getattr(_COLLECT, "stack", None)
+    if got is None:
+        got = _COLLECT.stack = []
+    return got
+
+
 #: Below this much resampling (units x draws, summed) the tests are drawn here, one after another: a child process
 #: costs about a second to start and import, a 1,000-item bootstrap-t about 2 s, a sign-flip about 0.6 s.
 PARALLEL_FROM = 20_000_000
@@ -806,16 +849,16 @@ def prefetch(calls: Callable[[], Any]) -> int:
     returns is thrown away (each p in it a stand-in). Nothing is drawn in parallel below PARALLEL_FROM, with one test,
     or when a child fails: those are drawn as before, when asked. Returns how many were drawn in parallel.
     PLAN_0.8.0 S2: a 50-arm catalog at 1,000 items drew 47 bootstrap-t's and 96 sign-flips one after another."""
-    if _COLLECT:  # inside another prefetch: its calls are collected there
+    if _collecting():  # inside another prefetch: its calls are collected there
         calls()
         return 0
-    _COLLECT.append([])
+    _collecting().append([])
     try:
         calls()
     except (Exception, SystemExit):  # noqa: BLE001 - a look ahead with stand-in p's never stops its caller:
         pass  # what it collected is drawn, and the real run that follows meets the same error, if it is one
     finally:
-        cases = list({c[0]: c for c in _COLLECT.pop()}.values())
+        cases = list({c[0]: c for c in _collecting().pop()}.values())
     if len(cases) < 2 or sum(c[1] for c in cases) < PARALLEL_FROM:
         return 0
     got = _in_children([c[2] for c in cases], [c[1] for c in cases])
@@ -1014,12 +1057,13 @@ def compare(
     groups: p and the interval then come from one sign per cluster (`clustered`), and each row says how
     many clusters it had. Returns {"items": [...], "rows": [...]} where each row has n (shared items),
     mean, baseline_mean, delta (arm - baseline), wins/losses/ties (by direction), p, ci, threshold,
-    verdict, and with clusters "clusters".
+    verdict, and with clusters "clusters". An item either arm scored with a value that is not a number (a run from before RFC-041 F7) counts as 0, as a failed
+    item does, and the row says how many (`non_finite`, `note`).
     """
     base = arms.get(baseline) or {}
     # The pairs' sign-flips drawn at once in child processes first, the same p's; only when one of them resamples
     # (with clusters a pair's units can be fewer than its items, so any pair above EXACT_UP_TO items counts).
-    if not _COLLECT and any(
+    if not _collecting() and any(
         (k := len(set(s) & set(base))) > EXACT_UP_TO and (clusters is not None or k < LARGE_SAMPLE)
         for a, s in arms.items()
         if a != baseline
@@ -1029,19 +1073,21 @@ def compare(
     for arm, scores in arms.items():
         if arm == baseline:
             continue
-        shared = sorted(set(scores) & set(base))
-        deltas = [scores[i] - base[i] for i in shared]
+        both = sorted(i for i in set(scores) & set(base) if is_scored(scores[i]) and is_scored(base[i]))
+        mine = {i: _counted(scores[i]) for i in both}
+        theirs = {i: _counted(base[i]) for i in both}
+        deltas = [mine[i] - theirs[i] for i in both]
         # The unit the test counts: an item, or with clusters a cluster's summed difference.
         if clusters is not None:
-            units, sizes = clustered(dict(zip(shared, deltas, strict=True)), clusters)
+            units, sizes = clustered(dict(zip(both, deltas, strict=True)), clusters)
         else:
             units, sizes = deltas, [1] * len(deltas)
         sign = 1 if higher_is_better else -1
         row = {
             "arm": arm,
-            "n": len(shared),
-            "mean": statistics.fmean(scores[i] for i in shared) if shared else None,
-            "baseline_mean": statistics.fmean(base[i] for i in shared) if shared else None,
+            "n": len(both),
+            "mean": statistics.fmean(mine.values()) if both else None,
+            "baseline_mean": statistics.fmean(theirs.values()) if both else None,
             "delta": statistics.fmean(deltas) if deltas else None,
             "wins": sum(1 for d in deltas if d * sign > 0),
             "losses": sum(1 for d in deltas if d * sign < 0),
@@ -1051,6 +1097,11 @@ def compare(
         }
         if clusters is not None:
             row["clusters"] = len(units)
+        if unnumbered := [i for i in both if not (is_number(scores[i]) and is_number(base[i]))]:
+            row["non_finite"] = len(unnumbered)
+            row["note"] = (
+                f"{len(unnumbered)} item(s) with a score that is not a number count as 0, as a failed item does"
+            )
         if len(units) >= 2 and any(deltas):
             row["p"] = sign_flip_p(units)
             pvals[arm] = row["p"]

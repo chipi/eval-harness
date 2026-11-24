@@ -95,6 +95,9 @@ services:
       # are not committed, and are not published.
       - --publish
       - outputs
+      # The Workbench, read-only, links to the catalog where this site serves it (RFC-039).
+      - --catalog-at
+      - /catalog/
       - --warm
       - /srv/evals/current/sites/evals.humancopilot.eu/public/catalog
       # This deployment's observability (infra/inspector/hooks.py): errors to GlitchTip, a span

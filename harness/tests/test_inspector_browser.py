@@ -43,6 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 HARNESS = HERE.parent
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel, shared with the deploy
+import _runstore  # noqa: E402
 import _slow  # noqa: E402
 import _wheel  # noqa: E402
 from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
@@ -69,12 +70,13 @@ def project(tmp: Path) -> tuple:
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
 
     evh("init", "--store", store_under_test(), "--tutorial")
-    shutil.copy(proj / "tutorial/fields/tickets.yaml", proj / "data/fields/")
+    _runstore.write_bytes(proj, "fields/tickets.yaml", (proj / "tutorial/fields/tickets.yaml").read_bytes())
     evh(
         "dataset-create",
         "--dataset-id",
@@ -88,7 +90,7 @@ def project(tmp: Path) -> tuple:
     )
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
     for f in (proj / "tutorial/systems").glob("tickets_*.yaml"):
-        shutil.copy(f, proj / "data/systems/")
+        _runstore.write_bytes(proj, f"systems/{f.name}", f.read_bytes())
     evh(
         "label-import",
         "--sheet",
@@ -116,7 +118,9 @@ def project(tmp: Path) -> tuple:
     for arm in ("lead1", "lead2", "author"):
         evh("run", "--system", f"tickets_{arm}_v1", "--dataset", "tickets_v1")
     # A goal with an open round: the goal page then carries its suggestions, each with a copy button.
-    shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
+    _runstore.write_bytes(
+        proj, "goals/tickets_summary.yaml", (proj / "tutorial/goals/tickets_summary.yaml").read_bytes()
+    )
     evh(
         "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
         "--hypothesis", "how many leading sentences summarise a ticket best",
@@ -128,7 +132,8 @@ def project(tmp: Path) -> tuple:
             json.dumps({"id": f"p{n}", "body": f"A new ticket {n}.", "created_at": f"2026-11-0{n}T09:00:00Z"})
             + "\n"
             for n in (1, 2)
-        )
+        ),
+        encoding="utf-8",
     )
     evh(
         "capture",
@@ -142,7 +147,9 @@ def project(tmp: Path) -> tuple:
     evh("dataset-from-capture", "--capture", "prod_c1", "--dataset-id", "prod_v1")
     evh("pick", "--dataset-id", "prod_v1", "--item", "p1", "--item", "p2", "--for", "tickets_v1")
     # A person's labels on two tickets: the sheet's wrong signal against them marks those two.
-    (proj / "sheet.csv").write_text("item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n")
+    (proj / "sheet.csv").write_text(
+        "item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n", encoding="utf-8"
+    )
     evh(
         "label-import",
         "--sheet",
@@ -191,6 +198,7 @@ def artifact_project(tmp: Path, env: dict) -> Path:
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
@@ -213,10 +221,12 @@ def artifact_project(tmp: Path, env: dict) -> Path:
         "reference-promote", "--dataset-id", "tickets_v1", "--labels", "owner_gold", "--tier", "gold",
         "--reason", "The kit's hand-written summaries decide.", "--by", "owner",
     )  # fmt: skip
-    (proj / "art.py").write_text(ARTIFACT_ADAPTER)
+    (proj / "art.py").write_text(ARTIFACT_ADAPTER, encoding="utf-8")
     for name, path in ARTIFACT_ARMS.items():
-        (proj / "data" / "systems" / f"tickets_{name}_v1.yaml").write_text(
-            f"system_id: tickets_{name}_v1\nadapter: art.py\nparams: {{artifact: {json.dumps(path)}, make: {json.dumps(path)}}}\n"
+        _runstore.write_text(
+            proj,
+            f"systems/tickets_{name}_v1.yaml",
+            f"system_id: tickets_{name}_v1\nadapter: art.py\nparams: {{artifact: {json.dumps(path)}, make: {json.dumps(path)}}}\n",
         )
         evh("run", "--system", f"tickets_{name}_v1", "--dataset", "tickets_v1")
     shutil.rmtree(proj / "artifacts" / "h1" / "none")  # not on this machine any more
@@ -238,10 +248,10 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
             start_new_session=True,
         )
     for _ in range(100):
-        if "catalog:" in log.read_text():
+        if "catalog:" in log.read_text(encoding="utf-8"):
             break
         if p.poll() is not None:
-            raise SystemExit(f"catalog-serve exited:\n{log.read_text()}")
+            raise SystemExit(f"catalog-serve exited:\n{log.read_text(encoding='utf-8')}")
         time.sleep(0.1)
     return p, f"http://127.0.0.1:{port}/.build/catalog/"
 
@@ -1400,7 +1410,7 @@ def main() -> int:
         art_server, art_base = serve(artifact_project(tmp, env), env, tmp / "serve-art.log")
         ov = subprocess.run(
             [sys.executable, "-m", "evaluation_harness", "overview-show", "--period", "14d"],
-            cwd=proj, env=env, capture_output=True, text=True,
+            cwd=proj, env=env, capture_output=True, text=True, encoding="utf-8",
         )  # fmt: skip
         drive(base, ov.stdout, art_base)
     finally:

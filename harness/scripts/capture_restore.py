@@ -172,7 +172,8 @@ def body(**inputs: Any) -> int:
         scrub = (doc.get("scrubbed") or {}).get("command")
         if scrub:
             argv = [a.replace("{records}", str(tmp)) for a in shlex.split(scrub)]
-            proc = subprocess.run(argv, capture_output=True, text=True)
+            # the scrubber is the project's own command, in any encoding: replaced, never a crash here
+            proc = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace")
             if proc.returncode != 0:
                 die(
                     f"the recorded scrubber exited {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}",

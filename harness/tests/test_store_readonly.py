@@ -118,7 +118,7 @@ try:
             "runs": st.runs(),
             "item_across": list(st.item_across([RUN], "i1")) == [],
             "fingerprint": len(_store.fingerprint(data)) == 3,
-            "open": _store.open_file(data / "goals" / "g.yaml").read(),
+            "open": _store.open_file(data / "goals" / "g.yaml", encoding="utf-8").read(),
         }
         want = {
             "read_text": "goal_id: g\n",
@@ -149,9 +149,9 @@ try:
         before = sha()
         reopen()
         stage = _store.staging(data / "adopted", "ro-")
-        (stage / "f.txt").write_text("x")
+        (stage / "f.txt").write_text("x", encoding="utf-8")
         disk_file = proj / "plain.txt"
-        disk_file.write_text("x")
+        disk_file.write_text("x", encoding="utf-8")
         st = sqlite_store()
 
         def opened(mode):

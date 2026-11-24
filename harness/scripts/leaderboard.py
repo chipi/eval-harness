@@ -25,6 +25,7 @@ import shutil
 import statistics
 import textwrap
 from collections.abc import Iterable
+from pathlib import Path
 
 from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
@@ -38,12 +39,15 @@ from evaluation_harness._common import (
 from evaluation_harness._record import derived_with
 from evaluation_harness._runs import (
     AMBIGUOUS_HOW,
-    direction,
-    is_repeat_set,
+    better_word,
+    deciding_metric,
     mixed_versions,
+    note_assumed,
     per_item,
+    ranks_direction,
     runs_on,
 )
+from evaluation_harness.model.runs import is_set
 from evaluation_harness.stats import kept
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
@@ -690,6 +694,18 @@ def _run(args: argparse.Namespace) -> int:
     A = scores_once(load_catalog_adapter(None))
     goal, keep = _goal_read(args, A)
     by_ds = goal_views.by_dataset(A, {ds})
+    # A goal that nobody asked for and whose measure no arm records (V14 warns: a prose name for the metric) is not a
+    # reason to refuse the dataset: it is read as when no goal names it, on each arm's own headline, and says so first.
+    seen = goal_views.unrecorded(goal, by_ds, ds) if goal else None
+    note = None
+    if goal and seen is not None and not args.goal and not args.round:
+        measure = goal["success_criteria"]["primary"]["measure"]
+        note = (
+            f"goal {goal['goal_id']} reads {measure!r} on {ds}, which no arm here records (the arms record "
+            f"{', '.join(seen)}); each arm is read on its own headline. `evh validate` warns about it (V14)."
+        )
+        print(f"  NOTE: {note}")
+        goal, seen = None, None
     # ONE TABLE PER REFERENCE. Runs scored against silver and against gold were averaged into
     # one row and one ranking (0.90 silver beside 0.24 gold, the table labelled silver): two
     # different measurements read as one. Each reference gets its own table and its own tests;
@@ -708,18 +724,25 @@ def _run(args: argparse.Namespace) -> int:
     if not groups:
         arms = (by_ds.get(ds) or {}).get("arms")
         measure = ((goal or {}).get("success_criteria") or {}).get("primary", {}).get("measure")
-        die(
-            (
+        if goal and arms and args.label is None and not args.match and keep is None:
+            die(
                 f"no arm on dataset {ds!r} records {measure}, which goal {goal['goal_id']} reads"
-                if goal and arms and args.label is None and not args.match and keep is None
-                else f"no runs on dataset {ds!r}"
-                + (f" matching {args.match!r}" if args.match else "")
-                + (f" read as {args.label!r}" if args.label else "")
-                + (f" in round {args.round}" if args.round else "")
-                + ".\n  "
-                + how("evh runs-list", "make runs-list")
-                + "   to see what exists"
-            ),
+                + (
+                    f"; the arms record {', '.join(seen)}.\n  Read the dataset without the goal: evh leaderboard {ds} "
+                    "(no --goal or --round); `evh validate` warns about the goal's measure (V14)"
+                    if seen is not None
+                    else ""
+                ),
+                "nothing-measured",
+            )
+        die(
+            f"no runs on dataset {ds!r}"
+            + (f" matching {args.match!r}" if args.match else "")
+            + (f" read as {args.label!r}" if args.label else "")
+            + (f" in round {args.round}" if args.round else "")
+            + ".\n  "
+            + how("evh runs-list", "make runs-list")
+            + "   to see what exists",
             "not-found",
         )
     rank = {"gold": 0, "silver": 1, "judge": 3}
@@ -743,7 +766,9 @@ def _run(args: argparse.Namespace) -> int:
                 **_table(args, A, groups[key], goal),
             }
         )
-    _jsonout.values({"dataset_id": ds, "goal": goal["goal_id"] if goal else None, "groups": out})
+    _jsonout.values(
+        {"dataset_id": ds, "goal": goal["goal_id"] if goal else None, "note": note, "groups": out}
+    )
     return 0
 
 
@@ -787,12 +812,12 @@ def _heading(ref: str | None) -> str:
     return f"scored against {ref or 'no reference'}"
 
 
-def _warn_ambiguous(by_config: dict[str, list[dict]]) -> None:
-    """Say loudly when the runs averaged into one row are not one `--repeat` set: two runs of an arm read against the
+def _warn_ambiguous(arm_runs: dict[str, list[tuple[Path, dict]]]) -> None:
+    """Say loudly when the runs averaged into one row are not one repeat set: two runs of an arm read against the
     same reference that nothing says apart (a run another reference scored is not in the row)."""
-    for name, runs in by_config.items():
-        ids = sorted(m["run_id"] for m in runs)
-        if len(ids) > 1 and not is_repeat_set(ids):
+    for name, runs in arm_runs.items():
+        ids = sorted(m["run_id"] for _d, m in runs)
+        if len(ids) > 1 and not is_set(runs):
             print(f"  WARNING: {len(ids)} runs claim system_id {name!r} — {', '.join(ids)}.")
             print(AMBIGUOUS_HOW)
 
@@ -807,7 +832,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
     dec = group.get("dec")
     goal_id = goal["goal_id"] if goal else ""
 
-    _warn_ambiguous(by_config)
+    _warn_ambiguous({n: rs for n, rs in arm_runs.items() if rs})
     if not by_config:
         die(
             f"no runs on dataset {args.dataset_id!r}"
@@ -832,17 +857,12 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
     kinds = classify_metrics(declared)
     quality = [k for k in all_keys if kinds.get(k, "quality") == "quality" and not k.startswith("total_")]
     descriptive = [k for k in all_keys if kinds.get(k) == "descriptive"]
-    # The adapter's declared headline facet wins over alphabetical order. Explicit
-    # --sort still overrides both.
-    primary = next(
-        (
-            r.get("primary_metric")
-            for runs in by_config.values()
-            for r in runs
-            if r.get("primary_metric") in all_keys
-        ),
-        None,
+    # The metric that decides on the dataset (its goal's measure, else the runs' primary metric: the one every command
+    # reads) wins over alphabetical order. Explicit --sort still overrides both.
+    decided = deciding_metric(
+        args.dataset_id, runs=found, goals={g["goal_id"]: g for g in A.goals()}, refuse=False
     )
+    primary = decided if decided in all_keys else None
     measure = group.get("measure") if goal else None  # what the goal reads the group on
     sort_key = (
         args.sort
@@ -850,14 +870,17 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         or primary
         or (quality[0] if quality else (descriptive[0] if descriptive else all_keys[0]))
     )
-    asc = direction(found, sort_key, args.asc, args.desc)
+    which = ranks_direction(found, sort_key, args.asc, args.desc)
+    asc = which == "lower"
+    if not (args.asc or args.desc):
+        note_assumed(sort_key, runs=found)
     # SAY SO when the headline metric was picked alphabetically. Runs written before
     # adapters declared PRIMARY_METRIC carry none, so this falls through to whichever
     # quality metric sorts first by name -- for one set of runs here that is `grounding`,
     # an extractiveness measure, silently promoted to the ranking metric.
     if not args.sort and not primary and measure not in all_keys:
         print(
-            f"  NOTE: no run declares a primary metric, so {sort_key!r} was chosen by\n"
+            f"  NOTE: no goal reads a measure a run records and no run declares a primary metric, so {sort_key!r} was chosen by\n"
             f"        sort order, not by meaning. Pass --sort explicitly, or re-run with\n"
             f"        an adapter that sets PRIMARY_METRIC."
         )
@@ -894,7 +917,10 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         for k in all_keys:
             vals = [r["scores"][k] for r in runs if k in r["scores"]]
             if vals:
-                row[k] = statistics.fmean(vals)
+                # the arm's value is its items' mean (`model.runs.pooled_mean`, as arm-show reads it); a measure no item
+                # row holds (a run-level one) is the mean of its runs'. The spread is of the runs, as it was.
+                pooled = (view[system_id].get("means") or {}).get(k)
+                row[k] = pooled[0] if pooled and pooled[0] is not None else statistics.fmean(vals)
                 row[f"__spread_{k}"] = max(vals) - min(vals)
         rows.append(row)
 
@@ -911,7 +937,8 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
             text_cols, split = tighter, True
     own = {n: view[n]["reference"] for n in by_config if view[n]["wrote"]}
     w = max(len(r["system_id"]) + (2 if r["system_id"] in own else 0) for r in rows) + 2
-    print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
+    better = better_word(which) if which == "neutral" else f"{which} is better"
+    print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({better})\n")
     if not _jsonout.table(
         ["system_id", "n_runs", "tier", *show],
         [[r["system_id"], r["n_runs"], r["tier"], *[r.get(k) for k in show]] for r in rows],
@@ -995,6 +1022,15 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         print(
             f"\n  NOTE: {cid} had a reference for {k} of {n} items: its quality columns are means over {k}."
         )
+    # A run that recorded a cost for only some of its items (`cost_coverage`, RFC-041 F3): its cost is of those.
+    priced = {
+        cid: (r["cost_coverage"]["items_with_cost"], r["cost_coverage"]["items"])
+        for cid, runs in by_config.items()
+        for r in runs
+        if r.get("cost_coverage")
+    }
+    for cid, (k, n) in sorted(priced.items()):
+        print(f"\n  NOTE: {cid} recorded a cost for {k} of {n} items: its cost columns are of those.")
     for system_id, ref in sorted(own.items()):
         print(
             f"\n  * {system_id} wrote the reference {ref}: it is graded against its own outputs,\n"
@@ -1047,7 +1083,7 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         )
     return {
         "sort_by": sort_key,
-        "direction": "lower" if asc else "higher",
+        "direction": which,
         "ranked_on_descriptive": ranking_on_descriptive,
         "metrics": show,
         "kinds": {k: kinds.get(k) for k in show},

@@ -144,6 +144,19 @@ def runs_of(rnd: dict[str, Any], label: str = "", data: Path | None = None) -> l
     ]
 
 
+def spend_of(rnd: dict[str, Any], data: Path | None = None) -> tuple[float | None, int]:
+    """What a round's runs spent, the one place it is summed (RFC-041 F3): (the sum over the runs that recorded a cost,
+    how many recorded none). The sum is None when runs were made and none recorded a cost: an unknown spend is not $0."""
+    costs = [(m.get("scores") or {}).get("total_cost_usd") for _, m in runs_of(rnd, data=data)]
+    known = [float(c) for c in costs if c is not None]
+    return (sum(known) if known or not costs else None), len(costs) - len(known)
+
+
+def no_cost_words(n: int) -> str:
+    """How many runs recorded no cost, for a line that shows a spend; "" when every run did."""
+    return f"{n} run{'s' if n != 1 else ''} recorded no cost" if n else ""
+
+
 def harness_now() -> dict[str, Any]:
     """The harness code a round is opened on: its version, the project's commit, and the hash of the code that
     can change a measurement (the same `instrument.harness` a run records)."""
@@ -188,7 +201,13 @@ def arms_of(rnd: dict[str, Any]) -> list[str]:
 
 
 def join(
-    goal: str, round_id: str, system: str, run_id: str, label: str = "", who: dict[str, Any] | None = None
+    goal: str,
+    round_id: str,
+    system: str,
+    run_id: str,
+    label: str = "",
+    who: dict[str, Any] | None = None,
+    joined: bool = False,
 ) -> dict[str, Any] | None:
     """A run made in the round joins its system's arm read under the label of the run's own score, or adds that arm
     (model.rounds.add_run); None when the round reads the system under a re-score the run is not yet. The round is
@@ -201,7 +220,7 @@ def join(
         rnd = find(goal, round_id)
         if rnd is None:
             return None
-        arm = model_rounds.add_run(rnd, system, run_id, who, label)
+        arm = model_rounds.add_run(rnd, system, run_id, who, label, joined)
         if arm is not None:
             save(rnd)
         return arm
@@ -334,7 +353,7 @@ def _arm_problems(rel: str, rnd: dict[str, Any], data: Path | None = None) -> li
             run = model_runs.run(str(rid), data)
             if run is None or run.get("system_id") != a["system"] or run.get("dataset_id") != ds:
                 out.append(f"rounds/{rel}: arm {arm}: {rid} is not a run of {a['system']} on {ds}")
-            elif not any(model_runs.label(sd) == lbl for sd in model_runs.scores_of(str(rid), data)):
+            elif not any(model_runs.read_under(sd, lbl) for sd in model_runs.scores_of(str(rid), data)):
                 out.append(f"rounds/{rel}: arm {arm}: {rid} is not scored under {lbl or 'the plain runs'!r}")
     return out
 

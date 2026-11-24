@@ -6,7 +6,7 @@ the sheet and its key are written in the job's folder; the sheet is served as th
     evh sheet-export --dataset-id D --runs A,B --csv sheet.csv [--fill label|pick|scores|tags]
 
 The sheet's rows are what `evh sheet-show D --runs A,B` shows (the same selection: --wrong-against, --new-vs, --disagree,
---split, --unlabelled, --where, --scores-only). Never over a file that exists. A blind fill (pick, scores) writes the key beside
+--split, --unlabelled, --judge-disagrees, --where, --scores-only). Never over a file that exists. A blind fill (pick, scores) writes the key beside
 the sheet (sheet.key.json): keep it there, not with the sheet.
 """
 
@@ -136,6 +136,7 @@ def body(**inputs: Any) -> int:
             ("split", args.split),
             ("new", args.new_vs),
             ("unlabelled", args.unlabelled),
+            ("judge", args.judge_disagrees),
         )
         if on
     ]

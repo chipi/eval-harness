@@ -323,7 +323,8 @@ Answered the same day (owner: "Love the reasoning and answers. I agree with all"
    views when it is built or deployed, as today: prod serves it read-only and its server refuses `/api/v1` with
    `--public`. The Workbench reads the views through the API. The inspector, which compares on request, stays served.
    Locally, a write that changes what the catalog shows starts a catalog rebuild job, so it is never stale (today the
-   server says "restart it").
+   server says "restart it"). *Amended by [RFC-040](RFC-040-catalog-rendered-on-request.md) (0.8.1): no job; each page
+   is rendered when it is asked for, from the data as it is then.*
 
 ## Decisions (owner, 2026-11-13)
 
@@ -460,7 +461,8 @@ Quoted from the discussion, typing slips corrected.
     coverage, picks, tags, judge spend, rounds, the run index); the comparison and a model's state live in the model;
   - the catalog never goes stale: a write through the API or an edit refreshes the server and starts a catalog
     rebuild job at once, any other write on the server's next read; a scorers page; API resources for the views
-    reached only by process (overview, arms, metrics, activity, inspect, a comparison, label coverage);
+    reached only by process (overview, arms, metrics, activity, inspect, a comparison, label coverage); *since
+    [RFC-040](RFC-040-catalog-rendered-on-request.md) (0.8.1) no rebuild job: a page is rendered when it is asked for;*
   - a run's `config_id` names its system (all 305): a format step renames it `system_id` in stored records, the
     fingerprint and judging sets kept (they are hashed);
   - dropped after the check: goal status and the goal page list different references by design (the goal's against

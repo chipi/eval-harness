@@ -71,7 +71,7 @@ def new_token() -> str:
     # truncate and then a write left a moment between).
     tmp = p.with_name(f".{p.name}.{os.getpid()}")
     fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as fh:
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
         fh.write(tok + "\n")
     os.chmod(tmp, 0o600)  # the server's, never project data: on disk, not through the store
     os.replace(tmp, p)
@@ -293,7 +293,7 @@ def resume_job(job_id: str) -> dict[str, Any]:
     # The cap is the job's, not each attempt's: the new job is given what this one left.
     env = dict(j.get("env") or {})
     if env.get("EVAL_MAX_COST_USD") is not None:
-        given, paid = float(env["EVAL_MAX_COST_USD"]), _jobs.spent(job_id)
+        given, paid = float(env["EVAL_MAX_COST_USD"]), _jobs.spent(job_id) or 0.0
         if given - paid <= 0:
             raise Refused(
                 f"{job_id} spent ${paid:.4f} of its ${given:.4f}: nothing is left to resume with "

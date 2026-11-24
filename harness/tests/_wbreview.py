@@ -8,9 +8,15 @@ once its project has rounds, jobs, a production capture, judges and a second goa
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
+from pathlib import Path
 from typing import Any, Callable
 
 import _wblayout as L
+
+HARNESS = Path(__file__).resolve().parents[1]
 
 # the words of a line, broken inside a word: (text, the two letters either side of the break)
 BROKEN = r"""
@@ -89,6 +95,13 @@ def run(
     page.set_viewport_size({"width": 1280, "height": 900})
 
     # ── jobs (#5, #6) ──────────────────────────────────────────────────────────────────────────────────────────
+    # A catalog job nobody asked for: the server's own rebuild, which a project's history keeps from before RFC-040 (a
+    # server renders its pages on request now and starts none), written as the server wrote it.
+    subprocess.run(  # nosec B603 - this interpreter and the harness's own module
+        [sys.executable, "-c", ("import sys; sys.path.insert(0, sys.argv[1]); from evaluation_harness import _jobs; "
+                                "_jobs.create('catalog', {}, None, [('catalog', True)])"), str(HARNESS)],
+        cwd=proj, env={**os.environ, "EVAL_HOME": str(proj)}, check=True, timeout=120,
+    )  # fmt: skip
     cat = (api(page, "/jobs?operation=catalog&limit=1").get("jobs") or [{}])[0]
     open_(page, f"jobs/{cat.get('id')}", "catalog")
     lead = page.locator("main .lead").inner_text()
@@ -160,10 +173,14 @@ def run(
     )
     L.settled(page)
     spent = page.locator("main tbody tr").first.locator("td").nth(6).inner_text().strip()
+    page.locator("main tbody tr").first.locator("a").first.click()
+    page.wait_for_selector("#jb-log", timeout=15000)
+    on_page = page.locator("main tr:has(th:text-is('spent')) td").inner_text().strip()
+    # A job that recorded nothing is unknown (—), one that spent is its dollars: the same on the list and on its page.
     check(
-        "review #6: the jobs list shows what a job spent the way its own page does ($0), not a dash",
-        spent.startswith("$"),
-        spent,
+        "review #6: the jobs list shows what a job spent the way its own page does",
+        on_page.startswith(spent) and (spent == "—" or spent.startswith("$")),
+        (spent, on_page),
     )
 
     # ── the eval: charts that contradict their evidence (#2), always resolve (#3) ──────────────────────────────

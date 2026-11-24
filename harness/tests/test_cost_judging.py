@@ -236,7 +236,7 @@ finally:
 
 # ── this repository's verdicts: the report's total is the sum of the files ──────────────────────────────────────────────
 files = sorted((HARNESS / "data" / "judge-verdicts").glob("*/*/*/*.json"))
-docs = [json.loads(f.read_text()) for f in files]
+docs = [json.loads(f.read_text(encoding="utf-8")) for f in files]
 want_billed = sum(float(d.get("cost_usd") or 0) for d in docs if d.get("cost_known", True))
 want_est = sum(float(d.get("cost_usd") or 0) for d in docs if not d.get("cost_known", True))
 repo = {"EVAL_STORE": "files"}  # this repository's data is files
