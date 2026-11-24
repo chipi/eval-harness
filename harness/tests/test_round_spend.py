@@ -172,6 +172,13 @@ try:
         "$0.0120 (on 40 of 65 items)" in report.stdout,
         report.stdout[-800:] + report.stderr[-300:],
     )
+    board = evh("leaderboard", "ds_v1")
+    check(
+        "leaderboard: an arm whose run recorded a cost for some items says its cost columns are of those (review, 2026-11-24)",
+        "NOTE: sys_d recorded a cost for 40 of 65 items: its cost columns are of those" in board.stdout
+        and "NOTE: sys_a recorded a cost" not in board.stdout,
+        board.stdout[-900:] + board.stderr[-300:],
+    )
     unpriced = [ln for ln in report.stdout.splitlines() if ln.strip().startswith("sys_b")]
     check(
         "cost-report: a run whose items recorded no cost shows its recorded cost as unknown, not $0.0000",

@@ -1022,6 +1022,15 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         print(
             f"\n  NOTE: {cid} had a reference for {k} of {n} items: its quality columns are means over {k}."
         )
+    # A run that recorded a cost for only some of its items (`cost_coverage`, RFC-041 F3): its cost is of those.
+    priced = {
+        cid: (r["cost_coverage"]["items_with_cost"], r["cost_coverage"]["items"])
+        for cid, runs in by_config.items()
+        for r in runs
+        if r.get("cost_coverage")
+    }
+    for cid, (k, n) in sorted(priced.items()):
+        print(f"\n  NOTE: {cid} recorded a cost for {k} of {n} items: its cost columns are of those.")
     for system_id, ref in sorted(own.items()):
         print(
             f"\n  * {system_id} wrote the reference {ref}: it is graded against its own outputs,\n"
