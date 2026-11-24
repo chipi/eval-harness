@@ -146,7 +146,7 @@ try:
             _serve.stop(proc)
 
     # ── across a change: a server in this process, readers during four edits ────────────────────────────────────────
-    cb._now = lambda: BUILT  # type: ignore[assignment]  # the server's model says the time the exports say
+    cb._now = lambda: BUILT  # the server's model says the time the exports say
     cs.say = lambda line, err=False: None
     cs.FRESH_EVERY_S = 0.0
     cs.set_adapter(load_catalog_adapter(None))
@@ -198,8 +198,8 @@ try:
     for t in readers:
         t.start()
     codes = []
-    for k in range(1, 5):
-        codes.append(patch_title(f"Served {k}"))
+    for edit in range(1, 5):
+        codes.append(patch_title(f"Served {edit}"))
         states.append(
             export()
         )  # the writes are one at a time: this is state k, whatever the readers meet meanwhile

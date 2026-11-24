@@ -134,7 +134,7 @@ try:
         shutil.rmtree(scratch, ignore_errors=True)
 
     # ── a sample over HTTP, from a real server, the cache off and on ────────────────────────────────────────────────
-    kinds = {}
+    kinds: dict[str, list[str]] = {}
     for p, g in wrote.items():
         kinds.setdefault(g.partition(":")[0], []).append(p)
     sample = sorted(

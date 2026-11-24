@@ -1336,15 +1336,15 @@ try:
         proc.returncode == 0 and bool(opt_pages) and not no_wb,
         no_wb[:5],
     )
-    plain = [
+    unlinked_wb = [
         p.relative_to(env_root / ".build/catalog").as_posix()
         for p in sorted((env_root / ".build/catalog").rglob("*.html"))
         if "workbench" in p.read_text(encoding="utf-8").lower()
     ]
     check(
         "evh catalog with no --link: no page mentions a Workbench (an export opened from disk has none to link to)",
-        not plain,
-        plain[:5],
+        not unlinked_wb,
+        unlinked_wb[:5],
     )
 
     # a port another program holds: say so, never a traceback
