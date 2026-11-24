@@ -428,9 +428,11 @@ def line_of(out: str, tag: str) -> list[str]:
     return []
 
 
-def broken(label: str, mutate, tag: str, names: list[str], fails: bool = True) -> None:
+def broken(
+    label: str, mutate, tag: str, names: list[str], fails: bool = True, absent: tuple[str, ...] = ()
+) -> None:
     """On a copy of the project, `mutate` breaks one link; check `tag` fails (or, with `fails` False, only notes: no
-    `FAIL tag`, exit 0, and a `note:` line) and names every string of `names`."""
+    `FAIL tag`, exit 0, and a `note:` line) and names every string of `names`, and that no string of `absent` is said."""
     proj, env = fresh()
     mutate(proj, env)
     r = evh(proj, env, "validate")
@@ -444,6 +446,7 @@ def broken(label: str, mutate, tag: str, names: list[str], fails: bool = True) -
         f"validate: {label}: {tag + ' fails' if fails else 'a note'}, naming {', '.join(names)}",
         (f"FAIL {tag}" in out if fails else f"FAIL {tag}" not in out)
         and all(n in shown for n in names)
+        and not any(a in out for a in absent)
         and "Traceback" not in out,
         shown[-600:],
     )
@@ -500,6 +503,8 @@ def lose_round_run(proj: Path, env: dict[str, str]) -> None:
 broken(
     "a run's reference that is not there",
     lose_reference, "V30", [f"runs/{FIRST_Y}/run.json", f"reference {REF!r}"],
+    # said once: V30's failure, not again as a V16 note (review, 2026-11-24)
+    absent=("V16 references:",),
 )  # fmt: skip
 broken(
     "a run's label set that is not there",

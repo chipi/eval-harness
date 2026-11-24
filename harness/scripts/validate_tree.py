@@ -2230,24 +2230,17 @@ def _imported(rec: dict[str, Any]) -> bool:
     return bool(rec.get("imported")) or str(rec.get("adapter") or "").startswith("imported:")
 
 
-def _missing_reference_note(ref: str, runs: set[str], imported: bool = False) -> str:
-    """The one note for a reference or label set that runs were scored against and that is not here (V16's wording).
-    An imported run's importer keeps its reference where it likes, so the note says the harness cannot find it, not
-    that it is gone (the podcast project keeps them under records/references/)."""
+def _missing_reference_note(ref: str, runs: set[str]) -> str:
+    """The note for a reference or label set imported runs were scored against and that is not here (V16's wording).
+    An importer keeps its reference where it likes, so the note says the harness cannot find it, not that it is gone
+    (the podcast project keeps them under records/references/). A harness-scored run's is V30's failure, said once."""
     shown = sorted(runs)
     where = "data/labels" if ref.startswith("labels/") else "data/references"
-    head = (
+    return (
         f"V16 references: {len(runs)} run(s) scored against {ref}, which is not under {where} "
-        f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): "
-    )
-    if imported:
-        return head + (
-            "the harness cannot find it, so it cannot re-check what they measured; the import named it, and it may be "
-            "kept elsewhere. To make it checkable here, promote it (evh reference-promote)."
-        )
-    return head + (
-        "what they measured cannot be re-checked. Restore the folder (evh reference-promote), or re-score against a "
-        "reference that is here."
+        f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): the harness cannot find it, so it cannot re-check "
+        "what they measured; the import named it, and it may be kept elsewhere. To make it checkable here, promote it "
+        "(evh reference-promote)."
     )
 
 
@@ -2311,7 +2304,7 @@ def v30_recorded_links() -> None:
                 f"{held}: {'label set' if ref.startswith('labels/') else 'reference'} {ref!r} is not there"
             )
     for ref, runs in sorted(imported_missing.items()):
-        notes.append(_missing_reference_note(ref, runs, imported=True))
+        notes.append(_missing_reference_note(ref, runs))
     for b in bad[:10]:
         print(f"       {b}")
     if len(bad) > 10:
@@ -2445,25 +2438,6 @@ def note_uncommitted_runs() -> None:
         )
 
 
-def note_missing_references() -> None:
-    """A note, never a failure (V16): scores read against a gold or silver reference that is not under data/references. A
-    reference's manifest is committed even when its text is not, so a folder that is gone altogether is a reference that
-    was deleted or never made here: the numbers read against it cannot be checked."""
-    missing: dict[str, set[str]] = {}
-    for _label, sd, rec in all_scores():
-        # The fingerprint's, as V30 and every reader follow it: the score's own `reference` is the dotted key part
-        # migration m0004 wrote (gold.name) on most migrated scores, so this note never saw one gone (review, 2026-11-24).
-        ref = _mr.reference_of(rec) if rec else ""
-        if (
-            ref.startswith(("gold/", "silver/"))
-            and not _imported(rec)
-            and not _store.is_dir(DATA / "references" / ref)
-        ):
-            missing.setdefault(ref, set()).add(_mr.run_of(sd).name)
-    for ref, runs in sorted(missing.items()):
-        notes.append(_missing_reference_note(ref, runs))
-
-
 def note_round_scorers() -> None:
     """A note, never a failure (RFC-022): a round whose arms through one adapter were scored by more than one version
     of it may compare them on different rules (the adapter's code is the scorer's identity, so an edit to its calling
@@ -2529,7 +2503,6 @@ def body() -> int:
         v29_repeats_and_the_arms_that_read_them,
         v30_recorded_links,
         note_uncommitted_runs,
-        note_missing_references,
         note_round_scorers,
     ):
         fn()

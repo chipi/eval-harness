@@ -143,7 +143,8 @@ MUTATIONS: tuple[Mutation, ...] = (
         "reference_gone",
         "the reference a run was scored against no longer exists",
         "reference_gone",
-        names=r"note: V16 references: \d+ run\(s\) scored against (gold|silver)/\S+, which is not under data/references",
+        # a harness-scored run's: V30's failure, once; an imported run's: V16's note that the harness cannot find it
+        names=r"reference '(gold|silver)/\S+' is not there|note: V16 references: \d+ run\(s\) scored against (gold|silver)/\S+, which is not under data/references",
         # V30 fails a harness-scored run's missing reference; an imported run's is a note (owner, 2026-11-24, after the
         # podcast's R8 run): the imported look-alike's runs came in through import-run.
         verdict={"tutorial": (6, "V30"), "fleet": (6, "V30"), "bakeoff": (6, "V30"), "imported": (0, "")},
@@ -152,7 +153,8 @@ MUTATIONS: tuple[Mutation, ...] = (
         "reference_gone_dotted",
         "the reference is gone, and the scores name it as migration m0004 left them (gold.name)",
         "reference_gone_dotted",
-        names=r"note: V16 references: \d+ run\(s\) scored against (gold|silver)/\S+, which is not under data/references",
+        # a harness-scored run's: V30's failure, once; an imported run's: V16's note that the harness cannot find it
+        names=r"reference '(gold|silver)/\S+' is not there|note: V16 references: \d+ run\(s\) scored against (gold|silver)/\S+, which is not under data/references",
         verdict={"tutorial": (6, "V30"), "fleet": (6, "V30"), "bakeoff": (6, "V30"), "imported": (0, "")},
     ),
     Mutation(
