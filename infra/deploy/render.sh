@@ -131,7 +131,7 @@ mkdir -p "$OUT/inspector/cache"
 EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" \
   EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/cli.py" catalog \
   --out "$OUT/sites/$SITE/public/catalog" \
-  --link "Harness=https://$SITE/" --link "Catalog=." --link "Docs=https://$SITE/docs/" --link "MCP=https://$SITE/#mcp" \
+  --link "Harness=https://$SITE/" --link "Catalog=." --link "Workbench=https://$SITE/workbench/" --link "Docs=https://$SITE/docs/" --link "MCP=https://$SITE/#mcp" \
   --mcp "https://$SITE/mcp" --card "https://$SITE/assets/social.png" --mcp-howto "https://$SITE/docs/harness/INTEGRATION/#for-an-agent-evh-mcp" --brand eval-harness --api /catalog/api/ \
   --head "$OUT/catalog-head.html" --about "$ROOT/infra/catalog/about.html" \
   --repo "https://github.com/${GITHUB_REPOSITORY:-chipi/eval-harness}/blob/main/"
