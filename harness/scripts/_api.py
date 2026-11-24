@@ -293,7 +293,7 @@ def resume_job(job_id: str) -> dict[str, Any]:
     # The cap is the job's, not each attempt's: the new job is given what this one left.
     env = dict(j.get("env") or {})
     if env.get("EVAL_MAX_COST_USD") is not None:
-        given, paid = float(env["EVAL_MAX_COST_USD"]), _jobs.spent(job_id)
+        given, paid = float(env["EVAL_MAX_COST_USD"]), _jobs.spent(job_id) or 0.0
         if given - paid <= 0:
             raise Refused(
                 f"{job_id} spent ${paid:.4f} of its ${given:.4f}: nothing is left to resume with "

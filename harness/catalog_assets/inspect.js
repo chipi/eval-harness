@@ -188,7 +188,8 @@
   // name is the tooltip. A path name (the sheet's: rescored-5f2c057c/orrery_triage_v1_labelled/triage_baseline_pro_v1)
   // is named by its last segment, the system id, which is where the prefix is; the prefix is the dataset's stem
   // (orrery_triage) or its trailing words (triage_): a system id is named after the dataset's subject. Two arms left
-  // with one name keep their paths. `dsOf` maps an id to its dataset.
+  // with one name keep their paths; a prefix is not cut when only a version suffix (v1) or nothing would be left.
+  // `dsOf` maps an id to its dataset.
   function shorten(full, dsOf) {
     const out = {}, kept = {};
     for (const id of Object.keys(full)) {
@@ -198,7 +199,8 @@
       let own = head.slice(at);
       for (let i = 0; i < words.length; i++) {
         const pre = words.slice(i).join('_') + '_';
-        if (own.startsWith(pre) && own.length > pre.length) { own = own.slice(pre.length); break; }
+        const rest = own.slice(pre.length);
+        if (own.startsWith(pre) && rest && !/^v\d+/.test(rest)) { own = rest; break; }
       }
       kept[id] = head.slice(0, at) + own + tail;
       out[id] = own + tail;
