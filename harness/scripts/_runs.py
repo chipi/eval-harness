@@ -21,6 +21,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import contextvars
+import math
 import re
 import statistics
 import sys
@@ -66,7 +67,11 @@ def left_out(
 ) -> list[str]:
     """What `runs_on` leaves out, one line a arm, named: an arm's runs scored against another reference than its latest
     run's are never averaged in (`model.runs.runs_of_arm`). [] when no arm has any."""
-    scores = _model_runs.scored(dataset_id, label_is=label, system_id=system_id, match=match)
+    return left_out_of(_model_runs.scored(dataset_id, label_is=label, system_id=system_id, match=match))
+
+
+def left_out_of(scores: Iterable[Run]) -> list[str]:
+    """`left_out` of scores already read: a caller that has them reads the project's runs once, not again for this."""
     groups: dict[str, list[Run]] = {}
     for d, m in scores:
         groups.setdefault(_model_runs.arm_of(d, m), []).append((d, m))
@@ -102,14 +107,23 @@ def item_rows(run_dir: Path, strict: bool = True, meta: bool = True) -> Iterator
             yield row
 
 
+_ABSENT = object()
+
+
 def score_of(row: dict, metric: str) -> float | None:
     """The row's value for `metric`, None where the row holds none (the item was not scored for it: no field, or a boolean
     or text in it). A value that is not a number (a NaN, an infinity or a None, as a run recorded before RFC-041 F7 can
     hold) is a failed item's score, 0 (`_number.counted`), as `evh run` records one now. The item id and the `_` fields
     are no scores."""
-    if metric == "item_id" or metric.startswith("_") or metric not in row or not is_scored(row[metric]):
+    if metric == "item_id" or metric.startswith("_"):
         return None
-    return counted(row[metric])
+    v = row.get(metric, _ABSENT)
+    # a million rows a catalog build: the finite float, nearly every one, is answered before the general rule
+    if type(v) is float and math.isfinite(v):
+        return v
+    if v is _ABSENT or not is_scored(v):
+        return None
+    return counted(v)
 
 
 # The call's, not the process's (the MCP server answers calls at once, in threads): `not_scorable()`, `confound()`.
@@ -618,7 +632,8 @@ def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, lab
     measured N times and is not ambiguous; averaging those is the point.
     """
     groups: dict[str, list[Run]] = {}
-    for d, m in runs_on(dataset_id or None, label=read_as):
+    scores = _model_runs.scored(dataset_id or None, label_is=read_as)
+    for d, m in _model_runs.read_arms(scores)[0]:
         groups.setdefault(m["system_id"], []).append((d, m))
     bad = []
     for cid, found in sorted(groups.items()):
@@ -633,6 +648,6 @@ def warn_on_ambiguous_runs(read_as: str = "", dataset_id: str | None = None, lab
             f"{' in ' + label if label else ''} — {', '.join(names)}."
         )
         print(AMBIGUOUS_HOW)
-    for line in left_out(dataset_id or None, label=read_as):
+    for line in left_out_of(scores):
         print(f"  WARNING: {line}.")
     return len(bad)

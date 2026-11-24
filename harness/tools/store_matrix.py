@@ -3,10 +3,11 @@
 EVAL_STORE=sqlite, a few at a time, each in its own process. Prints one line per file and store as it finishes and a
 table of the files whose result differs between the stores at the end; exits 1 when a file fails in either store.
 
-    python tools/store_matrix.py [--jobs 6] [--only PATTERN] [--store sqlite] [--log DIR]
+    python tools/store_matrix.py [--jobs 6] [--only PATTERN] [--store sqlite] [--shard I/N] [--log DIR]
 
 A test that builds its own project inherits EVAL_STORE; one that pins its store (test_store, test_outputs) keeps it.
-The log of each run is kept in --log (default .build/store-matrix/).
+The log of each run is kept in --log (default .build/store-matrix/). `--shard I/N` runs the I-th of N parts of the files
+(I from 1), the same split on every machine: CI runs each part in a job of its own.
 """
 
 import argparse
@@ -35,6 +36,62 @@ SKIP = (
     "test_catalog_render_real.py",
     "test_judge_message_frozen.py",
 )
+
+
+#: Seconds a file took on a developer machine, one test at a time (2026-11-24), for the files that take longest: what
+#: `--shard` balances the parts by. A file not named here counts DEFAULT_SECONDS; a stale figure makes a part longer than
+#: the others and fails nothing.
+SECONDS = {
+    "test_checks_can_fail.py": 100,
+    "test_study.py": 53,
+    "test_jobs.py": 40,
+    "test_scores_once.py": 33,
+    "test_charts.py": 33,
+    "test_arm_membership.py": 33,
+    "test_data_mutations.py": 31,
+    "test_spend.py": 26,
+    "test_report_tools.py": 26,
+    "test_judge_validate.py": 23,
+    "test_stats_edges.py": 22,
+    "test_installed_commands.py": 22,
+    "test_fingerprint_v5.py": 18,
+    "test_foreign_projects.py": 17,
+    "test_data_page.py": 16,
+    "test_writers_refuse.py": 14,
+    "test_rounds.py": 14,
+    "test_results_e2e.py": 14,
+    "test_run_progress.py": 13,
+    "test_prompts.py": 12,
+    "test_mcp_cancel.py": 12,
+    "test_call_once.py": 12,
+    "test_arm_smoke_report.py": 12,
+    "test_replay.py": 11,
+}
+DEFAULT_SECONDS = 2
+
+
+def shard(tests: list[Path], part: int, parts: int) -> list[Path]:
+    """The `part`-th (from 1) of `parts` parts of `tests`: each file, longest first, goes to the part with the least so far
+    (ties to the lower one), so the parts are about as long and every file is in exactly one."""
+    load = [0] * parts
+    mine: list[Path] = []
+    for t in sorted(tests, key=lambda t: (-SECONDS.get(t.name, DEFAULT_SECONDS), t.name)):
+        k = load.index(min(load))
+        load[k] += SECONDS.get(t.name, DEFAULT_SECONDS)
+        if k == part - 1:
+            mine.append(t)
+    return sorted(mine)
+
+
+def parse_shard(text: str) -> tuple[int, int]:
+    """`I/N` as (I, N), 1 <= I <= N."""
+    try:
+        part, parts = (int(x) for x in text.split("/"))
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not I/N") from None
+    if not 1 <= part <= parts:
+        raise argparse.ArgumentTypeError(f"{text!r}: I must be from 1 to N")
+    return part, parts
 
 
 def run(test: Path, store: str, log: Path) -> tuple[str, str, int, float]:
@@ -76,6 +133,11 @@ def main() -> int:
     ap.add_argument("--jobs", type=int, default=6)
     ap.add_argument("--only", default="test_*.py", help="which test files (a glob on the name)")
     ap.add_argument("--store", action="append", choices=("files", "sqlite"), help="default: both")
+    ap.add_argument(
+        "--shard",
+        type=parse_shard,
+        help="I/N: only the I-th of N parts of the files (the same split everywhere)",
+    )
     ap.add_argument("--log", default=str(HARNESS / ".build" / "store-matrix"))
     args = ap.parse_args()
     log = Path(args.log)
@@ -83,6 +145,8 @@ def main() -> int:
     tests = sorted(
         p for p in (HARNESS / "tests").glob(args.only) if not any(fnmatch.fnmatch(p.name, s) for s in SKIP)
     )
+    if args.shard:
+        tests = shard(tests, *args.shard)
     stores = args.store or ["files", "sqlite"]
     got: dict[tuple[str, str], int] = {}
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:

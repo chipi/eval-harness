@@ -1122,6 +1122,10 @@ def test_example_scorer_suites_pass() -> None:
             "evh run --purpose repeat --dry-run says where the repeat is read, and what differs with its value then and now; a dry run refuses an unmaterialized dataset; --items is a subset",
         ),
         (
+            "test_store_matrix_shard.py",
+            "the store matrix's --shard I/N is a split: every test file in exactly one part, the parts balanced, the same every time",
+        ),
+        (
             "test_cap_shown.py",
             "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
         ),

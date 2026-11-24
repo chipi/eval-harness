@@ -158,8 +158,9 @@ upgrade-check:
 
 # Every test file on the sqlite store (RFC-025), each in its own process: the self-test runs them on files, and the
 # store's other mode is exactly as safe as the tests that run on it (architecture review, 2026-11-06).
+# SHARD=I/N runs the I-th of N parts of the files (CI runs two parts, one job each).
 stores-check:
-	$(PYTHON) tools/store_matrix.py --store sqlite --jobs 4
+	$(PYTHON) tools/store_matrix.py --store sqlite --jobs 4 $(if $(SHARD),--shard $(SHARD))
 
 # Line coverage under the whole self-test and commands-check, subprocesses included (pyproject.toml's
 # [tool.coverage.*]): which code no test runs. Needs `coverage` (requirements-dev.txt). Measured on

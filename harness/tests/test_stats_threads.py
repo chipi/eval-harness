@@ -24,9 +24,12 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 # Between the exact test and the normal limit: an estimate, the kind prefetch collects.
 N = stats.EXACT_UP_TO + 10
+#: The estimate's own code, with a tenth of its draws: the caches and the threads are what is asked, and 600 asks at the
+#: default 20,000 draws were ten seconds of CPU (CI, 4 vCPUs shared with the rest of the matrix: 76 s).
+PERMUTATIONS = 2000
 rng = random.Random(3)
 deltas = [0.05 + rng.random() * 0.1 for _ in range(N)]  # all one way: a p far below 1
-alone = stats.sign_flip_p(deltas)
+alone = stats.sign_flip_p(deltas, PERMUTATIONS)
 stats._P.clear()
 
 entered, release = threading.Event(), threading.Event()
@@ -40,7 +43,7 @@ def collecting() -> None:
 t = threading.Thread(target=lambda: stats.prefetch(collecting))
 t.start()
 entered.wait(30)
-during = stats.sign_flip_p(deltas)
+during = stats.sign_flip_p(deltas, PERMUTATIONS)
 release.set()
 t.join(30)
 check(
@@ -52,7 +55,7 @@ check(
 # More distinct tests than the caches keep, on eight threads, each asked twice.
 stats._P.clear()
 cases = [[(k % 7 + 1) * 0.01 + random.Random(k).random() * 0.1 for _ in range(N)] for k in range(300)]
-expected = {k: stats.sign_flip_p(c) for k, c in enumerate(cases)}
+expected = {k: stats.sign_flip_p(c, PERMUTATIONS) for k, c in enumerate(cases)}
 saved = stats._P_MAX
 stats._P_MAX = 16  # eviction on nearly every call
 stats._P.clear()
@@ -63,7 +66,7 @@ errors: list = []
 def worker(ks: list[int]) -> None:
     for k in ks:
         try:
-            if stats.sign_flip_p(cases[k]) != expected[k]:
+            if stats.sign_flip_p(cases[k], PERMUTATIONS) != expected[k]:
                 wrong.append(k)
         except Exception as exc:  # noqa: BLE001 - reported by the check
             errors.append(repr(exc))

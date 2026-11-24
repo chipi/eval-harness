@@ -20,6 +20,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
@@ -651,6 +652,26 @@ try:
         "the catalog reads the same runs of that arm",
         by_name([(d, {}) for d in A2._dirs("runs/tickets_v2/mixed_v1")]) == by_name(kept),
         by_name([(d, {}) for d in A2._dirs("runs/tickets_v2/mixed_v1")]),
+    )
+
+    from evaluation_harness.ops import records as _records
+
+    scans: list[int] = []
+    scored_before = R.scored
+
+    def counted_scored(*a: Any, **k: Any) -> Any:
+        scans.append(1)
+        return scored_before(*a, **k)
+
+    R.scored = counted_scored
+    try:
+        listed_left = _records.runs_list().get("left_out") or []
+    finally:
+        R.scored = scored_before
+    check(
+        "runs-list names the run it left out, and reads the project's scores once (a scan reads every run's files)",
+        len(scans) == 1 and any(left_name in x for x in listed_left),
+        (len(scans), listed_left),
     )
 
     # -- the `_rN` suffix is read in model/runs.py only (run.py writes it, nothing else reads it)

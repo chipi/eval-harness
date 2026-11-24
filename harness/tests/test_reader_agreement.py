@@ -52,6 +52,7 @@ HERE = Path(__file__).resolve().parent
 HARNESS = HERE.parent
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(HERE))
+import _cli  # noqa: E402
 import _serve  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -136,8 +137,19 @@ def prefixed(prefix: str, c: Any) -> tuple[dict[str, FactMap], dict[str, list[st
     )
 
 
-def cli_reader(p: Project, evh: str | None = None, only: set[str] | None = None) -> Any:
-    return FD.collect(FD.Cli(evh or p.evh, str(p.proj), p.env).read, jobs=6, only=only)
+def cli_reader(
+    p: Project, evh: str | None = None, only: set[str] | None = None, session: _cli.Session | None = None
+) -> Any:
+    """The CLI's answers. Each is `evh <op> --json` asked of one process (`session`, or one of this call's own), not of a
+    new one each: what is under test is what the command says, and a start of the interpreter was most of what it cost."""
+    if evh is not None:
+        return FD.collect(FD.Cli(evh, str(p.proj), p.env).read, jobs=6, only=only)
+    own = session or _cli.Session(p.proj, p.env)
+    try:
+        return FD.collect(FD.Cli(p.evh, str(p.proj), p.env, session=own).read, jobs=1, only=only)
+    finally:
+        if session is None:
+            own.close()
 
 
 class Http:

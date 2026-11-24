@@ -30,7 +30,10 @@ import build
 def boom(*a, **k):
     raise RuntimeError("a page failed to render")
 
-build.privacy_page = boom  # a step that runs after the output is first touched
+# The figures take about a minute to compute, and `make site-check` builds the whole site on every change; here they are a
+# stand-in, and the first page fails after the stage has its assets: a failure part-way, with something written.
+build.figures.compute = lambda: dict()
+build.home = boom
 out = Path({out!r})
 try:
     build.build(out)

@@ -550,15 +550,17 @@ _RUN_COLUMNS = (
 def runs_list(label: str | None = None) -> dict[str, Any]:
     """The runs read under `label` (the plain runs by default), each with its build and its scores; the labels present."""
     from evaluation_harness._common import BOOKKEEPING_PREFIXES, data_rel  # noqa: PLC0415
-    from evaluation_harness._runs import left_out, runs_on  # noqa: PLC0415
+    from evaluation_harness._runs import left_out_of  # noqa: PLC0415
     from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
 
     label = label or ""
-    metrics = runs_on(label=label)
-    left = left_out(label=label)
+    everything = [(sd, rec, model_runs.label(sd, rec)) for sd, rec in model_runs.scored(label_is=None)]
+    read_as = [(sd, rec) for sd, rec, lab in everything if lab == label]
+    metrics = model_runs.read_arms(read_as)[0]
+    left = left_out_of(read_as)
     return {
         "label": label,
-        "labels": [x for x in model_runs.labels() if x != label],
+        "labels": sorted({lab for _sd, _rec, lab in everything} - {label}, key=lambda x: (x != "", x)),
         **({"left_out": left} if left else {}),
         "count": len(metrics),
         "runs": [
