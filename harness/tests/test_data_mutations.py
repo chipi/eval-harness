@@ -75,8 +75,9 @@ class Mutation:
     #: print no traceback.
     names: str | dict[str, str] | None = None
     #: what `evh validate` says of it (RUNBOOK exit codes): exit 6 and a `FAIL <check>` line, or exit 0 and no new FAIL
-    #: line (the `names` match is a `note:`; the bakeoff control fails V5 on its own). None: either exit is taken (no document says which).
-    verdict: tuple[int, str] | None = None
+    #: line (the `names` match is a `note:`; the bakeoff control fails V5 on its own), for every project or for the projects
+    #: it lists. None: either exit is taken (no document says which).
+    verdict: tuple[int, str] | dict[str, tuple[int, str]] | None = None
 
 
 MUTATIONS: tuple[Mutation, ...] = (
@@ -143,7 +144,9 @@ MUTATIONS: tuple[Mutation, ...] = (
         "the reference a run was scored against no longer exists",
         "reference_gone",
         names=r"note: V16 references: \d+ run\(s\) scored against (gold|silver)/\S+, which is not under data/references",
-        verdict=(6, "V30"),
+        # V30 fails a harness-scored run's missing reference; an imported run's is a note (owner, 2026-11-24, after the
+        # podcast's R8 run): the imported look-alike's runs came in through import-run.
+        verdict={"tutorial": (6, "V30"), "fleet": (6, "V30"), "bakeoff": (6, "V30"), "imported": (0, "")},
     ),
     Mutation(
         "goal_measure_unrecorded",
@@ -677,20 +680,20 @@ def judge(o: Outcome, control: Outcome | None) -> dict[str, str]:
         chk(label, ok, detail, "hand")
     chk("validate: no traceback", TRACEBACK not in o.validate, o.validate[-400:], "traceback")
     names = m.names.get(o.copy.project) if isinstance(m.names, dict) else m.names
+    verdict = m.verdict.get(o.copy.project) if isinstance(m.verdict, dict) else m.verdict
     if names:
         chk("validate names it", bool(re.search(names, o.validate)), o.validate[-700:], "validate silent")
-        if m.verdict is None:
+        if verdict is None:
             chk(
                 "validate: refuses with a failing check, or says it in a note",
                 o.validate_exit in (0, 6),
                 o.validate_exit,
                 "validate exit",
             )
-        elif m.verdict[0] == 6:
+        elif verdict[0] == 6:
             chk(
-                f"validate: exit 6, and a FAIL {m.verdict[1]} line",
-                o.validate_exit == 6
-                and re.search(rf"^\s+FAIL {m.verdict[1]}\b", o.validate, re.M) is not None,
+                f"validate: exit 6, and a FAIL {verdict[1]} line",
+                o.validate_exit == 6 and re.search(rf"^\s+FAIL {verdict[1]}\b", o.validate, re.M) is not None,
                 (o.validate_exit, fail_labels(o.validate)),
                 "validate exit",
             )
