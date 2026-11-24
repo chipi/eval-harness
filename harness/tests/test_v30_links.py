@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""V30 fails only a reference the harness scored a run against; goal entries are warnings (RFC-041 F7, owner 2026-11-24).
+"""V30 fails only a reference the harness scored a run against; goal entries are notes (RFC-041 F7, owner 2026-11-24).
 
     EVAL_STORE=files  python tests/test_v30_links.py
     EVAL_STORE=sqlite python tests/test_v30_links.py
@@ -8,9 +8,11 @@ The podcast project passed validate on v0.8.0 and failed V30 on the candidate wi
 name references by a bare name, kept in a folder of its own outside data/, and its goals' `datasets:` hold prose and
 patterns. Here R2's imported look-alike (invented names, no data of the project) is given that shape, and:
 
-  - a goal with a prose entry, a glob, a plain id that exists and a plain id that does not: validate exits 0, and says each of
-    the prose, the glob and the missing id in a warning naming the goal and the entry (the id's says it fails from 0.9);
-  - imported runs whose reference is a bare name outside data/: one note each, no failure;
+  - a goal with a prose entry, a glob, a range (`_v1..v3_`, the podcast project's), a plain id that exists and a plain id
+    that does not: validate exits 0, and says each of the prose, the glob, the range and the missing id in a note naming the
+    goal and the entry (only the id's says it fails from 0.9: a range is no id);
+  - imported runs whose reference is a bare name outside data/: one note each, no failure, which says the harness cannot
+    find it, not that it cannot be re-checked (the importer keeps it where it likes);
   - a harness-scored run's missing reference stays a FAIL: test_writers_refuse.py.
 """
 
@@ -36,7 +38,7 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_BUILD_REF", "EVAL_GOALS_DI
     env.pop(k, None)
 EXIT_PROBLEMS = 6
 BARE = ("silver_dev_v1_paragraph", "silver_dev_v2_paragraph")
-PROSE, GLOB = "5 personas", "prod_v3_*"
+PROSE, GLOB, RANGE = "5 personas", "prod_v3_*", "prod_like_2x10_v1..v3_cleaned"
 GONE = "never_imported_v1"
 
 
@@ -65,22 +67,25 @@ try:
     outside.mkdir(parents=True)
     (outside / "clip_01.txt").write_text("an invented reference text\n", encoding="utf-8")
 
-    goal([PROSE, GLOB, ds, GONE])
+    goal([PROSE, GLOB, RANGE, ds, GONE])
     code, out = validate()
     v30 = [ln for ln in out.splitlines() if re.match(r"\s+(ok|FAIL)\s+V30", ln)]
     check(
-        "the plain id that names no dataset is a warning naming the goal and the entry, saying it fails from 0.9; exit 0",
+        "the plain id that names no dataset is a note naming the goal and the entry, saying it fails from 0.9; exit 0",
         code == 0
         and v30
         and v30[0].lstrip().startswith("ok   V30")
         and f"V30 goal podcast_like: datasets entry '{GONE}' names no dataset of this project" in out
-        and "FAIL from 0.9" in out
+        and out.count("FAIL from 0.9") == 1
         and "VALIDATION PASSED" in out,
         f"exit {code}: {out[-700:]}",
     )
     check(
-        "a prose entry and a glob are warnings naming the goal and the entry, not failures",
-        all(f"V30 goal podcast_like: datasets entry '{e}' is not a dataset id" in out for e in (PROSE, GLOB))
+        "a prose entry, a glob and a range are notes naming the goal and the entry, not failures, and never 'FAIL from 0.9'",
+        all(
+            f"V30 goal podcast_like: datasets entry '{e}' is not a dataset id" in out
+            for e in (PROSE, GLOB, RANGE)
+        )
         and f"'{ds}'" not in " ".join(ln for ln in out.splitlines() if "V30 goal" in ln),
         out[-700:],
     )
@@ -93,14 +98,16 @@ try:
             )
             for b in BARE
         )
-        and out.count(f"scored against {BARE[0]},") == 1,
+        and out.count(f"scored against {BARE[0]},") == 1
+        and "the harness cannot find it" in out
+        and "cannot be re-checked" not in out,
         out[-900:],
     )
 
     goal([PROSE, GLOB, ds])
     code, out = validate()
     check(
-        "without that id, the warnings for the prose and the glob remain and none names it",
+        "without that id, the notes for the prose and the glob remain and none names it",
         code == 0 and "datasets entry" in out and GONE not in out and "scored against" in out,
         f"exit {code}: {out[-700:]}",
     )

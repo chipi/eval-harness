@@ -77,7 +77,7 @@ Each check exists because its absence let a real defect through somewhere:
                      read, are notes (a round reads what it recorded)
   V30 recorded links a run the harness scored whose reference (gold or silver) or label set is not there,
                      named with the file that holds the link (RFC-041 F7). A goal `datasets:` entry that names
-                     no dataset (a plain id, or prose or a pattern) is a warning, FAIL from 0.9 for a plain id;
+                     no dataset (a plain id, or prose, a pattern or a range) is a note, FAIL from 0.9 for a plain id;
                      an imported run's reference that is not under data/ is a note
 
 Exit 6 on any failure, so it can gate (RUNBOOK's exit codes).
@@ -2230,21 +2230,31 @@ def _imported(rec: dict[str, Any]) -> bool:
     return bool(rec.get("imported")) or str(rec.get("adapter") or "").startswith("imported:")
 
 
-def _missing_reference_note(ref: str, runs: set[str]) -> str:
-    """The one note for a reference or label set that runs were scored against and that is not here (V16's wording)."""
+def _missing_reference_note(ref: str, runs: set[str], imported: bool = False) -> str:
+    """The one note for a reference or label set that runs were scored against and that is not here (V16's wording).
+    An imported run's importer keeps its reference where it likes, so the note says the harness cannot find it, not
+    that it is gone (the podcast project keeps them under records/references/)."""
     shown = sorted(runs)
     where = "data/labels" if ref.startswith("labels/") else "data/references"
-    return (
+    head = (
         f"V16 references: {len(runs)} run(s) scored against {ref}, which is not under {where} "
-        f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): what they measured cannot be re-checked. "
-        "Restore the folder (evh reference-promote), or re-score against a reference that is here."
+        f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): "
+    )
+    if imported:
+        return head + (
+            "the harness cannot find it, so it cannot re-check what they measured; the import named it, and it may be "
+            "kept elsewhere. To make it checkable here, promote it (evh reference-promote)."
+        )
+    return head + (
+        "what they measured cannot be re-checked. Restore the folder (evh reference-promote), or re-score against a "
+        "reference that is here."
     )
 
 
 def v30_recorded_links() -> None:
     """V30: the links the harness wrote resolve. A goal's `datasets:` entry that is not a dataset of the project is a
-    warning naming the goal and the entry (a goal file is the project's own text; a plain id that names no dataset
-    becomes a FAIL in 0.9, an entry that is no id, prose or a glob, never does). The reference or label set a score was
+    note naming the goal and the entry (a goal file is the project's own text; a plain id that names no dataset
+    becomes a FAIL in 0.9, an entry that is no id, prose, a glob or a range `_v1..v3`, never does). The reference or label set a score was
     measured against (`fingerprint.data.reference_id`, the one every reader follows: `gold/<name>`, `silver/<name>`,
     or `labels/<dataset>/<set>`) is there for a run the harness scored (FAIL when it is not); for an imported run,
     whose importer named it and kept it where it likes (a bare name, a folder outside data/), one note says a missing
@@ -2260,7 +2270,7 @@ def v30_recorded_links() -> None:
     for gid, g in sorted(load_goals().items()):
         for ds in goal_datasets(g):
             listed += 1
-            if not DATASET_ID.fullmatch(ds):
+            if not DATASET_ID.fullmatch(ds) or ".." in ds:
                 notes.append(
                     f"V30 goal {gid}: datasets entry {ds!r} is not a dataset id (prose, a pattern or a list), so "
                     "nothing checks it; name each dataset by its id"
@@ -2301,7 +2311,7 @@ def v30_recorded_links() -> None:
                 f"{held}: {'label set' if ref.startswith('labels/') else 'reference'} {ref!r} is not there"
             )
     for ref, runs in sorted(imported_missing.items()):
-        notes.append(_missing_reference_note(ref, runs))
+        notes.append(_missing_reference_note(ref, runs, imported=True))
     for b in bad[:10]:
         print(f"       {b}")
     if len(bad) > 10:
