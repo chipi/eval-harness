@@ -195,6 +195,18 @@ class Copy(RA.Project):
         shutil.copytree(base.proj, self.proj, symlinks=True, dirs_exist_ok=True)
         self.env = {**dict(base.env, EVAL_HOME=str(self.proj)), **mutation.env}
         RA.SPENT[self.name] = {}
+        self._session: _cli.Session | None = None
+
+    @property
+    def session(self) -> _cli.Session:
+        """The copy's one `evh` process, started when the data is made (a process that has read it earlier would hold what it read)."""
+        if self._session is None:
+            self._session = _cli.Session(self.proj, self.env)
+        return self._session
+
+    def close(self) -> None:
+        if self._session is not None:
+            self._session.close()
 
     def helper(self, *args: str) -> str:
         """`_mutations.py <args>` in a process of its own, with this copy's environment but not its time zone or public
@@ -228,13 +240,9 @@ class Outcome:
 
 
 def evh(c: Copy, *args: str, public: bool | None = None) -> subprocess.CompletedProcess:
-    """`evh <args>` in the copy, with its environment; `public` True or False sets or clears EVH_PUBLIC for this call."""
-    env = dict(c.env)
-    if public is not None:
-        env.pop("EVH_PUBLIC", None)
-        if public:
-            env["EVH_PUBLIC"] = "1"
-    return _cli.run(c.proj, env, *args)
+    """`evh <args>` in the copy, with its environment, in the copy's one process (`_cli.Session`); `public` True or False
+    sets or clears EVH_PUBLIC for this call."""
+    return c.session.run(*args, public=public)
 
 
 def inventory(c: Copy, o: Outcome) -> dict[str, Any]:
@@ -323,8 +331,7 @@ def run_reads(c: Copy, cmds: list[tuple[str, list[str]]]) -> list[tuple[str, int
             (out[out.find(TRACEBACK) :][:300] if TRACEBACK in out else ""),
         )
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        return list(pool.map(one, cmds))
+    return [one(item) for item in cmds]
 
 
 def read_all(c: Copy) -> tuple[dict[str, RA.FactMap], dict[str, list[str]], dict[str, str], Any]:
@@ -340,7 +347,7 @@ def read_all(c: Copy) -> tuple[dict[str, RA.FactMap], dict[str, list[str]], dict
         why.update(got[1])
 
     for name, fn in (
-        ("cli", lambda: RA.cli_reader(c)),
+        ("cli", lambda: RA.cli_reader(c, session=c.session)),
         ("api", lambda: RA.api_reader(c)),
         ("mcp", lambda: RA.mcp_reader(c)),
         ("catalog", lambda: RA.catalog_reader(c)),
@@ -415,23 +422,26 @@ def process(mutation: Mutation, base: RA.Project) -> Outcome:
     """Copy `base`, apply the mutation, and read the copy every way (reads, R3's readers, validate)."""
     t = time.time()
     c = Copy(mutation, base)
-    if mutation.data:
-        c.helper(mutation.data)
-    o = Outcome(c)
-    o.oracle = json.loads(c.helper("oracle"))
-    t_read = time.time()
-    o.facts, o.why, o.reader_errors, _collected = read_all(c)
-    RA.SPENT[c.name]["readers"] = time.time() - t_read
-    inv = inventory(c, o)
-    o.reads = run_reads(c, read_commands(inv, o.oracle))
-    r = evh(c, "validate")
-    o.validate, o.validate_exit = r.stdout + r.stderr, r.returncode
-    r = evh(c, "runs-list", "--json")
-    o.runs_json = (json.loads(r.stdout).get("result") or {}).get("runs", []) if r.returncode == 0 else []
-    if "EVH_PUBLIC" in mutation.env:
-        o.extra["leaks"] = public_pass(c, o)
-    o.seconds = time.time() - t
-    return o
+    try:
+        if mutation.data:
+            c.helper(mutation.data)
+        o = Outcome(c)
+        o.oracle = json.loads(c.helper("oracle"))
+        t_read = time.time()
+        o.facts, o.why, o.reader_errors, _collected = read_all(c)
+        RA.SPENT[c.name]["readers"] = time.time() - t_read
+        inv = inventory(c, o)
+        o.reads = run_reads(c, read_commands(inv, o.oracle))
+        r = evh(c, "validate")
+        o.validate, o.validate_exit = r.stdout + r.stderr, r.returncode
+        r = evh(c, "runs-list", "--json")
+        o.runs_json = (json.loads(r.stdout).get("result") or {}).get("runs", []) if r.returncode == 0 else []
+        if "EVH_PUBLIC" in mutation.env:
+            o.extra["leaks"] = public_pass(c, o)
+        o.seconds = time.time() - t
+        return o
+    finally:
+        c.close()
 
 
 # ── what the files say of each arm ───────────────────────────────────────────────────────────────────────────────────

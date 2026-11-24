@@ -94,11 +94,17 @@ class Cli:
     """Runs `evh` as a subprocess in a project, for the commands the dump reads."""
 
     def __init__(
-        self, evh: str = "evh", project: str | None = None, env: dict[str, str] | None = None
+        self,
+        evh: str = "evh",
+        project: str | None = None,
+        env: dict[str, str] | None = None,
+        session: Any = None,
     ) -> None:
         self.evh = shlex.split(evh)
         self.project = project
         self.env = env
+        #: a process that runs each `evh <args>` in turn (tests/_cli.Session), instead of a new one each
+        self.session = session
 
     def read(self, op: str, public: bool = False, **params: Any) -> dict[str, Any]:
         """The `result` of `evh <op> --json`, or Unavailable with what the command said."""
@@ -108,10 +114,13 @@ class Cli:
         if public:
             env["EVH_PUBLIC"] = "1"
         try:
-            p = subprocess.run(  # nosec B603 - the operator's own evh
-                argv, cwd=self.project, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,
-                timeout=900, check=False, encoding="utf-8",
-            )  # fmt: skip
+            if self.session is not None:
+                p = self.session.run(*ARGV[op](**params), "--json", public=public)
+            else:
+                p = subprocess.run(  # nosec B603 - the operator's own evh
+                    argv, cwd=self.project, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                    timeout=900, check=False, encoding="utf-8",
+                )  # fmt: skip
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise Unavailable(f"evh {op}: {type(exc).__name__}: {exc}") from None
         if p.returncode != 0:
