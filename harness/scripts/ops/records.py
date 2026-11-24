@@ -410,6 +410,10 @@ def say_baselines(r: dict[str, Any]) -> str:
         out.append(
             f"    run      {b.get('promoted_from')}, promoted {str(b.get('promoted_at') or '')[:10]} by {named}"
         )
+        if b.get("goal_reads"):
+            out.append(
+                f"    the goal reads {b['goal_reads']} as its baseline (the promoted arm, or its re-score)"
+            )
         out.append(f"    why      {b.get('reason', '(none recorded)')}")
         label = f"scores (mean of {b['repeats']} repeats)" if b.get("repeats") else "scores"
         out.append(

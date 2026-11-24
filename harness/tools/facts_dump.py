@@ -41,6 +41,7 @@ SUFFIXES = ("group", "arm flag", "answer")
 #: kind of fact -> what it is, in the words of the dump
 KINDS = {
     "arms": "the arms on a dataset (key: dataset)",
+    "ranked": "the arms a leaderboard ranks on a dataset: those that record its ranking metric, so some of its arms (key: dataset)",
     "value": "the mean of a metric over the arm's items (key: arm, metric)",
     "n_items": "the items behind that mean (key: arm, metric)",
     "direction": "which way is better for a metric on a dataset: lower, higher or neutral (key: dataset, metric)",
@@ -146,12 +147,17 @@ def ref(v: Any) -> str:
     return "none" if not v or str(v) in ("none", "no reference", "—") else str(v)
 
 
+def scored_by(v: Any) -> str | None:
+    """What an arm is scored against, as a reference id: None where the reader says it is scored by a judge (`judge <scorer>`:
+    an arm judged is grouped by its judge, and its reference is the one `arm-list` names, which these readers do not)."""
+    return None if str(v or "").startswith("judge ") else ref(v)
+
+
 def arm_id(label: str, dataset: str, system: str) -> str:
-    """The id an evh that names none for a run or a row is read as having: `label/dataset/system`, `runs` for a plain
-    arm's empty label. Right only where the label is its own slug (`silver`, `repeats`): the dump never works an id out
-    from a label for an evh that names it (evh 0.8.1's `runs-list` rows and `metric-show` rows do), since the id is
-    `model.runs.arm_of`'s to say (`rescored 3d3a6afd, repeats` is the arm `rescored-3d3a6afd-repeats/...`)."""
-    return f"{label or 'runs'}/{dataset}/{system}"
+    """The arm's id: `<label as a slug>/dataset/system`, `runs` for a plain arm's empty label: a label that holds a `/` or a
+    space (`judged/<scorer>`, `rescored 3d3a6afd`) is `judged-<scorer>`, `rescored-3d3a6afd` in the id `evh arm-list` gives
+    (the slug of `model.runs.arm_prefix`, which `runs-list` does not apply to the label it prints)."""
+    return f"{re.sub(r'[^a-z0-9]+', '-', label.lower()).strip('-') or 'runs'}/{dataset}/{system}"
 
 
 def parse_arm_label(text: str) -> tuple[str, str, int]:
@@ -220,7 +226,10 @@ def from_arm_list(r: dict[str, Any]) -> list[Fact]:
 def from_arm_show(r: dict[str, Any]) -> list[Fact]:
     """Facts from `evh arm show`: reference, runs, latest run, and each metric's mean, item count and direction."""
     arm, ds = r["arm"], r["dataset"]
-    out: list[Fact] = [("reference", (arm,), ref(r.get("scored_against"))), ("n_runs", (arm,), r.get("runs"))]
+    out: list[Fact] = [
+        ("reference", (arm,), scored_by(r.get("scored_against"))),
+        ("n_runs", (arm,), r.get("runs")),
+    ]
     listed = r.get("run_list") or []
     out.append(("runs", (arm,), sorted(x["run"] for x in listed)))
     out.append(("latest", (arm,), newest([(x.get("made") or "", x["run"]) for x in listed])))
@@ -257,7 +266,7 @@ def from_metric_show(r: dict[str, Any]) -> list[Fact]:
             out += [
                 ("value", (arm, m), a.get("mean")),
                 ("n_items", (arm, m), a.get("n")),
-                ("reference", (arm,), ref(a.get("scored_against"))),
+                ("reference", (arm,), scored_by(a.get("scored_against"))),
                 ("n_runs", (arm,), n),
             ]
     return out
@@ -297,16 +306,20 @@ def from_leaderboard(r: dict[str, Any], dataset: str) -> list[Fact]:
                 out.append(("value", (arm, k), v))
         if "cost_usd" in row:
             out.append(("cost_state", (arm,), cost_state(row["cost_usd"])))
-    return [*out, ("arms", (dataset,), sorted(arms))] if rows else out
+    return [*out, ("ranked", (dataset,), sorted(arms))] if tables else out
 
 
 def from_baselines(r: dict[str, Any]) -> list[Fact]:
-    """Facts from `evh baselines`: the run each goal's current baseline was promoted from."""
-    return [
-        ("baseline_run", (b["dataset"], b["goal"]), b.get("promoted_from"))
-        for b in r.get("baselines") or []
-        if b.get("goal") and b.get("current", 1) == b.get("version", 1)
-    ]
+    """Facts from `evh baselines`: the run each goal's current baseline was promoted from, and (from the version that says it) the arm the goal reads."""
+    out: list[Fact] = []
+    for b in r.get("baselines") or []:
+        if not b.get("goal") or b.get("current", 1) != b.get("version", 1):
+            continue
+        key = (b["dataset"], b["goal"])
+        out.append(("baseline_run", key, b.get("promoted_from")))
+        if b.get("goal_reads"):
+            out.append(("baseline_arm", key, b["goal_reads"]))
+    return out
 
 
 def from_goal_leaderboard(r: dict[str, Any]) -> list[Fact]:
@@ -338,7 +351,7 @@ def from_goal_leaderboard(r: dict[str, Any]) -> list[Fact]:
                 out.append(("direction", (ds, measure), word(g["direction"])))
             for a in g.get("arms") or []:
                 arm = a["arm"]
-                out.append(("reference", (arm,), ref(g.get("scored_against"))))
+                out.append(("reference", (arm,), scored_by(g.get("scored_against"))))
                 if measure and isinstance(a.get("mean"), (int, float)):
                     out += [("value", (arm, measure), a["mean"]), ("n_items", (arm, measure), a.get("n"))]
                 cost = (a.get("axes") or {}).get("cost")
@@ -489,14 +502,13 @@ def collect(read: Callable[..., dict[str, Any]], jobs: int = 1, only: set[str] |
     )
 
     # a baseline run's arm, where the reader named the run only
-    in_arm = {
-        run: arm
-        for r in c.facts.values()
-        for (k, key), v in r.items()
-        if k == "runs"
-        for arm in [key[0]]
-        for run in v
-    }
+    # (one run can be read in several arms, as its own and as re-scored or silver: the plain one is the baseline's)
+    in_arm: dict[str, str] = {}
+    for r in c.facts.values():
+        for (k, key), v in r.items():
+            for run in v if k == "runs" else ():
+                if run not in in_arm or (key[0].startswith("runs/") and not in_arm[run].startswith("runs/")):
+                    in_arm[run] = key[0]
     for reader, d in c.facts.items():
         for (k, key), run in list(d.items()):
             if k == "baseline_run" and ("baseline_arm", key) not in d and reader == "baselines":

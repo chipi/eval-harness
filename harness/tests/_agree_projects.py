@@ -66,6 +66,14 @@ def tutorial(proj: Path, env: dict[str, str]) -> dict[str, Any]:
     )  # fmt: skip
     b.must("run", "--system", "s1_v1", "--dataset", "tk_late_v1", "--run-id", "s1_v1_20261110T130000Z")
     b.must("run", "--system", "s2_v1", "--dataset", "tk_hidden_v1", "--run-id", "s2_v1_20261110T140000Z")
+    # a run re-scored in place: its score's created_at is the re-score's time, its id keeps when it was measured
+    rid = "s2_v1_20261110T140000Z"
+    for score in _runstore.listdir(proj, f"runs/{rid}/scores"):
+        rel = f"runs/{rid}/scores/{score}/metrics.json"
+        metrics = _runstore.read_json(proj, rel)
+        metrics["derived"] = {"kind": "reparse", "from": rid, "at": "2026-11-30T09:00:00Z"}
+        metrics["created_at"] = "2026-11-30T09:00:00Z"
+        _runstore.write_text(proj, rel, json.dumps(metrics, indent=2) + "\n")
     rec = _runstore.read_json(proj, "datasets/tk_hidden_v1.json")
     rec["text"] = "hidden"
     _runstore.write_text(proj, "datasets/tk_hidden_v1.json", json.dumps(rec, indent=2) + "\n")
@@ -80,6 +88,28 @@ def tutorial(proj: Path, env: dict[str, str]) -> dict[str, Any]:
         "run-promote", "--run", "s2_v1_20261110T110000Z", "--goal", "tickets_summary",
         "--reason", "It leads the goal on the kit's tickets.", "--by", "ana",
     )  # fmt: skip
+    # the promoted run re-scored: the goal reads the re-score (RFC-022), on every reader
+    base = "s2_v1_20261110T110000Z"
+    src = _runstore.listdir(proj, f"runs/{base}/scores")[0]
+    dst = "rs3d3a6afd@" + src.split("@", 1)[1]
+    for rel in _runstore.files_under(proj, f"runs/{base}/scores/{src}"):
+        name = rel.split(f"scores/{src}/", 1)[1]
+        text = _runstore.read_text(proj, rel)
+        if name == "score.json":
+            meta = {**json.loads(text), "scorer": "rs3d3a6afd", "label": "rescored 3d3a6afd"}
+            meta.pop("first", None)  # the run's first score is the one it made when it ran
+            text = json.dumps(meta, indent=2) + "\n"
+        elif name == "metrics.json":
+            m = json.loads(text)
+            m["derived"] = {
+                "kind": "rescore",
+                "from": base,
+                "from_dir": f"runs/{base}",
+                "at": "2026-11-28T09:00:00Z",
+            }
+            text = json.dumps(m, indent=2) + "\n"
+        _runstore.write_text(proj, f"runs/{base}/scores/{dst}/{name}", text)
+    _runstore.copy_rows(proj, f"runs/{base}/scores/{src}", f"runs/{base}/scores/{dst}")
     return {"datasets": ["tk_v1", "tk_late_v1", "tk_hidden_v1"]}
 
 

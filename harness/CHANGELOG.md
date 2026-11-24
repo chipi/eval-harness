@@ -24,8 +24,8 @@ project in the full notes). No data format, fingerprint version or scorer change
 - **Refused now, by name:** a run, system or reference id that is not plain; `--purpose repeat` with no `--of`; an `--of` of
   another system's or dataset's run; `import-run` with a missing reference or a tier with no reference; `arm-smoke` with a goal
   or round that is not there; `run-promote` of a legacy `dirty: null` build; `leaderboard --goal` of a measure no run records (exit
-  7); a run with no goal once the goal policy's `required_from` has passed. `evh validate` has V30 (a broken link fails: a
-  deleted reference, a goal's missing dataset), and V29 holds every `of`.
+  7); a run with no goal once the goal policy's `required_from` has passed. `evh validate` has V30 (a harness-scored run's
+  deleted reference fails; a goal's missing dataset is a warning until 0.9), and V29 holds every `of`.
 - **Added:** the Workbench, read-only, for visitors to a deployment
   ([RFC-039](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-039-workbench-read-only-for-visitors.md)); where the judge disagrees with the gold, per item
   (`--judge-disagrees`); `import-run --goal`; the run field `cost_coverage`; a fact dump to compare two versions.

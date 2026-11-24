@@ -76,6 +76,26 @@ FactMap = dict[tuple, Any]
 KNOWN: dict[tuple[str, str, tuple, frozenset], str] = {}
 
 
+#: A project that exists already, read by every reader on a copy of it (`make reader-agreement-repo`): EVH_AGREE_PROJECT is
+#: its root (the folder holding config.yaml and data/); EVH_AGREE_INSPECT_ARMS the arms of a dataset the inspector is asked
+#: about (default 4: each call tests every pair).
+EXISTING = os.environ.get("EVH_AGREE_PROJECT", "").strip()
+EXISTING_NAME = Path(EXISTING).resolve().name or "project" if EXISTING else ""
+INSPECT_ARMS = int(os.environ.get("EVH_AGREE_INSPECT_ARMS", "4"))
+#: What a project is made of that the readers read: its settings and its data (the rest of a checkout is code).
+PROJECT_PARTS = ("config.yaml", "data", "adapter.py", "prompts", ".env.example")
+
+
+def copy_project(src: Path, dst: Path) -> None:
+    """A copy of the project's own files (PROJECT_PARTS) in `dst`: the readers run on the copy, so nothing is written to the
+    project (a catalog build, a server's token and a cache all write)."""
+    for part in PROJECT_PARTS:
+        if (src / part).is_dir():
+            shutil.copytree(src / part, dst / part, symlinks=True, dirs_exist_ok=True)
+        elif (src / part).is_file():
+            shutil.copy2(src / part, dst / part)
+
+
 class Project:
     """A project built by `_reader_proc.py build` in a process of its own."""
 
@@ -83,6 +103,14 @@ class Project:
         self.name = name
         self.proj = Path(tempfile.mkdtemp(prefix=f"evh-agree-{name}-"))
         PROJECTS.append(self.proj)
+        if name == EXISTING_NAME:
+            self.env = dict(os.environ, EVAL_HOME=str(self.proj), EVH_ACTOR="person:fixture")
+            for k in LIMITS:
+                self.env.pop(k, None)
+            t = time.time()
+            copy_project(Path(EXISTING), self.proj)
+            SPENT[name] = {"build": time.time() - t}
+            return
         self.env = dict(os.environ, EVAL_HOME=str(self.proj), EVH_ACTOR="person:fixture")
         for k in LIMITS:
             self.env.pop(k, None)
@@ -182,7 +210,7 @@ def api_inspector(p: Project, cli_facts: FactMap) -> tuple[dict[str, FactMap], d
         out: dict[str, FactMap] = {}
         why: list[str] = []
         for ds, ids in sorted(arms.items()):
-            pick = sorted(set(ids))[:4]
+            pick = sorted(set(ids))[:INSPECT_ARMS]
             names: list[str] = []
             first = True
             while first or names:
@@ -293,6 +321,18 @@ def kv(h: str) -> dict[str, str]:
     return {text(k): v for k, v in re.findall(r"<dt>(.*?)</dt>\s*<dd>(.*?)</dd>", h, re.S)}
 
 
+def better_on(says: str, dataset: str) -> str | None:
+    """The word a metric page's `better` line gives for one dataset: a single word is every dataset's, and a measure that
+    goes both ways says `higher on a, b; neutral on c` (visible text: the page has no attribute for it)."""
+    if FD.word(says) in ("lower", "higher", "neutral") and " on " not in says:
+        return FD.word(says)
+    for part in says.split(";"):
+        m = re.match(r"\s*(lower|higher|neutral) on (.*)$", part)
+        if m and dataset in [x.strip() for x in m.group(2).split(",")]:
+            return m.group(1)
+    return None
+
+
 def catalog_facts(out: Path) -> tuple[dict[str, FactMap], dict[str, list[str]]]:
     """What the export's pages state, from their attributes (`data-key`, `data-v`, `data-g`, `data-better`, the
     arm page's `inspect.html?runs=` link) and, where a page has none, the words it says: an arm's `scored against` and `last
@@ -331,7 +371,11 @@ def catalog_facts(out: Path) -> tuple[dict[str, FactMap], dict[str, list[str]]]:
             "arm page",
             "reference",
             (arm,),
-            FD.ref(text(link.group(1))) if link else FD.ref(None if said.startswith("nothing") else said),
+            FD.ref(text(link.group(1)))
+            if link
+            else None
+            if said.startswith("judge ")
+            else FD.ref(None if said.startswith("nothing") else said),
         )
         if "runs" in facts:
             put("arm page", "n_runs", (arm,), int(text(facts["runs"])))
@@ -378,8 +422,11 @@ def catalog_facts(out: Path) -> tuple[dict[str, FactMap], dict[str, list[str]]]:
 
     for page in sorted((out / "m").glob("*.html")) if (out / "m").is_dir() else []:
         h = page.read_text(encoding="utf-8")
-        name = text(re.search(r"<h1>(.*?)</h1>", h, re.S).group(1))  # type: ignore[union-attr]
-        better = FD.word(text(kv(h).get("better", "")))
+        title = re.search(r"<h1[^>]*>(.*?)</h1>", h, re.S)
+        if title is None:  # a page of the metric's rows that continues another
+            continue
+        name = text(title.group(1))
+        better = text(kv(h).get("better", ""))
         marks = [
             (m.start(), text(m.group(1)))
             for m in re.finditer(r'<span class="num">\d+</span>on ([^<]+)</h2>', h)
@@ -388,8 +435,7 @@ def catalog_facts(out: Path) -> tuple[dict[str, FactMap], dict[str, list[str]]]:
             if not re.match(r"on\d+$", tid):
                 continue
             ds = [d for s, d in marks if s < at][-1]
-            if better in ("lower", "higher", "neutral"):
-                put("metric page", "direction", (ds, name), better)
+            put("metric page", "direction", (ds, name), better_on(better, ds))
             for _a, cells in rows:
                 href = re.search(r'href="\.\./a/([^"]+)\.html"', cells[0])
                 arm = by_file.get(href.group(1)) if href else None
@@ -397,12 +443,17 @@ def catalog_facts(out: Path) -> tuple[dict[str, FactMap], dict[str, list[str]]]:
                     continue
                 put("metric page", "value", (arm, name), dv(cells[1]))
                 put("metric page", "n_items", (arm, name), dv(cells[2]))
-                ref_link = re.search(r'<a class="cell-link"[^>]*>(.*?)</a>', cells[3], re.S)
+                ref_link = re.search(
+                    r'<a class="cell-link" href="\.\./r/[^"]*">(.*?)</a>', cells[3], re.S
+                )  # a judge is no reference
                 put("metric page", "reference", (arm,), FD.ref(text(ref_link.group(1))) if ref_link else None)
 
     for page in sorted((out / "d").glob("*.html")) if (out / "d").is_dir() else []:
         h = page.read_text(encoding="utf-8")
-        ds = text(re.search(r"<h1>(.*?)</h1>", h, re.S).group(1))  # type: ignore[union-attr]
+        title = re.search(r"<h1[^>]*>(.*?)</h1>", h, re.S)
+        if title is None:  # `<dataset>~items-2.html`: the next page of a dataset's items
+            continue
+        ds = text(title.group(1))
         for goal, href in re.findall(
             r"([\w.-]+)&#x27;s baseline, version \d+, promoted [^<]*</p>\s*<p class=\"lead\">\s*<b>\s*<a [^>]*href=\"\.\./a/([^\"]+)\.html\"",
             h,
@@ -515,7 +566,7 @@ def matrix(per_project: dict[str, dict[str, FactMap]]) -> list[str]:
             for kind, _key in d:
                 gives[r][kind] += 1
     short = {
-        "arms": "arms", "value": "value", "n_items": "items", "direction": "dir", "runs": "runs", "n_runs": "n_runs",
+        "arms": "arms", "ranked": "ranked", "value": "value", "n_items": "items", "direction": "dir", "runs": "runs", "n_runs": "n_runs",
         "latest": "latest", "latest_day": "l_day", "reference": "ref", "cost_state": "cost", "baseline_run": "b_run",
         "baseline_arm": "b_arm", "public": "public",
     }  # fmt: skip
@@ -545,6 +596,14 @@ def assert_agreement(project: str, facts: dict[str, FactMap]) -> None:
         bad = [d for d in open_ if d["fact"] == kind]
         givers = {r for r, d in facts.items() if any(k == kind for k, _ in d)}
         check(f"agree: {project}: {kind} ({len(givers)} readers give it)", not bad, explain(bad))
+    listed = {k[1][0]: set(v) for d in facts.values() for k, v in d.items() if k[0] == "arms"}
+    stray = [
+        (r, ds, sorted(set(v) - listed.get(ds, set()))[:3])
+        for r, d in facts.items()
+        for (k, (ds,)), v in ((kk, vv) for kk, vv in d.items() if kk[0] == "ranked")
+        if set(v) - listed.get(ds, set())
+    ]
+    check(f"agree: {project}: a leaderboard ranks only arms the arm lists name", not stray, stray[:3])
     for entry, where in KNOWN.items():
         if entry[0] == project:
             check(
@@ -599,6 +658,20 @@ def hand_checks(project: str, facts: dict[str, FactMap]) -> None:
             say("reference", "runs/tk_late_v1/s1_v1") == "gold/tk_late_v1"
             and say("n_runs", "runs/tk_late_v1/s1_v1") == 1,
             (say("reference", "runs/tk_late_v1/s1_v1"), say("n_runs", "runs/tk_late_v1/s1_v1")),
+        )
+        day = ("latest_day", ("runs/tk_hidden_v1/s2_v1",))
+        days = {r: d[day] for r, d in facts.items() if day in d}
+        check(
+            "hand: tutorial: a run re-scored in place is dated by its id on every reader (its created_at was rewritten)",
+            len(days) >= 4 and set(days.values()) == {"2026-11-10"},
+            days,
+        )
+        bl = ("baseline_arm", ("tk_v1", "tickets_summary"))
+        reads = {r: d[bl] for r, d in facts.items() if bl in d}
+        check(
+            "hand: tutorial: a baseline that was re-scored is one arm, the re-score's, in every goal reader",
+            len(reads) >= 4 and set(reads.values()) == {"rescored-3d3a6afd/tk_v1/s2_v1"},
+            reads,
         )
         public = {
             fk[1][0]: v
@@ -757,7 +830,7 @@ def thin(facts: dict[str, FactMap]) -> int:
 def main() -> int:
     t0 = time.time()
     print(f"store: {STORE}")
-    names = list(BUILDERS)
+    names = [EXISTING_NAME] if EXISTING else list(BUILDERS)
     try:
         with ThreadPoolExecutor(max_workers=len(names)) as pool:
             projects = dict(zip(names, pool.map(Project, names)))
@@ -781,6 +854,17 @@ def main() -> int:
             + f" ({time.time() - t0:.0f}s)"
         )
         per_project = {n: g[0] for n, g in gathered.items()}
+        if os.environ.get(
+            "EVH_AGREE_SAVE"
+        ):  # every reader's facts, to look at a disagreement without reading again
+            Path(os.environ["EVH_AGREE_SAVE"]).write_text(
+                json.dumps(
+                    {
+                        n: {r: [[k, list(key), v] for (k, key), v in d.items()] for r, d in f.items()}
+                        for n, f in per_project.items()
+                    }
+                )
+            )
         for name in names:
             facts, why = gathered[name]
             print(f"\n{name}: {len(facts)} readers, {thin(facts)} facts given by two readers or more")
@@ -799,7 +883,22 @@ def main() -> int:
                 )
             assert_agreement(name, facts)
             arms_shown(name, facts, why)
+            if EXISTING:
+                arms = sum(
+                    len(v)
+                    for r, d in facts.items()
+                    if r == "cli:arm-list"
+                    for (k, _), v in d.items()
+                    if k == "arms"
+                )
+                print(f"    {arms} arms; the inspector was asked about at most {INSPECT_ARMS} per dataset")
+                continue
             hand_checks(name, facts)
+        if EXISTING:
+            print("\nfact x reader (gives / -):")
+            print("\n".join(matrix(per_project)))
+            print(f"\nwhole test {time.time() - t0:.0f}s")
+            return summary()
         dumper_checks(projects["tutorial"])
         runs_list_states_no_value()
         print("\nfact x reader (gives / -), over the five projects:")

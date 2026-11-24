@@ -25,7 +25,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         run-dry-run run sweep \
         runs-list run-compare leaderboard run-promote \
-        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check upgrade-check stores-check coverage ci test smoke-fixture cost-report facts-dump clean clean-cache \
+        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check upgrade-check stores-check coverage ci test smoke-fixture cost-report facts-dump reader-agreement-repo clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -340,6 +340,12 @@ cost-report:
 # under an installed evh with another interpreter: `python tools/facts_dump.py --evh evh --project <dir>`).
 facts-dump:
 	$(PYTHON) tools/facts_dump.py $(ARGS)
+
+# Every reader (CLI, API, MCP, catalog export, inspector) asked for the same facts of this repository's own data, on a
+# copy in a temporary folder (nothing is written to data/). PROJECT names another project root (config.yaml and data/).
+PROJECT ?= $(CURDIR)
+reader-agreement-repo:
+	EVH_AGREE_PROJECT=$(PROJECT) $(PYTHON) tests/test_reader_agreement.py
 
 
 leaderboard:

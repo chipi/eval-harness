@@ -77,9 +77,12 @@ has two new checks (V29 for every `of`, V30), and a note for each measure whose 
     come, `evh run` (not `--scratch`) and `evh import-run` refuse a run with no `--goal` (`bad-argument`); validate's V14
     only failed it afterwards. `import-run` takes `--goal G` now: add it to the scripts that bring runs in.
 - **`evh validate` has two checks that can fail a tree that passed.**
-  - **V30:** a goal that lists a dataset that does not exist, and a score whose reference or label set is gone, are
-    failures, each named with the file that holds the link (`runs/<id>/run.json`). A project that deleted a reference its
-    runs were scored against fails it: restore the folder (`evh reference-promote`), re-score against a reference that is
+  - **V30:** a run the harness scored (`evh run`, `rescore`, `judge-score`, `sheet-import`) whose reference or label set
+    is gone fails, named with the file that holds the link (`runs/<id>/run.json`). A goal's `datasets:` entry that names
+    no dataset (a plain id, prose or a pattern) is a warning, and an imported run's reference kept outside `data/` is a
+    note: neither fails. From 0.9, a plain id that names no dataset fails: make the dataset (`evh dataset-create`),
+    remove the entry, or write it as prose. A project that deleted a reference its harness-scored runs were scored
+    against fails it: restore the folder (`evh reference-promote`), re-score against a reference that is
     there (`evh rescore --reference-id`), or remove the runs. `evh validate` also notes (V16) each run scored against a
     reference that is no longer under `data/references/`.
   - **V29** now holds a `retime` and a `pair` run's `of` too, not a repeat's alone: it fails one that names a run of another
