@@ -226,6 +226,7 @@ with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as els
         },
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "runs: <project>/data/runs, not relative to the shell's directory",
@@ -254,6 +255,7 @@ with tempfile.TemporaryDirectory() as top:
         env={**os.environ, "PYTHONPATH": str(HERE.parent), "EVAL_HOME": str(pinned)},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "pinned project: the bundled adapter id is the package's copy, and the parent is not searched",
@@ -336,6 +338,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "V14: a goal saying higher while its runs record lower fails",
@@ -359,6 +362,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "V1: a system key nothing reads, and a malformed verdict, fail",
@@ -380,7 +384,9 @@ with tempfile.TemporaryDirectory() as tmp:
     env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""}
 
     def _default_id() -> str:
-        r = subprocess.run([sys.executable, str(adapter_probe)], env=env, capture_output=True, text=True)
+        r = subprocess.run(
+            [sys.executable, str(adapter_probe)], env=env, capture_output=True, text=True, encoding="utf-8"
+        )
         return r.stdout.strip() or r.stderr[-300:]
 
     bundled_id = _default_id()
@@ -434,6 +440,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     bl_rel = "baselines/_dataset/d/1.json"
     with aimed():
@@ -447,7 +454,11 @@ with tempfile.TemporaryDirectory() as tmp:
 
     def _v6() -> str:
         r = subprocess.run(
-            [sys.executable, str(HERE / "cli.py"), "validate"], env=env, capture_output=True, text=True
+            [sys.executable, str(HERE / "cli.py"), "validate"],
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         )
         return next((ln for ln in r.stdout.splitlines() if " V6 " in ln), r.stdout[-300:])
 
@@ -480,6 +491,7 @@ with tempfile.TemporaryDirectory() as tmp:
         env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "rescore: --out is not a flag any more",
@@ -524,6 +536,7 @@ def _stats_project(tmp: str, rec: dict) -> None:
             capture_output=True,
             text=True,
             stdin=subprocess.DEVNULL,
+            encoding="utf-8",
         )
         if moved.returncode != 0:
             raise RuntimeError(f"data-migrate --to sqlite failed: {(moved.stdout + moved.stderr)[-500:]}")
@@ -540,6 +553,7 @@ def _validate(tmp: str, extra: dict) -> str:
         },
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     return r.stdout
 

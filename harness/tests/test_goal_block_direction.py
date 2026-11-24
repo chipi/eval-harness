@@ -76,7 +76,11 @@ def leaders(goal: str, dataset: str, out: Path) -> dict:
     text = " ".join(ln for b in lb.get("blocks", []) for ln in b.get("lines", []))
     m = re.search(rf"goal {goal}: leader (\S+?),", text)
     got["leaderboard goal line"] = m.group(1) if m else None
-    page = (out / "g" / f"{goal}.html").read_text() if (out / "g" / f"{goal}.html").exists() else ""
+    page = (
+        (out / "g" / f"{goal}.html").read_text(encoding="utf-8")
+        if (out / "g" / f"{goal}.html").exists()
+        else ""
+    )
     m = re.search(r"Quality leader: (\S+)", re.sub(r"<[^>]+>|\s+", " ", page))
     got["goal page"] = m.group(1) if m else None
     return got
@@ -88,7 +92,7 @@ try:
         (proj / "data" / "systems").mkdir(parents=True)
         (proj / "data" / "models").mkdir()
     shutil.copytree(HARNESS / "tutorial" / "tickets", proj / "tutorial" / "tickets")
-    (proj / "wer_adapter.py").write_text(ADAPTER)
+    (proj / "wer_adapter.py").write_text(ADAPTER, encoding="utf-8")
     for name, v in ARMS:
         _runstore.write_text(
             proj,
@@ -131,7 +135,7 @@ try:
         got["goal-leaderboard direction"] == "lower",
         got["goal-leaderboard direction"],
     )
-    glance = (out / "goals.html").read_text() if (out / "goals.html").exists() else ""
+    glance = (out / "goals.html").read_text(encoding="utf-8") if (out / "goals.html").exists() else ""
     row = glance[glance.find("g_open") :]
     row = row[: row.find("</tr>")]
     check(
@@ -142,7 +146,11 @@ try:
 
     def decides(goal: str) -> str:
         """The text of the goal page's "decides" fact."""
-        page = (out / "g" / f"{goal}.html").read_text() if (out / "g" / f"{goal}.html").exists() else ""
+        page = (
+            (out / "g" / f"{goal}.html").read_text(encoding="utf-8")
+            if (out / "g" / f"{goal}.html").exists()
+            else ""
+        )
         at = page.find("<dt>decides</dt>")
         return re.sub(r"<[^>]+>|\s+", " ", page[at : page.find("</dd>", at)]).strip() if at >= 0 else ""
 
@@ -225,7 +233,7 @@ for f in sorted((HARNESS / "scripts").rglob("*.py")):
     rel = f.relative_to(HARNESS / "scripts").as_posix()
     if rel.startswith("catalog_assets"):
         continue
-    for fn, n in reads(f.read_text()):
+    for fn, n in reads(f.read_text(encoding="utf-8")):
         if (rel, fn) not in READS:
             unlisted.append(f"{rel}:{n} in {fn or 'module'}")
 check(

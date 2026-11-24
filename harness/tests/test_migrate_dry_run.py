@@ -66,8 +66,8 @@ def project(name: str, config_dir: bool = False) -> Path:
         configs = p / "projects" / "x" / "configs"
         configs.parent.mkdir(parents=True)
         shutil.move(str(p / "data" / "configs"), str(configs))
-        (p / "data" / "validate.json").write_text('{\n  "configs": []\n}\n')
-        (p / "config.yaml").write_text("store: files\nconfigs:\n  - projects/x/configs\n")
+        (p / "data" / "validate.json").write_text('{\n  "configs": []\n}\n', encoding="utf-8")
+        (p / "config.yaml").write_text("store: files\nconfigs:\n  - projects/x/configs\n", encoding="utf-8")
     return p
 
 
@@ -130,7 +130,8 @@ try:
     bad = project("bad")
     (bad / "data" / "models").mkdir()
     (bad / "data" / "models" / "m1.yaml").write_text(
-        "model_id: m1\ndeployments:\n  - id: a\n  - id: b\nsmokes:\n  tickets_lead1_v1:\n    ok: true\n"
+        "model_id: m1\ndeployments:\n  - id: a\n  - id: b\nsmokes:\n  tickets_lead1_v1:\n    ok: true\n",
+        encoding="utf-8",
     )
     before = tree(bad)
     d = evh(bad, "migrate", "--dry-run")
@@ -162,7 +163,7 @@ try:
     env.update(EVAL_HOME=str(hand), EVAL_STORE="files")
     runs = [
         subprocess.run([sys.executable, str(HERE / "migrate.py")], cwd=hand, env={**env, **extra}, capture_output=True,
-                       text=True, stdin=subprocess.DEVNULL, timeout=120)
+                       text=True, stdin=subprocess.DEVNULL, timeout=120, encoding="utf-8")
         for extra in ({}, {"EVH_MIGRATE_SCRATCH_COPY": str(base / "elsewhere")})
     ]  # fmt: skip
     check(

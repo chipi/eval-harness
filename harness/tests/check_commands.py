@@ -86,7 +86,9 @@ ROOT_MK = makefile(REPO / "Makefile")
 @cache
 def flags_of(script: Path) -> frozenset:
     """Extract all --flags from a script's --help output."""
-    r = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True, timeout=120)
+    r = subprocess.run(
+        [sys.executable, str(script), "--help"], capture_output=True, text=True, timeout=120, encoding="utf-8"
+    )
     return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
 
 
@@ -94,7 +96,11 @@ def evh_flags(name: str) -> frozenset:
     """Extract all --flags from `evh <name> --help`: a command made from an operation of the model (RFC-032) shares
     its script with the others, and only evh tells it which it is."""
     r = subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), name, "--help"], capture_output=True, text=True, timeout=120
+        [sys.executable, str(HERE / "cli.py"), name, "--help"],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        encoding="utf-8",
     )
     return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
 

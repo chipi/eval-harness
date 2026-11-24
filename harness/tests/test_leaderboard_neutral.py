@@ -55,7 +55,7 @@ try:
         (proj / "data" / "models").mkdir()
     shutil.copytree(HARNESS / "tutorial" / "tickets", proj / "tutorial" / "tickets")
     (proj / "adapters").mkdir()
-    (proj / "adapters" / "count.py").write_text(ADAPTER)
+    (proj / "adapters" / "count.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     for name, words in (("w4", 4), ("w9", 9)):

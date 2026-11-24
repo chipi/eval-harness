@@ -103,10 +103,10 @@ with tempfile.TemporaryDirectory() as tmp:
     def validated(root: Path) -> str:
         env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
         env.update(EVAL_HOME=str(root), EVAL_BUILD_REF="test-runs-location")
-        (root / "data" / "project.yaml").write_text(f"format: {_format.FORMAT}\n")
+        (root / "data" / "project.yaml").write_text(f"format: {_format.FORMAT}\n", encoding="utf-8")
         r = subprocess.run(
             [sys.executable, str(Path(__file__).resolve().parents[1] / "scripts" / "cli.py"), "validate"],
-            cwd=root, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
+            cwd=root, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False, encoding="utf-8",
         )  # fmt: skip
         return r.stdout + r.stderr
 
@@ -122,7 +122,7 @@ with tempfile.TemporaryDirectory() as tmp:
     from evaluation_harness.catalog_adapter import HarnessAdapter
 
     # the catalog reads the runs git keeps, never one it ignores (it shows what a clone and the release show)
-    (kept_root / ".gitignore").write_text(IGNORE + "data/runs/local_*/\n")
+    (kept_root / ".gitignore").write_text(IGNORE + "data/runs/local_*/\n", encoding="utf-8")
     _runstore.make_run(
         kept / "runs",
         "local_v1_20261031T000000Z",

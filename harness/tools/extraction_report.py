@@ -425,4 +425,7 @@ def _mean_item_f1(by_item: dict, gold: dict) -> float:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     raise SystemExit(main())

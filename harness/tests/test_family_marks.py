@@ -65,6 +65,7 @@ try:
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     out = r.stdout + r.stderr
     small = next((ln for ln in out.splitlines() if ln.strip().startswith("arm_small")), "")

@@ -251,7 +251,10 @@ def run_system(
     argv += ["--round", round_id] if round_id else []
     argv += ["--repeat", str(repeats)] if repeats > 1 else []
     argv += ["--items", str(items)] if items is not None else []
-    r, paid = _spend.run_child(argv, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+    # the arm is a child told to write UTF-8 (_spend.run_child); replacement keeps a stray byte from crashing here
+    r, paid = _spend.run_child(
+        argv, capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8", errors="replace"
+    )
     sys.stderr.write(r.stderr)
     runs = []
     with contextlib.suppress(ValueError, AttributeError):
@@ -551,7 +554,12 @@ class CommandSampler:
         import shlex  # noqa: PLC0415
 
         self.p = subprocess.Popen(  # nosec B603 - the project's own sampler, named in its spec
-            shlex.split(command), stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, cwd=_common.ROOT
+            shlex.split(command),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            cwd=_common.ROOT,
+            encoding="utf-8",
         )
 
     def _say(self, msg: dict[str, Any]) -> dict[str, Any]:

@@ -24,6 +24,8 @@ import sys
 import traceback
 from pathlib import Path
 
+from evaluation_harness._console import degrade_unencodable
+
 HERE = Path(__file__).resolve().parent
 
 #: command -> (script, one line of help). Names follow the Makefile targets.
@@ -81,6 +83,7 @@ def _usage() -> str:
 
 def main(argv: list[str] | None = None) -> int:
     """Dispatch evh commands to their scripts."""
+    degrade_unencodable()
     # No script directory on sys.path: the scripts import the package (evaluation_harness.*), and a
     # bare `stats` or `adapter` in a project is the project's own.
     argv = list(sys.argv[1:] if argv is None else argv)

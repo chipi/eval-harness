@@ -36,6 +36,7 @@ def usage(name: str) -> tuple[str, int, str]:
         text=True,
         timeout=120,
         stdin=subprocess.DEVNULL,
+        encoding="utf-8",
     )
     first = next((ln for ln in r.stdout.splitlines() if ln.strip()), "")
     return name, r.returncode, first

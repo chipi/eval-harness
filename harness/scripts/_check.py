@@ -18,6 +18,13 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
+from evaluation_harness._console import degrade_unencodable
+
+degrade_unencodable()  # a test script's labels carry "×" and "—": the console that cannot print them gets escapes
+# The children a test script runs are read back as UTF-8 (each of its subprocess calls says so): they write UTF-8,
+# whatever the console's encoding is. A test that wants a child with a console of its own removes this from its env.
+_os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
 #: (label, passed) for every check this process made.
 results: list[tuple[str, bool]] = []
 

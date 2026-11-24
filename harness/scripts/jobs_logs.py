@@ -12,4 +12,7 @@ import sys
 from evaluation_harness._jobs_cmd import run
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(run("logs"))

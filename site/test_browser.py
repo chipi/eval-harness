@@ -47,7 +47,9 @@ def prod_headers() -> dict:
     """The headers the deploy adds, as nginx would send them (the CSP report target, rendered at
     deploy time, left out)."""
     out = {}
-    for name, value in re.findall(r'^add_header\s+(\S+)\s+"([^"]*)"', HEADERS_CONF.read_text(), re.M):
+    for name, value in re.findall(
+        r'^add_header\s+(\S+)\s+"([^"]*)"', HEADERS_CONF.read_text(encoding="utf-8"), re.M
+    ):
         out[name] = value.replace("__CSP_REPORT__", "").strip()
     if "Content-Security-Policy" not in out:
         raise SystemExit(f"no Content-Security-Policy in {HEADERS_CONF}")
@@ -67,7 +69,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 def pages() -> list:
-    locs = re.findall(r"<loc>([^<]+)</loc>", (PUBLIC / "sitemap.xml").read_text())
+    locs = re.findall(r"<loc>([^<]+)</loc>", (PUBLIC / "sitemap.xml").read_text(encoding="utf-8"))
     return [urlparse(u).path.lstrip("/") or "index.html" for u in locs] + ["404.html"]
 
 

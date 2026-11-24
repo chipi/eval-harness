@@ -95,6 +95,7 @@ with tempfile.TemporaryDirectory() as td:
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     out = run.stdout + run.stderr
     check(
@@ -146,7 +147,7 @@ with tempfile.TemporaryDirectory() as td:
     acc_run = subprocess.run(
         [sys.executable, str(HERE / "scripts" / "cli.py"), "deployment-accept", "fake-1b", "here",
          "--flag", "determinism", "--why", "it is checked again on every onboarding"],
-        capture_output=True, text=True, env={**env, "EVH_ACTOR": "person:tester"},
+        capture_output=True, text=True, env={**env, "EVH_ACTOR": "person:tester"}, encoding="utf-8",
     )  # fmt: skip
     check(
         "a deployment model-onboard wrote is saved again through the model (deployment-accept)",
@@ -170,6 +171,7 @@ with tempfile.TemporaryDirectory() as td:
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     out = run.stdout + run.stderr
     check(
@@ -192,6 +194,7 @@ with tempfile.TemporaryDirectory() as td:
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     acc = view(td, "fake-1b")["deployments"][0].get("onboarding") or {}
     check(
@@ -220,6 +223,7 @@ with tempfile.TemporaryDirectory() as td:
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     check(
         "onboard: a build the server serves differently is flagged",
@@ -245,6 +249,7 @@ with tempfile.TemporaryDirectory() as td:
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     check(
         "onboard: with two deployments one must be named",
@@ -264,6 +269,7 @@ with tempfile.TemporaryDirectory() as td:
         capture_output=True,
         text=True,
         env=env,
+        encoding="utf-8",
     )
     got = view(td, "fake-1b")
     deps = {d["id"]: d for d in got["deployments"]}

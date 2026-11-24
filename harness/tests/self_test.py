@@ -152,7 +152,7 @@ def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
     import os  # noqa: PLC0415
 
     e = {**os.environ, **(env or {})}
-    return subprocess.run([PY, *args], cwd=ROOT, capture_output=True, text=True, env=e)
+    return subprocess.run([PY, *args], cwd=ROOT, capture_output=True, text=True, env=e, encoding="utf-8")
 
 
 def test_dotenv_does_not_override_exported() -> None:
@@ -161,7 +161,7 @@ def test_dotenv_does_not_override_exported() -> None:
 
     from evaluation_harness._common import load_dotenv  # noqa: PLC0415
 
-    with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as fh:
+    with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False, encoding="utf-8") as fh:
         fh.write("EVAL_SELFTEST_A=from_file\nEVAL_SELFTEST_B=from_file\n")
         path = Path(fh.name)
     os.environ["EVAL_SELFTEST_A"] = "from_shell"
@@ -200,6 +200,7 @@ def test_import_reads_no_env_and_no_paths() -> None:
             capture_output=True,
             text=True,
             timeout=60,
+            encoding="utf-8",
         )
         check(
             "import: a library import reads no .env and resolves paths on first use",
@@ -212,6 +213,7 @@ def test_import_reads_no_env_and_no_paths() -> None:
             capture_output=True,
             text=True,
             timeout=60,
+            encoding="utf-8",
         )
         check(
             "import: a harness command reads the project's .env",
@@ -396,6 +398,7 @@ def test_no_absolute_home_path_in_committed_data() -> None:
             text=True,
             timeout=30,
             check=True,
+            encoding="utf-8",
         ).stdout.split("\0")
         tracked = [ROOT / f for f in listed if f.endswith(".json")]
     except Exception:  # noqa: BLE001 -- no git available: fall back to scanning everything
@@ -444,7 +447,7 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
     baselines = sorted((ROOT / "data" / "baselines").glob("*/*/*.json"))  # RFC-027: <goal>/<dataset>/<n>.json
     check("consistency: a baseline ships", bool(baselines), "none found")
     for b in baselines:
-        promoted_from = json.loads(b.read_text()).get("promoted_from")
+        promoted_from = json.loads(b.read_text(encoding="utf-8")).get("promoted_from")
         if not promoted_from:
             continue
         run_dir = ROOT / "data" / "runs" / promoted_from
@@ -471,6 +474,7 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
         cwd=ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     ).stdout.split()
     tracked_ref_ids = {pathlib.Path(f).parent.name for f in tracked_refs}
     needs_fetch = set()
@@ -1484,6 +1488,14 @@ def test_example_scorer_suites_pass() -> None:
             "a project's stats.py or adapter.py never replaces the harness's, nor the reverse",
         ),
         (
+            "test_encoding_explicit.py",
+            "every text read, write and text-mode subprocess names its encoding (no locale's default)",
+        ),
+        (
+            "test_locale_independent.py",
+            "under a non-UTF-8 locale a command prints escapes, not a traceback; text is read back exactly",
+        ),
+        (
             "test_hf_rows.py",
             "the examples' Hub reader through the huggingface source: pages, pinned commit, rows map",
         ),
@@ -1579,7 +1591,7 @@ def test_fingerprint_version_is_read_somewhere() -> None:
     reporting a bare hash mismatch and sending a reader hunting for a change that is
     not there.
     """
-    src = (HERE / "compare_runs.py").read_text()
+    src = (HERE / "compare_runs.py").read_text(encoding="utf-8")
     check(
         "compare_runs notices a fingerprint version mismatch", 'fa.get("version") != fb.get("version")' in src
     )
@@ -1824,8 +1836,8 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
     # test_run_reports.py).
     _runstore.put_partial_text(crash, "".join(f"{_json.dumps(x)}\n" for x in _runstore.run_rows(crash)))
     shutil.rmtree(crash / "scores", ignore_errors=True)
-    rec = _json.loads((crash / "run.json").read_text())
-    (crash / "run.json").write_text(_json.dumps({**rec, "run_id": crash.name}))
+    rec = _json.loads((crash / "run.json").read_text(encoding="utf-8"))
+    (crash / "run.json").write_text(_json.dumps({**rec, "run_id": crash.name}), encoding="utf-8")
     check(
         "resume: a crashed run still carries its identity (run.json) and no score",
         (crash / "run.json").is_file() and not model_runs.scores_of(crash),
@@ -1887,13 +1899,15 @@ def _resume_scores_and_persists(runs: Path, fixture: Path) -> None:
         "    out = {'words': float(len(output.split()))}\n"
         "    if PASS == 1.0:\n"
         "        out['old_metric'] = 1.0\n"
-        "    return out\n"
+        "    return out\n",
+        encoding="utf-8",
     )
     # The fixture system beside the project's own for the test, removed with its runs (a system is found by its id).
     fx_system = HERE.parent / "data" / "systems" / "fx_extra_v1.yaml"
     fx_system.write_text(
         "system_id: fx_extra_v1\nadapter: ../../.build/scratch/selftest-resume-fixture/fx_adapter.py\n"
-        "params:\n  provider: fixture\n"
+        "params:\n  provider: fixture\n",
+        encoding="utf-8",
     )
     try:
         fx_arm = ("--system", "fx_extra_v1", "--dataset", "smoke_v1", *scratch)
@@ -2020,7 +2034,7 @@ def test_writes_leave_no_partial_file() -> None:
 
     with _tf.TemporaryDirectory() as td:
         target = pathlib.Path(td) / "out.txt"
-        target.write_text("the original, complete content")
+        target.write_text("the original, complete content", encoding="utf-8")
 
         # WINDOW 1: death DURING the write. A lone surrogate cannot be encoded to
         # utf-8, so the write raises partway -- the same shape as running out of disk.
@@ -2030,8 +2044,8 @@ def test_writes_leave_no_partial_file() -> None:
             pass
         check(
             "atomic write: a write that dies partway leaves the original intact",
-            target.read_text() == "the original, complete content",
-            f"file now: {target.read_text()[:60]!r}",
+            target.read_text(encoding="utf-8") == "the original, complete content",
+            f"file now: {target.read_text(encoding='utf-8')[:60]!r}",
         )
 
         # WINDOW 2: death AFTER the temp file is complete, BEFORE the rename. This is
@@ -2049,8 +2063,8 @@ def test_writes_leave_no_partial_file() -> None:
             _os.replace = real_replace
         check(
             "atomic write: a death before the rename leaves the original intact",
-            target.read_text() == "the original, complete content",
-            f"file now: {target.read_text()[:60]!r}",
+            target.read_text(encoding="utf-8") == "the original, complete content",
+            f"file now: {target.read_text(encoding='utf-8')[:60]!r}",
         )
 
         leftovers = [f.name for f in pathlib.Path(td).iterdir() if f.name != "out.txt"]
@@ -2059,8 +2073,8 @@ def test_writes_leave_no_partial_file() -> None:
         write_text_atomic(target, "the new content")
         check(
             "atomic write: a successful write still replaces the file",
-            target.read_text() == "the new content",
-            target.read_text()[:60],
+            target.read_text(encoding="utf-8") == "the new content",
+            target.read_text(encoding="utf-8")[:60],
         )
         from evaluation_harness._common import write_bytes_atomic  # noqa: PLC0415
 
@@ -2077,15 +2091,15 @@ def test_writes_leave_no_partial_file() -> None:
         # file. Without this the test would pass against any implementation that
         # happens to exist, including a broken one.
         naive = pathlib.Path(td) / "naive.txt"
-        naive.write_text("the original, complete content")
+        naive.write_text("the original, complete content", encoding="utf-8")
         try:
             naive.write_text("good start \ud800 bad", encoding="utf-8")
         except Exception:  # noqa: BLE001
             pass
         check(
             "atomic write: and the plain write_text it replaces DOES lose the file",
-            naive.read_text() != "the original, complete content",
-            f"write_text somehow preserved it: {naive.read_text()[:40]!r}",
+            naive.read_text(encoding="utf-8") != "the original, complete content",
+            f"write_text somehow preserved it: {naive.read_text(encoding='utf-8')[:40]!r}",
         )
 
 
@@ -2119,9 +2133,9 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
     with _tf.TemporaryDirectory() as td:
         data = shadow_data(Path(td))
         dst = add_run(data, src)
-        j = _json.loads((dst / "run.json").read_text())
+        j = _json.loads((dst / "run.json").read_text(encoding="utf-8"))
         j["fingerprint"]["data"]["references_sha256"] = "0" * 64  # cannot match
-        (dst / "run.json").write_text(_json.dumps(j))
+        (dst / "run.json").write_text(_json.dumps(j), encoding="utf-8")
 
         before = {p.name for p in model_runs.scores_of(dst)}
         r = run(
@@ -2250,10 +2264,10 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
         # Swap two items' source_path. The files still exist; each item now points at the
         # other's text, so any scorer that reads the source must produce different numbers.
         ds_copy = data / "datasets" / "cnn_dailymail_200.json"
-        ds = _json.loads(ds_copy.read_text())
+        ds = _json.loads(ds_copy.read_text(encoding="utf-8"))
         items = [i for i in ds.get("items", []) if i.get("source_path")]
         items[0]["source_path"], items[1]["source_path"] = (items[1]["source_path"], items[0]["source_path"])
-        ds_copy.write_text(_json.dumps(ds))
+        ds_copy.write_text(_json.dumps(ds), encoding="utf-8")
         swapped = run(*args, env=env)
         b = rescored_scores()
 
@@ -2408,9 +2422,9 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
         dst = add_run(data, src)
         first = model_runs.first_score(dst)
         assert first is not None
-        m = _json.loads((first / "metrics.json").read_text())
+        m = _json.loads((first / "metrics.json").read_text(encoding="utf-8"))
         m.setdefault("metric_kinds", {})["llm_named_unknown"] = "quality"  # the stale state
-        (first / "metrics.json").write_text(_json.dumps(m))
+        (first / "metrics.json").write_text(_json.dumps(m), encoding="utf-8")
         dataset_id = (model_runs.record(first) or {}).get("dataset_id")
 
         # --wide: every metric column, so the order of the kinds is what is read, not the terminal's width.
@@ -2563,7 +2577,9 @@ def test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check() -> No
         body = b"an item"
         item = {"item_id": "a", "source_path": "a.txt", "source_sha256": _h.sha256(body).hexdigest()}
         for ds in ("here_v1", "absent_v1"):
-            (tmp / "datasets" / f"{ds}.json").write_text(json.dumps({"dataset_id": ds, "items": [item]}))
+            (tmp / "datasets" / f"{ds}.json").write_text(
+                json.dumps({"dataset_id": ds, "items": [item]}), encoding="utf-8"
+            )
         mat = tmp / "materialized" / "here_v1"
         mat.mkdir(parents=True)
         (mat / "a.txt").write_bytes(body)
@@ -2823,7 +2839,7 @@ def test_the_reports_significance_counts_are_real() -> None:
         )
         return
     sep, fam = int(m.group(1)), int(m.group(2))
-    report = (HERE.parents[1] / "research" / "REPORT_RETRIEVAL.md").read_text()
+    report = (HERE.parents[1] / "research" / "REPORT_RETRIEVAL.md").read_text(encoding="utf-8")
 
     # A RANGE IS AN ACCEPTABLE ANSWER, AND HERE IT IS THE HONEST ONE. This count is not
     # stable: two arms sit on their Holm thresholds (gemma_s 0.0045 vs 0.0042,
@@ -2948,9 +2964,9 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
         # Point the copy at a reference_id that cannot exist. Equivalent to a fresh clone,
         # where the real one is absent because the corpus is gitignored -- and it does not
         # touch the real references, so a crash here cannot damage them.
-        m = _json.loads((dst / "run.json").read_text())
+        m = _json.loads((dst / "run.json").read_text(encoding="utf-8"))
         m["fingerprint"]["data"]["reference_id"] = "gold/_selftest_absent_reference"
-        (dst / "run.json").write_text(_json.dumps(m))
+        (dst / "run.json").write_text(_json.dumps(m), encoding="utf-8")
 
         before = {p.name for p in model_runs.scores_of(dst)}
         r = run(
@@ -3054,6 +3070,7 @@ def test_rank_stability_ranks_the_right_way_up() -> None:
             capture_output=True,
             text=True,
             env={**os.environ, "EVAL_HOME": str(tmp), "EVAL_DATA_DIR": "data"},
+            encoding="utf-8",
         )
         check(
             "rank-stability: on a lower-is-better metric the leader is the lowest",
@@ -3149,9 +3166,9 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
         # A regression guard (fleet feedback 28): the same code at another commit declares
         # `expect_identical_to`, so the identical pair is what was asked for, not an inert knob; and a
         # guard that does NOT reproduce its config fails.
-        m = json.loads((root / "arm_b" / "run.json").read_text())
+        m = json.loads((root / "arm_b" / "run.json").read_text(encoding="utf-8"))
         m["expect_identical_to"] = "arm_a"
-        (root / "arm_b" / "run.json").write_text(json.dumps(m))
+        (root / "arm_b" / "run.json").write_text(json.dumps(m), encoding="utf-8")
         dupes = vt._v5_in("runs", arm_scores())
         n, bad = vt._v5_guards("runs", arm_scores())
         check(
@@ -3184,9 +3201,9 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
 
     base = HERE.parent / "data"
     # The worked example the repository ships: the run its demo baseline was promoted from.
-    shipped = _json.loads((base / "baselines" / "_dataset" / "smoke_v1" / "1.json").read_text())[
-        "promoted_from"
-    ]
+    shipped = _json.loads(
+        (base / "baselines" / "_dataset" / "smoke_v1" / "1.json").read_text(encoding="utf-8")
+    )["promoted_from"]
     src = base / "runs" / shipped
     check("rescore/reference-id: the committed fixture run exists", src.is_dir())
     if not src.is_dir():
@@ -3301,10 +3318,10 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     import yaml  # noqa: PLC0415
 
     ex = ROOT.parent / "examples"
-    table = json.loads((ex / "models.json").read_text())["aliases"]
+    table = json.loads((ex / "models.json").read_text(encoding="utf-8"))["aliases"]
     used = set()
     for cfg in ex.glob("*/systems/*.yaml"):
-        model = ((yaml.safe_load(cfg.read_text()) or {}).get("params") or {}).get("model", "")
+        model = ((yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}).get("params") or {}).get("model", "")
         if str(model).startswith("eval-"):
             used.add(model)
     check(
@@ -3319,7 +3336,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     )
     proxy = {
         m["model_name"]: m["litellm_params"]["model"]
-        for m in yaml.safe_load((ex / "litellm.config.yaml").read_text())["model_list"]
+        for m in yaml.safe_load((ex / "litellm.config.yaml").read_text(encoding="utf-8"))["model_list"]
     }
     check("litellm.config.yaml serves exactly models.json", proxy == table)
     wrong = []
@@ -3329,7 +3346,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
             wrong.append(model_runs.run_of(sd).name)
     check("models.json: agrees with every upstream id a committed run resolved", not wrong, f"{wrong[:3]}")
 
-    reg = json.loads((ex / "evals.json").read_text())["evals"]
+    reg = json.loads((ex / "evals.json").read_text(encoding="utf-8"))["evals"]
     sys.path.insert(0, str(ex))
     import reproduce  # noqa: PLC0415
 
@@ -3361,7 +3378,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     # revision REFERENCE.md cites.
     import re  # noqa: PLC0415
 
-    pins = json.loads((ex / "local_models.json").read_text())["revisions"]
+    pins = json.loads((ex / "local_models.json").read_text(encoding="utf-8"))["revisions"]
     clash = []
     for sd, m in real_scores(None):
         sut = _declared_identity(m)
@@ -3370,7 +3387,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
             if sut.get("id") in pins and pins[sut["id"]] != got:
                 clash.append(f"{model_runs.run_of(sd).name}: {str(got)[:12]}")
     check("local_models.json: agrees with every revision a committed run recorded", not clash, f"{clash[:3]}")
-    ref = (ROOT.parent / "docs" / "REFERENCE.md").read_text()
+    ref = (ROOT.parent / "docs" / "REFERENCE.md").read_text(encoding="utf-8")
     off = [
         k
         for k, v in pins.items()
@@ -3613,7 +3630,10 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     if made.returncode != 0:
         shutil.rmtree(proj, ignore_errors=True)
         return
-    ids = [i["item_id"] for i in _json.loads((data / "datasets" / "proj_v1.json").read_text())["items"]]
+    ids = [
+        i["item_id"]
+        for i in _json.loads((data / "datasets" / "proj_v1.json").read_text(encoding="utf-8"))["items"]
+    ]
     # A git project with gold references under the moved data root: the fingerprint read
     # `<root>/data`, so it recorded references_sha256 None and every run after the first
     # made the tree dirty (its own untracked run output under data/eval/stats/runs).
@@ -3653,7 +3673,7 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     )
     git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false"]
     for argv in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "project"]):
-        subprocess.run([*git, *argv], cwd=proj, capture_output=True, text=True)
+        subprocess.run([*git, *argv], cwd=proj, capture_output=True, text=True, encoding="utf-8")
 
     def scores(name: str, base: float, rows=None) -> Path:
         f = Path(tempfile.gettempdir()) / f"{proj.name}-{name}.jsonl"  # outside the project: not tree dirt
@@ -3835,7 +3855,7 @@ def test_hints_name_the_command_the_user_has() -> None:
         site = _wheel.install(tmp / "site-packages")
         proj = tmp / "project"
         (proj / "data" / "sources" / "h_v1").mkdir(parents=True)
-        (proj / "data" / "sources" / "h_v1" / "a.txt").write_text("One. Two.\n")
+        (proj / "data" / "sources" / "h_v1" / "a.txt").write_text("One. Two.\n", encoding="utf-8")
         env = {
             **os.environ,
             "EVAL_HOME": str(proj),
@@ -3847,7 +3867,12 @@ def test_hints_name_the_command_the_user_has() -> None:
 
         def evh(*args: str) -> str:
             r = subprocess.run(
-                [PY, "-m", "evaluation_harness", *args], cwd=proj, capture_output=True, text=True, env=env
+                [PY, "-m", "evaluation_harness", *args],
+                cwd=proj,
+                capture_output=True,
+                text=True,
+                env=env,
+                encoding="utf-8",
             )
             return r.stdout + r.stderr
 
@@ -3899,16 +3924,19 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         (data / "systems").mkdir(parents=True)
         from evaluation_harness import _format  # noqa: PLC0415
 
-        (data / "project.yaml").write_text(f"format: {_format.FORMAT}\n")  # as evh init stamps it
+        (data / "project.yaml").write_text(
+            f"format: {_format.FORMAT}\n", encoding="utf-8"
+        )  # as evh init stamps it
         for i in ("t1", "t2", "t3"):
             (data / "sources" / "rs_v1" / f"{i}.txt").write_text(
-                f"Ticket {i} cannot log in. It fails twice. The user reset the password. Support replied.\n"
+                f"Ticket {i} cannot log in. It fails twice. The user reset the password. Support replied.\n",
+                encoding="utf-8",
             )
         # Four arms: silver-calibrate needs three to rank plus the one authoring the silver.
         for n in (1, 2, 3, 4):
             name = "arm_echo" if n == 1 else f"arm_echo{n}"
             (data / "systems" / f"{name}_v1.yaml").write_text(
-                f"system_id: {name}_v1\nparams:\n  provider: echo\n  sentences: {n}\n"
+                f"system_id: {name}_v1\nparams:\n  provider: echo\n  sentences: {n}\n", encoding="utf-8"
             )
         env = {
             **os.environ,
@@ -3921,7 +3949,12 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
 
         def evh(*args: str) -> subprocess.CompletedProcess:
             return subprocess.run(
-                [PY, "-m", "evaluation_harness", *args], cwd=proj, capture_output=True, text=True, env=env
+                [PY, "-m", "evaluation_harness", *args],
+                cwd=proj,
+                capture_output=True,
+                text=True,
+                env=env,
+                encoding="utf-8",
             )
 
         steps = [
@@ -3981,7 +4014,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         answers = data.parent / "rs_gold"
         answers.mkdir(parents=True)
         for i in ("t1", "t2", "t3"):
-            (answers / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
+            (answers / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n", encoding="utf-8")
         r = evh(
             "label-import",
             "--sheet",
@@ -4048,7 +4081,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         # ...while the same set's files changing under a run is still called out: the score it was scored by is
         # not written over with other rows, and the refusal says why.
         kept = echo_scores("gold/rs_v1")
-        (gold / "t1.txt").write_text("Ticket t1: login fails twice.\n")
+        (gold / "t1.txt").write_text("Ticket t1: login fails twice.\n", encoding="utf-8")
         again = evh("rescore", "--dataset-id", "rs_v1", "--reference-id", "gold/rs_v1")
         check(
             "rescore against the same reference after its files changed: refused, the stored score kept",
@@ -4108,6 +4141,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                     capture_output=True,
                     text=True,
                     check=True,
+                    encoding="utf-8",
                 ).stdout.strip()
             )
 
@@ -4120,7 +4154,9 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         (data / "sources" / "jds_v1").mkdir(parents=True)
         ids = ["ep_1", "ep_2", "ep_3"]
         for i in ids:
-            (data / "sources" / "jds_v1" / f"{i}.txt").write_text(f"Article {i}. It has a few sentences.\n")
+            (data / "sources" / "jds_v1" / f"{i}.txt").write_text(
+                f"Article {i}. It has a few sentences.\n", encoding="utf-8"
+            )
         env = {
             "EVAL_HOME": str(proj),
             "EVAL_DATA_DIR": "data",
@@ -4138,6 +4174,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                 capture_output=True,
                 text=True,
                 env={**os.environ, **env},
+                encoding="utf-8",
             )
 
         made = evh(
@@ -4202,7 +4239,8 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                     "arms_match": "arm_",
                     "cost_cap_usd": 1.0,
                 }
-            )
+            ),
+            encoding="utf-8",
         )
 
         def judged_scores(scorer: str) -> list[Path]:
@@ -4268,6 +4306,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             capture_output=True,
             text=True,
             env={**os.environ, **env},
+            encoding="utf-8",
         )
         check(
             "installed judge-score: leaderboard reads the scored runs",
@@ -4297,7 +4336,8 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         # A scorer that declares its own task: labels, dimensions, a 0-3 scale, `{n}` prompt.
         (proj / "prompts" / "answers.txt").write_text(
             "Rate each of the {n} numbered answers to the question, 0 to 3, on correctness "
-            "and completeness. Reply as JSON: one list of {n} integers per dimension.\n"
+            "and completeness. Reply as JSON: one list of {n} integers per dimension.\n",
+            encoding="utf-8",
         )
         (data / "scorers" / "judge-task-v1.yaml").write_text(
             _json.dumps(
@@ -4325,7 +4365,8 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                     },
                     "cost_cap_usd": 1.0,
                 }
-            )
+            ),
+            encoding="utf-8",
         )
         task_ran = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-task-v1", "--unvalidated")
         tvals = [
@@ -4334,9 +4375,12 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             if _outputs.has_rows(d)
             for r in _runstore.rows(d)
         ]
-        tsets = [_json.loads(f.read_text()) for f in (data / "judging-sets").glob("jds_v1-*.json")]
+        tsets = [
+            _json.loads(f.read_text(encoding="utf-8")) for f in (data / "judging-sets").glob("jds_v1-*.json")
+        ]
         tverd = [
-            _json.loads(f.read_text()) for f in (data / "judge-verdicts").glob("judge-task-v1/*/fa/*.json")
+            _json.loads(f.read_text(encoding="utf-8"))
+            for f in (data / "judge-verdicts").glob("judge-task-v1/*/fa/*.json")
         ]
         check(
             "installed judge-score: a declared task runs end to end, scores on its own scale",

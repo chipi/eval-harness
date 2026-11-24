@@ -60,7 +60,7 @@ try:
         (proj / "data" / "models").mkdir()
     shutil.copytree(HARNESS / "tutorial" / "tickets", proj / "tutorial" / "tickets")
     (proj / "adapters").mkdir()
-    (proj / "adapters" / "headline.py").write_text(ADAPTER)
+    (proj / "adapters" / "headline.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "headlines_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "headlines_v1")
     _runstore.write_text(proj, "goals/headline_short.yaml", GOAL.format(gid="headline_short", axes=""))
@@ -110,7 +110,11 @@ try:
     )
     out = proj / "catalog"
     r = evh("catalog", "--out", out)
-    page = (out / "m" / "words_out.html").read_text() if (out / "m" / "words_out.html").exists() else ""
+    page = (
+        (out / "m" / "words_out.html").read_text(encoding="utf-8")
+        if (out / "m" / "words_out.html").exists()
+        else ""
+    )
     check(
         "the metric's page: decides names its primary measure, the axis line says as an axis",
         r.returncode == 0
@@ -120,7 +124,7 @@ try:
         and "<dt>weighed by</dt>" not in page,
         r.stderr[-300:],
     )
-    table = (out / "metrics.html").read_text() if (out / "metrics.html").exists() else ""
+    table = (out / "metrics.html").read_text(encoding="utf-8") if (out / "metrics.html").exists() else ""
     check(
         "the metrics table: the axis note says as an axis",
         "weighed as an axis by" in table and ">weighed by<" not in table,

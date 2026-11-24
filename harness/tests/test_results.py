@@ -340,7 +340,7 @@ try:
     )
 
     # ── `call` and the schema ───────────────────────────────────────────────────────────────────────────────────────
-    schema = json.loads((HARNESS / "schemas" / "metrics.schema.json").read_text())
+    schema = json.loads((HARNESS / "schemas" / "metrics.schema.json").read_text(encoding="utf-8"))
     validator = jsonschema.Draft202012Validator(schema)
     check("model.runs: `call` is a run-only key", "call" in model_runs.RUN_ONLY, model_runs.RUN_ONLY)
 
@@ -371,7 +371,7 @@ PRIMARY_METRIC = "words"
     def evh(*args):
         return subprocess.run(
             [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
-            stdin=subprocess.DEVNULL, timeout=300,
+            stdin=subprocess.DEVNULL, timeout=300, encoding="utf-8",
         )  # fmt: skip
 
     def system(name, **params):
@@ -384,7 +384,7 @@ PRIMARY_METRIC = "words"
     if not _runstore.sqlite():
         (proj / "data" / "systems").mkdir(parents=True, exist_ok=True)
     shutil.copytree(HARNESS / "tutorial" / "tickets", proj / "tutorial" / "tickets")
-    (proj / "res_adapter.py").write_text(ADAPTER)
+    (proj / "res_adapter.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])

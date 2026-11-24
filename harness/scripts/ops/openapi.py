@@ -10,10 +10,10 @@ OpenAPI 3.1 takes JSON Schema 2020-12 as is, which is what the operations' input
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from typing import Any
 
+from evaluation_harness._console import dump_json
 from evaluation_harness.ops.registry import OPS, Op
 
 #: A refusal of the model's, as an HTTP status (the kinds are `_common.REFUSALS`).
@@ -659,9 +659,12 @@ def main(argv: list[str] | None = None) -> int:
     argparse.ArgumentParser(
         prog=evh_prog(), description="the API's OpenAPI 3.1 description, made from the operations, as JSON"
     ).parse_args(argv)
-    print(json.dumps(document(), ensure_ascii=False, indent=2))
+    print(dump_json(document(), indent=2))
     return 0
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main())

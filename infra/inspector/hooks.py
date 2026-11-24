@@ -194,7 +194,7 @@ def error(exc: BaseException, info: dict) -> None:
 
 def _rss_bytes() -> int:
     try:
-        for line in Path("/proc/self/status").read_text().splitlines():
+        for line in Path("/proc/self/status").read_text(encoding="utf-8").splitlines():
             if line.startswith("VmRSS:"):
                 return int(line.split()[1]) * 1024
     except OSError:

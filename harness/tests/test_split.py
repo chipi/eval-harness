@@ -56,10 +56,10 @@ src = proj / "src"
 src.mkdir()
 rows = ["item_id,group,day"]
 for i in range(300):
-    (src / f"i{i:03d}.txt").write_text(f"item {i}")
+    (src / f"i{i:03d}.txt").write_text(f"item {i}", encoding="utf-8")
     rows.append(f"i{i:03d},g{i % 60},2026-{1 + i % 12:02d}-{1 + i % 28:02d}")
-(proj / "fields.csv").write_text("\n".join(rows) + "\n")
-(proj / "fields_v1.csv").write_text("\n".join(rows[:101]) + "\n")
+(proj / "fields.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+(proj / "fields_v1.csv").write_text("\n".join(rows[:101]) + "\n", encoding="utf-8")
 r = evh(
     "dataset-create",
     "--dataset-id",
@@ -173,7 +173,7 @@ for name in ("base_v2_validation", "base_v2_test"):
 gold = proj / "gold"
 gold.mkdir()
 for i in range(100, 200):
-    (gold / f"i{i:03d}.txt").write_text(f"summary {i}\n")
+    (gold / f"i{i:03d}.txt").write_text(f"summary {i}\n", encoding="utf-8")
 evh("dataset-create", "--dataset-id", "kit_v1", "--source-dir", "src", "--glob", "i1*")
 evh("dataset-materialize", "--dataset-id", "kit_v1")
 evh("label-import", "--sheet", "gold", "--dataset-id", "kit_v1", "--set", "g", "--by", "t")

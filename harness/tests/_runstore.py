@@ -287,7 +287,7 @@ def migrate_in(proj: Path | str) -> None:
     env.update(EVAL_HOME=str(Path(proj).resolve()), EVAL_STORE="sqlite")
     r = subprocess.run(  # nosec B603 - this interpreter and the harness's own command
         [sys.executable, "-m", "evaluation_harness", "data-migrate", "--to", "sqlite"],
-        env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
+        env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False, encoding="utf-8",
     )  # fmt: skip
     if r.returncode != 0:
         raise RuntimeError(f"data-migrate --to sqlite failed: {(r.stdout + r.stderr)[-500:]}")

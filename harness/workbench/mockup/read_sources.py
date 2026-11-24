@@ -43,7 +43,7 @@ QUERIES = {
 }
 
 KEPT = H / "build" / "source_previews.json"
-out = json.loads(KEPT.read_text()) if KEPT.is_file() else {}
+out = json.loads(KEPT.read_text(encoding="utf-8")) if KEPT.is_file() else {}
 for name, query in QUERIES.items():
     if out.get(name, {}).get("rows") and out[name].get("query") == query:
         print(name, "kept from the last read")
@@ -56,7 +56,7 @@ for name, query in QUERIES.items():
         for it in itertools.islice(src.items(query), 4):
             text = it.get("text")
             if text is None and it.get("file"):
-                text = Path(it["file"]).read_text(errors="replace")
+                text = Path(it["file"]).read_text(errors="replace", encoding="utf-8")
             rows.append(
                 {
                     "id": str(it.get("item_id")),
@@ -69,4 +69,4 @@ for name, query in QUERIES.items():
     except Exception as e:  # noqa: BLE001 - the mockup shows what the source answered, whatever it was
         out[name] = {"query": query, "error": f"{type(e).__name__}: {e}"}
         print(name, "error", type(e).__name__, str(e)[:200])
-KEPT.write_text(json.dumps(out, indent=1, ensure_ascii=False))
+KEPT.write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")

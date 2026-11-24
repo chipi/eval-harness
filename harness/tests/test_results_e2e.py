@@ -108,7 +108,7 @@ class Project:
             os.environ.pop(k, None)
         _outputs.reset()
         r = self.evh("init", "--store", store)
-        (self.dir / "res_adapter.py").write_text(adapter_text())
+        (self.dir / "res_adapter.py").write_text(adapter_text(), encoding="utf-8")
         shutil.copytree(KIT / "tickets", self.dir / "tutorial" / "tickets")
         shutil.copy(KIT / "judge_prompt.txt", self.dir / "judge_prompt.txt")
         r = (
@@ -130,7 +130,7 @@ class Project:
     def evh(self, *args, **more):
         return subprocess.run(
             [sys.executable, str(HERE / "cli.py"), *args], cwd=self.dir, env={**self.env, **more}, capture_output=True,
-            text=True, stdin=subprocess.DEVNULL, timeout=600,
+            text=True, stdin=subprocess.DEVNULL, timeout=600, encoding="utf-8",
         )  # fmt: skip
 
     def system(self, name, **params):
@@ -373,7 +373,7 @@ def later(store: str) -> None:
             ), (what, m[ids[0]], m[ids[1]])
 
         # (a) rescore: the adapter file changed, so the scorer is another and the score a new one
-        (p.dir / "res_adapter.py").write_text(adapter_text(second=True))
+        (p.dir / "res_adapter.py").write_text(adapter_text(second=True), encoding="utf-8")
         r = p.evh("rescore", "--dataset-id", "tickets_v1", "--match", "arm_a")
         new = later_scores()
         ok, why = shaped(new[0], "rescore") if len(new) == 1 else (False, [str(s) for s in new])
@@ -463,11 +463,13 @@ def later(store: str) -> None:
         )
 
         # (c) sheet-import of a judged sheet
-        (p.dir / "rubric.md").write_text("Score the summary for what a person triaging needs to know.\n")
+        (p.dir / "rubric.md").write_text(
+            "Score the summary for what a person triaging needs to know.\n", encoding="utf-8"
+        )
         runs = ",".join(["arm_a_v1", "arm_b_v1"])
         sh = p.evh("sheet-export", "--dataset-id", "tickets_v1", "--runs", runs, "--csv", "sc.csv",
                    "--fill", "scores", "--scale", "1..10", "--rubric", "rubric.md", "--seed", "3")  # fmt: skip
-        key = json.loads((p.dir / "sc.key.json").read_text())
+        key = json.loads((p.dir / "sc.key.json").read_text(encoding="utf-8"))
         raw = (p.dir / "sc.csv").read_bytes().decode("utf-8-sig")
         sheet = list(csv.DictReader(io.StringIO(raw, newline="")))
         head = next(csv.reader(io.StringIO(raw)))

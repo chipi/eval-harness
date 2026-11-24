@@ -61,7 +61,7 @@ def serve() -> tuple[subprocess.Popen, int]:
 
 def get(port: int, path: str) -> tuple[int, dict]:
     """One API read with the server's token."""
-    token = (proj / ".build" / "api-token").read_text().strip()
+    token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
     req = urllib.request.Request(
         f"http://127.0.0.1:{port}/api/v1{path}",
         headers={"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"},
@@ -82,7 +82,7 @@ def item_view(public: bool) -> dict:
         + "print(json.dumps(cs.item({'arms': ['runs/tk_v1/echo_s1'], 'item': ['t01_login']})))"
     )
     r = subprocess.run([sys.executable, "-c", code], cwd=proj, env=dict(env, PYTHONPATH=str(HARNESS)),
-                       capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=300)  # fmt: skip
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=300, encoding="utf-8")  # fmt: skip
     try:
         return json.loads(r.stdout.splitlines()[-1])
     except (IndexError, ValueError):
@@ -99,7 +99,7 @@ try:
             f"systems/echo_s{s}.yaml",
             f"system_id: echo_s{s}\nparams:\n  provider: echo\n  sentences: {s}\n",
         )
-    sc = yaml.safe_load((KIT / "scorers" / "tickets-judge-v1.yaml").read_text())
+    sc = yaml.safe_load((KIT / "scorers" / "tickets-judge-v1.yaml").read_text(encoding="utf-8"))
     sc["dataset_id"] = "tk_v1"
     _runstore.write_text(proj, "scorers/tickets-judge-v1.yaml", yaml.safe_dump(sc, sort_keys=False))
     for step in (

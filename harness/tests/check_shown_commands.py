@@ -74,6 +74,7 @@ def _usage(name: str) -> tuple[dict, list, bool]:
         capture_output=True,
         text=True,
         timeout=120,
+        encoding="utf-8",
     )
     out = r.stdout + r.stderr
     usage = re.search(r"usage:(.*?)\n\s*\n", out, re.S)

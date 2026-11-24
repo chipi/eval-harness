@@ -59,7 +59,7 @@ def said(r):
 
 
 def git(*args):
-    return subprocess.run(["git", "-C", str(proj), *args], capture_output=True, text=True)
+    return subprocess.run(["git", "-C", str(proj), *args], capture_output=True, text=True, encoding="utf-8")
 
 
 def found(root: Path, word: str) -> list[str]:
@@ -67,7 +67,7 @@ def found(root: Path, word: str) -> list[str]:
     return [
         str(p.relative_to(root))
         for p in root.rglob("*")
-        if p.is_file() and word in p.read_text(errors="replace")
+        if p.is_file() and word in p.read_text(errors="replace", encoding="utf-8")
     ]
 
 
@@ -82,11 +82,11 @@ try:
         src = proj / "tutorial" / ds
         shutil.copytree(KIT / "tickets", src)
         for f in src.glob("*.txt"):
-            f.write_text(f"{word} reported this. " + f.read_text())
+            f.write_text(f"{word} reported this. " + f.read_text(encoding="utf-8"), encoding="utf-8")
         rows = ["item_id,note,link"] + [
             f"{f.stem},{word} note,https://example.org/{word}/{f.stem}" for f in sorted(src.glob("*.txt"))
         ]
-        (proj / f"{ds}_fields.csv").write_text("\n".join(rows) + "\n")
+        (proj / f"{ds}_fields.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
         r = evh(
             "dataset-create",
             "--dataset-id",
@@ -103,7 +103,7 @@ try:
         answers = proj / f"{ds}_gold"
         shutil.copytree(KIT / "gold", answers)
         for f in answers.glob("*.txt"):
-            f.write_text(f"{word} gold. " + f.read_text())
+            f.write_text(f"{word} gold. " + f.read_text(encoding="utf-8"), encoding="utf-8")
         r = evh(
             "label-import",
             "--sheet",
@@ -134,7 +134,7 @@ try:
         )
         check(f"setup: {ds}'s gold, imported and promoted", r.returncode == 0, said(r)[-300:])
         for c in ("tickets_lead1", "tickets_lead2"):
-            text = (KIT / "systems" / f"{c}_v1.yaml").read_text()
+            text = (KIT / "systems" / f"{c}_v1.yaml").read_text(encoding="utf-8")
             _runstore.write_text(
                 proj,
                 f"systems/{c}_{k}_v1.yaml",
@@ -184,7 +184,7 @@ try:
     page = cat / "d" / "tickets_h.html"
     check(
         "catalog: the hidden dataset's page says why its text is not shown",
-        page.is_file() and "text: hidden" in page.read_text(),
+        page.is_file() and "text: hidden" in page.read_text(encoding="utf-8"),
         str(sorted(p.name for p in (cat / "d").glob("*")) if (cat / "d").is_dir() else "no d/"),
     )
 
@@ -259,15 +259,15 @@ try:
             folder = proj / f"{ds}_{name}"
             folder.mkdir()
             for n, i in enumerate(ids):
-                (folder / f"{i}.txt").write_text(f"{MARK[k]}{extra if n % 2 else ''}\n")
+                (folder / f"{i}.txt").write_text(f"{MARK[k]}{extra if n % 2 else ''}\n", encoding="utf-8")
             r = evh(
                 "label-import", "--sheet", str(folder), "--dataset-id", ds, "--set", name, "--by", "owner"
             )
             check(f"setup: {ds}'s short label set {name}", r.returncode == 0, said(r)[-300:])
     cat2 = proj / "cat2"
     r = evh("catalog", "--out", str(cat2))
-    page_s = (cat2 / "d" / "tickets_s.html").read_text() if r.returncode == 0 else ""
-    page_h = (cat2 / "d" / "tickets_h.html").read_text() if r.returncode == 0 else ""
+    page_s = (cat2 / "d" / "tickets_s.html").read_text(encoding="utf-8") if r.returncode == 0 else ""
+    page_h = (cat2 / "d" / "tickets_h.html").read_text(encoding="utf-8") if r.returncode == 0 else ""
     check(
         "catalog: the shown dataset's label agreement names its labels (the surface shows them)",
         "how often two sets agree" in page_s and MARK["s"] in page_s,
@@ -401,7 +401,7 @@ try:
     cat3 = proj / "cat3"
     r = evh("catalog", "--out", str(cat3))
     goal_page = next(iter(cat3.rglob("studies_g.html")), None)
-    text = goal_page.read_text() if goal_page else ""
+    text = goal_page.read_text(encoding="utf-8") if goal_page else ""
     check(
         "catalog: a study on the shown dataset is on its goal page with its hypothesis; one on the hidden dataset is there, "
         "its hypothesis never",
@@ -491,7 +491,9 @@ try:
     out_j = proj / ".build" / "catalog-judges"
     r = evh("catalog", "--out", str(out_j))
     pj = (
-        (out_j / "scorers" / "jx_v1.html").read_text() if (out_j / "scorers" / "jx_v1.html").is_file() else ""
+        (out_j / "scorers" / "jx_v1.html").read_text(encoding="utf-8")
+        if (out_j / "scorers" / "jx_v1.html").is_file()
+        else ""
     )
     check(
         "catalog: the Scorers pages build with a scorer that judged a hidden dataset",
@@ -523,8 +525,10 @@ try:
     t1 = rel / "tags" / "tickets_h" / "t1" / "tags.json"
     check(
         "release: a hidden dataset's tag set is copied with its modes, without its notes",
-        t1.is_file() and '"too-long"' in t1.read_text() and MARK["h"] not in t1.read_text(),
-        t1.read_text()[:300] if t1.is_file() else "no tags.json",
+        t1.is_file()
+        and '"too-long"' in t1.read_text(encoding="utf-8")
+        and MARK["h"] not in t1.read_text(encoding="utf-8"),
+        t1.read_text(encoding="utf-8")[:300] if t1.is_file() else "no tags.json",
     )
     check("release: the shown dataset's outputs and gold texts are copied", bool(found(rel, MARK["s"])))
     check(
@@ -543,13 +547,13 @@ try:
     pr = relp / "catalog" / "scorers" / "jx_v1.html"
     check(
         "release: the catalog built from the copy has the scorer's page, the hidden set's verdicts none, the shown set's counted, nothing of the hidden text",
-        r.returncode == 0 and pr.is_file() and "js_h" in pr.read_text() and "js_s" in pr.read_text()
+        r.returncode == 0 and pr.is_file() and "js_h" in pr.read_text(encoding="utf-8") and "js_s" in pr.read_text(encoding="utf-8")
         and not found(relp / "catalog", MARK["h"]) and not found(relp / "catalog", f"{MARK['s']} said"),
         (said(r)[-300:], found(relp / "catalog", MARK["h"])),
     )  # fmt: skip
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
     jv = sorted((rel / "judge-validation").rglob("*.json")) if (rel / "judge-validation").is_dir() else []
-    jrecs = [json.loads(p.read_text()) for p in jv]
+    jrecs = [json.loads(p.read_text(encoding="utf-8")) for p in jv]
     check(
         "release: the people's checks are copied, every record without the judge's reply, its hash kept",
         len(jv) == 2
@@ -559,37 +563,40 @@ try:
     )  # fmt: skip
     check(
         "release: the scorer's page built from the copy lists the same checks as the project's (sources, judges)",
-        all(x in pr.read_text() and x in pj for x in ("<code>src_h</code>", "<code>src_s</code>", "<code>ja</code>"))
-        and "No check of the judges" not in pr.read_text(),
-        pr.read_text()[:0],
+        all(x in pr.read_text(encoding="utf-8") and x in pj for x in ("<code>src_h</code>", "<code>src_s</code>", "<code>ja</code>"))
+        and "No check of the judges" not in pr.read_text(encoding="utf-8"),
+        pr.read_text(encoding="utf-8")[:0],
     )  # fmt: skip
     sl, sh = rel / "studies" / "studies_g", rel / "faithfulness"
     check(
         "release: a study on the shown dataset is copied whole; one on the hidden dataset keeps its outcomes, reasons and "
         "counts, its hypotheses, rationales and instructions a mark",
-        MARK["s"] in (sl / "study_s.events.jsonl").read_text()
-        and MARK["s"] in (sl / "study_s.yaml").read_text()
+        MARK["s"] in (sl / "study_s.events.jsonl").read_text(encoding="utf-8")
+        and MARK["s"] in (sl / "study_s.yaml").read_text(encoding="utf-8")
         and counts["hidden_studies"] == 1
-        and "beat the best so far" in (sl / "study_h.events.jsonl").read_text()
-        and "(not published" in (sl / "study_h.events.jsonl").read_text()
-        and "(not published" in (sl / "study_h.yaml").read_text()
+        and "beat the best so far" in (sl / "study_h.events.jsonl").read_text(encoding="utf-8")
+        and "(not published" in (sl / "study_h.events.jsonl").read_text(encoding="utf-8")
+        and "(not published" in (sl / "study_h.yaml").read_text(encoding="utf-8")
         and (sl / "study_h" / "study_h-t1.yaml").is_file()
-        and '"vs_best"' in (sl / "study_h.events.jsonl").read_text(),
-        (counts, (sl / "study_h.events.jsonl").read_text()[:400]),
+        and '"vs_best"' in (sl / "study_h.events.jsonl").read_text(encoding="utf-8"),
+        (counts, (sl / "study_h.events.jsonl").read_text(encoding="utf-8")[:400]),
     )
-    fh, fs = (sh / "fleet_h" / "1.json").read_text(), (sh / "fleet_s" / "1.json").read_text()
+    fh, fs = (
+        (sh / "fleet_h" / "1.json").read_text(encoding="utf-8"),
+        (sh / "fleet_s" / "1.json").read_text(encoding="utf-8"),
+    )
     check(
         "release: a faithfulness record of a replay on the shown dataset is copied whole; on the hidden dataset it keeps "
         "the item, its kind and who named it, never what was answered or the cause",
         MARK["s"] in fs
-        and MARK["s"] in (sh / "fleet_s" / "1.exceptions.jsonl").read_text()
+        and MARK["s"] in (sh / "fleet_s" / "1.exceptions.jsonl").read_text(encoding="utf-8")
         and counts["hidden_faithfulness"] == 1
         and '"item_id"' in fh
         and '"differ"' in fh
         and json.loads(fh)["disagreements"][0]["production"] is None
         and "(not published" in fh
-        and "(not published" in (sh / "fleet_h" / "1.exceptions.jsonl").read_text()
-        and '"person"' in (sh / "fleet_h" / "1.exceptions.jsonl").read_text(),
+        and "(not published" in (sh / "fleet_h" / "1.exceptions.jsonl").read_text(encoding="utf-8")
+        and '"person"' in (sh / "fleet_h" / "1.exceptions.jsonl").read_text(encoding="utf-8"),
         (counts, fh[:400]),
     )
     check(

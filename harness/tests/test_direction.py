@@ -259,7 +259,7 @@ try:
         (proj / "data" / "systems").mkdir(parents=True)
         (proj / "data" / "models").mkdir()
     shutil.copytree(HARNESS / "tutorial" / "tickets", proj / "tutorial" / "tickets")
-    (proj / "dir_adapter.py").write_text(ADAPTER)
+    (proj / "dir_adapter.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: a frozen dataset", r.returncode == 0, r.stderr[-300:])
@@ -312,7 +312,7 @@ try:
     r = evh("catalog", "--out", out)
 
     def page(rel: str) -> str:
-        return (out / rel).read_text() if (out / rel).exists() else ""
+        return (out / rel).read_text(encoding="utf-8") if (out / rel).exists() else ""
 
     goal_page = page("g/g_err.html")
     check(
@@ -450,7 +450,11 @@ try:
         (shown.get("better"), order),
     )
     r = evh("catalog", "--out", out2)
-    own = (out2 / "m" / "my_rate.html").read_text() if (out2 / "m" / "my_rate.html").exists() else ""
+    own = (
+        (out2 / "m" / "my_rate.html").read_text(encoding="utf-8")
+        if (out2 / "m" / "my_rate.html").exists()
+        else ""
+    )
     at = own.find("<dt>better</dt>")
     cell = own[at : own.find("</dd>", at)] if at >= 0 else ""
 
@@ -534,7 +538,7 @@ found: list[str] = []
 seen_table: set[tuple[str, str]] = set()
 for f in sorted(SCRIPTS.rglob("*.py")):
     rel = f.relative_to(SCRIPTS).as_posix()
-    for name, fn, lineno, owner in calls(f.read_text()):
+    for name, fn, lineno, owner in calls(f.read_text(encoding="utf-8")):
         if (rel, fn) in STUDY_OWN and owner == "":
             continue
         if owner in ("", "_common") and name in TABLE:

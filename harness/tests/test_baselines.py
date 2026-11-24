@@ -59,7 +59,7 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (proj / "data" / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tickets")
-    goal = (KIT / "goals" / "tickets_summary.yaml").read_text().replace("tickets_v1", "tk_v1")
+    goal = (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8").replace("tickets_v1", "tk_v1")
     title = "title: One-line support ticket summaries"
     for which, name in (("one", "First"), ("two", "Second")):
         _runstore.write_text(
@@ -158,7 +158,7 @@ try:
     )
     evh("catalog")
     page = (
-        (proj / ".build/catalog/g/g_one.html").read_text()
+        (proj / ".build/catalog/g/g_one.html").read_text(encoding="utf-8")
         if (proj / ".build/catalog/g/g_one.html").exists()
         else ""
     )
@@ -167,7 +167,7 @@ try:
         "two_v1" in page and run_of("free_v1") not in page,
         page[:300],
     )
-    ds_page = (proj / ".build/catalog/datasets.html").read_text()
+    ds_page = (proj / ".build/catalog/datasets.html").read_text(encoding="utf-8")
     row = ds_page[ds_page.find('data-key="tk_v1"') :].split("</tr>")[0]
     check(
         "the datasets page names each goal's baseline on the dataset (the one goal's, not the latest of any)",

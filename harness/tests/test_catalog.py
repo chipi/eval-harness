@@ -99,12 +99,12 @@ try:
     run("", "b_2", "ds1", "arm_b", [0.8] * 10 + [0.5, 0.4])  # a repeat: averaged per item
     run("", "c_1", "ds2", "arm_c", base)
     (data / "references" / "gold" / "ds1").mkdir(parents=True)
-    (data / "references" / "gold" / "ds1" / "i00.txt").write_text(SECRET + " reference")
+    (data / "references" / "gold" / "ds1" / "i00.txt").write_text(SECRET + " reference", encoding="utf-8")
     promoted(
         data / "references" / "gold" / "ds1", "gold", "ds1", {"kind": "person", "by": "owner"}, "owner_v1"
     )
     (data / "runs" / ".hidden").mkdir()
-    (data / "runs" / ".hidden" / "x.txt").write_text("hidden")
+    (data / "runs" / ".hidden" / "x.txt").write_text("hidden", encoding="utf-8")
 
     A = HarnessAdapter(data)
     arms = sorted(A.arms())
@@ -149,11 +149,11 @@ try:
     )
     check(
         "build: no page carries a style attribute (a deployment's policy forbids them)",
-        not [p.name for p in html_pages if 'style="' in p.read_text()],
+        not [p.name for p in html_pages if 'style="' in p.read_text(encoding="utf-8")],
     )
     check(
         "build: the harness adds nothing to a page's head of its own (no analytics)",
-        all("<script defer" not in p.read_text() for p in html_pages),
+        all("<script defer" not in p.read_text(encoding="utf-8") for p in html_pages),
     )
     # --head: a deployment's own HTML (its analytics, a tag) in every page's head.
     cb.HEAD = '<meta name="deploy-tag" content="ours">\n'
@@ -164,7 +164,10 @@ try:
     check(
         "--head: its HTML is in every page's head",
         head_pages
-        and all('<meta name="deploy-tag" content="ours">\n</head>' in p.read_text() for p in head_pages),
+        and all(
+            '<meta name="deploy-tag" content="ours">\n</head>' in p.read_text(encoding="utf-8")
+            for p in head_pages
+        ),
     )
     # --about: a deployment's paragraph on the overview only.
     cb.ABOUT = '<p id="deploy-about">Our six evals.</p>'
@@ -174,26 +177,26 @@ try:
     check(
         "--about: its HTML is on the overview, under the description, and on no other page",
         '<div class="about"><p id="deploy-about">Our six evals.</p></div>'
-        in (about_out / "index.html").read_text()
+        in (about_out / "index.html").read_text(encoding="utf-8")
         and not [
             p.name
             for p in about_out.rglob("*.html")
-            if p.name != "index.html" and "deploy-about" in p.read_text()
+            if p.name != "index.html" and "deploy-about" in p.read_text(encoding="utf-8")
         ],
     )
     check(
         "build: without --about the overview has no about block",
-        'class="about"' not in (out / "index.html").read_text(),
+        'class="about"' not in (out / "index.html").read_text(encoding="utf-8"),
     )
     # --link: the parts of the publication, one switcher on every page, the catalog marked.
     parts_out = tmp / ".build" / "catalog-parts"
     cb.build(
         A, parts_out, (("Site", "https://s.example/"), ("Catalog", "."), ("Docs", "https://s.example/docs/"))
     )
-    ds_page = next((parts_out / "d").glob("*.html")).read_text()
+    ds_page = next((parts_out / "d").glob("*.html")).read_text(encoding="utf-8")
     check(
         "--link: Site · Catalog · Docs in order on every page, the catalog marked, the logo opens the first",
-        all('class="sections"' in p.read_text() for p in parts_out.rglob("*.html"))
+        all('class="sections"' in p.read_text(encoding="utf-8") for p in parts_out.rglob("*.html"))
         and re.findall(r'<nav class="sections"[^>]*>(.*?)</nav>', ds_page)[0]
         == '<a href="https://s.example/">Site</a><a href="../index.html" aria-current=page>Catalog</a>'
         '<a href="https://s.example/docs/">Docs</a>'
@@ -209,7 +212,8 @@ try:
     (data8 / "rounds" / "g" / "r3.yaml").write_text(
         "round_id: r3\ngoal: g\ndataset_id: ds_v1\narms:\n  - system: arm_v1\n    runs: [v_1]\n"
         "    entered: {how: ran, at: '2026-11-01T00:00:00Z'}\n    retired: {at: '2026-11-02T00:00:00Z', reason: x}\n"
-        "  - system: other_v1\n    runs: [w_1]\n    entered: {how: ran, at: '2026-11-01T00:00:00Z'}\n"
+        "  - system: other_v1\n    runs: [w_1]\n    entered: {how: ran, at: '2026-11-01T00:00:00Z'}\n",
+        encoding="utf-8",
     )
     r3 = HarnessAdapter(data8).rounds()[0]
     gone = r3["retired_arms"]
@@ -233,7 +237,8 @@ try:
     (data8 / "renames.json").write_text(
         json.dumps(
             {"arms": {"runs-rescored/3d3a6afdb978/runs/ds_v1/arm_v1": "rescored-3d3a6afd/ds_v1/arm_v1"}}
-        )
+        ),
+        encoding="utf-8",
     )
     out8 = tmp / ".build" / "catalog8"
     cb.build(HarnessAdapter(data8), out8)
@@ -241,9 +246,9 @@ try:
     check(
         "an arm renamed by the migration: its old page redirects to the new one",
         old_page.is_file()
-        and 'content="0; url=rescored-3d3a6afd-ds_v1-arm_v1.html"' in old_page.read_text()
+        and 'content="0; url=rescored-3d3a6afd-ds_v1-arm_v1.html"' in old_page.read_text(encoding="utf-8")
         and (out8 / "a" / "rescored-3d3a6afd-ds_v1-arm_v1.html").is_file(),
-        old_page.read_text()[:300] if old_page.is_file() else "no redirect page",
+        old_page.read_text(encoding="utf-8")[:300] if old_page.is_file() else "no redirect page",
     )
     check(
         "overview tiles: a long count also in short form for a phone, a short one as it is",
@@ -263,7 +268,7 @@ try:
         if p.is_file() and SECRET in p.read_text(encoding="utf-8", errors="ignore")
     ]
     check("build: no item text in any static file", not leaked, leaked)
-    page_ds1 = (out / "d/ds1.html").read_text()
+    page_ds1 = (out / "d/ds1.html").read_text(encoding="utf-8")
     check(
         "build: one inspector link for all the dataset's arms, best first",
         "inspect.html?runs=runs/ds1/arm_b,runs/ds1/arm_a" in page_ds1,
@@ -282,7 +287,7 @@ try:
         fx.patch(data3, rid, extra, lbl)
     silver = data3 / "references" / "silver" / "ds3"
     silver.mkdir(parents=True)
-    (silver / "i00.txt").write_text("x")
+    (silver / "i00.txt").write_text("x", encoding="utf-8")
     promoted(
         silver,
         "silver",
@@ -295,7 +300,7 @@ try:
     )
     out3 = tmp / ".build" / "catalog3"
     cb.build(HarnessAdapter(data3), out3)
-    ds3 = (out3 / "d/ds3.html").read_text().replace("<wbr>", "")
+    ds3 = (out3 / "d/ds3.html").read_text(encoding="utf-8").replace("<wbr>", "")
     check(
         "dataset page: rows tinted by what they are scored against",
         re.search(r'<tr class="t-author"><td><a class="cell-link" href="\.\./a/[^"]+">arm_s<', ds3)
@@ -312,12 +317,12 @@ try:
         "dataset page: the metric links to its page, the reference to its page, a judged row names its judge",
         'href="../m/acc.html"' in ds3 and 'href="../r/silver-ds3.html"' in ds3 and "judge <code" in ds3,
     )
-    metrics = (out3 / "metrics.html").read_text()
+    metrics = (out3 / "metrics.html").read_text(encoding="utf-8")
     check(
         "metrics page: the project's description, under the anchor every metric link uses; only recorded metrics listed",
         'id="m-acc"' in metrics and "share of items right" in metrics and "Prompt tokens" not in metrics,
     )
-    home = (out3 / "index.html").read_text()
+    home = (out3 / "index.html").read_text(encoding="utf-8")
     check(
         "home: the catalog at a glance (counts, goals, activity and spend, coverage, what was recorded)",
         all(
@@ -374,9 +379,9 @@ try:
     for name in ("activity.html", "arms.html"):
         check(f"build: {name}", (out3 / name).is_file())
     check("no switcher without --link: a catalog on its own", 'class="sections"' not in home)
-    dsp = (out3 / "datasets.html").read_text()
+    dsp = (out3 / "datasets.html").read_text(encoding="utf-8")
     check("datasets page: every dataset, linked", 'href="d/ds3.html"' in dsp)
-    refs_idx = (out3 / "references.html").read_text().replace("<wbr>", "")
+    refs_idx = (out3 / "references.html").read_text(encoding="utf-8").replace("<wbr>", "")
     check(
         "references page: every reference, its tier, dataset and author linked to the author's arm",
         'href="r/silver-ds3.html"' in refs_idx
@@ -391,7 +396,7 @@ try:
         str(arm_pages),
     )
     if arm_s_page:
-        ap_ = arm_s_page.read_text()
+        ap_ = arm_s_page.read_text(encoding="utf-8")
         check(
             "arm page: dataset, what it is scored against, its metrics linked, its runs, its config, and the note that it wrote its reference",
             'href="../d/ds3.html"' in ap_
@@ -400,7 +405,7 @@ try:
             and "runs" in ap_
             and "wrote the reference it is scored against" in ap_,
         )
-    mpage = (out3 / "m" / "acc.html").read_text()
+    mpage = (out3 / "m" / "acc.html").read_text(encoding="utf-8")
     check(
         "metric page: its description, which way is better, and the arms recording it, linked",
         "share of items right" in mpage and "higher" in mpage and 'href="../a/' in mpage,
@@ -477,10 +482,13 @@ try:
     first3 = cb.window(A3, by3)["first"]
     pds = cb.period_datasets(A3, by3)
     per = cp.in_period(pds, "all", _date.today(), first3)
-    page_keys = set(re.findall(r'<tr[^>]* data-key="([^"]+)"', (out3 / "datasets.html").read_text()))
+    page_keys = set(
+        re.findall(r'<tr[^>]* data-key="([^"]+)"', (out3 / "datasets.html").read_text(encoding="utf-8"))
+    )
     check(
         "datasets page: one dated row per dataset, keyed as its builder keys it",
-        page_keys == set(pds) and "window.PERIOD_ROWS=" in (out3 / "datasets-rows.js").read_text(),
+        page_keys == set(pds)
+        and "window.PERIOD_ROWS=" in (out3 / "datasets-rows.js").read_text(encoding="utf-8"),
         f"{page_keys} {set(pds)}",
     )
     dl = next(ln for ln in _view("dataset-list", period="all").splitlines() if ln.strip().startswith("ds3"))
@@ -503,7 +511,7 @@ try:
         and rows3["judged-sc1/ds3/arm_t"]["how"] == "judged by sc1",
         str({k: v["how"] for k, v in rows3.items()}),
     )
-    arms_html = (out3 / "arms.html").read_text()
+    arms_html = (out3 / "arms.html").read_text(encoding="utf-8")
     check(
         "arms page: every arm a row, with what the grouping and the filters read",
         len(re.findall(r'<tr[^>]* data-key="(?:runs|judged)', arms_html)) == len(rows3)
@@ -543,7 +551,7 @@ try:
         "share of items right" in mt and "on ds3:" in mt,
         mt[:400],
     )
-    ref_page = (out3 / "r/silver-ds3.html").read_text()
+    ref_page = (out3 / "r/silver-ds3.html").read_text(encoding="utf-8")
     check(
         "reference page: who wrote it, from which run, and every arm scored against it (not the judged one)",
         "arm_s" in ref_page
@@ -713,7 +721,7 @@ try:
         c.close()
         return r.status, body
 
-    (tmp / ".env").write_text("OPENAI_API_KEY=sk-test-not-served\n")
+    (tmp / ".env").write_text("OPENAI_API_KEY=sk-test-not-served\n", encoding="utf-8")
     leaks = {
         p: raw(p)
         for p in (
@@ -807,11 +815,11 @@ try:
         )
         both = subprocess.run(
             [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--public", "a.example", "--behind-proxy", prox],
-            cwd=tmp, capture_output=True, text=True, timeout=120,
+            cwd=tmp, capture_output=True, text=True, timeout=120, encoding="utf-8",
         )  # fmt: skip
         wide = subprocess.run(
             [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--bind", "0.0.0.0"],  # noqa: S104 - the refusal under test  # nosec B104
-            cwd=tmp, capture_output=True, text=True, timeout=120,
+            cwd=tmp, capture_output=True, text=True, timeout=120, encoding="utf-8",
         )  # fmt: skip
         check(
             "behind a proxy: refused with --public (two deployments); --bind 0.0.0.0 alone names both modes",
@@ -828,7 +836,9 @@ try:
     # A public server serves the text of a dataset only when its record can be read and does not say hidden. This
     # fixture's data is not the project's, so the record is looked up here.
     (data / "datasets").mkdir()
-    (data / "datasets" / "ds1.json").write_text(json.dumps({"dataset_id": "ds1", "items": []}))
+    (data / "datasets" / "ds1.json").write_text(
+        json.dumps({"dataset_id": "ds1", "items": []}), encoding="utf-8"
+    )
     _visibility.record_file = lambda ds, data_dir=None: data / "datasets" / f"{ds}.json"  # type: ignore[assignment]
     # PUBLIC mode: the API only, to the named host, rate-limited, arms capped, answers cached
     cs.LIMITS.update(hosts=("catalog.example.org",), rate=5, max_arms=2)
@@ -959,7 +969,8 @@ try:
         "fieldset_id: fs\nfields:\n"
         "  - {name: product, type: choice, values: [x, y], public: true}\n"
         "  - {name: size, type: number}\n"
-        "  - {name: customer, type: text}\n"
+        "  - {name: customer, type: text}\n",
+        encoding="utf-8",
     )
     (data / "datasets" / "ds1.json").write_text(
         json.dumps(
@@ -977,7 +988,8 @@ try:
                     for k in range(12)
                 ],
             }
-        )
+        ),
+        encoding="utf-8",
     )
     (data / "datasets" / "ds2.json").write_text(
         json.dumps(
@@ -987,7 +999,8 @@ try:
                 "created_at": "x",
                 "items": [{"item_id": f"i{k:02d}", "source_sha256": "0" * 64} for k in range(20)],
             }
-        )
+        ),
+        encoding="utf-8",
     )
     # An adapter's caches die with it: lru_cache on its methods kept every instance alive.
     import gc
@@ -1010,7 +1023,7 @@ try:
     cs.set_adapter(AF)
     out_f = tmp / ".build" / "catalog-fields"
     cb.build(AF, out_f)
-    page_f = (out_f / "d/ds1.html").read_text()
+    page_f = (out_f / "d/ds1.html").read_text(encoding="utf-8")
     check(
         "fields: the dataset page lists the declared fields and their coverage",
         "item fields" in page_f and "product" in page_f and "customer" in page_f and "12 of 12" in page_f,
@@ -1208,13 +1221,14 @@ try:
     # the command line: evh catalog builds into the project
     env_root = tmp / "proj"
     shutil.copytree(data, env_root / "data")
-    (env_root / "config.yaml").write_text("store: files\n")
+    (env_root / "config.yaml").write_text("store: files\n", encoding="utf-8")
     proc = subprocess.run(
         [sys.executable, str(HERE / "cli.py"), "catalog"],
         cwd=env_root,
         capture_output=True,
         text=True,
         env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"},
+        encoding="utf-8",
     )
     check(
         "evh catalog: builds into <project>/.build/catalog",
@@ -1233,6 +1247,7 @@ try:
             capture_output=True,
             text=True,
             env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin", "PYTHONHASHSEED": seed},
+            encoding="utf-8",
         )
         seeded[seed] = {
             f.relative_to(out_s).as_posix(): re.sub(
@@ -1259,8 +1274,8 @@ try:
     # The deployment's options reach EVERY page when the builder runs as a command (the module is
     # __main__ then; arms.html was rendered by a second copy of it with the defaults: "eval
     # catalog", no switcher, no --head, /api/, found reviewing the 0.4.4 render).
-    (env_root / "head.html").write_text('<meta name="deploy-tag" content="ours">\n')
-    (env_root / "about.html").write_text("<p>Ours.</p>\n")
+    (env_root / "head.html").write_text('<meta name="deploy-tag" content="ours">\n', encoding="utf-8")
+    (env_root / "about.html").write_text("<p>Ours.</p>\n", encoding="utf-8")
     proc = subprocess.run(
         [
             sys.executable,
@@ -1285,13 +1300,14 @@ try:
         capture_output=True,
         text=True,
         env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"},
+        encoding="utf-8",
     )
     opt_pages = sorted((env_root / ".build/catalog-opts").rglob("*.html"))
     missing = [
         p.relative_to(env_root / ".build/catalog-opts").as_posix()
         for p in opt_pages
         if not all(
-            s in p.read_text()
+            s in p.read_text(encoding="utf-8")
             for s in (
                 'class="sections"',
                 "<span>deploy-brand</span>",
@@ -1320,6 +1336,7 @@ try:
             text=True,
             timeout=60,
             env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"},
+            encoding="utf-8",
         )
     elsewhere = Path(tempfile.mkdtemp(prefix="evh-elsewhere-"))
     shutil.copytree(env_root / ".build/catalog", elsewhere / "catalog")
@@ -1330,6 +1347,7 @@ try:
         text=True,
         timeout=60,
         env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"},
+        encoding="utf-8",
     )
     shutil.rmtree(elsewhere, ignore_errors=True)
     check(

@@ -62,7 +62,7 @@ def out(r):
 
 
 def set_bonus(b: float) -> None:
-    (proj / "bonus_adapter.py").write_text(ADAPTER.format(bonus=b))
+    (proj / "bonus_adapter.py").write_text(ADAPTER.format(bonus=b), encoding="utf-8")
 
 
 def files_under() -> set[str]:
@@ -85,9 +85,9 @@ from evaluation_harness._common import load_module  # noqa: E402
 
 mod_dir = Path(tempfile.mkdtemp(prefix="evh-pyc-"))
 f = mod_dir / "scorer_mod.py"
-f.write_text("BONUS = 0.0\n")
+f.write_text("BONUS = 0.0\n", encoding="utf-8")
 first = load_module(f, "evh_test_pyc_a").BONUS
-f.write_text("BONUS = 0.5\n")
+f.write_text("BONUS = 0.5\n", encoding="utf-8")
 second = load_module(f, "evh_test_pyc_b").BONUS
 shutil.rmtree(mod_dir, ignore_errors=True)
 check("load_module: an edit within the same second, same length, is what runs", (first, second) == (0.0, 0.5))
@@ -100,7 +100,9 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     _runstore.write_text(
-        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+        proj,
+        "goals/tickets_summary.yaml",
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8"),
     )
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -135,7 +137,7 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     set_bonus(0.0)
     for arm in ("lead1", "lead2"):
-        cfg = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text()
+        cfg = (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8")
         _runstore.write_text(
             proj, f"systems/tickets_{arm}_v1.yaml", cfg + "adapter: ../../bonus_adapter.py\n"
         )
@@ -294,9 +296,12 @@ try:
         "from evaluation_harness import _rounds, rounds, catalog_serve\n"
         "catalog_serve.LIMITS['max_arms'] = 1\n"
         "ev = rounds.evidence('tickets_summary', _rounds.find('tickets_summary', 'r1'))\n"
-        "print('ROWS', len(ev['rows']), 'NOTES', ev['notes'])\n"
+        "print('ROWS', len(ev['rows']), 'NOTES', ev['notes'])\n",
+        encoding="utf-8",
     )
-    pr = subprocess.run([sys.executable, str(probe)], cwd=proj, env=env, capture_output=True, text=True)
+    pr = subprocess.run(
+        [sys.executable, str(probe)], cwd=proj, env=env, capture_output=True, text=True, encoding="utf-8"
+    )
     check(
         "round evidence: more arms than one inspector request takes are still compared, by the same paired test",
         "ROWS 1" in pr.stdout and "no comparison" not in pr.stdout,
@@ -359,7 +364,7 @@ try:
         set_bonus(bonus)
         cfg = (
             (KIT / "systems" / "tickets_lead2_v1.yaml")
-            .read_text()
+            .read_text(encoding="utf-8")
             .replace("tickets_lead2_v1", f"tickets_{arm}_v1")
         )
         _runstore.write_text(

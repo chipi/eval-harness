@@ -62,7 +62,7 @@ try:
         port = s.getsockname()[1]
     srv = subprocess.Popen(
         [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)],
-        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+        cwd=proj, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
     )  # fmt: skip
     lines: list[str] = []
     for _ in range(300):

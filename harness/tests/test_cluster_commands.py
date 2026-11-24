@@ -96,7 +96,7 @@ try:
         ),
         "gold promoted",
     )
-    goal = (KIT / "goals" / "tickets_summary.yaml").read_text()
+    goal = (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8")
     goal = goal.replace(
         "{dataset_id: tickets_v1, role: validation,",
         "{dataset_id: tickets_v1, cluster: area, role: validation,",
@@ -106,7 +106,7 @@ try:
         _runstore.write_text(
             proj,
             f"systems/tickets_{arm}_v1.yaml",
-            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(),
+            (KIT / "systems" / f"tickets_{arm}_v1.yaml").read_text(encoding="utf-8"),
         )
         ready = ready and ok(
             evh(
@@ -236,10 +236,10 @@ try:
     second = proj / "second_labels"
     second.mkdir()
     for f in sorted((KIT / "gold").glob("*.txt")):
-        text = f.read_text()
+        text = f.read_text(encoding="utf-8")
         if f.stem in ("t02_invoice", "t04_api"):
             text = "something else entirely."
-        (second / f.name).write_text(text)
+        (second / f.name).write_text(text, encoding="utf-8")
     ok(
         evh(
             "label-import",

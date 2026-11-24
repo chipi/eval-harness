@@ -87,7 +87,7 @@ def export_body(**inputs: Any) -> int:
     if _store.exists(target):
         r = subprocess.run(  # nosec B603 B607 - git, read-only, no shell
             ["git", "-C", str(target.parent), "status", "--porcelain", "--", target.name],
-            capture_output=True, text=True, check=False,
+            capture_output=True, text=True, check=False, encoding="utf-8",
         )  # fmt: skip
         if r.returncode == 0 and r.stdout.strip():
             die(f"--to {a.to}: has uncommitted changes; commit or discard them first", "would-overwrite")

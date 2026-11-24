@@ -49,7 +49,9 @@ build.build(Path({out!r}))
 def run(code: str, env_extra: dict, drop=()) -> subprocess.CompletedProcess:
     env = {k: v for k, v in os.environ.items() if k not in drop}
     env.update(env_extra)
-    return subprocess.run([PY, "-c", code], env=env, capture_output=True, text=True, check=False)
+    return subprocess.run(
+        [PY, "-c", code], env=env, capture_output=True, text=True, check=False, encoding="utf-8"
+    )
 
 
 with tempfile.TemporaryDirectory() as tmp:

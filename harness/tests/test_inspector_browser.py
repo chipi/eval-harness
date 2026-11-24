@@ -70,6 +70,7 @@ def project(tmp: Path) -> tuple:
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
@@ -131,7 +132,8 @@ def project(tmp: Path) -> tuple:
             json.dumps({"id": f"p{n}", "body": f"A new ticket {n}.", "created_at": f"2026-11-0{n}T09:00:00Z"})
             + "\n"
             for n in (1, 2)
-        )
+        ),
+        encoding="utf-8",
     )
     evh(
         "capture",
@@ -145,7 +147,9 @@ def project(tmp: Path) -> tuple:
     evh("dataset-from-capture", "--capture", "prod_c1", "--dataset-id", "prod_v1")
     evh("pick", "--dataset-id", "prod_v1", "--item", "p1", "--item", "p2", "--for", "tickets_v1")
     # A person's labels on two tickets: the sheet's wrong signal against them marks those two.
-    (proj / "sheet.csv").write_text("item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n")
+    (proj / "sheet.csv").write_text(
+        "item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n", encoding="utf-8"
+    )
     evh(
         "label-import",
         "--sheet",
@@ -194,6 +198,7 @@ def artifact_project(tmp: Path, env: dict) -> Path:
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
@@ -216,7 +221,7 @@ def artifact_project(tmp: Path, env: dict) -> Path:
         "reference-promote", "--dataset-id", "tickets_v1", "--labels", "owner_gold", "--tier", "gold",
         "--reason", "The kit's hand-written summaries decide.", "--by", "owner",
     )  # fmt: skip
-    (proj / "art.py").write_text(ARTIFACT_ADAPTER)
+    (proj / "art.py").write_text(ARTIFACT_ADAPTER, encoding="utf-8")
     for name, path in ARTIFACT_ARMS.items():
         _runstore.write_text(
             proj,
@@ -243,10 +248,10 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
             start_new_session=True,
         )
     for _ in range(100):
-        if "catalog:" in log.read_text():
+        if "catalog:" in log.read_text(encoding="utf-8"):
             break
         if p.poll() is not None:
-            raise SystemExit(f"catalog-serve exited:\n{log.read_text()}")
+            raise SystemExit(f"catalog-serve exited:\n{log.read_text(encoding='utf-8')}")
         time.sleep(0.1)
     return p, f"http://127.0.0.1:{port}/.build/catalog/"
 
@@ -1405,7 +1410,7 @@ def main() -> int:
         art_server, art_base = serve(artifact_project(tmp, env), env, tmp / "serve-art.log")
         ov = subprocess.run(
             [sys.executable, "-m", "evaluation_harness", "overview-show", "--period", "14d"],
-            cwd=proj, env=env, capture_output=True, text=True,
+            cwd=proj, env=env, capture_output=True, text=True, encoding="utf-8",
         )  # fmt: skip
         drive(base, ov.stdout, art_base)
     finally:

@@ -545,7 +545,7 @@ with tempfile.TemporaryDirectory() as td:
     def put(rel, doc):
         f = data / rel / "metrics.json"
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+        f.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         return f
 
     ident = {"dataset_id": "d1", "build": {"ref": "x", "dirty": False}, "scores": {}}
@@ -588,15 +588,16 @@ with tempfile.TemporaryDirectory() as td:
             indent=2,
             sort_keys=True,
         )
-        + "\n"
+        + "\n",
+        encoding="utf-8",
     )
     (data / "systems").mkdir()
     for s in ("c1", "c2"):  # the last step refuses a run whose system the project lacks
-        (data / "systems" / f"{s}.yaml").write_text(f"system_id: {s}\n")
+        (data / "systems" / f"{s}.yaml").write_text(f"system_id: {s}\n", encoding="utf-8")
     cmd = [sys.executable, str(HERE / "scripts" / "cli.py"), "migrate"]
     # the fixture is a files project, whatever store the suite runs in
     menv = {**os.environ, "EVAL_HOME": td, "EVAL_DATA_DIR": "data", "EVAL_STORE": "files"}
-    first = subprocess.run(cmd, capture_output=True, text=True, env=menv)
+    first = subprocess.run(cmd, capture_output=True, text=True, env=menv, encoding="utf-8")
     # a score as the project now reads it: <run>/<label>, its record (the run's facts with the score's over them)
     docs = {
         f"{rd.name}/{model_runs.label(sd, rec) or 'runs'}": rec
@@ -628,7 +629,7 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "migration tool: the baseline carries the run's new hash",
-        json.loads(b.read_text())["fingerprint_hash"] == r1["hash"],
+        json.loads(b.read_text(encoding="utf-8"))["fingerprint_hash"] == r1["hash"],
     )
 
     def tree_bytes() -> dict:
@@ -638,7 +639,7 @@ with tempfile.TemporaryDirectory() as td:
 
     before_bytes = tree_bytes()
     (data / "project.yaml").unlink()  # the steps again (the stamp would say "nothing to do")
-    second = subprocess.run(cmd, capture_output=True, text=True, env=menv)
+    second = subprocess.run(cmd, capture_output=True, text=True, env=menv, encoding="utf-8")
     check(
         "migration tool: idempotent, a v5 fingerprint is left as it is",
         "runs migrated: 0" in second.stdout and before_bytes == tree_bytes(),
@@ -762,6 +763,7 @@ with tempfile.TemporaryDirectory() as td:
         text=True,
         cwd=td,
         env={**os.environ, "EVAL_HOME": td},
+        encoding="utf-8",
     )
     check(
         "evh run-compare: names the deployment that differs",
@@ -867,7 +869,7 @@ try:
     _model_records.stamp(proj / "data")
     (proj / "data" / "models").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    (proj / "adapter.py").write_text(ADAPTER)
+    (proj / "adapter.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
@@ -971,7 +973,9 @@ try:
         v.stdout[-900:],
     )
     (proj / "arms").mkdir()
-    (proj / "arms" / "elsewhere_v1.yaml").write_text("system_id: elsewhere_v1\ndeployment: dgx\n")
+    (proj / "arms" / "elsewhere_v1.yaml").write_text(
+        "system_id: elsewhere_v1\ndeployment: dgx\n", encoding="utf-8"
+    )
     _runstore.write_text(proj, "validate.json", json.dumps({"systems": ["arms/*.yaml"]}))
     v = evh("validate")
     check(

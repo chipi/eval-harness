@@ -71,7 +71,7 @@ def new_token() -> str:
     # truncate and then a write left a moment between).
     tmp = p.with_name(f".{p.name}.{os.getpid()}")
     fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as fh:
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
         fh.write(tok + "\n")
     os.chmod(tmp, 0o600)  # the server's, never project data: on disk, not through the store
     os.replace(tmp, p)

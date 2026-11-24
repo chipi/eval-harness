@@ -70,6 +70,7 @@ def _commits(repo: Path, needle: str) -> list[datetime]:
             capture_output=True,
             text=True,
             check=False,
+            encoding="utf-8",
         )
         if r.returncode != 0:
             die(f"{repo}: git log failed: {(r.stderr or '').strip()[:200]}", "failed")

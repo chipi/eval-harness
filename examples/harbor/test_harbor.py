@@ -81,7 +81,7 @@ check(
 def reward_of(job):
     t = next((FIXTURES / job).glob("*__*"))
     return (
-        (json.loads((t / "result.json").read_text()).get("verifier_result") or {})
+        (json.loads((t / "result.json").read_text(encoding="utf-8")).get("verifier_result") or {})
         .get("rewards", {})
         .get("reward")
     )
@@ -182,7 +182,7 @@ build_timeout_sec = 600
 allow_internet = true
 """
 with tempfile.TemporaryDirectory() as t:
-    (Path(t) / "task.toml").write_text(REAL)
+    (Path(t) / "task.toml").write_text(REAL, encoding="utf-8")
     tt = _toml.read(Path(t) / "task.toml")
 check(
     "toml: scalars of a table, arrays and [[array tables]] skipped, comments and multi-line arrays survived",
@@ -278,7 +278,9 @@ for bad_query in ({}, {"jobs_dir": str(HERE / "nope")}, {"jobs_dir": str(FIXTURE
 
 # --- two routes, one score: the live adapter and a recorded arm ------------------------------------------------------
 bindir = Path(tempfile.mkdtemp(prefix="evh-harbor-bin-"))
-(bindir / "harbor").write_text(f'#!/bin/sh\nexec "{sys.executable}" "{HERE / "fake_harbor.py"}" "$@"\n')
+(bindir / "harbor").write_text(
+    f'#!/bin/sh\nexec "{sys.executable}" "{HERE / "fake_harbor.py"}" "$@"\n', encoding="utf-8"
+)
 (bindir / "harbor").chmod(0o755)
 live_cwd = Path(tempfile.mkdtemp(prefix="evh-harbor-live-"))
 os.environ["PATH"] = f"{bindir}{os.pathsep}{os.environ['PATH']}"
@@ -370,7 +372,7 @@ def evh(*args, **extra):
 
 
 def calls(task=None):
-    got = [json.loads(x) for x in LOG.read_text().splitlines()] if LOG.exists() else []
+    got = [json.loads(x) for x in LOG.read_text(encoding="utf-8").splitlines()] if LOG.exists() else []
     return [c for c in got if task is None or c["task"] == task]
 
 
@@ -407,7 +409,7 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     if not _runstore.sqlite():
         (proj / "data" / "systems").mkdir(parents=True)
-    _runstore.write_text(proj, "fields/harbor_tasks.yaml", (HERE / "fields.yaml").read_text())
+    _runstore.write_text(proj, "fields/harbor_tasks.yaml", (HERE / "fields.yaml").read_text(encoding="utf-8"))
     r = evh(
         "dataset-create", "--dataset-id", "harbor_tasks_v1", "--source", f"{HERE / 'source.py'}:Source",
         "--query", json.dumps({"path": str(TASKS)}), "--fieldset", "harbor_tasks",
@@ -623,7 +625,7 @@ try:
         m = record(f"{mode}1")
         failed = (m.get("failed_items") or [{}])[0]
         bad = next((x for x in rows(f"{mode}1") if x["item_id"] == "write-greeting"), {})
-        pids = [int(x) for x in PIDS.read_text().split()] if PIDS.exists() else []
+        pids = [int(x) for x in PIDS.read_text(encoding="utf-8").split()] if PIDS.exists() else []
         alive = []
         for pid in pids:
             for _ in range(30):
@@ -782,7 +784,10 @@ import yaml  # noqa: E402
 
 check(
     "every .yaml under systems/ is a system (a mapping): the template is a .yaml.example, which evh validate never reads",
-    all(isinstance(yaml.safe_load(f.read_text()), dict) for f in (HERE / "systems").glob("*.yaml"))
+    all(
+        isinstance(yaml.safe_load(f.read_text(encoding="utf-8")), dict)
+        for f in (HERE / "systems").glob("*.yaml")
+    )
     and (HERE / "systems" / "harbor_agent_template.yaml.example").is_file(),
     sorted(f.name for f in (HERE / "systems").iterdir()),
 )

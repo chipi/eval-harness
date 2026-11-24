@@ -47,10 +47,10 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
             start_new_session=True,
         )
     for _ in range(150):
-        if "catalog:" in log.read_text():
+        if "catalog:" in log.read_text(encoding="utf-8"):
             return p, f"http://127.0.0.1:{port}"
         if p.poll() is not None:
-            raise SystemExit(f"catalog-serve exited:\n{log.read_text()}")
+            raise SystemExit(f"catalog-serve exited:\n{log.read_text(encoding='utf-8')}")
         time.sleep(0.1)
     raise SystemExit("catalog-serve did not start")
 

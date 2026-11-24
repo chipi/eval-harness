@@ -74,7 +74,7 @@ try:
         (proj / "data" / "systems").mkdir(parents=True)
         (proj / "data" / "models").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    (proj / "calls_adapter.py").write_text(ADAPTER)
+    (proj / "calls_adapter.py").write_text(ADAPTER, encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
@@ -241,6 +241,7 @@ try:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
     )
     lines: list[tuple[float, str]] = []
     assert p.stdout is not None

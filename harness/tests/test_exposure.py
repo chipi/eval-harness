@@ -50,7 +50,7 @@ def out(r):
 
 def git(*args, cwd=None, e=None):
     return subprocess.run(
-        ["git", *args], cwd=cwd or proj, capture_output=True, text=True, env=e
+        ["git", *args], cwd=cwd or proj, capture_output=True, text=True, env=e, encoding="utf-8"
     ).stdout.strip()
 
 
@@ -94,7 +94,8 @@ try:
     names = sorted(p.stem for p in (proj / "tickets").glob("*.txt"))
     (proj / "f.csv").write_text(
         "item_id,opened,kind,alert\n"
-        + "".join(f"{n},{d},{k},ALERT-{i}\n" for i, (n, d, k) in enumerate(zip(names, dates, kinds)))
+        + "".join(f"{n},{d},{k},ALERT-{i}\n" for i, (n, d, k) in enumerate(zip(names, dates, kinds))),
+        encoding="utf-8",
     )
     r = evh(
         "dataset-create",
@@ -275,11 +276,13 @@ try:
     pub = proj.parent / (proj.name + "-public")
     pub.mkdir()
     git("init", "-q", cwd=pub)
-    (pub / "notes.md").write_text("ALERT-5 was looked at before it was held out\n")
+    (pub / "notes.md").write_text("ALERT-5 was looked at before it was held out\n", encoding="utf-8")
     commit("an old note", cwd=pub, when="2026-11-01T00:00:00Z")
     cfg = proj / "config.yaml"  # config.yaml is the project's, never in the store
     cfg.write_text(
-        (cfg.read_text() if cfg.is_file() else "") + f"exposure:\n  public_repos: [{pub}]\n  ids: [alert]\n"
+        (cfg.read_text(encoding="utf-8") if cfg.is_file() else "")
+        + f"exposure:\n  public_repos: [{pub}]\n  ids: [alert]\n",
+        encoding="utf-8",
     )
     r = evh("exposure-check", "--dataset-id", "tk_v1_test")
     check(
@@ -287,10 +290,10 @@ try:
         r.returncode == 0 and "0 not in the register" in r.stdout,
         out(r)[-400:],
     )
-    (pub / "phase-2-plan.md").write_text("we read ALERT-5 and ALERT-4 again\n")
+    (pub / "phase-2-plan.md").write_text("we read ALERT-5 and ALERT-4 again\n", encoding="utf-8")
     commit("a plan that names held-out alerts", cwd=pub)
     r = evh("exposure-check", "--dataset-id", "tk_v1_test", "--out", "leaks.tsv")
-    tsv = (proj / "leaks.tsv").read_text() if (proj / "leaks.tsv").is_file() else ""
+    tsv = (proj / "leaks.tsv").read_text(encoding="utf-8") if (proj / "leaks.tsv").is_file() else ""
     check(
         "exposure-check: a later commit naming an unrecorded item exits 6, ids only in the --out file, misses said",
         r.returncode == 6
@@ -310,7 +313,7 @@ try:
     )
     r = evh("catalog")
     page = proj / ".build" / "catalog" / "d" / "tk_v1_test.html"
-    html = page.read_text() if page.is_file() else ""
+    html = page.read_text(encoding="utf-8") if page.is_file() else ""
     check(
         "the catalog: the held-out dataset page says how many items were read, and that scores leave them out",
         r.returncode == 0

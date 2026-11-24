@@ -91,7 +91,7 @@ try:
     _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")
     (proj / "data" / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tickets")
-    goal = (KIT / "goals" / "tickets_summary.yaml").read_text().replace("tickets_v1", "tk_v1")
+    goal = (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8").replace("tickets_v1", "tk_v1")
     _runstore.write_text(proj, "goals/g_one.yaml", goal.replace("goal_id: tickets_summary", "goal_id: g_one"))
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
@@ -226,7 +226,7 @@ try:
     r = evh("catalog")
     page = proj / ".build" / "catalog"
     check("setup: the catalog builds", r.returncode == 0, out(r)[-300:])
-    html = (page / "arms.html").read_text()
+    html = (page / "arms.html").read_text(encoding="utf-8")
     spend_cells = re.findall(r'<span data-v="0">([^<]*)</span>', html)
     check(
         "the arms page's systems table: an arm that recorded $0 shows $0, not the — of not recorded",

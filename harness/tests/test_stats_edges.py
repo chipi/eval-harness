@@ -115,9 +115,10 @@ def make(name: str) -> None:
     src = proj / f"src_{name}"
     src.mkdir()
     for i in range(1, sp["n"] + 1):
-        (src / f"i{i:02d}.txt").write_text(f"item i{i:02d} body\n")
+        (src / f"i{i:02d}.txt").write_text(f"item i{i:02d} body\n", encoding="utf-8")
     (proj / f"{name}.csv").write_text(
-        "item_id,thread,batch\n" + "".join(f"i{i:02d},t{i:02d},all\n" for i in range(1, sp["n"] + 1))
+        "item_id,thread,batch\n" + "".join(f"i{i:02d},t{i:02d},all\n" for i in range(1, sp["n"] + 1)),
+        encoding="utf-8",
     )
     for step in (
         ("dataset-create", "--dataset-id", f"e_{name}", "--source-dir", f"src_{name}", "--fieldset", "edge",
@@ -145,7 +146,7 @@ def make(name: str) -> None:
         )
         args = ["run", "--system", f"e_{name}_{arm}", "--dataset", f"e_{name}", "--goal", f"g_{name}"]
         if on := sp.get(f"on_{arm}"):
-            (proj / f"{name}_{arm}.items").write_text("".join(f"i{i:02d}\n" for i in on))
+            (proj / f"{name}_{arm}.items").write_text("".join(f"i{i:02d}\n" for i in on), encoding="utf-8")
             args += ["--items", f"{name}_{arm}.items"]
         sp["runs"][arm] = evh(*args)
 
@@ -373,7 +374,7 @@ try:
     r = evh("init", "--store", store_under_test(), "--tutorial")
     assert r.returncode == 0, r.stderr[-400:]
     _runstore.write_text(proj, "fields/edge.yaml", FIELDSET)
-    (proj / "edge_adapter.py").write_text(ADAPTER)
+    (proj / "edge_adapter.py").write_text(ADAPTER, encoding="utf-8")
     first = [n for n, sp in SHAPES.items() if not sp.get("stage")]
     for name in first:
         make(name)
@@ -477,7 +478,8 @@ try:
 
     # ── the writer that takes numbers from outside refuses a nan by name ───────────────────────────────────────────
     (proj / "nan.jsonl").write_text(
-        '{"item_id": "i01", "q": NaN}\n{"item_id": "i02", "q": 0.5}\n{"item_id": "i03", "q": 0.5}\n'
+        '{"item_id": "i01", "q": NaN}\n{"item_id": "i02", "q": 0.5}\n{"item_id": "i03", "q": 0.5}\n',
+        encoding="utf-8",
     )
     r = evh("import-run", "--dataset-id", "e_three_items", "--system-id", "imp_nan", "--scores", "nan.jsonl",
             "--primary-metric", "q", "--build-ref", "abc123", "--source", "here", "--scorer-id", "imp")  # fmt: skip

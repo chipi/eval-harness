@@ -52,7 +52,9 @@ def out(r):
 
 
 def git(*args):
-    return subprocess.run(["git", *args], cwd=proj, capture_output=True, text=True).stdout.strip()
+    return subprocess.run(
+        ["git", *args], cwd=proj, capture_output=True, text=True, encoding="utf-8"
+    ).stdout.strip()
 
 
 def commit(msg):
@@ -84,7 +86,9 @@ try:
     )
     dates = ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-08", "2026-11-09", "2026-11-10"]
     names = sorted(p.stem for p in (proj / "tickets").glob("*.txt"))
-    (proj / "opened.csv").write_text("item_id,opened\n" + "".join(f"{n},{d}\n" for n, d in zip(names, dates)))
+    (proj / "opened.csv").write_text(
+        "item_id,opened\n" + "".join(f"{n},{d}\n" for n, d in zip(names, dates)), encoding="utf-8"
+    )
     r = evh(
         "dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets", "--fieldset", "t",
         "--fields", "opened.csv",

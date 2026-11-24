@@ -104,7 +104,7 @@ def git(*args: str) -> None:
 def build() -> None:
     need("init", "--store", store_under_test(), "--tutorial")
     _runstore.write_text(proj, "fields/notes.yaml", FIELDSET)
-    (proj / "leak_adapter.py").write_text(ADAPTER)
+    (proj / "leak_adapter.py").write_text(ADAPTER, encoding="utf-8")
     for tag in "HS":
         ds = f"lk_{tag.lower()}"
         src, gold, lab = proj / f"src_{tag}", proj / f"gold_{tag}", proj / f"lab_{tag}"
@@ -115,12 +115,12 @@ def build() -> None:
         ):
             shutil.copytree(KIT / kit, d)
             for f in d.glob("*.txt"):
-                f.write_text(f"{s(word, tag)} " + f.read_text())
+                f.write_text(f"{s(word, tag)} " + f.read_text(encoding="utf-8"), encoding="utf-8")
         rows = ["item_id,note,link"] + [
             f"{f.stem},{s('FIELD-TEXT', tag)},https://example.org/{s('FIELD-URL', tag)}/{f.stem}"
             for f in sorted(src.glob("*.txt"))
         ]
-        (proj / f"{ds}_fields.csv").write_text("\n".join(rows) + "\n")
+        (proj / f"{ds}_fields.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
         need("dataset-create", "--dataset-id", ds, "--source-dir", f"src_{tag}", "--fieldset", "notes",
              "--fields", f"{ds}_fields.csv")  # fmt: skip
         need("dataset-materialize", "--dataset-id", ds)
@@ -169,7 +169,7 @@ def build() -> None:
          "--by", "person:owner")  # fmt: skip
     # a judge on each dataset (the tutorial's fake one: $0, offline); its reasons are then rewritten to carry a sentinel
     for tag in "HS":
-        sc = yaml.safe_load((KIT / "scorers" / "tickets-judge-v1.yaml").read_text())
+        sc = yaml.safe_load((KIT / "scorers" / "tickets-judge-v1.yaml").read_text(encoding="utf-8"))
         sc.update(scorer_id=f"lk-judge-{tag.lower()}-v1", dataset_id=f"lk_{tag.lower()}")
         _runstore.write_text(
             proj, f"scorers/lk-judge-{tag.lower()}-v1.yaml", yaml.safe_dump(sc, sort_keys=False)
@@ -190,7 +190,7 @@ def build() -> None:
     # a production capture: a body and an outcome
     records = [{"id": f"c{i}", "body": f"{s('CAPTURE-BODY')} {i}", "created_at": "2026-10-01T10:00:00Z",
              "outcome": {"resolution": s("CAPTURE-OUTCOME")}} for i in range(3)]  # fmt: skip
-    (proj / "prod.jsonl").write_text("".join(json.dumps(r) + "\n" for r in records))
+    (proj / "prod.jsonl").write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
     need(
         "capture", "--importer", "jsonl", "--query", json.dumps({"path": "prod.jsonl"}), "--capture", "lk_cap"
     )

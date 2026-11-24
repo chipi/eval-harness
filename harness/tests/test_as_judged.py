@@ -26,7 +26,7 @@ from evaluation_harness import judge_score as js
 from evaluation_harness._check import check, summary
 
 DATA = Path(__file__).resolve().parents[1] / "data"
-RENAMES = json.loads((DATA / "renames.json").read_text())["systems"]
+RENAMES = json.loads((DATA / "renames.json").read_text(encoding="utf-8"))["systems"]
 
 # ── a fixture set whose arms carry ids a migration renamed ───────────────────────────────────────────────────────────
 # Two systems renamed by this repository's own migration; the new ids sort the other way round from the old ones, so
@@ -55,7 +55,8 @@ def stored(path, dataset_id, ids, runs):
                 "dataset_id": dataset_id,
                 "arms": [{"config_id": i, "run": r, "family": "x"} for i, r in zip(ids, runs)],
             }
-        )
+        ),
+        encoding="utf-8",
     )
 
 
@@ -115,7 +116,7 @@ with tempfile.TemporaryDirectory(prefix="evh-as-judged-") as td:
 files = sorted((DATA / "judging-sets").glob("*.json"))
 check("this repository has its three judging sets", len(files) == 3, [f.name for f in files])
 for f in files:
-    s = json.loads(f.read_text())
+    s = json.loads(f.read_text(encoding="utf-8"))
     ds, sarms = s["dataset_id"], s["arms"]
     by_run = {a["run"]: a["config_id"] for a in sarms}
     missing = [r for r in by_run if not (DATA / "runs" / r).is_dir()]

@@ -74,10 +74,10 @@ def serve(cat: Path, log: Path) -> tuple:
             start_new_session=True,
         )
     for _ in range(300):
-        if "catalog:" in log.read_text():
+        if "catalog:" in log.read_text(encoding="utf-8"):
             break
         if p.poll() is not None:
-            raise SystemExit(f"catalog-serve exited:\n{log.read_text()}")
+            raise SystemExit(f"catalog-serve exited:\n{log.read_text(encoding='utf-8')}")
         time.sleep(0.1)
     return p, f"http://127.0.0.1:{port}/{cat.resolve().relative_to(HARNESS).as_posix()}/"
 
@@ -1014,7 +1014,11 @@ def drive(cat: Path, base: str) -> None:
         differ = []
         for gp in sorted((cat / "g").glob("*.html")):
             shown = dict(
-                re.findall(r"<b>(r\d+)</b>.*?<span data-v=\"(\d+)\">\d+ arms</span>", gp.read_text(), re.S)
+                re.findall(
+                    r"<b>(r\d+)</b>.*?<span data-v=\"(\d+)\">\d+ arms</span>",
+                    gp.read_text(encoding="utf-8"),
+                    re.S,
+                )
             )
             if not shown:
                 continue
@@ -1023,6 +1027,7 @@ def drive(cat: Path, base: str) -> None:
                 cwd=HARNESS,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             ).stdout
             said = dict(re.findall(r"^\s*(r\d+)\s+\S+\s+\S+\s+(\d+) arm\(s\)", cli, re.M))
             differ += [
@@ -1093,7 +1098,11 @@ def drive(cat: Path, base: str) -> None:
             from evaluation_harness._common import system_now  # noqa: PLC0415
 
             # the author by the id its system has now (a migration renamed systems; the manifest keeps the old one)
-            who = system_now(json.loads(m.read_text()).get("authored_by")) if m.is_file() else None
+            who = (
+                system_now(json.loads(m.read_text(encoding="utf-8")).get("authored_by"))
+                if m.is_file()
+                else None
+            )
             arm = f"silver/{ds}/{who}"
             return (
                 q.replace("runs=" + ",".join(runs), "runs=" + ",".join([*runs, arm]), 1)
@@ -1146,7 +1155,9 @@ def sqlite_copy(cat: Path) -> Path:
     os.environ.update(EVAL_DATA_DIR=str(root / "data"), EVAL_STORE="sqlite")
     cli = [sys.executable, str(HARNESS / "scripts" / "cli.py")]
     for args in (["data-migrate", "--to", "sqlite"], ["catalog", "--out", str(root / "catalog")]):
-        r = subprocess.run(cli + args, cwd=HARNESS, capture_output=True, text=True, check=False)  # nosec B603
+        r = subprocess.run(
+            cli + args, cwd=HARNESS, capture_output=True, text=True, check=False, encoding="utf-8"
+        )  # nosec B603
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
     return root / "catalog"

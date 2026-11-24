@@ -45,7 +45,7 @@ def evh(*args, extra_env=None):
 
 
 def git(*args):
-    r = subprocess.run(["git", *args], cwd=proj, capture_output=True, text=True)
+    r = subprocess.run(["git", *args], cwd=proj, capture_output=True, text=True, encoding="utf-8")
     return r.stdout.strip()
 
 
@@ -68,7 +68,7 @@ def write_system(system_id, sentences, hypothesis=None):
     text = f"system_id: {system_id}\nparams:\n  provider: echo\n  sentences: {sentences}\n"
     if hypothesis:
         text += "hypothesis:\n" + "".join(f"  {k}: {json.dumps(v)}\n" for k, v in hypothesis.items())
-    (proj / "data" / "systems" / f"{system_id}.yaml").write_text(text)
+    (proj / "data" / "systems" / f"{system_id}.yaml").write_text(text, encoding="utf-8")
 
 
 HYP = {
@@ -81,11 +81,11 @@ HYP = {
 try:
     data = proj / "data"
     (data / "systems").mkdir(parents=True)
-    (data / _format.NAME).write_text(f"format: {_format.FORMAT}\n")
+    (data / _format.NAME).write_text(f"format: {_format.FORMAT}\n", encoding="utf-8")
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
-    (proj / ".gitignore").write_text(".cache/\n.build/\n__pycache__/\n")
+    (proj / ".gitignore").write_text(".cache/\n.build/\n__pycache__/\n", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     r = (
@@ -129,7 +129,9 @@ try:
     write_system("tickets_guard_v1", 1)
     cfgs = proj / "data" / "systems"
     (cfgs / "tickets_guard_v1.yaml").write_text(
-        (cfgs / "tickets_guard_v1.yaml").read_text() + "expect_identical_to: tickets_lead1_v1\n"
+        (cfgs / "tickets_guard_v1.yaml").read_text(encoding="utf-8")
+        + "expect_identical_to: tickets_lead1_v1\n",
+        encoding="utf-8",
     )
     r = evh(
         "run",
@@ -156,7 +158,8 @@ try:
     # The fleet's beta (F2): a guard's runs made before 0.8.0 do not carry the declaration, and runs are frozen. The
     # config's own `expect_identical_to` declares it for them: V5 reads the pair as the guard, not as a copied result.
     (cfgs / "tickets_oldguard_v1.yaml").write_text(
-        "system_id: tickets_oldguard_v1\nparams:\n  provider: echo\n  sentences: 1\n  commit: 8213775\n"
+        "system_id: tickets_oldguard_v1\nparams:\n  provider: echo\n  sentences: 1\n  commit: 8213775\n",
+        encoding="utf-8",
     )
     r = evh(
         "run",
@@ -175,7 +178,9 @@ try:
         out(r)[-300:] + v.stdout[-600:],
     )
     (cfgs / "tickets_oldguard_v1.yaml").write_text(
-        (cfgs / "tickets_oldguard_v1.yaml").read_text() + "expect_identical_to: tickets_lead1_v1\n"
+        (cfgs / "tickets_oldguard_v1.yaml").read_text(encoding="utf-8")
+        + "expect_identical_to: tickets_lead1_v1\n",
+        encoding="utf-8",
     )
     v = evh("validate")
     check(
@@ -197,8 +202,8 @@ try:
         v.stdout[-400:],
     )
     proj_cfg = data / "validate.json"
-    before = proj_cfg.read_text() if proj_cfg.exists() else None
-    proj_cfg.write_text(json.dumps({"systems": ["projects/dedup/systems/*.yaml"]}))
+    before = proj_cfg.read_text(encoding="utf-8") if proj_cfg.exists() else None
+    proj_cfg.write_text(json.dumps({"systems": ["projects/dedup/systems/*.yaml"]}), encoding="utf-8")
     v = evh("validate")
     check(
         "validate: validate.json's systems: names where the project keeps its systems; their declarations count",
@@ -208,7 +213,7 @@ try:
     if before is None:
         proj_cfg.unlink()
     else:
-        proj_cfg.write_text(before)
+        proj_cfg.write_text(before, encoding="utf-8")
     for f in (proj / "data" / "runs").glob("tickets_oldguard_v1_*"):
         shutil.rmtree(f)
     (own / "tickets_oldguard_v1.yaml").unlink()
@@ -420,7 +425,9 @@ try:
     write_system("tickets_dirty_v1", 2, HYP)
     commit("dirty arm")
     goal_file = data / "goals" / "tickets_summary.yaml"
-    goal_file.write_text(goal_file.read_text() + "# edited, not committed\n")
+    goal_file.write_text(
+        goal_file.read_text(encoding="utf-8") + "# edited, not committed\n", encoding="utf-8"
+    )
     r = evh("run", "--system", "tickets_dirty_v1", "--dataset", "tickets_v1", "--goal", "tickets_summary")
     adv = metrics_of("tickets_dirty_v1").get("hypothesis_in_advance") or {}
     check(

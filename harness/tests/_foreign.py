@@ -69,7 +69,7 @@ class Build:
         d = self.proj / "sources" / dataset_id
         d.mkdir(parents=True)
         for name, text in items.items():
-            (d / f"{name}.txt").write_text(text + "\n")
+            (d / f"{name}.txt").write_text(text + "\n", encoding="utf-8")
         self.must("dataset-create", "--dataset-id", dataset_id, "--source-dir", d)
         self.must("dataset-materialize", "--dataset-id", dataset_id)
 
@@ -117,7 +117,7 @@ def imported(proj: Path, env: dict[str, str]) -> dict[str, Any]:
                 row["der"] = round(0.02 + ((n * 53 + k * 7) % 211) / 1000, 3)
             rows.append(row)
         f = scores / f"{system}.jsonl"
-        f.write_text("".join(json.dumps(r) + "\n" for r in rows))
+        f.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
         run_id = f"{system}_20260901T{10 + n // 60:02d}{n % 60:02d}00Z"
         spec = {
             "dataset_id": ds, "system_id": system, "scores": str(f), "primary_metric": "wer", "asc": asc,
@@ -144,10 +144,10 @@ def imported(proj: Path, env: dict[str, str]) -> dict[str, Any]:
     for n in range(3):
         one(IMPORTED_LOWER, 200 + n, f"q{200 + n}__lecture__cfg_{n}", True, False, cli=n == 0)
     batch = proj / "import_specs.json"
-    batch.write_text(json.dumps(pending))
+    batch.write_text(json.dumps(pending), encoding="utf-8")
     r = subprocess.run(  # nosec B603 - this interpreter and the harness's own operation
         [sys.executable, str(Path(__file__).with_name("_foreign_import.py")), str(batch)],
-        cwd=proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
+        cwd=proj, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False, encoding="utf-8",
     )  # fmt: skip
     if r.returncode != 0:
         raise RuntimeError(f"batch import-run failed: {(r.stdout + r.stderr)[-600:]}")
@@ -332,7 +332,7 @@ def bakeoff(proj: Path, env: dict[str, str]) -> dict[str, Any]:
     """Build the bake-off-shape project with a custom adapter and zero-price systems; return its runs, datasets, goals and systems."""
     b = Build(proj, {**env, "EVAL_BUILD_REF": "bakeoff-fixture-1"})
     b.init()
-    (proj / "adapter.py").write_text(BAKEOFF_ADAPTER)
+    (proj / "adapter.py").write_text(BAKEOFF_ADAPTER, encoding="utf-8")
     b.source(
         BAKEOFF_SMALL,
         {f"job_{i}": f"Invented task {i}: rename a helper across two files and report." for i in range(1, 4)},

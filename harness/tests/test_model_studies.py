@@ -79,7 +79,7 @@ def serve() -> tuple[subprocess.Popen, int]:
 
 def call(port: int, path: str) -> tuple[int, dict]:
     """One API read with the server's token."""
-    token = (proj / ".build" / "api-token").read_text().strip()
+    token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
     h = {"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"}
     req = urllib.request.Request(f"http://127.0.0.1:{port}/api/v1{path}", headers=h, method="GET")
     try:
@@ -136,7 +136,9 @@ try:
     r = (
         r
         if r.returncode
-        else subprocess.run(["git", "-C", str(proj), "init", "-q"], capture_output=True, text=True)
+        else subprocess.run(
+            ["git", "-C", str(proj), "init", "-q"], capture_output=True, text=True, encoding="utf-8"
+        )
     )
     check("setup: a project", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     put("goals/g.yaml", "goal_id: g\ntitle: t\nstatement: s\ndecision: d\n"

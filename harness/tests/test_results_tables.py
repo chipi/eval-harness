@@ -135,7 +135,7 @@ def dm(store: str, *args: str, cwd: Path) -> subprocess.CompletedProcess:
     env.update(EVAL_HOME=str(cwd), EVAL_STORE=store)
     return subprocess.run(
         [sys.executable, str(HARNESS / "scripts" / "cli.py"), *args], cwd=cwd, env=env, capture_output=True, text=True,
-        stdin=subprocess.DEVNULL, timeout=300,
+        stdin=subprocess.DEVNULL, timeout=300, encoding="utf-8",
     )  # fmt: skip
 
 
@@ -859,31 +859,35 @@ try:
     # ── data-migrate: there and back ────────────────────────────────────────────────────────────────────────────────
     files = Path(tempfile.mkdtemp(prefix="evh-tables-files-"))
     try:
-        (files / "config.yaml").write_text("store: files\n")
+        (files / "config.yaml").write_text("store: files\n", encoding="utf-8")
         fdata = files / "data"
         fdata.mkdir()
         _format.stamp(data=fdata)
         (fdata / "systems").mkdir()
-        (fdata / "systems" / "arm_m_v1.yaml").write_text("system_id: arm_m_v1\n")
+        (fdata / "systems" / "arm_m_v1.yaml").write_text("system_id: arm_m_v1\n", encoding="utf-8")
         for rid, cases in (("arm_m_v1", [ALL, {"item_id": "z"}]), ("arm_n_v1", fuzz[:50])):
             rd = fdata / "runs" / rid
             sdir = rd / "scores" / "aaaaaaaaaaaa@gold.ds"
             sdir.mkdir(parents=True)
             (rd / "run.json").write_text(
-                json.dumps({"run_id": rid, "system_id": "arm_m_v1", "dataset_id": "ds"}) + "\n"
+                json.dumps({"run_id": rid, "system_id": "arm_m_v1", "dataset_id": "ds"}) + "\n",
+                encoding="utf-8",
             )
-            (sdir / "metrics.json").write_text("{}\n")
-            (sdir / "predictions.jsonl").write_text("".join(line(r) + "\n" for r in cases))
-        (fdata / "runs" / "arm_m_v1" / "rows.partial.jsonl").write_text('{"item_id": "z"}\n{"item_id": "y"')
+            (sdir / "metrics.json").write_text("{}\n", encoding="utf-8")
+            (sdir / "predictions.jsonl").write_text("".join(line(r) + "\n" for r in cases), encoding="utf-8")
+        (fdata / "runs" / "arm_m_v1" / "rows.partial.jsonl").write_text(
+            '{"item_id": "z"}\n{"item_id": "y"', encoding="utf-8"
+        )
         (fdata / "runs" / "arm_n_v1" / "outputs.jsonl").write_text(
-            json.dumps({"item_id": "i", "text": "t", "sha256": hashlib.sha256(b"t").hexdigest()}) + "\n"
+            json.dumps({"item_id": "i", "text": "t", "sha256": hashlib.sha256(b"t").hexdigest()}) + "\n",
+            encoding="utf-8",
         )
 
         def tree(p: Path) -> dict[str, bytes]:
             return {str(f.relative_to(p)): f.read_bytes() for f in sorted(p.rglob("*")) if f.is_file()}
 
         held = tree(fdata)
-        (files / "config.yaml").write_text("store: sqlite\n")
+        (files / "config.yaml").write_text("store: sqlite\n", encoding="utf-8")
         r = dm("sqlite", "data-migrate", "--to", "sqlite", cwd=files)
         check(
             "data-migrate --to sqlite: the 52 rows and the checkpoint's 2 lines move in",
@@ -902,7 +906,7 @@ try:
             and [p.name for p in fdata.iterdir() if not p.name.startswith("project.sqlite")] == [],
             got,
         )
-        (files / "config.yaml").write_text("store: files\n")
+        (files / "config.yaml").write_text("store: files\n", encoding="utf-8")
         r = dm("files", "data-migrate", "--to", "files", cwd=files)
         check(
             "data-migrate --to files: the data back, every file byte for byte (the rows canonical, as they went in)",

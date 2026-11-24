@@ -49,7 +49,8 @@ def mcp(out: Path) -> int:
                 "facts": {r: [[k, list(key), v] for (k, key), v in d.items()] for r, d in c.facts.items()},
                 "why": c.why,
             }
-        )
+        ),
+        encoding="utf-8",
     )
     return 0
 

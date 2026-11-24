@@ -26,7 +26,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 os.environ.setdefault("EVAL_HOME", str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._common import no_options  # noqa: E402
+from evaluation_harness._console import degrade_unencodable  # noqa: E402
 
+degrade_unencodable()
 no_options(__doc__)  # --help prints this; anything else is refused
 
 ROOT = HERE.parents[1]

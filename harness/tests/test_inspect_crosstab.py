@@ -30,7 +30,12 @@ env = {k: v for k, v in os.environ.items() if not k.startswith(("EVAL_", "EVH_")
 def run_cmd(command, *args, public=False):
     e = dict(env, EVH_PUBLIC="1") if public else env
     return subprocess.run(
-        [sys.executable, str(CLI), command, *args], cwd=ROOT, env=e, capture_output=True, text=True
+        [sys.executable, str(CLI), command, *args],
+        cwd=ROOT,
+        env=e,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     )
 
 

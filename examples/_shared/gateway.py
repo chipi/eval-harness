@@ -28,7 +28,7 @@ MODELS_FILE = Path(__file__).resolve().parents[1] / "models.json"
 
 def models() -> dict[str, str]:
     """alias -> upstream id ("openrouter/<vendor>/<model>")."""
-    return json.loads(MODELS_FILE.read_text())["aliases"]
+    return json.loads(MODELS_FILE.read_text(encoding="utf-8"))["aliases"]
 
 
 def _upstream_for(alias: str | None) -> str | None:

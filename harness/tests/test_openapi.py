@@ -469,7 +469,7 @@ try:
     )
 
     port = serve()
-    token = (proj / ".build" / "api-token").read_text().strip()
+    token = (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
     bearer = {"Authorization": f"Bearer {token}"}
     url = f"{PREFIX}/openapi.json"
     st, body, hd = call(port, "GET", url, bearer)

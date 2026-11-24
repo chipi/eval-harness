@@ -26,10 +26,12 @@ with tempfile.TemporaryDirectory() as tmp:
     for extra in SRC.glob(f"{base}*"):
         if extra.suffix != ".yaml":
             shutil.copy(extra, d / extra.name)
-    text = (SRC / f"{base}.yaml").read_text()
+    text = (SRC / f"{base}.yaml").read_text(encoding="utf-8")
 
     def with_(lines: str) -> list:
-        (d / "next-v2.yaml").write_text(text.replace(f"scorer_id: {base}", "scorer_id: next-v2") + lines)
+        (d / "next-v2.yaml").write_text(
+            text.replace(f"scorer_id: {base}", "scorer_id: next-v2") + lines, encoding="utf-8"
+        )
         return [p for p in scorer_problems(d) if p.startswith("next-v2.yaml")]
 
     good = with_(f"supersedes: {base}\nwhy: the rubric now asks for one sentence, after long answers won\n")

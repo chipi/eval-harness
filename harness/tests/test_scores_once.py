@@ -57,7 +57,7 @@ def narrowed() -> Counter:
     run folders of its system and dataset with a score under the arm's label, a plain run and each repeat of it that
     is the same measurement (`_measured`); a repeat that is not is read as `repeats`."""
     runs = {
-        d.name: json.loads((d / "run.json").read_text())
+        d.name: json.loads((d / "run.json").read_text(encoding="utf-8"))
         for d in (DATA / "runs").iterdir()
         if (d / "run.json").is_file()
     }
@@ -69,7 +69,10 @@ def narrowed() -> Counter:
             root = runs[root["of"]]
         if rec.get("purpose") == "repeat" and (root is rec or not _measured(rec, root)):
             continue  # a --repeat set's member, or a repeat of something else: read as `repeats`
-        labels = {json.loads(f.read_text()).get("label") or "" for f in (d / "scores").glob("*/score.json")}
+        labels = {
+            json.loads(f.read_text(encoding="utf-8")).get("label") or ""
+            for f in (d / "scores").glob("*/score.json")
+        }
         prefixes = {_slug(x) for x in labels if x} | (
             {"runs"} if root.get("purpose", "run") == "run" else set()
         )
@@ -77,7 +80,7 @@ def narrowed() -> Counter:
             on_disk.setdefault((prefix, rec["dataset_id"], rec["system_id"]), set()).add(name)
     found: Counter = Counter()
     for f in sorted((DATA / "rounds").glob("*/r*.yaml")):
-        rnd = yaml.safe_load(f.read_text())
+        rnd = yaml.safe_load(f.read_text(encoding="utf-8"))
         for a in rnd.get("arms") or []:
             prefix = _slug(a.get("label") or "") or "runs"
             key = (prefix, rnd["dataset_id"], a["system"])

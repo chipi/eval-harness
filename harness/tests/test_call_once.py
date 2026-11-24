@@ -108,7 +108,7 @@ ADAPTERS = {
 
 
 def calls(item=None):
-    got = LOG.read_text().split() if LOG.exists() else []
+    got = LOG.read_text(encoding="utf-8").split() if LOG.exists() else []
     return got.count(item) if item else got
 
 
@@ -168,7 +168,7 @@ try:
     )  # fmt: skip
     check("setup: the tutorial dataset and its gold", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for name, text in ADAPTERS.items():
-        (proj / f"{name}.py").write_text(text)
+        (proj / f"{name}.py").write_text(text, encoding="utf-8")
     for sid, adapter, params in (
         ("once_v1", "once", "{}"),
         ("plain_v1", "plain", "{}"),
@@ -272,9 +272,9 @@ try:
     r = evh("run", "--system", "warm_v1", "--dataset", "tickets_v1", "--run-id", "W1")
     check(
         "the warm-up of a call-once adapter is retried (a transient failure there does not end the run)",
-        r.returncode == 0 and (proj / "warm.log").read_text().count("w") == 2,
+        r.returncode == 0 and (proj / "warm.log").read_text(encoding="utf-8").count("w") == 2,
         (
-            (proj / "warm.log").read_text() if (proj / "warm.log").exists() else None,
+            (proj / "warm.log").read_text(encoding="utf-8") if (proj / "warm.log").exists() else None,
             (r.stdout + r.stderr)[-300:],
         ),
     )

@@ -54,13 +54,13 @@ def write(data: Path, doc: dict[str, Any], smoke_deployment: dict[str, str] | No
     shutil.rmtree(data / "deployments" / doc["model_id"], ignore_errors=True)
     for rel, text in files_of(doc, smoke_deployment).items():
         (data / rel).parent.mkdir(parents=True, exist_ok=True)
-        (data / rel).write_text(text)
+        (data / rel).write_text(text, encoding="utf-8")
 
 
 def stamp(data: Path) -> None:
     """The data folder's format, as `evh init` writes it."""
     data.mkdir(parents=True, exist_ok=True)
-    (data / _format.NAME).write_text(f"format: {_format.FORMAT}\n")
+    (data / _format.NAME).write_text(f"format: {_format.FORMAT}\n", encoding="utf-8")
 
 
 def put(proj: Path | str, doc: dict[str, Any], smoke_deployment: dict[str, str] | None = None) -> None:

@@ -53,12 +53,13 @@ def evh(proj: Path, env: dict, *args: str) -> subprocess.CompletedProcess:
         text=True,
         stdin=subprocess.DEVNULL,
         timeout=600,
+        encoding="utf-8",
     )
 
 
 def build(proj: Path, env: dict) -> dict[str, Any]:
     """The rated dataset, the judge and its run; returns {"dataset", "system", "arm", "items"}."""
-    (proj / "rated_source.py").write_text(SOURCE_PY)
+    (proj / "rated_source.py").write_text(SOURCE_PY, encoding="utf-8")
     for args in (
         ("init", "--store", "files"),
         (
@@ -102,7 +103,8 @@ def build(proj: Path, env: dict) -> dict[str, Any]:
     (systems / f"{SYSTEM}.yaml").write_text(
         yaml.safe_dump(
             {"system_id": SYSTEM, "adapter": "scripts/judge_validation.py", "params": params}, sort_keys=False
-        )
+        ),
+        encoding="utf-8",
     )
     r = evh(proj, env, "run", "--system", SYSTEM, "--dataset", DATASET)
     if r.returncode:

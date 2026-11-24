@@ -61,36 +61,38 @@ def build(root: Path, runs: list[tuple[str, dict[str, Any]]], extra: tuple[str, 
     """A project of files in `root` (store: sqlite named, its data still files): every run with one output and two scores.
     `extra` is (run id, scorer): one more score set on that run."""
     root.mkdir(parents=True)
-    (root / "config.yaml").write_text("store: sqlite\n")
+    (root / "config.yaml").write_text("store: sqlite\n", encoding="utf-8")
     data = root / "data"
     data.mkdir(parents=True)
     _format.stamp(data=data)
     (data / "zz_goals").mkdir()  # after "runs" by name: it must still come before every run
-    (data / "zz_goals" / "g.json").write_text("{}\n")
+    (data / "zz_goals" / "g.json").write_text("{}\n", encoding="utf-8")
     for extra_file in (
         "a_x/z.json",
         "b_x/a.json",
     ):  # two more, to tell their order from the reverse of their names
         (data / extra_file).parent.mkdir(exist_ok=True)
-        (data / extra_file).write_text("{}\n")
+        (data / extra_file).write_text("{}\n", encoding="utf-8")
     for rid, fields in runs:
         rd = data / "runs" / rid
         rd.mkdir(parents=True)
         (rd / "run.json").write_text(
-            json.dumps({"run_id": rid, "system_id": "s_v1", "dataset_id": "ds", **fields}) + "\n"
+            json.dumps({"run_id": rid, "system_id": "s_v1", "dataset_id": "ds", **fields}) + "\n",
+            encoding="utf-8",
         )
         (rd / "outputs.jsonl").write_text(
             json.dumps({"item_id": "i1", "text": rid, "sha256": hashlib.sha256(rid.encode()).hexdigest()})
-            + "\n"
+            + "\n",
+            encoding="utf-8",
         )
         scorers = [*SCORES, *([extra[1]] if extra and extra[0] == rid else [])]
         for scorer in scorers:
             sd = rd / "scores" / f"{scorer}@gold.ds"
             sd.mkdir(parents=True)
-            (sd / "metrics.json").write_text("{}\n")
+            (sd / "metrics.json").write_text("{}\n", encoding="utf-8")
             tag = "u" if scorer == SCORES[0] else "v"
             row = {"item_id": "i1", "common": 1, f"{tag}_{rid}": 2.5}
-            (sd / "predictions.jsonl").write_text(json.dumps(row, sort_keys=True) + "\n")
+            (sd / "predictions.jsonl").write_text(json.dumps(row, sort_keys=True) + "\n", encoding="utf-8")
     return data
 
 
@@ -99,7 +101,7 @@ def migrate(root: Path) -> subprocess.CompletedProcess[str]:
     env.update(EVAL_HOME=str(root), EVAL_STORE="sqlite")
     return subprocess.run(
         [sys.executable, str(HARNESS / "scripts" / "cli.py"), "data-migrate", "--to", "sqlite"],
-        cwd=root, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=300, check=False,
+        cwd=root, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=300, check=False, encoding="utf-8",
     )  # fmt: skip
 
 

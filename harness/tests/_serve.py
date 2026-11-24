@@ -73,6 +73,7 @@ def start(cwd: Path, env: dict, *extra: str) -> tuple[subprocess.Popen, int, lis
         text=True,
         encoding="utf-8",
         stdin=subprocess.DEVNULL,
+        encoding="utf-8",
     )
     lines = drain(p, [])
     port = 0
@@ -102,7 +103,11 @@ def jobs_done(proj: Path, timeout: float = 120) -> bool:
         live = []
         for st in (Path(proj) / ".build" / "jobs").glob("*/state.json"):
             try:
-                live += [st] if json.loads(st.read_text()).get("state") in ("queued", "running") else []
+                live += (
+                    [st]
+                    if json.loads(st.read_text(encoding="utf-8")).get("state") in ("queued", "running")
+                    else []
+                )
             except (OSError, ValueError):
                 live.append(st)  # being written
         if not live:

@@ -22,5 +22,7 @@ def step(done: int, total: int | None) -> None:
         return
     with contextlib.suppress(OSError):
         tmp = Path(_common.PROGRESS_LIVE + ".tmp")
-        tmp.write_text(json.dumps({"done": int(done), "total": total, "at": _common.now()}) + "\n")
+        tmp.write_text(
+            json.dumps({"done": int(done), "total": total, "at": _common.now()}) + "\n", encoding="utf-8"
+        )
         os.replace(tmp, _common.PROGRESS_LIVE)

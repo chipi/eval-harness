@@ -110,12 +110,12 @@ try:
         (proj / "data" / "systems").mkdir(parents=True)
         (proj / "data" / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    (proj / "a.py").write_text(ADAPTER)
+    (proj / "a.py").write_text(ADAPTER, encoding="utf-8")
     _runstore.write_text(proj, "validate.json", json.dumps({"committed": ["runs", "repeats"]}))
     _runstore.write_text(
         proj,
         "goals/tickets_summary.yaml",
-        (KIT / "goals" / "tickets_summary.yaml").read_text().replace("overlap_f1", "words"),
+        (KIT / "goals" / "tickets_summary.yaml").read_text(encoding="utf-8").replace("overlap_f1", "words"),
     )
     for ds in (DS, "tickets_v2"):
         r = evh("dataset-create", "--dataset-id", ds, "--source-dir", "tutorial/tickets")

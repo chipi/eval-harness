@@ -44,8 +44,10 @@ try:
     shutil.copytree(KIT / "tickets", v1_src)
     shutil.copytree(KIT / "tickets", v2_src)
     (v2_src / "t06_mobile.txt").unlink()  # removed
-    (v2_src / "t07_new.txt").write_text("A new ticket about invoices.\n")  # added
-    (v2_src / "t01_login.txt").write_text((v1_src / "t01_login.txt").read_text() + " Edited.\n")  # changed
+    (v2_src / "t07_new.txt").write_text("A new ticket about invoices.\n", encoding="utf-8")  # added
+    (v2_src / "t01_login.txt").write_text(
+        (v1_src / "t01_login.txt").read_text(encoding="utf-8") + " Edited.\n", encoding="utf-8"
+    )  # changed
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "src_v1")
     check("setup: v1 is frozen", r.returncode == 0, r.stderr[-300:])
 
@@ -82,7 +84,9 @@ try:
 
     # A run on v1 only: v2 has no arm, and still gets a page because it is v1's version.
     _runstore.write_text(
-        proj, "systems/tickets_lead1_v1.yaml", (KIT / "systems" / "tickets_lead1_v1.yaml").read_text()
+        proj,
+        "systems/tickets_lead1_v1.yaml",
+        (KIT / "systems" / "tickets_lead1_v1.yaml").read_text(encoding="utf-8"),
     )
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
     r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1")
@@ -98,10 +102,18 @@ try:
     )
     r = evh("catalog")
     out = proj / ".build" / "catalog"
-    v1 = (out / "d/tickets_v1.html").read_text() if (out / "d/tickets_v1.html").is_file() else ""
-    v2 = (out / "d/tickets_v2.html").read_text() if (out / "d/tickets_v2.html").is_file() else ""
-    home = (out / "index.html").read_text() if (out / "index.html").is_file() else ""
-    dsets = (out / "datasets.html").read_text() if (out / "datasets.html").is_file() else ""
+    v1 = (
+        (out / "d/tickets_v1.html").read_text(encoding="utf-8")
+        if (out / "d/tickets_v1.html").is_file()
+        else ""
+    )
+    v2 = (
+        (out / "d/tickets_v2.html").read_text(encoding="utf-8")
+        if (out / "d/tickets_v2.html").is_file()
+        else ""
+    )
+    home = (out / "index.html").read_text(encoding="utf-8") if (out / "index.html").is_file() else ""
+    dsets = (out / "datasets.html").read_text(encoding="utf-8") if (out / "datasets.html").is_file() else ""
     check(
         "catalog: v1 links forward to v2, v2 back to v1 with what changed",
         'Made into <a class="cell-link" href="../d/tickets_v2.html">' in v1

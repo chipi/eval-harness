@@ -50,10 +50,14 @@ def old_run(d: Path, outs: dict, metrics: dict, rows: bool = False) -> None:
     (d / "outputs").mkdir(parents=True)
     for i, t in outs.items():
         (d / "outputs" / f"{i}.txt").write_bytes(t.encode() if isinstance(t, str) else t)
-    (d / "metrics.json").write_text(json.dumps(metrics))
-    (d / "predictions.jsonl").write_text("".join(json.dumps({"item_id": i, "acc": 1.0}) + "\n" for i in outs))
+    (d / "metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
+    (d / "predictions.jsonl").write_text(
+        "".join(json.dumps({"item_id": i, "acc": 1.0}) + "\n" for i in outs), encoding="utf-8"
+    )
     if rows:
-        (d / "outputs" / "_rows.jsonl").write_text("".join(json.dumps({"item_id": i}) + "\n" for i in outs))
+        (d / "outputs" / "_rows.jsonl").write_text(
+            "".join(json.dumps({"item_id": i}) + "\n" for i in outs), encoding="utf-8"
+        )
 
 
 def old_sig(outs: dict) -> str:
@@ -67,11 +71,11 @@ try:
     data = proj / "data"
     (data / "datasets").mkdir(parents=True)
     (data / "datasets" / "ds1.json").write_text(
-        json.dumps({"dataset_id": "ds1", "items": [{"item_id": i} for i in ITEMS]})
+        json.dumps({"dataset_id": "ds1", "items": [{"item_id": i} for i in ITEMS]}), encoding="utf-8"
     )
     (data / "systems").mkdir()
     (data / "systems" / "arm_v1.yaml").write_text(
-        "system_id: arm_v1\n"
+        "system_id: arm_v1\n", encoding="utf-8"
     )  # the last step refuses a run of no system
     m = data / "runs" / "arm_v1_20261101T000000Z"
     adapter = {"fingerprint": {"instrument": {"adapter": {"sha256": "a" * 64}}}}
@@ -145,7 +149,7 @@ try:
     )
     a = evh("migrate")
     rows = (
-        [json.loads(x) for x in (m / _outputs.FILE).read_text().splitlines()]
+        [json.loads(x) for x in (m / _outputs.FILE).read_text(encoding="utf-8").splitlines()]
         if (m / _outputs.FILE).is_file()
         else []
     )
@@ -203,7 +207,9 @@ try:
     )
     b = data / "runs" / "bin_v1_20261101T000000Z"
     old_run(b, {"t01": b"\xff\xfe not text"}, {"run_id": b.name, "dataset_id": "ds1", "config_id": "bin_v1"})
-    (b / "run.json").write_text(json.dumps({"run_id": b.name, "dataset_id": "ds1", "config_id": "bin_v1"}))
+    (b / "run.json").write_text(
+        json.dumps({"run_id": b.name, "dataset_id": "ds1", "config_id": "bin_v1"}), encoding="utf-8"
+    )
     v = evh("validate")
     check(
         "validate V23: a run left in the old layout is named, with the command",
@@ -232,10 +238,13 @@ try:
                 "version": 1,
                 "items": [{"item_id": "t01", "source_sha256": "0" * 64}],
             }
-        )
+        ),
+        encoding="utf-8",
     )
     (proj / "data" / "systems").mkdir()
-    (proj / "data" / "systems" / "arm_v1.yaml").write_text("system_id: arm_v1\nparams: {}\n")
+    (proj / "data" / "systems" / "arm_v1.yaml").write_text(
+        "system_id: arm_v1\nparams: {}\n", encoding="utf-8"
+    )
     scorer_id = "podcast_scraper scripts/measure/naming_gate.py"
     adapter_fp = {"fingerprint": {"instrument": {"adapter": {"sha256": "c" * 64}}}}
     imp = proj / "data" / "runs" / "arm_v1_20261102T000000Z"

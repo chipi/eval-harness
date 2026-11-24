@@ -25,7 +25,7 @@ def write(base: Path, name: str, doc: dict) -> None:
         if rel.startswith("models/"):
             rel = f"models/{name}.yaml"
         (base / rel).parent.mkdir(parents=True, exist_ok=True)
-        (base / rel).write_text(text)
+        (base / rel).write_text(text, encoding="utf-8")
 
 
 with tempfile.TemporaryDirectory() as td:
@@ -100,7 +100,7 @@ with tempfile.TemporaryDirectory() as td:
         "find: a model with its deployments, in the order it lists them, each its own record",
         [d["id"] for d in rec.get("deployments") or []] == ["mac", "dgx"]
         and (data / "deployments" / "dep" / "dgx.yaml").is_file()
-        and "deployments" not in yaml.safe_load((data / "models" / "dep.yaml").read_text()),
+        and "deployments" not in yaml.safe_load((data / "models" / "dep.yaml").read_text(encoding="utf-8")),
         rec,
     )
     check("deployment_of: by id", (_models.deployment_of(rec, "dgx") or {}).get("where") == "dgx")
@@ -125,10 +125,10 @@ with tempfile.TemporaryDirectory() as td:
         check(f"resolve: {name} is refused", words in msg, msg)
     (data / "deployments" / "ghost").mkdir(parents=True)
     (data / "deployments" / "ghost" / "x.yaml").write_text(
-        yaml.safe_dump({"model_id": "ghost", "deployment_id": "x", "where": "x"})
+        yaml.safe_dump({"model_id": "ghost", "deployment_id": "x", "where": "x"}), encoding="utf-8"
     )
     (data / "deployments" / "dep" / "lost.yaml").write_text(
-        yaml.safe_dump({"model_id": "dep", "deployment_id": "other", "where": "x"})
+        yaml.safe_dump({"model_id": "dep", "deployment_id": "other", "where": "x"}), encoding="utf-8"
     )
     probs = " | ".join(_models.problems(data))
     check(
@@ -139,8 +139,12 @@ with tempfile.TemporaryDirectory() as td:
     )
 
 schemas = Path(__file__).resolve().parents[1] / "schemas"
-model_v = jsonschema.Draft202012Validator(json.loads((schemas / "model.schema.json").read_text()))
-dep_v = jsonschema.Draft202012Validator(json.loads((schemas / "deployment.schema.json").read_text()))
+model_v = jsonschema.Draft202012Validator(
+    json.loads((schemas / "model.schema.json").read_text(encoding="utf-8"))
+)
+dep_v = jsonschema.Draft202012Validator(
+    json.loads((schemas / "deployment.schema.json").read_text(encoding="utf-8"))
+)
 rec = {"model_id": "m", "kind": "llm", "aliases": ["m"]}
 dep = {
     "model_id": "m",
@@ -202,7 +206,9 @@ with tempfile.TemporaryDirectory() as td:
             {"kind": "smoke", "system": cid, "status": status, "at": f"2026-11-13T{at}:00:00Z"},
         )
     got = _models.find(data, "two") or {}
-    checks = yaml.safe_load((data / "deployments" / "two" / "here.yaml").read_text())["checks"]
+    checks = yaml.safe_load((data / "deployments" / "two" / "here.yaml").read_text(encoding="utf-8"))[
+        "checks"
+    ]
     check(
         "add_check: each check kept, none written over, each naming who made it; the view gives each arm's latest smoke",
         len(checks) == 3
@@ -223,7 +229,8 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "a deployment's record names no actor of its own: its checks name who made them",
-        "actor" not in yaml.safe_load((data / "deployments" / "two" / "here.yaml").read_text()),
+        "actor"
+        not in yaml.safe_load((data / "deployments" / "two" / "here.yaml").read_text(encoding="utf-8")),
     )
     check(
         "update_record: the second change keeps the first",

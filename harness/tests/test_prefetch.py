@@ -154,7 +154,7 @@ for name, body in (
     ("prints no answer", "cat >/dev/null; echo '[1'"),
 ):
     fake = tmp / "python"
-    fake.write_text(f"#!/bin/sh\n{body}\n")
+    fake.write_text(f"#!/bin/sh\n{body}\n", encoding="utf-8")
     fake.chmod(0o755)
     fresh()
     sys.executable = str(fake)

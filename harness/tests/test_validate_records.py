@@ -36,7 +36,12 @@ for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR", "EVH_ACTOR"):
 
 def validate():
     r = subprocess.run(
-        [sys.executable, str(HERE / "cli.py"), "validate"], cwd=proj, env=env, capture_output=True, text=True
+        [sys.executable, str(HERE / "cli.py"), "validate"],
+        cwd=proj,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     )
     return r.stdout + r.stderr
 

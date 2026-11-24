@@ -63,7 +63,7 @@ try:
         _runstore.write_text(proj, f"runs/{rid}/run.json", json.dumps(run, indent=2) + "\n")
     outside = proj / "records" / "references" / "silver" / BARE[0]
     outside.mkdir(parents=True)
-    (outside / "clip_01.txt").write_text("an invented reference text\n")
+    (outside / "clip_01.txt").write_text("an invented reference text\n", encoding="utf-8")
 
     goal([PROSE, GLOB, ds, GONE])
     code, out = validate()

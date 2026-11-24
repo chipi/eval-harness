@@ -80,6 +80,7 @@ r = subprocess.run(
     capture_output=True,
     text=True,
     stdin=subprocess.DEVNULL,
+    encoding="utf-8",
 )
 check(
     "a refusal prints its kind: `ERROR (not-found): no goal ...`, exit 1",
