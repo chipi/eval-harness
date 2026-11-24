@@ -51,6 +51,7 @@ from evaluation_harness.axes import (  # noqa: E402
     fmt_usd,
     strategy_of,
     tie_break_of,
+    with_coverage,
 )
 from evaluation_harness.catalog_adapter import (  # noqa: E402
     Adapter,
@@ -4160,7 +4161,11 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
                 f'<span data-v="{e(r.get("created_at") or "")}">{e((r.get("created_at") or "")[:16].replace("T", " "))}</span>',
                 f'<span data-v="{r.get("items") or ""}">{r.get("items") if r.get("items") is not None else "—"}</span>',
                 f'<span data-v="{r.get("cost_usd") if r.get("cost_usd") is not None else ""}">'
-                + (fmt_usd(r["cost_usd"]) if isinstance(r.get("cost_usd"), (int, float)) else "—")
+                + (
+                    e(with_coverage(fmt_usd(r["cost_usd"]), r.get("cost_coverage")))
+                    if isinstance(r.get("cost_usd"), (int, float))
+                    else "—"
+                )
                 + "</span>",
                 e(r.get("derived") or "measured"),
             ]

@@ -43,6 +43,7 @@ from pathlib import Path
 from evaluation_harness import _jsonout, _runs
 from evaluation_harness._common import die
 from evaluation_harness._runs import left_out, runs_on
+from evaluation_harness.axes import with_coverage
 from evaluation_harness.model.spend import judge_costs
 
 
@@ -128,11 +129,18 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
         if total == 0:
             continue
         if with_bill == 0:
-            no_bill.append((cid, recorded, m.get("dataset_id")))
+            no_bill.append((cid, recorded, m.get("dataset_id"), m.get("cost_coverage")))
             continue
         if with_bill != total:
             # Half a bill is not a bill. Say so rather than summing a mixture.
-            no_bill.append((f"{cid} (only {with_bill}/{total} items billed)", recorded, m.get("dataset_id")))
+            no_bill.append(
+                (
+                    f"{cid} (only {with_bill}/{total} items billed)",
+                    recorded,
+                    m.get("dataset_id"),
+                    m.get("cost_coverage"),
+                )
+            )
             continue
         rows.append((billed, recorded, cid, m.get("dataset_id")))
 
@@ -161,8 +169,8 @@ def body(dataset_id: str | None = None, match: str | None = None) -> int:
             f"\n  {len(no_bill)} run(s) with NO provider bill — the price table is all "
             f"there is, and they are NOT in the total above:"
         )
-        for cid, recorded, ds in no_bill:
-            print(f"    {cid}  ${recorded:.4f}  ({ds})")
+        for cid, recorded, ds, coverage in no_bill:
+            print(f"    {cid}  {with_coverage(f'${recorded:.4f}', coverage)}  ({ds})")
 
     if rows or no_bill:
         print("\n  'billed' is the sum of _meta.usage.cost over every item: what the provider")

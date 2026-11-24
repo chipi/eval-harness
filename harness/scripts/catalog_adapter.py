@@ -1275,6 +1275,7 @@ class HarnessAdapter:
                     "created_at": made,
                     "items": m.get("n_items"),
                     "cost_usd": (m.get("scores") or {}).get("total_cost_usd"),
+                    "cost_coverage": m.get("cost_coverage"),
                     "derived": (m.get("derived") or {}).get("kind", ""),
                     "from": frm,
                     "in_place": in_place,

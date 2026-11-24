@@ -628,6 +628,14 @@ def fmt_usd(v: float) -> str:
     return f"${v:.{max(4, 1 - math.floor(math.log10(abs(v))))}f}"
 
 
+def with_coverage(text: str, coverage: dict | None) -> str:
+    """A run's total cost as shown, said to be of only some items when the run recorded `cost_coverage` (RFC-041 F3):
+    the one wording of it, for every view that shows a run's cost."""
+    if not coverage:
+        return text
+    return f"{text} (on {coverage['items_with_cost']} of {coverage['items']} items)"
+
+
 def fmt_ms(v: float) -> str:
     """Milliseconds, the one precision everywhere: three significant digits ("0.00350", "1.23", "12.5"), whole from 100 up
     with separators ("1,988"); never scientific (a keyword match takes 0.004 ms)."""

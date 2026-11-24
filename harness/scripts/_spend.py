@@ -244,9 +244,8 @@ def round_left(rnd: dict[str, Any], data: Path | None = None) -> float | None:
         return None
     from evaluation_harness import _rounds  # noqa: PLC0415
 
-    used = sum(
-        float((m.get("scores") or {}).get("total_cost_usd") or 0) for _, m in _rounds.runs_of(rnd, data=data)
-    )
+    # An unknown cost cannot be charged: only what runs recorded counts, and over-budget names the rest.
+    used = _rounds.spend_of(rnd, data)[0] or 0.0
     for e in _read(ledger_path(rnd["goal"], rnd["round_id"])).get("entries", []):
         used += _entry_use(e)
     return float(rnd["budget_usd"]) - used
@@ -285,9 +284,14 @@ def reserve(rnd: dict[str, Any], command: str, run_ids: list[str] | None = None)
         left_now = round_left(rnd)
         assert left_now is not None
         if left_now <= 0:
+            from evaluation_harness import _rounds  # noqa: PLC0415
+
+            unpriced = _rounds.no_cost_words(_rounds.spend_of(rnd)[1])
             _common.die(
                 f"round {rnd['round_id']} of {rnd['goal']} has spent its budget (${float(rnd['budget_usd']):.2f}, "
-                "counting what its running commands have reserved): nothing is called. Raise budget_usd in the "
+                "counting what its running commands have reserved"
+                + (f"; {unpriced}, so what they cost is not counted" if unpriced else "")
+                + "): nothing is called. Raise budget_usd in the "
                 f"round, or wait for a running arm to end (`evh round-evidence {rnd['goal']} {rnd['round_id']}` shows what was spent)",
                 "over-budget",
             )
