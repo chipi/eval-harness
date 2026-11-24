@@ -29,7 +29,8 @@ Pin a release tag:
 
 ## Cutting a release
 
-1. **Bump the version** in `harness/scripts/_version.py` (semantic versioning):
+1. **Bump the version** in `harness/scripts/_version.py`, and the `harness-version` each bundled skill names
+   (`harness/skills/*/SKILL.md`; `tests/test_skills.py` fails a skill that names another), using semantic versioning:
    - patch: a fix that cannot move a result;
    - minor: new capability, or any change that can move a result;
    - major: a change to the run format or the CLI that breaks existing projects.
