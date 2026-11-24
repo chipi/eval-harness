@@ -1581,7 +1581,7 @@ def v16_references() -> None:
     ]
     if not dirs:
         print(
-            "  --   V16 references: 0 sets under data/references, so no manifest was checked (each reference a run used from elsewhere has a note below)"
+            "  --   V16 references — 0 sets under data/references, so no manifest was checked (each reference a run used from elsewhere has a note below)"
         )
         return
     schema = json.loads(_store.read_text(SCHEMAS / "reference.schema.json")) if jsonschema else None
