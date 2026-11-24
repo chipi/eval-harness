@@ -176,15 +176,14 @@ def sign_flip_p(
         # exact), and fsum is exactly rounded whatever order it reads the values in: the same
         # p, bit for bit, many times faster.
         key = (tuple(deltas), permutations, seed)
-        if key in _P:
-            _P.move_to_end(key)
-            return _P[key]
+        if (hit := _cached(_P, key)) is not _MISS:
+            return hit
         stored = _stored_p(key)
         if stored is None and _collecting():
 
             def hold(v: float, key: tuple = key) -> None:
                 _store_p(key, v)
-                _P[key] = v
+                _cache(_P, key, v, _P_MAX)
 
             job = {"kind": "sf", "d": [float(d).hex() for d in deltas], "n": permutations, "s": seed}
             _collecting()[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
@@ -193,10 +192,7 @@ def sign_flip_p(
             hits = _count_hits(deltas, abs(obs), _signs(len(deltas), permutations, seed))
             stored = (hits + 1) / (permutations + 1)
             _store_p(key, stored)
-        _P[key] = stored
-        while len(_P) > _P_MAX:
-            _P.popitem(last=False)
-        return _P[key]
+        return _cache(_P, key, stored, _P_MAX)
     # The shared stream: the signs fmean(d if rng.random() < 0.5 else -d ...) drew, from _draw,
     # summed as above (fmean is fsum / n). The same p, and the same generator state after, so the
     # next opponent's draws are unchanged too.
@@ -372,6 +368,28 @@ def _as_state(state: Any) -> tuple:
 #: minutes. A dropped table is drawn again from the same seed, so a p never changes, only speed.
 _P: OrderedDict = OrderedDict()
 _P_MAX = 4096
+#: One lock for the in-process caches (_P, _KEPT, _SIGNS): the server reads p's on many threads, and a look-up's
+#: check-then-move raced another thread's eviction (a KeyError, test_stats_threads).
+_CACHES_LOCK = threading.Lock()
+_MISS = object()
+
+
+def _cached(cache: OrderedDict, key: Any) -> Any:
+    with _CACHES_LOCK:
+        v = cache.get(key, _MISS)
+        if v is not _MISS:
+            cache.move_to_end(key)
+        return v
+
+
+def _cache(cache: OrderedDict, key: Any, v: Any, most: int) -> Any:
+    with _CACHES_LOCK:
+        cache[key] = v
+        cache.move_to_end(key)
+        while len(cache) > most:
+            cache.popitem(last=False)
+    return v
+
 
 #: A file of estimated p's that outlives the process: `EVH_P_CACHE=<path>`, one JSON line per p,
 #: {"k": sha256 of the deltas (as float.hex), permutations and seed; "p": the p as float.hex}. Each
@@ -429,9 +447,8 @@ def kept(algo: str, data: str, compute: Callable[[], Any]) -> Any:
     k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
     # Kept in the process too, as the sign-flip p's are (_P): a catalog build decides each goal twice (the glance
     # and its page), and without EVH_P_CACHE every bootstrap-t was drawn again, 9,999 resamples each time.
-    if k in _KEPT:
-        _KEPT.move_to_end(k)
-        return copy.deepcopy(_KEPT[k])
+    if (hit := _cached(_KEPT, k)) is not _MISS:
+        return copy.deepcopy(hit)
     if os.environ.get("EVH_P_CACHE") and (v := _disk().get(k)) is not None:
         _remember(k, v)
         return copy.deepcopy(v)
@@ -445,9 +462,7 @@ _KEPT: OrderedDict = OrderedDict()
 
 
 def _remember(k: str, v: Any) -> None:
-    _KEPT[k] = copy.deepcopy(v)
-    while len(_KEPT) > _P_MAX:
-        _KEPT.popitem(last=False)
+    _cache(_KEPT, k, copy.deepcopy(v), _P_MAX)
 
 
 def _keep(k: str, v: Any) -> None:
@@ -493,14 +508,10 @@ def _signs(n: int, permutations: int, seed: int) -> list:
     order sign_flip_p draws them: one bytes per pass, 1 where a draw below 0.5 keeps the item's
     sign and 0 where it flips. Kept for the last _SIGNS_MAX (n, permutations, seed)."""
     key = (n, permutations, seed)
-    if key in _SIGNS:
-        _SIGNS.move_to_end(key)
-        return _SIGNS[key]
+    if (hit := _cached(_SIGNS, key)) is not _MISS:
+        return hit
     rng = random.Random(seed)
-    _SIGNS[key] = [_draw(rng, n) for _ in range(permutations)]
-    while len(_SIGNS) > _SIGNS_MAX:
-        _SIGNS.popitem(last=False)
-    return _SIGNS[key]
+    return _cache(_SIGNS, key, [_draw(rng, n) for _ in range(permutations)], _SIGNS_MAX)
 
 
 def fmt_p(p: float | None) -> str:
