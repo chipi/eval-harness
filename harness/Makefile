@@ -107,7 +107,7 @@ browser-install:
 	$(VENV)/bin/pip install -q -r requirements-browser.txt
 	$(VENV)/bin/python -m playwright install chromium $(ARGS)
 
-# The inspector's budgets on this repository's runs: memory under --warm (prod's limit is 256 MiB)
+# The inspector's budgets on this repository's runs: memory under --warm and the Workbench's reads (the mem_limit in infra/compose.yml)
 # and how long an answer takes, cached and cold (tests/test_inspector_budget.py).
 budget-check:
 	$(PYTHON) tests/test_inspector_budget.py $(ARGS)
