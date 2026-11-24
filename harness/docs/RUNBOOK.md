@@ -629,6 +629,7 @@ evh runs-list
 A run is only attributable if it knows its build. `runs-list` marks runs from a
 dirty tree with `*` — their `build.ref` does not describe what actually ran — and a run whose tree was never checked
 (`EVAL_BUILD_REF` set, a run brought in by `evh import-run`, or no build recorded) with `?`; `--json` gives `dirty: true | false | null`, null being unknown.
+A run re-scored in place or rewritten by a migration is dated by the time in its run id, not by its record's `created_at`.
 **Commit before you measure** — dataset, systems, references — so the runs you keep are
 clean the first time. Re-running an arm into `data/runs` after the fact leaves two
 measurements of one system, which `evh validate` refuses (V8) unless `duplicate_ok` lists the pair; explore with a throwaway pass

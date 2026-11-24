@@ -863,15 +863,13 @@ def leaderboard(
     rounds_of = getattr(A, "rounds", None)
     answer = []
     for d in g.get("datasets") or []:
-        b = [
-            x
-            for x in (by_ds.get(d.get("dataset_id", "")) or {}).get("baselines", [])
-            if x.get("goal") == goal_id
-        ]
+        b, read = baseline_read(by_ds.get(d.get("dataset_id", "")) or {}, goal_id)
         answer.append(
             {
                 "dataset": d.get("dataset_id", ""),
-                "baseline": {k: b[-1].get(k) for k in ("arm", "run", "promoted_at", "reason")} if b else None,
+                "baseline": {k: b[-1].get(k) for k in ("run", "promoted_at", "reason")} | {"arm": read}
+                if b
+                else None,
             }
         )
     per_ds = {

@@ -220,6 +220,14 @@ def write_bytes(proj: Path | str, rel: str, content: bytes) -> None:
         _store.write_bytes(data / rel, content)
 
 
+def copy_rows(proj: Path | str, src: str, dst: str) -> None:
+    """A score's rows copied to another score directory of the test project's data/, wherever its store keeps them."""
+    with _InProject(proj) as data:
+        got = _outputs.store().rows(data / src)
+        if got is not None:
+            _outputs.store().put_rows(data / dst, got)
+
+
 def record_of(proj: Path | str, run_id: str) -> dict[str, Any]:
     """The record of a run of the test project: its run.json with its first score's metrics over it (what a run's
     metrics.json held before RFC-032 step 4); the run's own when it has no score; {} when there is no such run."""

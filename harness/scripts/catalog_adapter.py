@@ -36,7 +36,6 @@ import hashlib
 import importlib.util
 import itertools
 import json
-import re
 import statistics
 import sys
 import threading
@@ -387,20 +386,6 @@ def _flat_conditions(fp: dict) -> dict[str, str]:
     if fp.get("version") is not None:
         out["fingerprint.version"] = str(fp["version"])
     return out
-
-
-def measured(m: dict, first: bool) -> tuple[bool, str]:
-    """(re-scored or re-parsed in place, when it was measured). The score a run made when it ran, re-scored where it
-    lay (its record has `derived`), is still the run that was measured (its calls, its bill), dated when it was, which
-    the run id keeps (created_at was rewritten with the re-score's time). Any other score: (False, its created_at)."""
-    made = m.get("created_at") or ""
-    if not (first and m.get("derived")):
-        return False, made
-    stamp = re.search(r"_(\d{8})T(\d{6})Z$", str(m.get("run_id") or ""))
-    if stamp:
-        day, hms = stamp.groups()
-        made = f"{day[:4]}-{day[4:6]}-{day[6:]}T{hms[:2]}:{hms[2:4]}:{hms[4:]}Z"
-    return True, made
 
 
 def _json(p: Path | None):
@@ -1283,7 +1268,7 @@ class HarnessAdapter:
             m = self._record(d)
             run_id = m.get("run_id") or self._run_id(d)
             frm = (m.get("derived") or {}).get("from", "")
-            in_place, made = measured(m, bool(model_runs.meta(d).get("first")))
+            in_place, made = model_runs.measured(m, bool(model_runs.meta(d).get("first")))
             out.append(
                 {
                     "run_id": run_id,
@@ -1339,7 +1324,7 @@ class HarnessAdapter:
             usd = number(sc.get("total_cost_usd"))
             tokens = token_total(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
             first = bool(model_runs.meta(d).get("first"))
-            _in_place, at = measured(m, first)
+            _in_place, at = model_runs.measured(m, first)
             if not first or (usd is None and tokens is None):
                 continue
             out.append(

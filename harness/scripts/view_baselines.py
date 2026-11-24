@@ -63,6 +63,23 @@ def _entry(v: dict[str, Any]) -> dict[str, Any]:
     return {k: v.get(k) for k in keep if v.get(k) is not None}
 
 
+def goal_reads(rows: list[dict[str, Any]]) -> dict[tuple[str, str], str | None]:
+    """{(goal, dataset): the arm the goal reads as its baseline}: the promoted arm, or its re-score when it was re-scored (RFC-022),
+    by the one rule every goal view reads it by (`goal_views.baseline_read`). The promotion record names the run promoted; this
+    names the arm the goal reads: two facts, both said."""
+    from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: PLC0415
+    from evaluation_harness.model import goal_views  # noqa: PLC0415
+
+    mine = [r for r in rows if r["goal"]]
+    if not mine:
+        return {}
+    by_ds = goal_views.by_dataset(load_catalog_adapter(None), {r["dataset"] for r in mine})
+    return {
+        (r["goal"], r["dataset"]): goal_views.baseline_read(by_ds.get(r["dataset"]) or {}, r["goal"])[1]
+        for r in mine
+    }
+
+
 def lines(goal: str | None, no_goal: bool, dataset: str | None, all_versions: bool) -> list[dict[str, Any]]:
     """Every selected line with its current version, how to reproduce it and its history."""
     goals = load_goals()
@@ -82,6 +99,7 @@ def lines(goal: str | None, no_goal: bool, dataset: str | None, all_versions: bo
                 "scores": _scores(cur)[0],
                 "repeats": _scores(cur)[1],
                 "reference_tier": cur.get("reference_tier"),
+                "goal_reads": None,
                 "reproduce": _reproduce(str(cur.get("promoted_from"))),
                 "intended_use": {"context": gdoc.get("context"), "decision": gdoc.get("decision")}
                 if gdoc
@@ -89,4 +107,7 @@ def lines(goal: str | None, no_goal: bool, dataset: str | None, all_versions: bo
                 "history": [_entry(v) for v in (vs if all_versions else vs[:-1])],
             }
         )
+    reads = goal_reads(out)
+    for row in out:
+        row["goal_reads"] = reads.get((row["goal"], row["dataset"]))
     return out
