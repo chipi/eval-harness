@@ -73,7 +73,6 @@ def start(cwd: Path, env: dict, *extra: str) -> tuple[subprocess.Popen, int, lis
         text=True,
         encoding="utf-8",
         stdin=subprocess.DEVNULL,
-        encoding="utf-8",
     )
     lines = drain(p, [])
     port = 0
