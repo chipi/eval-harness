@@ -123,7 +123,7 @@ OPS = (
            "source": {"type": "string", "description": "where the outputs and scores came from"},
            "scorer_id": {"type": "string", "description": "the scoring code that produced the numbers"},
            "scorer_file": {"type": "array", "format": "path", "items": {"type": "string"}, "description": "a file of that scoring code (repeatable, in a fixed order); hashed by what it does, docstrings and comments not counted, and recorded as the instrument", "x-file": "upload"},
-           "reference_id": {"type": "string", "description": "the references the scores are against, e.g. gold/my_v1"},
+           "reference_id": {"type": "string", "description": "the references the scores are against, e.g. gold/my_v1; a bare id, or one kept outside data/references, is recorded as given with a note (V16)"},
            "reference_tier": {"type": "string", "enum": ["gold", "silver"], "description": "the tier of the references the scores are against"},
            "metric_kind": {"type": "array", "items": {"type": "string"}, "x-metavar": "METRIC=KIND", "description": "quality | descriptive | cost | speed (repeatable)"},
            "allow_subset": {"type": "boolean", "description": "accept scores for only part of the dataset, recorded as coverage"},

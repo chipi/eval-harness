@@ -109,7 +109,7 @@ try:
         "the V16 summary line does not say (none) while a V16 note says runs were scored against a reference outside data/references",
         "scored against" in out
         and len(v16) == 1
-        and "(none)" not in v16[0]
+        and "none" not in v16[0]
         and "under data/references" in v16[0],
         v16,
     )

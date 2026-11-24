@@ -1580,7 +1580,9 @@ def v16_references() -> None:
         d for tier in ("gold", "silver") for d in sorted(_store.glob(base / tier, "*")) if _store.is_dir(d)
     ]
     if not dirs:
-        print("  --   V16 references (none under data/references to check against a manifest)")
+        print(
+            "  --   V16 references: 0 sets under data/references, so no manifest was checked (each reference a run used from elsewhere has a note below)"
+        )
         return
     schema = json.loads(_store.read_text(SCHEMAS / "reference.schema.json")) if jsonschema else None
     bad: list[str] = []
