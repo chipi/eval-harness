@@ -21,6 +21,9 @@ project in the full notes). No data format, fingerprint version or scorer change
   - `wer`, `cer` and `der` read lower-is-better where nothing declares otherwise: the podcast project's `wer` flips on two
     datasets. A measure whose datasets disagree reads "mixed", a descriptive one "neutral"; a baseline is per goal;
   - a NaN, an infinity or a None score is a failed item, on read as on write: old data holding one can read differently;
+    a failed item whose fallback score is not a number either counts 0 on that measure, where it was left out of the mean;
+  - `run-compare` reads a measure's direction for its runs' dataset, as `leaderboard` does: a goal on another dataset
+    no longer decides a verdict;
   - an arm's value is the mean over its items in every view, the leaderboard's too, to 6 places as a run records it, and the
     leaderboard ranks a re-score in place of its arm: the fleet's two arms move, the podcast project's 974 values read
     to 6 places (a near-zero `bleu` of 1.4323e-05 reads 1.4e-05, what its run records).
