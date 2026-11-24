@@ -67,6 +67,13 @@ Pin a release tag:
    `migrate --dry-run`, `validate`, `runs-list` and `leaderboard` in each. It also checks UPGRADING's claim that a plain
    `pip install` of a build that reports the installed version keeps the old code. Run it on the release pull request, once
    the version is bumped; a failure is a release that breaks the project of someone who upgrades.
+
+   **4c. Check that the readers agree on this repository's own data.** `make -C harness reader-agreement-repo` (15 to 25
+   minutes; not in the self-test) asks the CLI, the API, the MCP reads, the catalog export and the inspector for the same
+   facts of `harness/data`, on a copy, and fails when two of them differ. The self-test's version runs the same check on
+   small projects; this one runs it on the real ones, where a migration or a re-score leaves a shape no fixture has.
+   Run it on the release pull request; a disagreement is a reader that says something different from the others about
+   a project someone is using.
 5. **Run the [newcomer scenario](SCENARIO.md)** on the release candidate **when the newcomer's path
    changed** since its last recorded run: the install, getting started, the tutorials, or the
    commands and files they use. It is a smoke test: a fresh project, the published docs only, two
