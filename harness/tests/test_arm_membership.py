@@ -653,6 +653,21 @@ try:
         by_name([(d, {}) for d in A2._dirs("runs/tickets_v2/mixed_v1")]),
     )
 
+    from evaluation_harness.ops import records as _records  # noqa: E402
+
+    scans: list[int] = []
+    scored_before = R.scored
+    R.scored = lambda *a, **k: scans.append(1) or scored_before(*a, **k)
+    try:
+        listed_left = _records.runs_list().get("left_out") or []
+    finally:
+        R.scored = scored_before
+    check(
+        "runs-list names the run it left out, and reads the project's scores once (a scan reads every run's files)",
+        len(scans) == 1 and any(left_name in x for x in listed_left),
+        (len(scans), listed_left),
+    )
+
     # -- the `_rN` suffix is read in model/runs.py only (run.py writes it, nothing else reads it)
     suffix = re.compile(r"_\(?r\\d|_r\*|_r\[|[\"']_r[\"']")
     readers = sorted(
