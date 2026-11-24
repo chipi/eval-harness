@@ -17,7 +17,9 @@ has two new checks (V29 for every `of`, V30), and a note for each measure whose 
   - **A repeat joins its arm.** A run made with `--purpose repeat --of RUN`, as RUN was run (the same data, deployment,
     settings and adapter; a later harness build does not matter), is now read in RUN's arm, which gains a run: its mean,
     its pair tests and its goal page can change, and so can the count of arms. It was a separate `repeats` arm. A repeat that
-    differs in one of those is still read under `repeats`, and `evh run --purpose repeat` says which before its first call.
+    differs in one of those is still read under `repeats`, and `evh run --purpose repeat` says which before its first call
+    (`--dry-run` too), naming each field that differs with its value then and now. A repeat with `--items` is a subset, which is other
+    data than a run of the whole dataset: it joins only a run of exactly those items.
     A closed round's numbers do not change.
   - **A repeat set is what the runs record, not what they are called.** `--repeat N` records `repeat_index`, and that, or a
     joined repeat, makes a set. Two runs named `foo_r1` and `foo_r2` by hand (copied in, or made before 0.6.0 recorded

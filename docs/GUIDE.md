@@ -157,8 +157,9 @@ evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary -
   system      tickets_author_v1  (echo)
   dataset     tickets_v1  (6 items)
   API calls   6
-  No price in the system, so no estimate. Add usd_per_mtok_in /
-  usd_per_mtok_out and the run will record what it actually cost.
+  No price in the system, so no estimate. Add usd_per_mtok_in / usd_per_mtok_out to the
+  params of the system file (0 is a valid price for a local model) and the run will record
+  what it actually cost.
   cap         NONE — set EVAL_MAX_COST_USD
 ```
 

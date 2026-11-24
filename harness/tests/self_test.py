@@ -1114,6 +1114,10 @@ def test_example_scorer_suites_pass() -> None:
             "which runs make up an arm: a repeat with the same fingerprint joins its original's, a set is what the record says, the latest run, one reference",
         ),
         (
+            "test_repeat_dry_run.py",
+            "evh run --purpose repeat --dry-run says where the repeat is read, and what differs with its value then and now; a dry run refuses an unmaterialized dataset; --items is a subset",
+        ),
+        (
             "test_cap_shown.py",
             "a spending cap's three meanings printed one way: no command formats a cap or asks its truth itself",
         ),
