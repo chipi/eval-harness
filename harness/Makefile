@@ -25,7 +25,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         run-dry-run run sweep \
         runs-list run-compare leaderboard run-promote \
-        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check upgrade-check stores-check coverage ci test smoke-fixture cost-report facts-dump reader-agreement-repo clean clean-cache \
+        validate format-check judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check catalog-render-check upgrade-check stores-check coverage ci test smoke-fixture cost-report facts-dump reader-agreement-repo clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -149,6 +149,13 @@ guard-check:
 commands-check:
 	$(PYTHON) tests/test_report_tools.py
 	$(PYTHON) tests/test_ops_commands.py
+
+# This repository's own catalog, every page rendered on its own and over HTTP against its export, the p-value cache off,
+# empty and full (tests/test_catalog_render_real.py, RFC-040). Every p of the 673 arms is drawn in four passes, about 11
+# minutes of CPU together: about a third of the self-test's CPU time when it was in it, so it is not in `make check`;
+# `make ci` runs it, and CI runs it as its own job, beside verify.
+catalog-render-check:
+	$(PYTHON) tests/test_catalog_render_real.py
 
 # The previous release's wheel installed, a project on it per store, this tree's build installed over it, and the
 # reads UPGRADING ends on (tests/check_upgrade_install.py). Needs the network and an authenticated `gh`, and a minute
@@ -531,7 +538,7 @@ site-check:
 docs:
 	cd .. && mkdocs build --strict
 
-ci: check site-check
+ci: check catalog-render-check site-check
 	@echo "ci: green"
 
 # The judging PASS (ADR-0001): a validated LLM judge re-measures every arm's frozen outputs,

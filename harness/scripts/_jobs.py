@@ -428,6 +428,10 @@ def stop(job_id: str, grace: float = STOP_GRACE_S) -> dict[str, Any]:
     if j["state"] in ("succeeded", "failed", "cancelled", "lost"):
         return j
     (d / "stop").write_text(_common.now() + "\n", encoding="utf-8")
+    # Read after the stop file is written: a supervisor that recorded the command's group before it looked for the file
+    # has that group in this read, and one that looks later sees the file and stops the command itself. The read above
+    # is from before the file: its group may be one the supervisor recorded since, and acting on it left the command running.
+    j = read(job_id)
     st0 = _read_json(d / "state.json")
     spid = st0.get("supervisor_pid")
     if not st0.get("pgid") and st0.get("state") == "queued" and spid:

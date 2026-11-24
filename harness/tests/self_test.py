@@ -18,6 +18,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
@@ -129,6 +130,65 @@ def add_run(data: Path, src: Path, new_id: str | None = None, first_only: bool =
     return dst
 
 
+#: What each test file and each in-process test took: (name, wall seconds, CPU seconds), printed slowest first at the end.
+TIMINGS: list[tuple[str, float, float]] = []
+
+
+def _run_timed(script: str, env: dict) -> subprocess.CompletedProcess:
+    """`run`, with the file's wall and CPU time (its own and its children's, from wait4) put in TIMINGS. Its output goes
+    to files, not pipes, so the child can be reaped here, where the rusage is."""
+    out_path, err_path = Path(env["TMPDIR"]) / "stdout", Path(env["TMPDIR"]) / "stderr"
+    started = time.perf_counter()
+    with out_path.open("wb") as out, err_path.open("wb") as err:
+        proc = subprocess.Popen(
+            [PY, script],
+            cwd=ROOT,
+            stdout=out,
+            stderr=err,
+            env={**os.environ, **env},
+            stdin=subprocess.DEVNULL,
+        )
+        _, status, usage = os.wait4(proc.pid, 0)
+    wall = time.perf_counter() - started
+    TIMINGS.append((script, wall, usage.ru_utime + usage.ru_stime))
+    code = os.waitstatus_to_exitcode(status)
+    return subprocess.CompletedProcess(
+        [PY, script],
+        code,
+        out_path.read_text(encoding="utf-8", errors="replace"),
+        err_path.read_text(encoding="utf-8", errors="replace"),
+    )
+
+
+#: The files that take longest (CPU seconds, 2026-11-24, under taskset -c 0-3), started first: a pool that begins with
+#: the long ones ends with the short ones, where one started last leaves three of four CPUs idle for its whole length.
+LONGEST_FIRST = (
+    "test_scores_once.py",
+    "test_data_mutations.py",
+    "check_commands.py",
+    "check_report_claims.py",
+    "test_charts.py",
+    "check_shown_commands.py",
+    "test_study.py",
+    "test_arm_membership.py",
+    "test_reader_agreement.py",
+    "test_judge_validate.py",
+    "test_fingerprint_v5.py",
+    "test_stats_edges.py",
+    "test_installed_commands.py",
+)
+
+
+def print_timings(top: int = int(os.environ.get("SELF_TEST_TOP", "15"))) -> None:
+    """The slowest test files and in-process tests, with the sums: where a suite that grew spent its time."""
+    if not TIMINGS:
+        return
+    print(f"\nslowest of {len(TIMINGS)} timed (wall s, cpu s):")
+    for name, wall, cpu in sorted(TIMINGS, key=lambda t: -t[1])[:top]:
+        print(f"  {wall:8.1f} {cpu:8.1f}  {name}")
+    print(f"  {'':8} {'':8}  sum of cpu: {sum(t[2] for t in TIMINGS):.0f} s")
+
+
 def run_own_tmp(script: str) -> subprocess.CompletedProcess:
     """A test file run with a TMPDIR of its own, removed when it ends, whatever the file leaves there: temporary
     projects test files did not remove filled /tmp's inodes, shared by every session on a machine (6,762 projects,
@@ -141,7 +201,7 @@ def run_own_tmp(script: str) -> subprocess.CompletedProcess:
     own = Path.home() / ".cache" / "evh-tests" / secrets.token_hex(3)
     own.mkdir(parents=True)
     try:
-        return run(script, env={"TMPDIR": str(own)})
+        return _run_timed(script, {"TMPDIR": str(own)})
     finally:
         shutil.rmtree(own, ignore_errors=True)
 
@@ -1270,10 +1330,6 @@ def test_example_scorer_suites_pass() -> None:
             "one renderer, two drivers (RFC-040): every page rendered on its own is the exported file, on threads too",
         ),
         (
-            "test_catalog_render_real.py",
-            "this repository's catalog: every page rendered on its own, in a shuffled order, is the exported file",
-        ),
-        (
             "test_catalog_served.py",
             "what a catalog server serves is the export of one state (RFC-040): over HTTP, cache off and on, and across edits, the recorded badge on every page",
         ),
@@ -1542,8 +1598,11 @@ def test_example_scorer_suites_pass() -> None:
         ("check_model_facts.py", "model facts vs the evidence capture"),
     )
     present = [script for script, _ in suites if (ROOT / at(script)).is_file()]
+    started = sorted(
+        present, key=lambda s: LONGEST_FIRST.index(s) if s in LONGEST_FIRST else len(LONGEST_FIRST)
+    )
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
-        ran = dict(zip(present, pool.map(lambda script: run_own_tmp(at(script)), present)))
+        ran = dict(zip(started, pool.map(lambda script: run_own_tmp(at(script)), started)))
     for script, subject in suites:
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
         # test_retrieval_scorer.py removed it from `make ci` silently -- the suite went
@@ -4426,6 +4485,14 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def _cpu_now() -> float:
+    """CPU seconds this process and the children it has waited for have used so far."""
+    import resource  # noqa: PLC0415
+
+    own, kids = resource.getrusage(resource.RUSAGE_SELF), resource.getrusage(resource.RUSAGE_CHILDREN)
+    return own.ru_utime + own.ru_stime + kids.ru_utime + kids.ru_stime
+
+
 def main() -> int:
     print("harness self-tests (no network, no keys)\n")
     for fn in (
@@ -4485,6 +4552,7 @@ def main() -> int:
         # at that point and every later test simply never ran, silently, while the
         # output looked like a normal early exit. That is the same shape as every
         # other "reported green for checking nothing" bug in this repo.
+        began, cpu0, timed0 = time.perf_counter(), _cpu_now(), len(TIMINGS)
         try:
             fn()
         except Exception as exc:  # noqa: BLE001 — a crashing test is a failing test
@@ -4492,6 +4560,10 @@ def main() -> int:
 
             check(f"{fn.__name__} ran without raising", False, f"{type(exc).__name__}: {exc}")
             traceback.print_exc()
+        # The files a test ran through _run_timed are already counted, each by itself: not again in the test's.
+        own_cpu = _cpu_now() - cpu0 - sum(t[2] for t in TIMINGS[timed0:])
+        TIMINGS.append((fn.__name__, time.perf_counter() - began, own_cpu))
+    print_timings()
     failures = [label for label, passed in results if not passed]
     if failures or not results:
         print(f"\n{len(failures)} FAILED: {', '.join(failures)}" if failures else "\nFAIL  no self-test ran")

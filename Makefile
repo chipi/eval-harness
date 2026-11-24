@@ -27,7 +27,7 @@ ARMS ?=
 SYSTEM ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check guard-check commands-check stores-check \
+.PHONY: help setup verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check guard-check commands-check catalog-render-check stores-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
@@ -84,6 +84,9 @@ browser-real-check: $(PY)
 
 commands-check: $(PY)
 	$(MAKE) -C harness commands-check
+
+catalog-render-check: $(PY)
+	$(MAKE) -C harness catalog-render-check
 
 stores-check: $(PY)
 	$(MAKE) -C harness stores-check

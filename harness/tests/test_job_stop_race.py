@@ -11,10 +11,13 @@ fsynced, so the stretch is as long as the disk's fsync: here each fsync of a job
 sitecustomize on their PYTHONPATH), which makes the stretch last long enough to stop in it every time.
 """
 
+import fcntl
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -85,7 +88,9 @@ try:
         pid is not None,
         pid,
     )
+    stop_began = time.monotonic()
     stopped = _jobs.stop(jid)
+    stop_took = time.monotonic() - stop_began
     alive_after = command_of(jid)
     held = None
     try:
@@ -94,10 +99,82 @@ try:
         held = False
     except _jobs.Busy:
         held = True
+    ok = stopped.get("state") == "cancelled" and alive_after is None and held is False
+    why: tuple = (stopped.get("state"), alive_after, held)
+    if (
+        not ok
+    ):  # what a failure under load needs to be read: the job's own files, and the command as /proc has it
+        d = _jobs.job_dir(jid)
+        why += tuple(
+            (f.name, f.read_text(encoding="utf-8", errors="replace")[-600:])
+            for f in (d / "state.json", d / "log")
+            if f.is_file()
+        )
+        if alive_after:
+            seen = Path(f"/proc/{alive_after}/stat").read_text(encoding="utf-8")[:60]
+            end = time.monotonic() + 30  # dies late (a slow stop) or never (an orphan)?
+            while command_of(jid) and time.monotonic() < end:
+                time.sleep(0.2)
+            why += (f"stop took {stop_took:.1f} s", seen, f"alive 30 s on: {command_of(jid) is not None}")
     check(
         "a stop while the command is starting: cancelled, the command gone, the job's lock free",
-        stopped.get("state") == "cancelled" and alive_after is None and held is False,
-        (stopped.get("state"), alive_after, held),
+        ok,
+        why,
+    )
+
+    # The stop's own read of the job, made certain here as the pool's CPUs made it twice in three runs: stop() read the job
+    # (no group yet), wrote its stop file, and in between the supervisor recorded the command's group. The group it acts on
+    # is the one recorded when the stop file was written: a stale read left the command running, 20 s of its own, under a
+    # job stop() then wrote `cancelled` after 5 s of waiting for a supervisor that had never seen the stop either.
+    sleeper = subprocess.Popen(["sleep", "60"], start_new_session=True)
+    jid2 = _jobs.new_id()
+    _jobs.create("prompt-version", {"name": "who_q2", "text": "x", "note": "n"}, "person:ana", [("prompt:who_q2", True)], {}, None, jid2)  # fmt: skip
+    d2 = _jobs.job_dir(jid2)
+    lock = os.open(str(d2 / "supervisor.lock"), os.O_RDWR | os.O_CREAT, 0o644)
+    fcntl.flock(lock, fcntl.LOCK_EX)  # a live supervisor's: the job reads queued, not lost
+    _jobs._write_json(
+        d2 / "state.json", {"state": "queued", "waiting_for": None, "supervisor_pid": os.getpid()}
+    )
+
+    def supervisor() -> None:
+        """What the supervisor does once the command is gone: ends the job and lets go of its lock."""
+        sleeper.wait()
+        _jobs._write_json(
+            d2 / "state.json", {"state": "cancelled", "ended_at": "2026-11-24T00:00:00Z", "exit": -15}
+        )
+        os.close(lock)
+
+    threading.Thread(target=supervisor, daemon=True).start()
+    real_read = _jobs.read
+    calls: list[int] = []
+
+    def read_then_record_the_group(job_id: str) -> dict:
+        got = real_read(job_id)  # queued, no group: what stop() first sees
+        if not calls:
+            calls.append(1)
+            _jobs._write_json(
+                d2 / "state.json",
+                {"state": "running", "pgid": sleeper.pid, "waiting_for": None, "supervisor_pid": os.getpid()},
+            )
+        return got
+
+    _jobs.read = read_then_record_the_group
+    try:
+        began = time.monotonic()
+        stopped2 = _jobs.stop(jid2, grace=5)
+    finally:
+        _jobs.read = real_read
+    took = time.monotonic() - began
+    try:
+        sleeper.wait(timeout=1)
+        gone = True
+    except subprocess.TimeoutExpired:
+        gone = False
+        sleeper.kill()
+    check(
+        "a stop that reads the job before the supervisor records the command's group still stops the command",
+        gone and stopped2.get("state") == "cancelled" and took < 4,
+        (stopped2.get("state"), gone, round(took, 1)),
     )
 finally:
     pid = command_of(jid) if "jid" in globals() else None

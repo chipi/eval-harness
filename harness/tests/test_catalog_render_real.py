@@ -107,10 +107,19 @@ try:
     scratch = Path(tempfile.mkdtemp(prefix="evh-render-p-"))
     try:
         for what, path in (
-            ("off (every p drawn)", ""),
             ("on and empty (every p drawn and written)", str(scratch / "p.jsonl")),
+            ("off (no file read or written, the p's the pass before drew held in memory)", ""),
         ):
-            _render_proj.p_cache(path)
+            # Drawn once here: a p is a pure function of its deltas, and the first pass draws every one of them and
+            # is compared page by page with the export. The next starts with them in memory and the file switched
+            # off: drawing them again took 60 s of four CPUs and showed nothing the first had not; what it checks is
+            # that no file read or written moves a byte. The server passes below draw again, each in a process of
+            # its own, with the cache off and with it empty.
+            if path:
+                _render_proj.p_cache(path)
+            else:
+                os.environ["EVH_P_CACHE"] = ""
+                _render_proj.stats._DISK = None
             t = time.monotonic()
             drawn = cb.prepare(load_catalog_adapter(None), built=BUILT)
             differ = [p for p in order if drawn.page(p) != exported[p]]
