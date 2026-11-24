@@ -147,7 +147,10 @@ def ref(v: Any) -> str:
 
 
 def arm_id(label: str, dataset: str, system: str) -> str:
-    """The arm's id: `label/dataset/system`, with `runs` for a plain arm's empty label."""
+    """The id an evh that names none for a run or a row is read as having: `label/dataset/system`, `runs` for a plain
+    arm's empty label. Right only where the label is its own slug (`silver`, `repeats`): the dump never works an id out
+    from a label for an evh that names it (evh 0.8.1's `runs-list` rows and `metric-show` rows do), since the id is
+    `model.runs.arm_of`'s to say (`rescored 3d3a6afd, repeats` is the arm `rescored-3d3a6afd-repeats/...`)."""
     return f"{label or 'runs'}/{dataset}/{system}"
 
 
@@ -178,7 +181,7 @@ def from_runs_list(r: dict[str, Any], label: str) -> list[Fact]:
     """Facts from `evh runs list`: each arm's runs, latest run, mean values and cost state."""
     arms: dict[str, list[dict[str, Any]]] = {}
     for run in r.get("runs") or []:
-        arms.setdefault(arm_id(label, run["dataset_id"], run["system_id"]), []).append(run)
+        arms.setdefault(run.get("arm") or arm_id(label, run["dataset_id"], run["system_id"]), []).append(run)
     out: list[Fact] = []
     for arm, runs in arms.items():
         ds = runs[0]["dataset_id"]
@@ -254,7 +257,7 @@ def from_metric_show(r: dict[str, Any]) -> list[Fact]:
         out.append(("direction", (ds, m), word(on.get(ds, r.get("better")))))
         for a in d.get("arms") or []:
             label, system, n = parse_arm_label(a["arm"])
-            arm = arm_id(label, ds, system)
+            arm = a.get("arm_id") or arm_id(label, ds, system)
             out += [
                 ("value", (arm, m), a.get("mean")),
                 ("n_items", (arm, m), a.get("n")),
@@ -275,18 +278,30 @@ def from_leaderboard(r: dict[str, Any], dataset: str) -> list[Fact]:
     tables = [
         b for b in r.get("blocks") or [] if "system_id" in (b.get("columns") or [])
     ]  # one per reference scored against
+    named = [a for g in (r.get("values") or {}).get("groups") or [] for a in g.get("arms") or []]
+    # the arms by id, as the leaderboard says them; an evh that says them only by label is read by the rows below
+    if named:
+        rows = [
+            {"arm": a["arm"], "n_runs": a.get("n_runs"), **(a.get("metrics") or {})}
+            for a in named
+            if a.get("arm")
+        ]
+    else:
+        rows = []
+        for row in (row for t in tables for row in t.get("rows") or []):
+            label, system, _n = parse_arm_label(row["system_id"])
+            rows.append({**row, "arm": arm_id(label, dataset, system)})
     arms = []
-    for row in (row for t in tables for row in t.get("rows") or []):
-        label, system, _n = parse_arm_label(row["system_id"])
-        arm = arm_id(label, dataset, system)
+    for row in rows:
+        arm = row["arm"]
         arms.append(arm)
         out.append(("n_runs", (arm,), row.get("n_runs")))
         for k, v in row.items():
-            if k not in ("system_id", "n_runs", "tier") and isinstance(v, (int, float)):
+            if k not in ("arm", "system_id", "n_runs", "tier") and isinstance(v, (int, float)):
                 out.append(("value", (arm, k), v))
         if "cost_usd" in row:
             out.append(("cost_state", (arm,), cost_state(row["cost_usd"])))
-    return [*out, ("arms", (dataset,), sorted(arms))] if tables else out
+    return [*out, ("arms", (dataset,), sorted(arms))] if rows else out
 
 
 def from_baselines(r: dict[str, Any]) -> list[Fact]:

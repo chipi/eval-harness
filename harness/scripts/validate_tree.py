@@ -1018,7 +1018,8 @@ def v8_no_duplicate_system_ids() -> None:
 
     A repeat set is one arm measured N times, averaged on purpose, and not ambiguous: the runs `--repeat N` made
     (their record's `repeat_index`) and the repeats joined to the run they repeat (`--purpose repeat --of`, with the
-    same fingerprint hash), as `model.runs.set_of` says. What a run is called says nothing.
+    same fingerprint hash), as `model.runs.set_of` says. What a run is called says nothing, and two `--repeat`
+    invocations are two sets: runs that carry one `repeat_index` twice are not a set.
     """
     #: The arms whose runs back a report. A throwaway pass (`evh run --scratch`) is outside the data.
     # The `linux` arm was omitted when it was added, so the sixth committed arm was the one place a duplicate

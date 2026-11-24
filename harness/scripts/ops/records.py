@@ -562,6 +562,7 @@ def runs_list(label: str | None = None) -> dict[str, Any]:
                 "run_id": m["run_id"],
                 "system_id": m.get("system_id"),
                 "dataset_id": m["dataset_id"],
+                "arm": model_runs.arm_of(d, m),
                 "created_at": m.get("created_at"),
                 "build_ref": (m.get("build") or {}).get("ref"),
                 "dirty": (m.get("build") or {}).get("dirty"),

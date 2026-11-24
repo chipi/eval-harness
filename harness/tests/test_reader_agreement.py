@@ -7,13 +7,16 @@
 
 Why: each reader was tested alone, so a fact that two of them work out apart (the direction of a measure, the runs of an
 arm, the baseline of a goal) was right in each test and wrong between them (SLIP_ANALYSIS_0.8.1 section 3, six of the ten
-bugs). Here four projects (the tutorial's, and R2's three look-alikes of the beta projects) are built in the store
-EVAL_STORE names, and each reader is asked for the facts it states:
+bugs). Here five projects (the tutorial's, R2's three look-alikes of the beta projects, and a 0.7 repeat set that was re-scored)
+are built in the store EVAL_STORE names, and each reader is asked for the facts it states:
 
   - the value, the items behind it, the direction word, for every (arm, metric);
   - for every arm: its run ids, their number, its latest run, the reference it is read against, its cost state (unknown,
     zero or an amount);
-  - for every goal on a dataset: the baseline (the run and the arm); for a dataset: whether its text is shown publicly.
+  - for every goal on a dataset: the baseline (the run and the arm); for a dataset: whether its text is shown publicly;
+  - for every arm `arm-list` lists: that `arm-show` shows it. A refusal is a disagreement, not "unavailable": an arm
+    a reader lists and refuses is no arm (the 0.8.0 dump named arms by their label, `rescored 3d3a6afd, repeats`, where
+    the id is its slug, `rescored-3d3a6afd-repeats`).
 
 The readers: `evh <command> --json` (tools/facts_dump.py, the dumper the beta projects run), the same commands through
 the API of `evh catalog-serve` (local, and `--public` for the public flag), through the MCP server's read operations
@@ -63,14 +66,24 @@ CLI = HARNESS / "scripts" / "cli.py"
 STORE = os.environ.get("EVAL_STORE", "").strip() or "files"
 LIMITS = ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_BUILD_REF", "EVAL_GOALS_DIR", "EVH_PUBLIC")
 KINDS = list(FD.KINDS)
-BUILDERS = ("tutorial", "imported", "fleet", "bakeoff")
+BUILDERS = ("tutorial", "imported", "fleet", "bakeoff", "rescored")
 PROJECTS: list[Path] = []
 SPENT: dict[str, dict[str, float]] = {}
 FactMap = dict[tuple, Any]
 
 #: Disagreements this test found that are not fixed yet: (project, fact, key, the readers that differ) -> where it is.
 #: The check reproduces each one and fails when it no longer does.
-KNOWN: dict[tuple[str, str, tuple, frozenset], str] = {}
+KNOWN: dict[tuple[str, str, tuple, frozenset], str] = {
+    (
+        "rescored",
+        "arms",
+        ("tickets_rescored_v1",),
+        frozenset({"api:leaderboard", "cli:leaderboard", "mcp:leaderboard"}),
+    ): (
+        "the leaderboard ranks an arm's re-score in place of the arm (arm-list's `superseded_by`), and arm-list lists both: "
+        "the dump states the leaderboard's arms as the dataset's; found once the dump named arms by their ids"
+    ),
+}
 
 
 class Project:
@@ -551,6 +564,23 @@ def assert_agreement(project: str, facts: dict[str, FactMap]) -> None:
             )
 
 
+def arms_shown(project: str, facts: dict[str, FactMap], why: dict[str, list[str]]) -> None:
+    """Every arm `arm-list` lists, `arm-show` shows, through the CLI, the API and the MCP reads: the arm-show answer of an
+    arm is its `reference` fact. A reader's refusal of a listed arm (`not-found`) is a disagreement, not an arm this evh
+    is unable to say."""
+    for reader in ("cli", "api", "mcp"):
+        listed = {
+            a for (kind, _k), v in facts.get(f"{reader}:arm-list", {}).items() if kind == "arms" for a in v
+        }
+        shown = {key[0] for kind, key in facts.get(f"{reader}:arm-show", {}) if kind == "reference"}
+        refused = why.get(f"{reader}:arm-show", [])
+        check(
+            f"arms: {project}: {reader}: every arm arm-list lists ({len(listed)}) is shown by arm-show",
+            bool(listed) and not listed - shown and not refused,
+            (sorted(listed - shown)[:3], refused[:2]),
+        )
+
+
 def hand_checks(project: str, facts: dict[str, FactMap]) -> None:
     """Facts known by hand, from the CLI's answer: the agreement above is not agreement on nothing."""
     cli = {fk: v for r, d in facts.items() if r.startswith("cli:arm-show") for fk, v in d.items()}
@@ -621,6 +651,13 @@ def hand_checks(project: str, facts: dict[str, FactMap]) -> None:
             (say("direction", "task_set_small_v1", "turns"), say("direction", "task_set_small_v1", "pass"))
             == ("neutral", "higher"),
             None,
+        )
+    if project == "rescored":
+        arm = "rescored-3d3a6afd-repeats/tickets_rescored_v1/arm_w_v1"
+        check(
+            "hand: rescored: the re-scored 0.7 repeat set is one arm of two runs, named by the label's slug",
+            say("n_runs", arm) == 2 and say("n_runs", "repeats/tickets_rescored_v1/arm_w_v1") == 2,
+            (say("n_runs", arm), say("n_runs", "repeats/tickets_rescored_v1/arm_w_v1")),
         )
     if project == "imported":
         bare = sum(
@@ -756,9 +793,10 @@ def main() -> int:
                     n,
                 )
             assert_agreement(name, facts)
+            arms_shown(name, facts, why)
             hand_checks(name, facts)
         dumper_checks(projects["tutorial"])
-        print("\nfact x reader (gives / -), over the four projects:")
+        print("\nfact x reader (gives / -), over the five projects:")
         print("\n".join(matrix(per_project)))
 
         # ── it bites ────────────────────────────────────────────────────────────────────────────────────────────

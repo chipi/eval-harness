@@ -1,8 +1,9 @@
 """The four projects test_reader_agreement.py reads, built in the store EVAL_STORE names (RFC-041, PLAN 0.8.1 R3): the
 tutorial's, with three datasets, and R2's three look-alikes of the beta projects (`_foreign.py`), the bake-off's with one
-more arm whose cost was never recorded.
+more arm whose cost was never recorded, and a fifth that holds a 0.7 `--repeat 2` set (`purpose: repeat`, no `of`) that was
+re-scored: the arm read as `rescored 3d3a6afd, repeats`, whose id is the label's slug and not the label.
 
-    python tests/_reader_proc.py build NAME DIR      (NAME: tutorial, imported, fleet, bakeoff)
+    python tests/_reader_proc.py build NAME DIR      (NAME: tutorial, imported, fleet, bakeoff, rescored)
 
 Each is built in a process of its own: the builders write through the store's in-process state, which two projects at
 once would share.
@@ -102,11 +103,49 @@ def bakeoff(proj: Path, env: dict[str, str]) -> dict[str, Any]:
     return out
 
 
+RESCORED_DS = "tickets_rescored_v1"
+RESCORED_ADAPTER = """
+from types import SimpleNamespace
+
+def call_system(text, params):
+    return SimpleNamespace(output=text[:40], tokens_in=10, tokens_out=5, cost_usd=None, latency_ms=None, extra={}, meta={})
+
+def score(output, reference):
+    return {"words": float(len(output.split())) + SHIFT}
+
+PRIMARY_METRIC = "words"
+SHIFT = 0
+"""
+
+
+def rescored(proj: Path, env: dict[str, str]) -> dict[str, Any]:
+    """A `--repeat 2` set written as 0.7 wrote one (`purpose: repeat`, no `of`), then re-scored by another scorer: one
+    arm under `repeats` and one under `rescored 3d3a6afd, repeats`, which `arm_prefix` slugs to `rescored-3d3a6afd-repeats`."""
+    b = _foreign.Build(proj, {**env, "EVAL_BUILD_REF": "rescored-fixture-1"})
+    b.init()
+    shutil.copytree(KIT / "tickets", proj / "tickets")
+    b.must("dataset-create", "--dataset-id", RESCORED_DS, "--source-dir", "tickets")
+    b.must("dataset-materialize", "--dataset-id", RESCORED_DS)
+    (proj / "a.py").write_text(RESCORED_ADAPTER)
+    b.put("systems/arm_w_v1.yaml", "system_id: arm_w_v1\nadapter: a.py\nparams:\n  provider: echo\n")
+    base = "arm_w_v1_20261110T150000Z"
+    b.must("run", "--system", "arm_w_v1", "--dataset", RESCORED_DS, "--repeat", "2", "--run-id", base)
+    for n in (f"{base}_r1", f"{base}_r2"):
+        rec = _runstore.read_json(proj, f"runs/{n}/run.json")
+        _runstore.write_text(
+            proj, f"runs/{n}/run.json", json.dumps({**rec, "purpose": "repeat"}, indent=2) + "\n"
+        )
+    (proj / "a.py").write_text(RESCORED_ADAPTER.replace("SHIFT = 0", "SHIFT = 1"))
+    b.must("rescore", "--dataset-id", RESCORED_DS, "--match", "arm_w", "--label", "rescored 3d3a6afd")
+    return {"datasets": [RESCORED_DS], "runs": [f"{base}_r1", f"{base}_r2"]}
+
+
 BUILDERS = {
     "tutorial": tutorial,
     "imported": _foreign.imported,
     "fleet": _foreign.fleet,
     "bakeoff": bakeoff,
+    "rescored": rescored,
 }
 
 

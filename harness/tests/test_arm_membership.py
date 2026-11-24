@@ -559,6 +559,53 @@ try:
         named or text[-600:],
     )
 
+    # -- three `--repeat` invocations of one system are three sets, not one arm of six: an index two of the arm's runs
+    # carry (two `r1`) comes from two invocations, so V8 fails them as it fails two plain runs, and notes them when the
+    # project allows them (RFC-041 F2; the fleet's b95efa9, 6 runs over 3 invocations)
+    system("many_v1")
+    allow = lambda *ids: _runstore.write_text(  # noqa: E731
+        proj,
+        "validate.json",
+        json.dumps({"committed": ["runs", "repeats"], "duplicate_ok": [[DS, s] for s in ("chain_v1", *ids)]}),
+    )
+    allow(
+        "many_v1"
+    )  # `evh run` refuses a second --repeat set beside a measured run unless the project allows the pair
+    ran = [
+        evh("run", "--system", "many_v1", "--dataset", DS, "--repeat", n, "--run-id", f"many_v1_{x}")
+        for x, n in (("A", "2"), ("B", "2"), ("C", "3"))
+    ]
+    evh("data-rm", "--path", "runs/many_v1_A_r2")
+    allow()
+    many = [(sd, rec) for sd, rec, _a in scores_of("many_v1")]
+    check(
+        "setup: six runs over three --repeat invocations",
+        len(run_ids("many_v1")) == 6,
+        ([r.returncode for r in ran], run_ids("many_v1")),
+    )
+    ok, text = v8()
+    named = [ln for ln in text.splitlines() if "runs claim" in ln]
+    check(
+        "validate: six runs of three `--repeat` invocations are not one repeat set: V8 fails them, naming the runs",
+        not R.is_set(many) and not ok and any("6 runs claim 'many_v1'" in ln for ln in named),
+        (R.is_set(many), named),
+    )
+    allow("many_v1")
+    ok, text = v8()
+    note = f"6 'many_v1' runs on {DS} (allowed: duplicate_ok in validate.json)"
+    check(
+        "validate: with the project's `duplicate_ok` the six runs are noted, not failed",
+        any(ln.lstrip().startswith("note:") and note in ln for ln in text.splitlines())
+        and not any("many_v1" in ln for ln in text.splitlines() if "runs claim" in ln),
+        [ln for ln in text.splitlines() if "many_v1" in ln],
+    )
+    one = [(sd, rec) for sd, rec in many if R.run_of(sd).name.startswith("many_v1_C")]
+    check(
+        "set_of: one invocation's runs are still a set, the passes of two are not",
+        len(R.set_of(one)) == 3 and R.is_set(one) and not R.set_of(many) and not R.is_set(many),
+        (len(R.set_of(one)), len(R.set_of(many))),
+    )
+
     # -- runs scored against another reference than the arm's latest run's are named and not averaged in
     system("mixed_v1")
     evh("run", "--system", "mixed_v1", "--dataset", "tickets_v2")
@@ -616,6 +663,126 @@ try:
         and any(suffix.search(ln) for ln in p.read_text(encoding="utf-8").splitlines() if not ln.lstrip().startswith("#"))
     )  # fmt: skip
     check("the `_rN` run-id suffix is read only in model/runs.py", readers == [], readers)
+
+    # -- a rescored repeat set (a 0.7 `--repeat 3` set: `purpose: repeat`, no `of`, re-scored): every arm `arm-list`
+    # lists is shown by `arm-show`, and a reader that groups runs by arm (runs-list, metric-show) names the id arm-list
+    # does, through the CLI, the API and the MCP server's reads (RFC-041 F2: the id is `model.runs.arm_of`'s alone)
+    system("resc_v1")
+    evh("run", "--system", "resc_v1", "--dataset", DS, "--repeat", "2", "--run-id", "resc_v1_A")
+    _store.close()
+    for n in ("resc_v1_A_r1", "resc_v1_A_r2"):
+        R.write_run(n, {**(R.run(n) or {}), "purpose": "repeat"})
+    (proj / "a.py").write_text(
+        ADAPTER.replace("float(len(output.split()))", "float(len(output.split())) + 1")
+    )
+    r = evh("rescore", "--dataset-id", DS, "--match", "resc_v1", "--label", "rescored 3d3a6afd")
+    resc = arms_of("resc_v1")
+    check(
+        "setup: a rescored repeat set is read as `rescored 3d3a6afd, repeats`, under a slug that is not the label",
+        r.returncode == 0
+        and sorted(resc) == ["repeats/tickets_v1/resc_v1", "rescored-3d3a6afd-repeats/tickets_v1/resc_v1"],
+        (out(r)[-300:], resc),
+    )
+
+    class Readers:
+        """One reader's `read(op, **params)`: the CLI's JSON, the API of a local `evh catalog-serve`, the MCP server's
+        read operations in this process."""
+
+        def __init__(self, how):
+            self.how = how
+            self.srv = None
+
+        def __enter__(self):
+            if self.how == "api":
+                import _serve  # noqa: PLC0415
+
+                self.srv, self.port, _lines = _serve.start(proj, env)
+                tok = proj / ".build" / "api-token"
+                self.token = tok.read_text().strip() if tok.exists() else None
+            return self
+
+        def __exit__(self, *_exc):
+            if self.srv is not None:
+                self.srv.terminate()
+                self.srv.wait(15)
+
+        def read(self, op, **params):
+            from evaluation_harness.ops import OPS  # noqa: PLC0415
+
+            if self.how == "cli":
+                pos = [params[k] for k in ("label", "dataset", "system", "metric") if k in params]
+                opt = [
+                    x for k, v in params.items() if k == "label" and op == "runs-list" for x in ("--label", v)
+                ]
+                r = evh(op, *(pos if op != "runs-list" else []), *opt, "--json")
+                if r.returncode:
+                    raise LookupError(out(r)[-200:])
+                return json.loads(r.stdout)["result"]
+            if self.how == "mcp":
+                from evaluation_harness import mcp_server  # noqa: PLC0415
+
+                _store.close()
+                try:
+                    return mcp_server.run_op(OPS[op], params, False)["result"]
+                except Exception as exc:  # noqa: BLE001 - a refusal of any type is what the check reports
+                    raise LookupError(f"{type(exc).__name__}: {exc}") from None
+            import urllib.error  # noqa: PLC0415
+            import urllib.parse  # noqa: PLC0415
+            import urllib.request  # noqa: PLC0415
+
+            spec = OPS[op]
+            route = spec.route
+            for k in spec.path_params():
+                route = route.replace("{" + k + "}", urllib.parse.quote(str(params[k]), safe=""))
+            query = urllib.parse.urlencode({k: v for k, v in params.items() if k not in spec.path_params()})
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{self.port}/api/v1{route}" + (f"?{query}" if query else ""),
+                headers={"Authorization": f"Bearer {self.token}"} if self.token else {},
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310 # nosec B310 - this test's server
+                    return json.loads(resp.read().decode())["result"]
+            except urllib.error.HTTPError as exc:
+                raise LookupError(f"HTTP {exc.code}: {exc.read().decode()[:200]}") from None
+
+    for how in ("cli", "api", "mcp"):
+        with Readers(how) as rd:
+            listed = [a["arm"] for a in rd.read("arm-list")["arms"]]
+            refused = []
+            for arm in listed:
+                label, ds, sid = arm.split("/", 2)
+                try:
+                    shown = rd.read("arm-show", label=label, dataset=ds, system=sid)["arm"]
+                except LookupError as exc:
+                    refused.append((arm, str(exc)))
+                else:
+                    if shown != arm:
+                        refused.append((arm, f"shows {shown}"))
+            check(
+                f"{how}: every arm `arm-list` lists ({len(listed)}) is shown by `arm-show`, a rescored repeat set's too",
+                bool(listed) and "rescored-3d3a6afd-repeats/tickets_v1/resc_v1" in listed and not refused,
+                refused[:3],
+            )
+            n_runs = 0
+            unlisted: list[tuple] = []
+            labels = ["", *[x for x in rd.read("runs-list")["labels"] if x]]
+            for lab in labels:
+                for row in rd.read("runs-list", **({"label": lab} if lab else {}))["runs"]:
+                    n_runs += 1
+                    if row.get("arm") not in listed:
+                        unlisted.append((lab, row["run_id"], row.get("arm")))
+            check(
+                f"{how}: runs-list names each run's arm by the id `arm-list` lists ({n_runs} runs, under {len(labels)} labels)",
+                n_runs > 0 and not unlisted,
+                unlisted[:3],
+            )
+            rows = [a for d in rd.read("metric-show", metric="words")["datasets"] for a in d["arms"]]
+            bad = [a["arm"] for a in rows if a.get("arm_id") not in listed]
+            check(
+                f"{how}: metric-show names each arm row by the id `arm-list` lists ({len(rows)} rows)",
+                bool(rows) and not bad,
+                bad[:3],
+            )
 finally:
     _store.close()
     shutil.rmtree(proj, ignore_errors=True)

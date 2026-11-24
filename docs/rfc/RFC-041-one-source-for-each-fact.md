@@ -129,7 +129,9 @@ run recorded:
 Set membership comes from what the run records:
 
 - `repeat_index` (written by `--repeat N`) or a joined repeat makes a run a member of its arm's set. The suffix no longer
-  counts.
+  counts. An index that two runs of the arm both carry (two `r1`) comes from two `--repeat` invocations, which are two sets
+  and not one: none of the arm's `repeat_index` runs is a member by it (a joined repeat still is), and V8 fails them as it
+  fails any two measurements of one system, or notes them where `duplicate_ok` lists the pair.
 - `is_repeat_set`, V8, `promote_baseline._repeats` and the goal's system names call `model.runs.set_of(...)`.
 - Rounds (`model/rounds.py add_run`) join the run to the arm `arm_of` names.
 

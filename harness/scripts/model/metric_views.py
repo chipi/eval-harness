@@ -85,6 +85,7 @@ def metric(A, by_ds: dict, name: str, dataset: str | None = None) -> dict[str, A
                 "arms": [
                     {
                         "arm": a["label"],
+                        "arm_id": a["arm"],
                         "mean": a["means"][name][0],
                         "shown": cb.metric_value(A, name, a["means"][name][0]),
                         "n": a["means"][name][1],
