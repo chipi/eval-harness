@@ -163,6 +163,13 @@ MUTATIONS: tuple[Mutation, ...] = (
         verdict=(0, ""),
     ),
     Mutation(
+        "goal_measure_boolean",
+        "a goal's primary measure the runs record only as a boolean (no score)",
+        "goal_measure_boolean",
+        names=rf"primary measure '{MUT.NO_SUCH_MEASURE}' is recorded by no run",
+        verdict=(0, ""),
+    ),
+    Mutation(
         "no_fingerprint",
         "every second run has no fingerprint (a repeat that joined its run through it joins no more)",
         "no_fingerprint",

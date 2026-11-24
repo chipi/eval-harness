@@ -387,6 +387,21 @@ def goal_measure_unrecorded(proj: Path) -> None:
         put_goal(proj, gid, doc)
 
 
+def goal_measure_boolean(proj: Path) -> None:
+    """Every goal's primary measure is one the runs record only as a boolean, which no reader counts as a score: it was
+    taken for a recorded measure (`isinstance(True, int)`; review, 2026-11-24)."""
+    for gid, doc in goals(proj).items():
+        doc.setdefault("success_criteria", {}).setdefault("primary", {})["measure"] = NO_SUCH_MEASURE
+        put_goal(proj, gid, doc)
+
+    def flag(_rows: list, metrics: dict, _score: dict) -> None:
+        metrics.setdefault("scores", {})[NO_SUCH_MEASURE] = True
+
+    for runs in by_dataset(proj).values():
+        for rid, _rec in runs:
+            edit_scores(proj, rid, flag)
+
+
 def no_fingerprint(proj: Path) -> None:
     """Every second run has no fingerprint, as a run of an older release has none."""
     for i, (rid, rec) in enumerate(ordered(proj)):
@@ -465,6 +480,7 @@ MUTATIONS: dict[str, Callable[[Path], None]] = {
     "utc_day_boundary": utc_day_boundary,
     "reference_gone": reference_gone,
     "reference_gone_dotted": reference_gone_dotted,
+    "goal_measure_boolean": goal_measure_boolean,
     "goal_measure_unrecorded": goal_measure_unrecorded,
     "no_fingerprint": no_fingerprint,
     "hide_a_dataset": hide_a_dataset,
