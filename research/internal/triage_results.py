@@ -38,7 +38,8 @@ def _count(means: dict, k: str) -> str:
         return "—"
     rate, n = means[k]
     count = rate * n
-    return f"{round(count)} / {n}" if abs(count - round(count)) < 1e-9 else f"{count:.1f} / {n}"
+    # an arm's rate is rounded to 6 places (`model.runs.pooled_mean`), so a whole count comes back within n * 5e-7
+    return f"{round(count)} / {n}" if abs(count - round(count)) <= n * 5e-7 else f"{count:.1f} / {n}"
 
 
 def _num(means: dict, k: str, fmt: str, scale: float = 1.0) -> str:
