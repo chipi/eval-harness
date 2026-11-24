@@ -118,9 +118,12 @@ def score_of(row: dict, metric: str) -> float | None:
     if metric == "item_id" or metric.startswith("_"):
         return None
     v = row.get(metric, _ABSENT)
-    # a million rows a catalog build: the finite float, nearly every one, is answered before the general rule
+    # a million rows a catalog build: the finite float and the int (an accuracy of 0 or 1), nearly every one, are
+    # answered before the general rule
     if type(v) is float and math.isfinite(v):
         return v
+    if type(v) is int:
+        return float(v)
     if v is _ABSENT or not is_scored(v):
         return None
     return counted(v)

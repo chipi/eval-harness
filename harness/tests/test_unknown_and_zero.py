@@ -14,6 +14,7 @@ In a throwaway project ($0, offline: the tutorial's tickets, two echo arms):
 - a study's `stop: {usd: 0, wall_h: 2}` is a stop rule (`open_study` already honours `usd: 0`).
 """
 
+import math
 import os
 import re
 import shutil
@@ -282,5 +283,64 @@ try:
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
+
+# A catalog build reads a million scores; an int one (an accuracy of 0 or 1) is answered before the general rule, as a
+# finite float is: 0.8.1's arm-list ran ~10% over 0.8.0's for want of it (profile 2026-11-24).
+from evaluation_harness import _number, _runs  # noqa: E402
+
+slow: list[object] = []
+_is_scored = _number.is_scored
+_runs.is_scored = lambda v: slow.append(v) or _is_scored(v)
+try:
+    got = [_runs.score_of({"acc": v}, "acc") for v in (1, 0, 0.5, True, "x", None, float("nan"))]
+finally:
+    _runs.is_scored = _is_scored
+check(
+    "score_of: an int and a finite float skip the general rule; the rule still decides a bool, text, None and NaN",
+    got == [1.0, 0.0, 0.5, None, None, 0.0, 0.0]
+    and type(got[0]) is float
+    and slow == [True, "x", None, slow[-1]],
+    (got, slow),
+)
+
+
+class _Int(int):
+    pass
+
+
+class _Float(float):
+    pass
+
+
+def _rule(v: object) -> tuple[bool, bool, float]:
+    num = not isinstance(v, bool) and isinstance(v, (int, float)) and math.isfinite(v)  # type: ignore[arg-type]
+    scored = v is None or (not isinstance(v, (bool, str, list, dict)) and isinstance(v, (int, float)))
+    return num, scored, (float(v) if num else 0.0)  # type: ignore[arg-type]
+
+
+values = [
+    1,
+    0,
+    -3,
+    2**70,
+    1.5,
+    -0.0,
+    float("nan"),
+    float("inf"),
+    -float("inf"),
+    None,
+    True,
+    False,
+    "x",
+    [],
+    {},
+]
+values += [_Int(4), _Float(2.5), _Float("nan")]
+fast = [(_number.is_number(v), _number.is_scored(v), _number.counted(v)) for v in values]
+check(
+    "_number's fast paths answer as the general rule does, for every kind of value (bool, NaN, None, subclasses)",
+    all(repr(f) == repr(_rule(v)) for f, v in zip(fast, values, strict=True)),
+    [(v, f, _rule(v)) for f, v in zip(fast, values, strict=True) if repr(f) != repr(_rule(v))],
+)
 
 sys.exit(summary())
