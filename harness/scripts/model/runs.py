@@ -217,6 +217,50 @@ def same_measurement(a: dict[str, Any], b: dict[str, Any]) -> tuple[bool, list[s
     return ok, why
 
 
+def _leaves(a: Any, b: Any, path: str) -> Iterator[tuple[str, Any, Any]]:
+    if isinstance(a, dict) and isinstance(b, dict):
+        for k in sorted(set(a) | set(b)):
+            yield from _leaves(a.get(k), b.get(k), f"{path}.{k}")
+    elif a != b:
+        yield path, a, b
+
+
+def _shown(v: Any) -> str:
+    """A value as the repeat line shows it: a sha256 by its first 8, another long value cut, nothing as `not recorded`."""
+    if v is None:
+        return "not recorded"
+    text = v if isinstance(v, str) else json.dumps(v, sort_keys=True)
+    if re.fullmatch(r"[0-9a-f]{64}", text):
+        return f"{text[:8]}…"
+    return text if len(text) <= 40 else f"{text[:37]}…"
+
+
+#: How many differing values a repeat line names before it counts the rest.
+DIFFERENCES_SHOWN = 6
+
+
+def differences(a: dict[str, Any], b: dict[str, Any]) -> list[str]:
+    """What `same_measurement` found differing between runs `a` (then) and `b` (now), named by the field and its value in
+    each: "settings.params.n 30 then, 20 now", "adapter sha256 663c89dd… then, e92731fc… now". Only the parts the
+    fingerprint hashes (data, deployment, settings) and the adapter's own sha256 are looked into, as `same_measurement`
+    reads them; the harness build, the system and the dataset are named there, not here. Empty when either run has no
+    fingerprint."""
+    fa, fb = a.get("fingerprint") or {}, b.get("fingerprint") or {}
+    if not fa or not fb:
+        return []
+    found: list[tuple[str, Any, Any]] = []
+    for part in ("data", "deployment", "settings"):
+        if fa.get(f"{part}_sha256") != fb.get(f"{part}_sha256"):
+            found.extend(_leaves(fa.get(part), fb.get(part), part))
+    ax, ay = ((f.get("instrument") or {}).get("adapter", {}).get("sha256") for f in (fa, fb))
+    if ax != ay:
+        found.append(("adapter sha256", ax, ay))
+    out = [f"{path} {_shown(x)} then, {_shown(y)} now" for path, x, y in found]
+    if len(out) > DIFFERENCES_SHOWN:
+        out = [*out[:DIFFERENCES_SHOWN], f"and {len(out) - DIFFERENCES_SHOWN} more"]
+    return out
+
+
 def _resolve(
     base: Path, rj: dict[str, Any], seen: tuple[str, ...] = ()
 ) -> tuple[dict[str, Any] | None, list[str], list[str]]:
@@ -260,15 +304,18 @@ def repeat_reading(
     """Where a repeat of run `of_id` will be read, before it has run. `mine`: the repeat's dataset_id, system_id and
     fingerprint; `label_as`: the label its score will carry. {"joins": whether it is read in the arm of the run it
     repeats, "why": what keeps it from it (named as `same_measurement` names them), "notes": what differs and does not
-    keep it (the harness build), "arm": the arm it is read in, "label": its label}."""
+    keep it (the harness build), "differs": what differs from the run, named with its value then and now
+    (`differences`), "arm": the arm it is read in, "label": its label}."""
     rj = {**mine, "purpose": "repeat", "of": of_id, "run_id": ""}
     target, why, notes = _resolve(root(scratch), rj)
+    then = run(root(scratch) / of_id)
     by = _by_purpose(root(scratch), target) if target is not None else "repeats"
     lbl = ", ".join(x for x in (label_as, by) if x)
     return {
         "joins": target is not None,
         "why": why,
         "notes": notes,
+        "differs": differences(then, rj) if then is not None and target is None else [],
         "arm": f"{arm_prefix(lbl)}/{mine.get('dataset_id')}/{mine.get('system_id')}",
         "label": lbl,
     }

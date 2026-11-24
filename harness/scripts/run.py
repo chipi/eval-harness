@@ -506,6 +506,23 @@ def progress_line(
     return line
 
 
+def _refuse_unmaterialized(dataset_id: str) -> Path:
+    """The dataset's materialized folder; refused (`not-materialized`) when there is none, as a pass and a dry run both
+    need its item texts."""
+    mat = MATERIALIZED / dataset_id
+    if not _store.is_dir(mat):
+        die(
+            f"{dataset_id} is not materialized.\n"
+            f"  "
+            + how(
+                f"evh dataset-materialize --dataset-id {dataset_id}",
+                f"make dataset-materialize DATASET_ID={dataset_id}",
+            ),
+            "not-materialized",
+        )
+    return mat
+
+
 def one_pass(
     ds: dict[str, Any],
     cfg: dict[str, Any],
@@ -536,17 +553,7 @@ def one_pass(
     RFC-030); with ``once`` each item is called exactly once, a failure recorded and never retried (a retry would
     repeat a replay's side effects). A resumed pass with ``once`` does not call again an item the earlier run called
     once and did not finish (a failed row, a start mark with no row) unless ``recall`` names them (RFC-038)."""
-    mat = MATERIALIZED / ds["dataset_id"]
-    if not _store.is_dir(mat):
-        die(
-            f"{ds['dataset_id']} is not materialized.\n"
-            f"  "
-            + how(
-                f"evh dataset-materialize --dataset-id {ds['dataset_id']}",
-                f"make dataset-materialize DATASET_ID={ds['dataset_id']}",
-            ),
-            "not-materialized",
-        )
+    mat = _refuse_unmaterialized(ds["dataset_id"])
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
     ref_dir, ref_tier = scored_against or _reference_for(ds["dataset_id"])
@@ -952,8 +959,10 @@ def _dry_run(
     only: int | None = None,
     note: str | None = None,
     adapter_id: str = BUNDLED_ADAPTER_ID,
+    repeat_line: str | None = None,
 ) -> int:
-    """Shape and cost the sweep without calling anything.
+    """Shape and cost the sweep without calling anything. `repeat_line`: where a `--purpose repeat` run would be read
+    (`_says_repeat`).
 
     The estimate counts what the system alone shows: one call per item (or the adapter's declared
     `CALLS_PER_ITEM`), the prompt in and max_tokens out, each call as large as the first. It is NOT an upper
@@ -1003,6 +1012,8 @@ def _dry_run(
         print(CALL_ONCE_LINE)
     if note:
         print(f"  {note}")
+    if repeat_line:
+        print(repeat_line)
     print(f"  API calls   {calls}")
     print(
         f"              {per_item} per item, declared by the adapter (CALLS_PER_ITEM)"
@@ -1020,8 +1031,9 @@ def _dry_run(
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
     est = None
     if pin is None or pout is None:
-        print("\n  No price in the system, so no estimate. Add usd_per_mtok_in /")
-        print("  usd_per_mtok_out and the run will record what it actually cost.")
+        print("\n  No price in the system, so no estimate. Add usd_per_mtok_in / usd_per_mtok_out to the")
+        print("  params of the system file (0 is a valid price for a local model) and the run will record")
+        print("  what it actually cost.")
     else:
         est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat * per_item * share
         print(
@@ -1189,6 +1201,35 @@ def _refuse_unrelated_of(of: str, cfg: dict[str, Any], purpose: str) -> None:
         )
 
 
+def _fingerprint_of(
+    cfg: dict[str, Any],
+    ds: dict[str, Any],
+    ref_id: str | None,
+    ref_tier: str | None,
+    adapter_id: str,
+    adapter_path: Path | None,
+    model_fingerprint: Any,
+    resolved: dict[str, Any] | None,
+    plan: Any,
+) -> dict[str, Any]:
+    """The fingerprint a run of this arm on `ds` records: a run's and its dry run's are one."""
+    return build_fingerprint(
+        root=ROOT,
+        data_dir=DATA,
+        dataset=ds,
+        reference_id=ref_id,
+        reference_tier=ref_tier,
+        system_id=cfg["system_id"],
+        params=dict(cfg.get("params") or {}),
+        adapter_id=adapter_id,
+        adapter_path=adapter_path,
+        model_hook=model_fingerprint,
+        cfg=cfg,
+        prompt_settings=(resolved or {}).get("settings"),
+        replay=plan,
+    )
+
+
 def _repeat_reading(
     of: str, fingerprint: dict[str, Any], cfg: dict[str, Any], label_as: str
 ) -> dict[str, Any]:
@@ -1197,28 +1238,52 @@ def _repeat_reading(
     return _model_runs.repeat_reading(of, mine, label_as)
 
 
-def _says_repeat(of: str, reading: dict[str, Any]) -> tuple[str, str]:
-    """What a `--purpose repeat --of <run>` run tells, before its first call and again as its last line: whether it will
-    be read in the arm of the run it repeats (the same measurement taken again), or under `repeats` as another one, and
-    what differs (RFC-041 F2)."""
+def _says_repeat(of: str, reading: dict[str, Any], subset: tuple[int, int] | None = None) -> tuple[str, str]:
+    """What a `--purpose repeat --of <run>` run tells, before its first call (a dry run too) and again as its last line:
+    whether it will be read in the arm of the run it repeats (the same measurement taken again), or under `repeats` as
+    another one, and what differs, each field with its value then and now (RFC-041 F2). `subset` is (the items `--items`
+    runs, the dataset's): the fingerprint's data is those items, so the repeat joins only a run of exactly them."""
     arm = reading["arm"]
     build = f" (the {_model_runs.HARNESS} differs)" if reading["notes"] else ""
     if reading["joins"]:
+        same_items = f"; made on the same items as {of}" if subset else ""
         return (
             (
                 f"  repeat of {of}: the same measurement (data, deployment, settings, adapter), so this run joins its "
-                f"arm {arm} and is averaged with it{build}"
+                f"arm {arm} and is averaged with it{build}{same_items}"
             ),
             f"  repeat of {of}: joined {arm}{build}",
         )
-    what = ", ".join(reading["why"])
+    what = "; ".join(reading["differs"]) or ", ".join(reading["why"])
+    why_items = (
+        f"; --items is a subset ({subset[0]} of {subset[1]} items), other data than a run of the whole dataset: a "
+        "repeat joins only a run of the same items"
+        if subset and "data" in reading["why"]
+        else ""
+    )
     return (
         (
-            f"  repeat of {of}: not the same measurement ({what}), so this run is read under `repeats` ({arm}), a "
-            f"separate arm, and is not averaged with {of}; to join its arm, run it again as {of} was run"
+            f"  repeat of {of}: not the same measurement ({what}{why_items}), so this run is read under `repeats` "
+            f"({arm}), a separate arm, and is not averaged with {of}; to join its arm, run it again as {of} was run"
         ),
         f"  repeat of {of}: read under `repeats` ({arm}), not in {of}'s arm: {what}",
     )
+
+
+def _repeat_line(
+    args: argparse.Namespace,
+    fingerprint: dict[str, Any],
+    cfg: dict[str, Any],
+    label_as: str,
+    rnd: dict[str, Any] | None,
+    subset: tuple[int, int] | None,
+) -> tuple[tuple[str, str], bool]:
+    """(the two lines `_says_repeat` tells, whether the run joins RUN's arm) for a `--purpose repeat --of RUN` run, as a
+    run and its dry run both say it."""
+    reading = _repeat_reading(args.of, fingerprint, cfg, label_as)
+    if reading["joins"] and rnd is not None:
+        _refuse_repeat_of_retired(rnd, cfg["system_id"], reading["label"], args.of)
+    return _says_repeat(args.of, reading, subset), reading["joins"]
 
 
 def _refuse_repeat_of_retired(rnd: dict[str, Any], system_id: str, label: str, of: str) -> None:
@@ -1465,6 +1530,7 @@ def _run(args: argparse.Namespace) -> int:
                 "call_once(params)): its failed items were retried, and --resume calls them again without a flag",
                 "bad-argument",
             )
+    subset: tuple[int, int] | None = None
     if args.items is not None:
         if not _store.is_file(args.items):
             die(f"--items {args.items}: no such file", "not-found")
@@ -1482,6 +1548,7 @@ def _run(args: argparse.Namespace) -> int:
             die(f"--items {args.items}: no item ids in it", "not-enough")
         keep = set(wanted)
         ds = {**ds, "items": [it for it in ds["items"] if it["item_id"] in keep]}
+        subset = (len(ds["items"]), len(known_ids))
         print(f"  --items: {len(ds['items'])} of {len(known_ids)} items of {cfg['dataset_id']}")
     # A SEALED SIDE IS HELD OUT (the fleet's feedback 29): refused before a cent is spent, unless an unseal named
     # this system in advance.
@@ -1561,6 +1628,7 @@ def _run(args: argparse.Namespace) -> int:
     )
 
     if args.dry_run:
+        _refuse_unmaterialized(cfg["dataset_id"])
         calls_only, note = None, None
         if args.resume and declared_once:  # what the resume would call, not the whole dataset
             rdir, prows = _resume_source(args.resume, cfg, runs)
@@ -1574,8 +1642,29 @@ def _run(args: argparse.Namespace) -> int:
                 f"({'CALLED AGAIN, --recall-failed: their side effects repeat' if args.recall_failed else 'not called; --recall-failed would call them'}), "
                 f"{len(fresh)} never attempted (called): {calls_only} call(s) in all"
             )
+        says = None
+        if args.purpose == "repeat" and args.of and not args.scratch:
+            import atexit  # noqa: PLC0415
+
+            from evaluation_harness import _prompts  # noqa: PLC0415
+
+            resolved = _prompts.resolve(cfg, args.config, cfg["system_id"], dry=True)
+            atexit.register(_prompts.remove_copy, resolved)
+            fp = _fingerprint_of(
+                cfg, ds, ref_id, ref_tier, adapter_id, adapter_path, model_fingerprint, resolved, plan
+            )
+            says, _joins = _repeat_line(args, fp, cfg, label_as, rnd, subset)
         return _dry_run(
-            ds, cfg, args.repeat, adapter_path, args.config, declared_once, calls_only, note, adapter_id
+            ds,
+            cfg,
+            args.repeat,
+            adapter_path,
+            args.config,
+            declared_once,
+            calls_only,
+            note,
+            adapter_id,
+            says[0] if says else None,
         )
 
     if declared_once:
@@ -1634,29 +1723,13 @@ def _run(args: argparse.Namespace) -> int:
         else:
             print(f"  warmed up in {warmup_ms:.0f}ms — timing below excludes it")
 
-    fingerprint = build_fingerprint(
-        root=ROOT,
-        data_dir=DATA,
-        dataset=ds,
-        reference_id=ref_id,
-        reference_tier=ref_tier,
-        system_id=cfg["system_id"],
-        params=dict(cfg.get("params") or {}),
-        adapter_id=adapter_id,
-        adapter_path=adapter_path,
-        model_hook=model_fingerprint,
-        cfg=cfg,
-        prompt_settings=(resolved or {}).get("settings"),
-        replay=plan,
+    fingerprint = _fingerprint_of(
+        cfg, ds, ref_id, ref_tier, adapter_id, adapter_path, model_fingerprint, resolved, plan
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
     repeat_says, repeat_joins = None, False
     if args.purpose == "repeat" and args.of and not args.scratch:
-        reading = _repeat_reading(args.of, fingerprint, cfg, label_as)
-        repeat_joins = reading["joins"]
-        if reading["joins"] and rnd is not None:
-            _refuse_repeat_of_retired(rnd, cfg["system_id"], reading["label"], args.of)
-        repeat_says = _says_repeat(args.of, reading)
+        repeat_says, repeat_joins = _repeat_line(args, fingerprint, cfg, label_as, rnd, subset)
         print(repeat_says[0])
     prompt_versions = {} if args.scratch else _prompt_versions(adapter_path, adapter_id, cfg, fingerprint)
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads

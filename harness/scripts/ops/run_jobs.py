@@ -13,7 +13,7 @@ OPS = (
        "POST", "/systems/{system}/runs", "evaluation_harness.run:body", "",
        locks=(("system:{system}", True), ("dataset:{dataset}", False)), spends=True, resume=("resume", "run_id",), required=("system", "dataset",), inputs={
            "system": {"type": "string", "description": "the system to run: its id (evh system-list)", "x-ref": "system"},
-           "dataset": {"type": "string", "description": "the dataset it runs on: its id"},
+           "dataset": {"type": "string", "description": "the dataset it runs on: its id (evh dataset-list)"},
            "goal": {"type": "string", "description": "the goal this run is measured for (ADR-0002); required from the date data/goals/policy.yaml says (--scratch excepted)"},
            "round": {"type": "string", "description": "the round of its goal the run belongs to (ADR-0004): needs --goal, on the round's dataset"},
            "labels": {"type": "string", "x-metavar": "SET", "description": "score against this label set of the dataset (SET or DATASET/SET) instead of its gold or silver (RFC-023)"},
@@ -22,7 +22,7 @@ OPS = (
            "of": {"type": "string", "x-metavar": "RUN_ID", "description": "the run a re-run (--purpose repeat, retime, pair) re-does: a run of the same system and dataset; required by --purpose repeat"},
            "scratch": {"type": "boolean", "description": "a throwaway pass: written under .build/scratch/runs, where nothing that reads runs looks"},
            "run_id": {"type": "string", "description": "the id the run is written under (default: the job's, <system>_<job id>; on the command line <system>_<timestamp>)"},
-           "items": {"type": "string", "format": "path", "x-metavar": "FILE", "description": "run only these item ids (one per line) of the dataset: a study's confirmation leaves out the items its study saw (RFC-029). The fingerprint's items are then these; a test set's looks are still the whole set's", "x-file": "upload"},
+           "items": {"type": "string", "format": "path", "x-metavar": "FILE", "description": "run only these item ids (one per line) of the dataset: a study's confirmation leaves out the items its study saw (RFC-029). The fingerprint's items are then these; a test set's looks are still the whole set's. A subset is other data than the whole dataset: a --purpose repeat of a run joins that run's arm only if the run ran exactly these items, else it is read under `repeats` (its line says so, and --dry-run too)", "x-file": "upload"},
            "dry_run": {"type": "boolean", "description": "cost and shape the sweep WITHOUT calling anything"},
            "resume": {"type": "string", "x-metavar": "RUN_ID", "description": "the run to continue: the outputs it already produced are reused, only what is missing is paid for"},
            "recall_failed": {"type": "boolean", "description": "with --resume, on a call-once arm (its adapter declares CALL_ONCE, RFC-038): call again the items the run called once and did not finish (a failed item, or one the process died in), once each; their side effects happen again, and the run records which items it recalled"},

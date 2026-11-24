@@ -199,10 +199,13 @@ def root_digest(root: Path, include: list[str]) -> str:
     return hashlib.sha256(json.dumps(body).encode()).hexdigest()
 
 
-def resolve(cfg: dict[str, Any], config_path: Any, run_label: str) -> dict[str, Any] | None:
+def resolve(
+    cfg: dict[str, Any], config_path: Any, run_label: str, dry: bool = False
+) -> dict[str, Any] | None:
     """The system's declared prompts at this run: every file hashed and its version found or recorded, and (for a
     root) a per-run copy made. None when the system declares none. Returns {"settings": what the fingerprint's
-    settings take, "params": what the adapter is given, "copy": the per-run copy to remove after, or None}."""
+    settings take, "params": what the adapter is given, "copy": the per-run copy to remove after, or None}. A `dry` call
+    (a dry run's fingerprint) records no version: it hashes the files and says nothing."""
     prompts = cfg.get("prompts") or {}
     root_spec = cfg.get("prompt_root")
     if not prompts and not root_spec:
@@ -217,15 +220,18 @@ def resolve(cfg: dict[str, Any], config_path: Any, run_label: str) -> dict[str, 
         if not path.is_file():
             _common.die(f"{config_path}: prompt {name}: no file at {shown}", "not-found")
         data = path.read_bytes()
-        doc, new = record(
-            name,
-            data,
-            source={"path": shown, "commit": _git_commit(path)},
-            note=f"recorded by a run of {run_label}",
-            extension=path.suffix,
-        )
-        if new:
-            print(f"  prompt {name}: new version {doc['id']}")
+        if dry:
+            doc = {"id": version_id(name, sha256(data)), "sha256": sha256(data)}
+        else:
+            doc, new = record(
+                name,
+                data,
+                source={"path": shown, "commit": _git_commit(path)},
+                note=f"recorded by a run of {run_label}",
+                extension=path.suffix,
+            )
+            if new:
+                print(f"  prompt {name}: new version {doc['id']}")
         shas[name] = doc["sha256"]
         given[name] = {
             "text": data.decode("utf-8", errors="replace"),
