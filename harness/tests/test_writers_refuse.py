@@ -333,6 +333,25 @@ put(P2, "goals/policy.yaml", "required_from: 2026-01-01\n")
 refused("evh run with no goal under the policy", P2, E2, RUN, "bad-argument", "--goal")
 refused("import-run with no goal under the policy", P2, E2, import_args(), "bad-argument", "--goal")
 refused("import-run --goal that is not there", P2, E2, import_args(goal="nope"), "not-found", "nope")
+refused(
+    "import-run with no goal and a tier its reference contradicts: the goal is said first, the reference once it is named",
+    P2, E2, import_args(reference_id=REF, reference_tier="silver"), "bad-argument", "--goal",
+)  # fmt: skip
+refused(
+    "import-run with a goal and a tier its reference contradicts",
+    P2, E2, import_args(goal="triage_a", reference_id=REF, reference_tier="silver"), "mismatch", "silver",
+)  # fmt: skip
+for cmd in ("import-run", "run"):
+    helped = evh(P2, E2, cmd, "--help")
+    check(
+        f"evh {cmd} --help says what data/goals/policy.yaml holds: required_from, a date",
+        "required_from: YYYY-MM-DD" in helped.stdout + helped.stderr,
+        (helped.stdout + helped.stderr)[-300:],
+    )
+refused(
+    "import-run with no goal and a reference kept elsewhere",
+    P2, E2, import_args(reference_id="silver/kept_elsewhere"), "bad-argument", "--goal",
+)  # fmt: skip
 r = evh(P2, E2, *import_args(goal="triage_a", run_id="named_run"))
 check("recorded: import-run --goal names the goal the run answers", r.returncode == 0 and (
     _runstore.record_of(P2, "named_run").get("goal") == "triage_a"), (r.stdout + r.stderr)[-300:])  # fmt: skip

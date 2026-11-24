@@ -14,7 +14,7 @@ OPS = (
        locks=(("system:{system}", True), ("dataset:{dataset}", False)), spends=True, resume=("resume", "run_id",), required=("system", "dataset",), inputs={
            "system": {"type": "string", "description": "the system to run: its id (evh system-list)", "x-ref": "system"},
            "dataset": {"type": "string", "description": "the dataset it runs on: its id"},
-           "goal": {"type": "string", "description": "the goal this run is measured for (ADR-0002); required from the date data/goals/policy.yaml says (--scratch excepted)"},
+           "goal": {"type": "string", "description": "the goal this run is measured for (ADR-0002); required from the date data/goals/policy.yaml gives (one line there: required_from: YYYY-MM-DD; the file is yours to create; --scratch excepted)"},
            "round": {"type": "string", "description": "the round of its goal the run belongs to (ADR-0004): needs --goal, on the round's dataset"},
            "labels": {"type": "string", "x-metavar": "SET", "description": "score against this label set of the dataset (SET or DATASET/SET) instead of its gold or silver (RFC-023)"},
            "repeat": {"type": "integer", "default": 1, "description": "run N times to measure the arm's spread"},
