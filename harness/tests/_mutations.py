@@ -15,6 +15,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Callable
@@ -394,11 +395,22 @@ def oracle(proj: Path) -> dict[str, Any]:
     with _runstore._InProject(proj) as data:
         for rid, rec in ordered(proj):
             sd = model_runs.first_score(data / "runs" / rid)
-            scores = (json.loads(_store.read_text(sd / model_runs.METRICS)).get("scores") or {}) if sd else {}
+            first = json.loads(_store.read_text(sd / model_runs.METRICS)) if sd else {}
+            scores = first.get("scores") or {}
+            made = rec.get("created_at")
+            # RFC-041, the owner's decision: a run re-scored in place or migrated is dated by the time in its id
+            stamp = re.search(r"_(\d{8})T(\d{6})Z$", rid)
+            if first.get("derived"):
+                made = (
+                    first.get("created_at") or made
+                )  # the derived score's own stamp, when the id carries none
+                if stamp:
+                    d, t = stamp.groups()
+                    made = f"{d[:4]}-{d[4:6]}-{d[6:]}T{t[:2]}:{t[2:4]}:{t[4:]}Z"
             runs[rid] = {
                 "dataset": rec["dataset_id"],
                 "system": rec["system_id"],
-                "created_at": rec.get("created_at"),
+                "created_at": made,
                 "cost": scores.get("cost_usd"),
                 "dirty": (rec.get("build") or {}).get("dirty", "absent"),
                 "named_goal": rec.get("goal"),

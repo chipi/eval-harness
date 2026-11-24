@@ -1853,9 +1853,16 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     q = f"dataset={quote(ds, safe='')}&sheet=1" + (f"&runs={quote(','.join(rec), safe=',/')}" if rec else "")
     btns.append(f'<a class="btn" href="../inspect.html?{q}">Open its sheet</a>')
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
+    latest_of = {b.get("goal"): b for b in v.get("baselines", [])}
     for b in v.get("baselines", []):
-        label = next((a["label"] for a in arms if a["arm"] == b.get("arm")), b["run"])
-        who = arm_link(b["arm"], label, "../") if b.get("arm") else e(label)
+        # the arm the goal reads (its re-score when it was re-scored: RFC-022), as every goal view says it
+        arm_id = (
+            goal_views.baseline_read(v, b["goal"])[1]
+            if b.get("goal") and latest_of[b["goal"]] is b
+            else b.get("arm")
+        )
+        label = next((a["label"] for a in arms if a["arm"] == arm_id), b["run"])
+        who = arm_link(arm_id, label, "../") if arm_id else e(label)
         of = f"{b['goal']}'s baseline" if b.get("goal") else "the dataset's own baseline"
         btn = (
             f'<div class="answer"><p class="small muted">{e(of)}, version {e(b.get("version"))}, promoted '
@@ -2625,13 +2632,13 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
         v = by_ds.get(ds) or {}
-        bl = [b for b in v.get("baselines", []) if b.get("goal") == g["goal_id"]]
+        bl, read = goal_views.baseline_read(v, g["goal_id"])
         label = {a["arm"]: a["label"] for a in v.get("arms", [])}
         head = dataset_link(ds, "../")
         if bl and latest and str(latest.get("closed_at") or "") > str(bl[-1].get("promoted_at") or ""):
             b = bl[-1]
-            arm = label.get(b.get("arm") or "", b["run"])
-            who = arm_link(b["arm"], arm, "../") if b.get("arm") else e(arm)
+            arm = label.get(read or "", b["run"])
+            who = arm_link(read, arm, "../") if read else e(arm)
             parts.append(
                 f'<div class="answer"><p class="small muted">{head} · round {e(latest["round_id"])} concluded '
                 f"{e(_when(str(latest.get('closed_at') or '')))}</p>"
@@ -2642,16 +2649,16 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 + _baseline_facts(A, b)
                 + _sheet_fold(A, b)
                 + (
-                    f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
-                    if b.get("arm")
+                    f'<p><a class="btn small" href="{inspect_url([read], "../", metric=measure)}">inspect it</a></p>'
+                    if read
                     else ""
                 )
                 + "</div>"
             )
         elif bl:
             b = bl[-1]
-            arm = label.get(b.get("arm") or "", b["run"])
-            who = arm_link(b["arm"], arm, "../") if b.get("arm") else e(arm)
+            arm = label.get(read or "", b["run"])
+            who = arm_link(read, arm, "../") if read else e(arm)
             parts.append(
                 f'<div class="answer"><p class="small muted">{head} · baseline promoted {e(_when(b["promoted_at"]))}'
                 + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
@@ -2659,8 +2666,8 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 + _baseline_facts(A, b)
                 + _sheet_fold(A, b)
                 + (
-                    f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
-                    if b.get("arm")
+                    f'<p><a class="btn small" href="{inspect_url([read], "../", metric=measure)}">inspect it</a></p>'
+                    if read
                     else ""
                 )
                 + "</div>"

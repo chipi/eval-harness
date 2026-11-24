@@ -302,12 +302,16 @@ def from_leaderboard(r: dict[str, Any], dataset: str) -> list[Fact]:
 
 
 def from_baselines(r: dict[str, Any]) -> list[Fact]:
-    """Facts from `evh baselines`: the run each goal's current baseline was promoted from."""
-    return [
-        ("baseline_run", (b["dataset"], b["goal"]), b.get("promoted_from"))
-        for b in r.get("baselines") or []
-        if b.get("goal") and b.get("current", 1) == b.get("version", 1)
-    ]
+    """Facts from `evh baselines`: the run each goal's current baseline was promoted from, and (from the version that says it) the arm the goal reads."""
+    out: list[Fact] = []
+    for b in r.get("baselines") or []:
+        if not b.get("goal") or b.get("current", 1) != b.get("version", 1):
+            continue
+        key = (b["dataset"], b["goal"])
+        out.append(("baseline_run", key, b.get("promoted_from")))
+        if b.get("goal_reads"):
+            out.append(("baseline_arm", key, b["goal_reads"]))
+    return out
 
 
 def from_goal_leaderboard(r: dict[str, Any]) -> list[Fact]:

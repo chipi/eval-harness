@@ -123,6 +123,21 @@ def meta(score_dir: Path) -> dict[str, Any]:
     return _json(Path(score_dir) / SCORE) or {}
 
 
+def measured(m: dict[str, Any], first: bool) -> tuple[bool, str]:
+    """(re-scored or re-parsed in place, the day-time the run was measured). The one owner of when a run was made. The score a
+    run made when it ran, re-scored where it lay (its record has `derived`), is still the run that was measured (its
+    calls, its bill), dated when it was, which the run id keeps: `created_at` was rewritten with the re-score's time (or
+    the migration's). Any other score: (False, its created_at)."""
+    made = str(m.get("created_at") or "")
+    if not (first and m.get("derived")):
+        return False, made
+    stamp = re.search(r"_(\d{8})T(\d{6})Z$", str(m.get("run_id") or ""))
+    if stamp:
+        day, hms = stamp.groups()
+        made = f"{day[:4]}-{day[4:6]}-{day[6:]}T{hms[:2]}:{hms[2:4]}:{hms[4:]}Z"
+    return True, made
+
+
 def record(score_dir: Path) -> dict[str, Any] | None:
     """What a scored run's record says: the run's facts with the score's over them (the keys the score unsets
     removed). None when either is missing or unreadable."""
@@ -134,6 +149,10 @@ def record(score_dir: Path) -> dict[str, Any] | None:
     unset = set(meta(sd).get("unset") or ())
     out = {k: v for k, v in r.items() if k not in unset}
     out.update(s)
+    if out.get(
+        "created_at"
+    ):  # when it was measured, whatever a re-score or a migration wrote over it (`measured`)
+        out["created_at"] = measured(out, bool(meta(sd).get("first")))[1]
     scores = out.get("scores")
     if isinstance(scores, dict) and any(
         isinstance(v, float) and not math.isfinite(v) for v in scores.values()

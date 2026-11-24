@@ -639,6 +639,20 @@ def hand_checks(project: str, facts: dict[str, FactMap]) -> None:
             and say("n_runs", "runs/tk_late_v1/s1_v1") == 1,
             (say("reference", "runs/tk_late_v1/s1_v1"), say("n_runs", "runs/tk_late_v1/s1_v1")),
         )
+        day = ("latest_day", ("runs/tk_hidden_v1/s2_v1",))
+        days = {r: d[day] for r, d in facts.items() if day in d}
+        check(
+            "hand: tutorial: a run re-scored in place is dated by its id on every reader (its created_at was rewritten)",
+            len(days) >= 4 and set(days.values()) == {"2026-11-10"},
+            days,
+        )
+        bl = ("baseline_arm", ("tk_v1", "tickets_summary"))
+        reads = {r: d[bl] for r, d in facts.items() if bl in d}
+        check(
+            "hand: tutorial: a baseline that was re-scored is one arm, the re-score's, in every goal reader",
+            len(reads) >= 4 and set(reads.values()) == {"rescored-3d3a6afd/tk_v1/s2_v1"},
+            reads,
+        )
         public = {
             fk[1][0]: v
             for r, d in facts.items()
