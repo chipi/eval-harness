@@ -1163,7 +1163,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_v30_links.py",
-            "V30 fails only a link the harness wrote: a plain goal dataset id that names no dataset; an imported run's reference outside data/ is a note, a prose or glob goal entry a warning, and without the id validate exits 0",
+            "V30 fails only a reference a harness-scored run lacks: a goal entry that names no dataset (an id, prose, a glob) is a warning, an imported run's reference outside data/ a note, and validate exits 0",
         ),
         (
             "test_item_index.py",

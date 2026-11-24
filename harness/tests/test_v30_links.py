@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""V30 fails only a link the harness wrote and can resolve (RFC-041 F7, owner 2026-11-24, after the podcast project's beta run).
+"""V30 fails only a reference the harness scored a run against; goal entries are warnings (RFC-041 F7, owner 2026-11-24).
 
     EVAL_STORE=files  python tests/test_v30_links.py
     EVAL_STORE=sqlite python tests/test_v30_links.py
@@ -8,10 +8,10 @@ The podcast project passed validate on v0.8.0 and failed V30 on the candidate wi
 name references by a bare name, kept in a folder of its own outside data/, and its goals' `datasets:` hold prose and
 patterns. Here R2's imported look-alike (invented names, no data of the project) is given that shape, and:
 
-  - a goal with a prose entry, a glob, a plain id that exists and a plain id that does not: validate exits 6 for the plain
-    id that does not exist alone, and says the prose and the glob in a warning naming the goal and the entry;
+  - a goal with a prose entry, a glob, a plain id that exists and a plain id that does not: validate exits 0, and says each of
+    the prose, the glob and the missing id in a warning naming the goal and the entry (the id's says it fails from 0.9);
   - imported runs whose reference is a bare name outside data/: one note each, no failure;
-  - without the plain id that does not exist, validate exits 0.
+  - a harness-scored run's missing reference stays a FAIL: test_writers_refuse.py.
 """
 
 import json
@@ -69,13 +69,13 @@ try:
     code, out = validate()
     v30 = [ln for ln in out.splitlines() if re.match(r"\s+(ok|FAIL)\s+V30", ln)]
     check(
-        "the plain id that names no dataset alone fails: exit 6, FAIL V30, one problem, naming the goal and the id",
-        code == EXIT_PROBLEMS
+        "the plain id that names no dataset is a warning naming the goal and the entry, saying it fails from 0.9; exit 0",
+        code == 0
         and v30
-        and v30[0].lstrip().startswith("FAIL V30")
-        and "1 problem(s)" in v30[0]
-        and f"goals/podcast_like.yaml: dataset '{GONE}' does not exist" in out
-        and "VALIDATION FAILED — 1 check(s): V30" in out,
+        and v30[0].lstrip().startswith("ok   V30")
+        and f"V30 goal podcast_like: datasets entry '{GONE}' names no dataset of this project" in out
+        and "FAIL from 0.9" in out
+        and "VALIDATION PASSED" in out,
         f"exit {code}: {out[-700:]}",
     )
     check(
@@ -100,8 +100,8 @@ try:
     goal([PROSE, GLOB, ds])
     code, out = validate()
     check(
-        "without the plain id that names no dataset, validate exits 0 with the notes and warnings",
-        code == 0 and "VALIDATION PASSED" in out and "datasets entry" in out and "scored against" in out,
+        "without that id, the warnings for the prose and the glob remain and none names it",
+        code == 0 and "datasets entry" in out and GONE not in out and "scored against" in out,
         f"exit {code}: {out[-700:]}",
     )
 finally:

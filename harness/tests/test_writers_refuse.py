@@ -492,7 +492,7 @@ broken(
 )  # fmt: skip
 broken(
     "a goal's dataset that is not there",
-    lose_goal_dataset, "V30", ["goals/triage_a.yaml", "ghost_v1", "does not exist"],
+    lose_goal_dataset, "V30", ["V30 goal triage_a", "ghost_v1", "names no dataset", "FAIL from 0.9"], fails=False,
 )  # fmt: skip
 broken(
     "a round's run that is not there",

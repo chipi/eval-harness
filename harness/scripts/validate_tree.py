@@ -75,9 +75,9 @@ Each check exists because its absence let a real defect through somewhere:
   V29 repeats        a repeat's `of` naming a run of another system or dataset, a round arm that records
                      a repeat where it is no longer read (RFC-041 F2); a repeat whose `of` is not there is
                      a note naming its run.json
-  V30 recorded links a goal naming a plain dataset id that does not exist, a run the harness scored whose
-                     reference (gold or silver) or label set is not there: each named with the file that holds
-                     the link (RFC-041 F7). A goal entry that is no id (prose, a pattern) is a warning, and
+  V30 recorded links a run the harness scored whose reference (gold or silver) or label set is not there,
+                     named with the file that holds the link (RFC-041 F7). A goal `datasets:` entry that names
+                     no dataset (a plain id, or prose or a pattern) is a warning, FAIL from 0.9 for a plain id;
                      an imported run's reference that is not under data/ is a note
 
 Exit 6 on any failure, so it can gate (RUNBOOK's exit codes).
@@ -2231,9 +2231,9 @@ def _missing_reference_note(ref: str, runs: set[str]) -> str:
 
 
 def v30_recorded_links() -> None:
-    """V30: the links the harness wrote resolve. A plain dataset id in a goal's `datasets:` names a dataset that is there
-    (FAIL when it is not); an entry that is not a plain id (prose, a glob, a list, a parenthesis) names nothing the
-    harness can look up, and is a warning naming the goal and the entry. The reference or label set a score was
+    """V30: the links the harness wrote resolve. A goal's `datasets:` entry that is not a dataset of the project is a
+    warning naming the goal and the entry (a goal file is the project's own text; a plain id that names no dataset
+    becomes a FAIL in 0.9, an entry that is no id, prose or a glob, never does). The reference or label set a score was
     measured against (`fingerprint.data.reference_id`, the one every reader follows: `gold/<name>`, `silver/<name>`,
     or `labels/<dataset>/<set>`) is there for a run the harness scored (FAIL when it is not); for an imported run,
     whose importer named it and kept it where it likes (a bare name, a folder outside data/), one note says a missing
@@ -2255,7 +2255,10 @@ def v30_recorded_links() -> None:
                     "nothing checks it; name each dataset by its id"
                 )
             elif not _store.is_file(DATASETS / f"{ds}.json"):
-                bad.append(f"goals/{gid}.yaml: dataset {ds!r} does not exist")
+                notes.append(
+                    f"V30 goal {gid}: datasets entry {ds!r} names no dataset of this project (goals/{gid}.yaml); "
+                    "this is a FAIL from 0.9"
+                )
     for rid in _mr.run_ids():
         for sd in _mr.scores_of(rid):
             rec = _mr.record(sd)
