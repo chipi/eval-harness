@@ -9,7 +9,6 @@ references and the baselines say, and the decision is made from that."""
 from __future__ import annotations
 
 import copy
-import statistics
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -17,6 +16,7 @@ from contextlib import contextmanager
 from evaluation_harness import _runs
 from evaluation_harness.axes import strategy_of
 from evaluation_harness.catalog_adapter import item_fields
+from evaluation_harness.model import runs as _runs_model
 
 # -- what every goal view reads ------------------------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ def by_dataset(A, datasets: set[str] | None = None) -> dict:
                 "read_as": read_as(arm) if callable(read_as) else "",
                 "runs": d.get("runs", 1),
                 "metric": head,
-                "mean": statistics.fmean(values.values()) if values else None,
+                "mean": _runs_model.pooled_mean(values.values()),
                 "n": len(values) or max((len(v["values"]) for v in sc.values()), default=0),
                 "lower": A.lower_is_better(head, d["dataset"]) if head else False,
                 "reference": d.get("reference", ""),
@@ -60,7 +60,7 @@ def by_dataset(A, datasets: set[str] | None = None) -> dict:
                 "last": max((r.get("created_at") or "" for r in runs), default=""),
                 # every metric's mean and item count, for the goal pages (numbers only)
                 "means": {
-                    k: (statistics.fmean(v["values"].values()), len(v["values"]))
+                    k: (_runs_model.pooled_mean(v["values"].values()), len(v["values"]))
                     for k, v in sc.items()
                     if v["values"]
                 },
@@ -179,8 +179,9 @@ def leader(
     means = {}
     for a in comparable(A, goal, arms, retired_in):
         vals = (A.scores(a).get(metric) or {}).get("values") or {}
-        if vals:
-            means[a] = statistics.fmean(vals.values())
+        value = _runs_model.pooled_mean(vals.values())
+        if value is not None:
+            means[a] = value
     if not means:
         return None
     return (min if lower else max)(means, key=lambda a: means[a])

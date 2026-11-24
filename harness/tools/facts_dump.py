@@ -42,6 +42,7 @@ SUFFIXES = ("group", "arm flag", "answer")
 KINDS = {
     "arms": "the arms on a dataset (key: dataset)",
     "ranked": "the arms a leaderboard ranks on a dataset: those that record its ranking metric, so some of its arms (key: dataset)",
+    "superseded_by": "the arm whose re-score a leaderboard ranks in place of this arm (key: arm)",
     "value": "the mean of a metric over the arm's items (key: arm, metric)",
     "n_items": "the items behind that mean (key: arm, metric)",
     "direction": "which way is better for a metric on a dataset: lower, higher or neutral (key: dataset, metric)",
@@ -213,6 +214,8 @@ def from_arm_list(r: dict[str, Any]) -> list[Fact]:
             ("reference", (arm,), ref(a.get("reference"))),
             ("cost_state", (arm,), cost_state(a.get("cost"))),
         ]
+        if a.get("superseded_by"):
+            out.append(("superseded_by", (arm,), a["superseded_by"]))
         if a.get("repeats") is not None:
             out.append(("n_runs", (arm,), a["repeats"]))
         if a.get("last"):

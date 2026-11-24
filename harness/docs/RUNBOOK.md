@@ -1034,6 +1034,11 @@ When a dataset's runs were scored more than one way, `leaderboard` prints one ta
 (`=== scored against <ref> ===`, gold first; `=== scored by judge <scorer_id> ===` for judged
 runs; runs scored against none get one too), each with its own tests, under a NOTE naming them
 all, and never averages across them.
+`leaderboard` ranks an arm's re-score in place of the arm when every run of the arm was re-scored against the reference it
+was measured on, as the goals, the rounds and the catalog read it (RFC-022): the arm it replaces is left out, and `arm-list`
+names it (`superseded_by`). An arm's value in a row is the mean over its items, an item's score being the mean of its
+repeats' (what `arm-show` and `metric-show` give too, where runs score different item counts); its `spread` is the range
+of its runs' values.
 
 Two that are easy to reach for and wrong:
 

@@ -917,7 +917,10 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
         for k in all_keys:
             vals = [r["scores"][k] for r in runs if k in r["scores"]]
             if vals:
-                row[k] = statistics.fmean(vals)
+                # the arm's value is its items' mean (`model.runs.pooled_mean`, as arm-show reads it); a measure no item
+                # row holds (a run-level one) is the mean of its runs'. The spread is of the runs, as it was.
+                pooled = (view[system_id].get("means") or {}).get(k)
+                row[k] = pooled[0] if pooled and pooled[0] is not None else statistics.fmean(vals)
                 row[f"__spread_{k}"] = max(vals) - min(vals)
         rows.append(row)
 

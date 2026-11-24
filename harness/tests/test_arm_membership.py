@@ -783,6 +783,65 @@ try:
                 bool(rows) and not bad,
                 bad[:3],
             )
+
+    # -- an arm has one value: the mean over its items, repeats pooled per item (RUNBOOK: an arm's repeats are averaged per
+    # item). Two runs that score different item counts: the mean of the runs' means is another number, and the
+    # leaderboard, arm-show and metric-show give the item-pooled one, through the CLI, the API and the MCP reads
+    partial = """
+from types import SimpleNamespace
+
+SEEN = [0]
+
+def call_system(text, params):
+    return SimpleNamespace(output=text[:40], tokens_in=10, tokens_out=5, cost_usd=None, latency_ms=None, extra={}, meta={})
+
+def score(output, reference):
+    SEEN[0] += 1
+    return {"words": 1.0, **({"partial": VALUE} if SEEN[0] <= K else {})}
+
+PRIMARY_METRIC = "words"
+"""
+    system("val_v1")
+    allow("many_v1", "val_v1")
+    for tag, n_seen, v in (("a", 3, "1.0"), ("b", 1, "0.0")):
+        (proj / f"p_{tag}.py").write_text(partial + f"K = {n_seen}\nVALUE = {v}\n")
+        _runstore.write_text(
+            proj,
+            "systems/val_v1.yaml",
+            f"system_id: val_v1\nadapter: p_{tag}.py\nparams:\n  provider: echo\n",
+        )
+        r = evh("run", "--system", "val_v1", "--dataset", DS, "--run-id", f"val_v1_{tag}")
+    vruns = [(sd, rec) for sd, rec, _a in scores_of("val_v1")]
+    run_means: list[float] = sorted((rec.get("scores") or {}).get("partial", -1.0) for _sd, rec in vruns)
+    check(
+        "setup: two runs of one arm scoring one item count and another",
+        len(vruns) == 2 and run_means == [0.0, 1.0],
+        (out(r)[-300:], run_means),
+    )
+    for how in ("cli", "api", "mcp"):
+        with Readers(how) as rd:
+            arm = "runs/tickets_v1/val_v1"
+            shown = {
+                m["metric"]: m["mean"]
+                for m in rd.read("arm-show", label="runs", dataset=DS, system="val_v1")["metrics"]
+            }
+            metric = {
+                a["arm_id"]: a["mean"]
+                for d in rd.read("metric-show", metric="partial")["datasets"]
+                for a in d["arms"]
+            }
+            lb = rd.read("leaderboard", dataset=DS)
+            board = {a["arm"]: a["metrics"] for g in (lb.get("values") or lb)["groups"] for a in g["arms"]}
+            got: tuple = (shown.get("partial"), metric.get(arm), (board.get(arm) or {}).get("partial"))
+            check(
+                f"{how}: an arm whose runs score different item counts has one value on `partial`: "
+                "arm-show, metric-show and the leaderboard agree, and it is not the mean of the runs' means",
+                None not in got
+                and got[0] == got[1]
+                and abs(got[0] - got[2]) < 1e-9
+                and abs(got[0] - sum(run_means) / 2) > 1e-6,
+                (got, run_means),
+            )
 finally:
     _store.close()
     shutil.rmtree(proj, ignore_errors=True)

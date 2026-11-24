@@ -566,7 +566,7 @@ def matrix(per_project: dict[str, dict[str, FactMap]]) -> list[str]:
             for kind, _key in d:
                 gives[r][kind] += 1
     short = {
-        "arms": "arms", "ranked": "ranked", "value": "value", "n_items": "items", "direction": "dir", "runs": "runs", "n_runs": "n_runs",
+        "arms": "arms", "ranked": "ranked", "superseded_by": "superseded", "value": "value", "n_items": "items", "direction": "dir", "runs": "runs", "n_runs": "n_runs",
         "latest": "latest", "latest_day": "l_day", "reference": "ref", "cost_state": "cost", "baseline_run": "b_run",
         "baseline_arm": "b_arm", "public": "public",
     }  # fmt: skip
@@ -611,6 +611,33 @@ def assert_agreement(project: str, facts: dict[str, FactMap]) -> None:
                 any(matches(entry, d) for d in dis),
                 "it no longer differs: remove it from KNOWN",
             )
+
+
+def superseded_ranked(project: str, facts: dict[str, FactMap]) -> None:
+    """Wherever arm-list says an arm is `superseded_by` its re-score, the leaderboard ranks the re-score and leaves the
+    superseded arm out (the goals, the rounds and the catalog read a re-score in its place: RFC-022, `rescore.py`)."""
+    n = 0
+    for reader in ("cli", "api", "mcp"):
+        sup = {
+            k[0]: v for (kind, k), v in facts.get(f"{reader}:arm-list", {}).items() if kind == "superseded_by"
+        }
+        n += len(sup)
+        bad = []
+        for arm, by in sorted(sup.items()):
+            ranked = set(facts.get(f"{reader}:leaderboard", {}).get(("ranked", (arm.split("/")[1],)), ()))
+            if by not in ranked or arm in ranked:
+                bad.append((arm, by, by in ranked, arm in ranked))
+        check(
+            f"superseded: {project}: {reader}: the leaderboard ranks the re-score and leaves the superseded arm out",
+            not bad,
+            bad[:3],
+        )
+    if project == "rescored":
+        check(
+            "superseded: rescored: arm-list names a superseded arm (else the check above is vacuous)",
+            n > 0,
+            n,
+        )
 
 
 def arms_shown(project: str, facts: dict[str, FactMap], why: dict[str, list[str]]) -> None:
@@ -883,6 +910,7 @@ def main() -> int:
                 )
             assert_agreement(name, facts)
             arms_shown(name, facts, why)
+            superseded_ranked(name, facts)
             if EXISTING:
                 arms = sum(
                     len(v)

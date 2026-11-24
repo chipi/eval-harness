@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import re
+import statistics
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
@@ -337,6 +338,15 @@ def arm_of(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
     """`<prefix>/<dataset>/<system>`: the arm a score is read in. The one place that says it (RFC-041 F2)."""
     rec = rec if rec is not None else record(score_dir) or {}
     return f"{arm_prefix(label(score_dir, rec))}/{rec.get('dataset_id')}/{rec.get('system_id')}"
+
+
+def pooled_mean(values: Iterable[float]) -> float | None:
+    """An arm's value on a metric: the mean over its items of each item's score, where an item's score is already the
+    mean of its repeats' (`HarnessAdapter.scores`); None for no item. The one place that says it: `arm-show`,
+    `metric-show`, the goal views and the leaderboard read it, so runs that score different item counts give one number
+    (a mean of the runs' means is another)."""
+    xs = list(values)
+    return statistics.fmean(xs) if xs else None
 
 
 def latest_key(rec: dict[str, Any]) -> tuple[str, str]:
