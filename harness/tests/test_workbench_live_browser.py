@@ -2363,6 +2363,14 @@ try:
             deadline = time.monotonic() + 120
             while done_items(started["id"]) < 1 and time.monotonic() < deadline:
                 time.sleep(0.2)
+            if done_items(started["id"]) < 1:  # say why, not a Resume that has nothing to continue
+                held = json.loads(
+                    (proj / ".build" / "jobs" / started["id"] / "state.json").read_text(encoding="utf-8")
+                )
+                raise AssertionError(
+                    f"the run answered no item in 120 s: {held}, "
+                    + (proj / ".build" / "jobs" / started["id"] / "log").read_text(encoding="utf-8")[-600:]
+                )
             page.click("#jb-stop")
             page.wait_for_selector("#jb-resume, #jb-out [role=alert]", timeout=30000)
             stopped = json.loads(
@@ -2377,9 +2385,12 @@ try:
             gate2.release(10)
             page.click("#jb-resume")
             page.wait_for_function(
-                f"() => location.hash.startsWith('#jobs/') && !location.hash.endsWith('{started['id']}')",
+                f"() => (location.hash.startsWith('#jobs/') && !location.hash.endsWith('{started['id']}')) || document.querySelector('#jb-out [role=alert]')",
                 timeout=20000,
             )
+            assert not page.locator("#jb-out [role=alert]").count(), page.locator(
+                "#jb-out"
+            ).inner_text()  # Resume refused: say why
             page.wait_for_selector(
                 "h1 ~ p.lead:has-text('succeeded'), h1 ~ p.lead:has-text('failed')", timeout=120000
             )
