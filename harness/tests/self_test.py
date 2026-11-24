@@ -1162,6 +1162,10 @@ def test_example_scorer_suites_pass() -> None:
             "every writer records the fact or refuses by name (an id with a path or unicode, a repeat with no of, a reference not there, a goal the policy requires, a cost some items did not report), and validate names each broken link with its file",
         ),
         (
+            "test_v30_links.py",
+            "V30 fails only a link the harness wrote: a plain goal dataset id that names no dataset; an imported run's reference outside data/ is a note, a prose or glob goal entry a warning, and without the id validate exits 0",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),

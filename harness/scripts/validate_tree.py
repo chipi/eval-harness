@@ -75,10 +75,12 @@ Each check exists because its absence let a real defect through somewhere:
   V29 repeats        a repeat's `of` naming a run of another system or dataset, a round arm that records
                      a repeat where it is no longer read (RFC-041 F2); a repeat whose `of` is not there is
                      a note naming its run.json
-  V30 recorded links a goal naming a dataset that does not exist, a score whose reference (gold or silver) or
-                     label set is not there: each named with the file that holds the link (RFC-041 F7)
+  V30 recorded links a goal naming a plain dataset id that does not exist, a run the harness scored whose
+                     reference (gold or silver) or label set is not there: each named with the file that holds
+                     the link (RFC-041 F7). A goal entry that is no id (prose, a pattern) is a warning, and
+                     an imported run's reference that is not under data/ is a note
 
-Exit 1 on any failure, so it can gate.
+Exit 6 on any failure, so it can gate (RUNBOOK's exit codes).
 
     evh validate
 """
@@ -2211,30 +2213,54 @@ def v29_repeats_and_the_arms_that_read_them() -> None:
     )
 
 
+def _imported(rec: dict[str, Any]) -> bool:
+    """Whether a score's record says it came from an import (`evh import-run`): the harness did not score it, so it
+    cannot vouch for where the reference the importer named lives."""
+    return bool(rec.get("imported")) or str(rec.get("adapter") or "").startswith("imported:")
+
+
+def _missing_reference_note(ref: str, runs: set[str]) -> str:
+    """The one note for a reference or label set that runs were scored against and that is not here (V16's wording)."""
+    shown = sorted(runs)
+    where = "data/labels" if ref.startswith("labels/") else "data/references"
+    return (
+        f"V16 references: {len(runs)} run(s) scored against {ref}, which is not under {where} "
+        f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): what they measured cannot be re-checked. "
+        "Restore the folder (evh reference-promote), or re-score against a reference that is here."
+    )
+
+
 def v30_recorded_links() -> None:
-    """V30: a goal's datasets are there, and so is the reference or label set a score was measured against. The score's
-    record names it
-    (`fingerprint.data.reference_id`, the one every reader follows: `gold/<name>`, `silver/<name>`, or
-    `labels/<dataset>/<set>`); one that was removed leaves a number that says what it was scored against and cannot be
-    checked (RFC-041 F7). A reference fetched elsewhere keeps its folder, with its manifest, so it is there. The link is
-    named with the file that holds it: the score's metrics.json for a score that has a fingerprint of its own (a
-    re-score), else its run's run.json."""
-    from evaluation_harness._common import scored_against_dir  # noqa: PLC0415
+    """V30: the links the harness wrote resolve. A plain dataset id in a goal's `datasets:` names a dataset that is there
+    (FAIL when it is not); an entry that is not a plain id (prose, a glob, a list, a parenthesis) names nothing the
+    harness can look up, and is a warning naming the goal and the entry. The reference or label set a score was
+    measured against (`fingerprint.data.reference_id`, the one every reader follows: `gold/<name>`, `silver/<name>`,
+    or `labels/<dataset>/<set>`) is there for a run the harness scored (FAIL when it is not); for an imported run,
+    whose importer named it and kept it where it likes (a bare name, a folder outside data/), one note says a missing
+    one once. A link is named with the file that holds it: the score's metrics.json for a score with a fingerprint of
+    its own (a re-score), else its run's run.json (RFC-041 F7)."""
+    from evaluation_harness._common import DATASET_ID, scored_against_dir  # noqa: PLC0415
 
     found: dict[str, bool] = {}
     bad: list[str] = []
+    imported_missing: dict[str, set[str]] = {}
     named = 0
     listed = 0
     for gid, g in sorted(load_goals().items()):
         for ds in goal_datasets(g):
             listed += 1
-            if not _store.is_file(DATASETS / f"{ds}.json"):
+            if not DATASET_ID.fullmatch(ds):
+                notes.append(
+                    f"V30 goal {gid}: datasets entry {ds!r} is not a dataset id (prose, a pattern or a list), so "
+                    "nothing checks it; name each dataset by its id"
+                )
+            elif not _store.is_file(DATASETS / f"{ds}.json"):
                 bad.append(f"goals/{gid}.yaml: dataset {ds!r} does not exist")
     for rid in _mr.run_ids():
         for sd in _mr.scores_of(rid):
             rec = _mr.record(sd)
             ref = _mr.reference_of(rec) if rec else ""
-            if not ref:
+            if not rec or not ref:
                 continue
             named += 1
             if ref not in found:
@@ -2247,22 +2273,28 @@ def v30_recorded_links() -> None:
                         else _store.is_dir(where)
                     )
                 )
-            if not found[ref]:
-                held = (
-                    f"runs/{rid}/scores/{sd.name}/{_mr.METRICS}"
-                    if "fingerprint" in (parsed(sd / _mr.METRICS) or {})
-                    else f"runs/{rid}/{_mr.RUN}"
-                )
-                bad.append(
-                    f"{held}: {'label set' if ref.startswith('labels/') else 'reference'} {ref!r} is not there"
-                )
+            if found[ref]:
+                continue
+            if _imported(rec):
+                imported_missing.setdefault(ref, set()).add(rid)
+                continue
+            held = (
+                f"runs/{rid}/scores/{sd.name}/{_mr.METRICS}"
+                if "fingerprint" in (parsed(sd / _mr.METRICS) or {})
+                else f"runs/{rid}/{_mr.RUN}"
+            )
+            bad.append(
+                f"{held}: {'label set' if ref.startswith('labels/') else 'reference'} {ref!r} is not there"
+            )
+    for ref, runs in sorted(imported_missing.items()):
+        notes.append(_missing_reference_note(ref, runs))
     for b in bad[:10]:
         print(f"       {b}")
     if len(bad) > 10:
         print(f"       ... and {len(bad) - 10} more")
     check(
         f"V30 recorded links — {listed} goal dataset(s) and {named} score reference(s) or label set(s), and every one "
-        "is there",
+        "the harness wrote is there",
         not bad,
         f"{len(bad)} problem(s)",
     )
@@ -2393,17 +2425,16 @@ def note_missing_references() -> None:
     reference's manifest is committed even when its text is not, so a folder that is gone altogether is a reference that
     was deleted or never made here: the numbers read against it cannot be checked."""
     missing: dict[str, set[str]] = {}
-    for _label, sd, _rec in all_scores():
+    for _label, sd, rec in all_scores():
         ref = str(_mr.meta(sd).get("reference") or "")
-        if ref.startswith(("gold/", "silver/")) and not _store.is_dir(DATA / "references" / ref):
+        if (
+            ref.startswith(("gold/", "silver/"))
+            and not _imported(rec)
+            and not _store.is_dir(DATA / "references" / ref)
+        ):
             missing.setdefault(ref, set()).add(_mr.run_of(sd).name)
     for ref, runs in sorted(missing.items()):
-        shown = sorted(runs)
-        notes.append(
-            f"V16 references: {len(runs)} run(s) scored against {ref}, which is not under data/references "
-            f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): what they measured cannot be re-checked. "
-            "Restore the folder (evh reference-promote), or re-score against a reference that is here."
-        )
+        notes.append(_missing_reference_note(ref, runs))
 
 
 def note_round_scorers() -> None:
@@ -2435,7 +2466,7 @@ def note_round_scorers() -> None:
 
 
 def body() -> int:
-    """Run all integrity checks over the eval tree; 1 if any fails."""
+    """Run all integrity checks over the eval tree; 6 if any fails."""
     problems.clear()
     notes.clear()
     print(f"eval tree: {DATA}\n")
