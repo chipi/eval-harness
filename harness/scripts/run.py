@@ -71,6 +71,7 @@ from evaluation_harness._common import (
     warn_if_ignored,
 )
 from evaluation_harness._fingerprint import build_fingerprint
+from evaluation_harness._number import counted, is_scored
 from evaluation_harness._providers import priced_by_table, secret_params
 from evaluation_harness._record import (
     aggregate_scores,
@@ -753,8 +754,14 @@ def one_pass(
                     if score_wants_source(score)
                     else score("", reference)
                 )
-            # what the failed item's own score holds that is a number stays; no metric of it is a NaN
-            scored = {k: v for k, v in scored.items() if non_number({k: v}) is None}
+            # what the failed item's own score holds that is a number stays; a measure its fallback could not score
+            # either (NaN, an infinity, None) counts 0, as a failed item does: dropped, the mean ran over the other items
+            # and the failure made the arm look better (review, 2026-11-24). A boolean or text is no score: left out.
+            scored = {
+                k: v if non_number({k: v}) is None else counted(v)
+                for k, v in scored.items()
+                if non_number({k: v}) is None or is_scored(v)
+            }
         # A failed item's output is not written: --resume calls it again.
         if live is not None and not resumed and not failed:
             # One synced line per item: `--resume` treats a complete line as proof the item is done, and a torn

@@ -1167,7 +1167,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_v30_links.py",
-            "V30 fails only a reference a harness-scored run lacks: a goal entry that names no dataset (an id, prose, a glob) is a warning, an imported run's reference outside data/ a note, and validate exits 0",
+            "V30 fails only a reference a harness-scored run lacks: a goal entry that names no dataset (an id, prose, a glob, a range) is a note, an imported run's reference outside data/ a note that the harness cannot find it, and validate exits 0",
+        ),
+        (
+            "test_nan_fallback.py",
+            "a failed item whose fallback score is not a number either counts 0 on that measure: the mean is over every item",
         ),
         (
             "test_item_index.py",

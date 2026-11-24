@@ -2451,7 +2451,9 @@ def note_missing_references() -> None:
     was deleted or never made here: the numbers read against it cannot be checked."""
     missing: dict[str, set[str]] = {}
     for _label, sd, rec in all_scores():
-        ref = str(_mr.meta(sd).get("reference") or "")
+        # The fingerprint's, as V30 and every reader follow it: the score's own `reference` is the dotted key part
+        # migration m0004 wrote (gold.name) on most migrated scores, so this note never saw one gone (review, 2026-11-24).
+        ref = _mr.reference_of(rec) if rec else ""
         if (
             ref.startswith(("gold/", "silver/"))
             and not _imported(rec)

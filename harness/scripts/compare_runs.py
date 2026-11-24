@@ -218,6 +218,13 @@ def _run(args: argparse.Namespace) -> int:
     kinds = {**(a.get("metric_kinds") or {}), **(b.get("metric_kinds") or {})}
     for run in (a, b):
         kinds.update(recorded_metric_kinds(run.get("adapter")) or {})
+    # The runs and their dataset, as leaderboard asks: with neither, any goal (the first by name) decided, so a goal on
+    # another dataset flipped a verdict here (review, 2026-11-24).
+    ask = {
+        "kinds": kinds,
+        "runs": [(RUNS / args.baseline, a), (RUNS / args.candidate, b)],
+        "dataset": a["dataset_id"],
+    }
 
     worth = 0
     shown: list[tuple] = []  # (metric, baseline, candidate, delta, verdict); None where a side has none
@@ -236,13 +243,13 @@ def _run(args: argparse.Namespace) -> int:
             # Direction comes from _common, the same place leaderboard.py gets it.
             # This used to be `"better" if d > 0 else "worse"` for every metric, so a
             # run that got FASTER or CHEAPER was reported as worse.
-            verdict = verdict_for(k, d, kinds=kinds)
+            verdict = verdict_for(k, d, **ask)
             # Only a real regression or improvement counts toward "moved beyond the
             # noise floor". A descriptive metric moving is not a verdict, and counting
             # it inflated the number a reader uses to decide whether to care.
             if verdict in ("better", "worse"):
                 worth += 1
-                note_assumed(k, kinds=kinds)
+                note_assumed(k, **ask)
         shown.append((k, av, bv, d, verdict))
 
     if not _jsonout.table(["metric", "baseline", "candidate", "delta", "verdict"], shown):

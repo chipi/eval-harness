@@ -290,6 +290,24 @@ try:
         all(rows.get(m) == "worse" for m in EXPECTED),
         {m: rows.get(m) for m in EXPECTED},
     )
+    # A goal on another dataset says nothing about this one (review, 2026-11-24): run-compare asked with no dataset,
+    # so the first goal alphabetically decided `my_rate`, which nothing about tickets_v1 declares.
+    write_goal("a_elsewhere", "{measure: my_rate, direction: lower}", ["elsewhere_v1"])
+    r = evh("run-compare", "--baseline", "good", "--candidate", "bad", "--json")
+    rate = {
+        x["metric"]: x["verdict"]
+        for b in result(r).get("blocks", [])
+        for x in b.get("rows", [])
+        if "verdict" in x
+    }
+    lb = result(evh("leaderboard", "tickets_v1", "--sort", "my_rate", "--json"))
+    lb_dir = ((lb.get("values", {}).get("groups") or [{}])[0]).get("direction")
+    _runstore.unlink(proj, "goals/a_elsewhere.yaml")
+    check(
+        "run-compare: a goal on another dataset does not decide a measure's direction here; it reads as leaderboard does",
+        rate.get("my_rate") == "better" and lb_dir != "lower",
+        (rate.get("my_rate"), lb_dir),
+    )
 
     for sort in ("err", "wer", "cost_usd"):
         r = evh("leaderboard", "tickets_v1", "--sort", sort, "--json")

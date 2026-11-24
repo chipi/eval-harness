@@ -149,6 +149,13 @@ MUTATIONS: tuple[Mutation, ...] = (
         verdict={"tutorial": (6, "V30"), "fleet": (6, "V30"), "bakeoff": (6, "V30"), "imported": (0, "")},
     ),
     Mutation(
+        "reference_gone_dotted",
+        "the reference is gone, and the scores name it as migration m0004 left them (gold.name)",
+        "reference_gone_dotted",
+        names=r"note: V16 references: \d+ run\(s\) scored against (gold|silver)/\S+, which is not under data/references",
+        verdict={"tutorial": (6, "V30"), "fleet": (6, "V30"), "bakeoff": (6, "V30"), "imported": (0, "")},
+    ),
+    Mutation(
         "goal_measure_unrecorded",
         "a goal's primary measure no run records",
         "goal_measure_unrecorded",

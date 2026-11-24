@@ -365,6 +365,21 @@ def reference_gone(proj: Path) -> None:
         save(proj, rid, rec)
 
 
+def reference_gone_dotted(proj: Path) -> None:
+    """`reference_gone`, on scores whose own `reference` is the dotted key part ("gold.name"), as migration m0004 wrote
+    it: 621 of this repository's 719 scores. The run's fingerprint names the reference ("gold/name"); a reader of the
+    score's field never saw it gone (review, 2026-11-24)."""
+    reference_gone(proj)
+
+    def dotted(_rows: list, _metrics: dict, score: dict) -> None:
+        if "/" in str(score.get("reference") or ""):
+            score["reference"] = str(score["reference"]).replace("/", ".", 1)
+
+    for runs in by_dataset(proj).values():
+        for rid, _rec in runs:
+            edit_scores(proj, rid, dotted)
+
+
 def goal_measure_unrecorded(proj: Path) -> None:
     """Every goal's primary measure is one no run records."""
     for gid, doc in goals(proj).items():
@@ -449,6 +464,7 @@ MUTATIONS: dict[str, Callable[[Path], None]] = {
     "two_goals_two_baselines": two_goals_two_baselines,
     "utc_day_boundary": utc_day_boundary,
     "reference_gone": reference_gone,
+    "reference_gone_dotted": reference_gone_dotted,
     "goal_measure_unrecorded": goal_measure_unrecorded,
     "no_fingerprint": no_fingerprint,
     "hide_a_dataset": hide_a_dataset,
