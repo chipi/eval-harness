@@ -420,12 +420,13 @@ def _evidence(goal: str, rnd: dict, A: Any, data: Path | None, g: dict, metric: 
         out["arms"] = arms
         out["reference"] = ref
     round_ref = out.get("reference") or next(iter(set(ref_of.values())), "")
-    spent = sum(
-        (m.get("scores") or {}).get("total_cost_usd") or 0 for _, m in _rounds.runs_of(rnd, data=data)
-    )
+    spent, unpriced = _rounds.spend_of(rnd, data)
     out["spent"] = spent
     if rnd.get("budget_usd") is not None:
-        line = f"spent ${spent:.4f} of ${rnd['budget_usd']:.2f}"
+        line = f"spent {'unknown' if spent is None else f'${spent:.4f}'} of ${rnd['budget_usd']:.2f}"
+        if unpriced:
+            line += f" ({_rounds.no_cost_words(unpriced)})"
+        spent = spent or 0.0
         if rnd.get("status") != "closed":
             # What a spending command would be given now (RFC-026 step 5): running commands' reservations and a
             # stopped run's paid items counted, as the commands count them.

@@ -144,6 +144,19 @@ def runs_of(rnd: dict[str, Any], label: str = "", data: Path | None = None) -> l
     ]
 
 
+def spend_of(rnd: dict[str, Any], data: Path | None = None) -> tuple[float | None, int]:
+    """What a round's runs spent, the one place it is summed (RFC-041 F3): (the sum over the runs that recorded a cost,
+    how many recorded none). The sum is None when runs were made and none recorded a cost: an unknown spend is not $0."""
+    costs = [(m.get("scores") or {}).get("total_cost_usd") for _, m in runs_of(rnd, data=data)]
+    known = [float(c) for c in costs if c is not None]
+    return (sum(known) if known or not costs else None), len(costs) - len(known)
+
+
+def no_cost_words(n: int) -> str:
+    """How many runs recorded no cost, for a line that shows a spend; "" when every run did."""
+    return f"{n} run{'s' if n != 1 else ''} recorded no cost" if n else ""
+
+
 def harness_now() -> dict[str, Any]:
     """The harness code a round is opened on: its version, the project's commit, and the hash of the code that
     can change a measurement (the same `instrument.harness` a run records)."""

@@ -530,7 +530,6 @@ ALLOWED: dict[tuple[str, str, str], str] = {
         "_spend.py",
         "_run_spend",
     ): "a total of recorded costs: the cap's ledger adds what is known",
-    ("F3/cost-or-zero", "_spend.py", "round_left"): "the same",
     (
         "F3/cost-or-zero",
         "catalog_adapter.py",
@@ -550,11 +549,6 @@ ALLOWED: dict[tuple[str, str, str], str] = {
         "judge_validate.py",
         "body",
     ): "a total of the judges' estimates; each line says `unpriced`",
-    (
-        "F3/cost-or-zero",
-        "model/rounds.py",
-        "_evidence",
-    ): "a total of the runs' recorded costs, against the round's budget",
     (
         "F3/cost-or-zero",
         "model/spend.py",
@@ -776,6 +770,15 @@ check(
     not scan(quiet, "probe.py"),
     scan(quiet, "probe.py"),
 )
+
+# -- a round's spend is summed in one place: `_rounds.spend_of` (the runs that recorded a cost, and how many did not)
+for rel in ("model/rounds.py", "_spend.py"):
+    src = (SCRIPTS / rel).read_text(encoding="utf-8")
+    check(
+        f"{rel} reads a round's spend from _rounds.spend_of, not a sum of its own",
+        "_rounds.spend_of(" in src and "runs_of(" not in src,
+        rel,
+    )
 
 # -- the other source checks of these facts are still there ------------------------------------------------------------
 suite = (HARNESS / "tests" / "self_test.py").read_text(encoding="utf-8")

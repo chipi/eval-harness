@@ -1452,6 +1452,7 @@ def test_example_scorer_suites_pass() -> None:
             "test_rounds.py",
             "eval rounds: open, run, suggest, retire, close, the next, validate, the page",
         ),
+        ("test_round_spend.py", "a round's spend: the known sum, the runs that recorded none, never $0"),
         (
             "test_pair_versions.py",
             "pair-test --b-dataset: one arm on two versions of a dataset; the refusals (reference, ids, direction)",
