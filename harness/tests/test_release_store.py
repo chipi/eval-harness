@@ -594,6 +594,10 @@ try:
             and 'PYTHONDONTWRITEBYTECODE=1 python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" check'
             in sh,
         )
+        check(
+            "render.sh: the catalog's switcher links to the Workbench the site serves at /workbench/ (--link, as the other parts)",
+            '--link "Workbench=https://$SITE/workbench/"' in sh,
+        )
         inspector = compose.split("  inspector:")[1].split("\n  mcp:")[0]
         mcp = compose.split("\n  mcp:")[1]
         check(

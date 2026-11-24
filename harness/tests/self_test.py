@@ -1262,6 +1262,10 @@ def test_example_scorer_suites_pass() -> None:
             "this repository's catalog: every page rendered on its own, in a shuffled order, is the exported file",
         ),
         (
+            "test_catalog_served.py",
+            "what a catalog server serves is the export of one state (RFC-040): over HTTP, cache off and on, and across edits, the recorded badge on every page",
+        ),
+        (
             "test_catalog_scorers.py",
             "the scorers page: each judge scorer, its judges, validation and checks, read through the data root, no verdict text",
         ),

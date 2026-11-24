@@ -1287,6 +1287,8 @@ try:
             "Site=https://s.example/",
             "--link",
             "Catalog=.",
+            "--link",
+            "Workbench=https://s.example/workbench/",
             "--brand",
             "deploy-brand",
             "--api",
@@ -1320,6 +1322,29 @@ try:
         "evh catalog --link/--brand/--head/--api: every page carries them, arms.html included",
         proc.returncode == 0 and "arms.html" in {p.name for p in opt_pages} and not missing,
         missing or proc.stderr[-300:],
+    )
+
+    # The Workbench is a part of the publication the deployment names (--link), as the site is: a catalog exported
+    # with no --link and opened from disk links to no Workbench (nothing serves one there).
+    no_wb = [
+        p.relative_to(env_root / ".build/catalog-opts").as_posix()
+        for p in opt_pages
+        if 'href="https://s.example/workbench/"' not in p.read_text(encoding="utf-8")
+    ]
+    check(
+        "evh catalog --link Workbench=URL: every page's switcher links to the Workbench",
+        proc.returncode == 0 and bool(opt_pages) and not no_wb,
+        no_wb[:5],
+    )
+    plain = [
+        p.relative_to(env_root / ".build/catalog").as_posix()
+        for p in sorted((env_root / ".build/catalog").rglob("*.html"))
+        if "workbench" in p.read_text(encoding="utf-8").lower()
+    ]
+    check(
+        "evh catalog with no --link: no page mentions a Workbench (an export opened from disk has none to link to)",
+        not plain,
+        plain[:5],
     )
 
     # a port another program holds: say so, never a traceback

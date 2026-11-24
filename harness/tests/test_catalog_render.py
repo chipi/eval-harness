@@ -8,6 +8,9 @@ In a throwaway tutorial project ($0, offline), in either store (the store matrix
   - coverage: the addresses the model names are the files the export writes, each owned by the group that wrote it;
   - equality: every page rendered on its own, from a fresh model, is the exported file byte for byte;
   - one page at a time: asking for one page renders its group only, not the site;
+  - the p-value cache (RFC-040 test 2): the export and every page rendered on request are the same bytes with the cache
+    off and on (this project's tests are exact: the drawn p's are checked in test_catalog_render_real.py); production's
+    recorded arm is in the project, so its badge is among the bytes compared;
   - threads: pages rendered concurrently from one model are the exported files (no global read half-filled);
   - the footer's time is the model's, not the clock's, so the two drivers agree.
 
@@ -34,6 +37,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/
 import _cli  # noqa: E402
+import _render_proj  # noqa: E402
 import _runstore  # noqa: E402
 from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
@@ -79,8 +83,14 @@ try:
     for cid in ("one_v1", "two_v1"):
         r = r if r.returncode else evh("run", "--system", cid, "--dataset", "tk_v1")
     r = r if r.returncode else evh("goal-new", GOAL, *(x for s in SETS for x in ("--set", s)))
-    check("setup: a project with a goal and two runs", r.returncode == 0, (r.stdout + r.stderr)[-400:])
+    r = r if r.returncode else _render_proj.add_recorded_arm(evh, proj)
+    check(
+        "setup: a project with a goal, two runs and production's recorded arm",
+        r.returncode == 0,
+        (r.stdout + r.stderr)[-400:],
+    )
 
+    _render_proj.p_cache("")  # the cache off: what the rest compares against
     out = proj / ".build" / "render-export"
     A = load_catalog_adapter(None)
     site = cb.prepare(A, built=BUILT)
@@ -111,6 +121,12 @@ try:
         "coverage: the assets are served from the model's addresses too",
         {f"assets/{a}" for a in cb.ASSETS} | {"assets/head.js"} <= set(site.addresses),
         sorted(p for p in site.addresses if p.startswith("assets/")),
+    )
+    badged = sorted(p for p, html in exported.items() if 'class="badge recorded"' in html)
+    check(
+        "the recorded arm's badge is in the export, so the equality below compares it",
+        bool(badged),
+        sorted(pages)[:20],
     )
     check(
         "the footer carries the model's time, not the clock's",
@@ -148,6 +164,28 @@ try:
         "an asset is served as the export copies it",
         fresh.page("assets/head.js") == (out / "assets" / "head.js").read_text(encoding="utf-8"),
     )
+
+    # ── the p-value cache changes no byte ───────────────────────────────────────────────────────────────────────────
+    # This project's tests are exact (three items): no p is drawn, so the file stays empty and the pass below shows the
+    # cache's switch changes nothing here; the p's that are drawn and stored are in test_catalog_render_real.py.
+    p_file = proj / ".cache" / "render-p.jsonl"
+    _render_proj.p_cache(str(p_file))
+    cached = cb.prepare(load_catalog_adapter(None), built=BUILT)
+    differ = [p for p in sorted(pages) if cached.page(p) != exported[p]]
+    check(
+        f"equality with the p-value cache on: every page ({len(pages)}) rendered on request is the export made with it off",
+        not differ,
+        differ[:5],
+    )
+    on_out = proj / ".build" / "render-export-on"
+    cb.prepare(load_catalog_adapter(None), built=BUILT).export(on_out)
+    on_files = files_under(on_out)
+    check(
+        "the export made with the cache on is the export made with it off, file for file",
+        on_files == exported,
+        sorted(p for p in set(on_files) | set(exported) if on_files.get(p) != exported.get(p))[:5],
+    )
+    _render_proj.p_cache("")
 
     # ── threads ─────────────────────────────────────────────────────────────────────────────────────────────────────
     shared = cb.prepare(load_catalog_adapter(None), built=BUILT)
