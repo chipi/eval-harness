@@ -187,6 +187,7 @@ def arm(A, by_ds: dict, arm_id: str) -> dict[str, Any]:
                 "made": r.get("created_at") or "",
                 "items": r.get("items"),
                 "cost_usd": r.get("cost_usd") if isinstance(r.get("cost_usd"), (int, float)) else None,
+                "cost_coverage": r.get("cost_coverage"),
                 "how": r.get("derived") or "measured",
             }
             for r in a["run_list"]

@@ -29,6 +29,7 @@ from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_periods as cp
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die
+from evaluation_harness.axes import with_coverage
 from evaluation_harness.model import arm_views as av
 from evaluation_harness.model import metric_views as mviews
 from evaluation_harness.model.entity import Problem
@@ -834,7 +835,9 @@ def print_arm(d: dict) -> None:
                     r["run"],
                     r["made"][:16].replace("T", " "),
                     r["items"] if r["items"] is not None else "—",
-                    f"${r['cost_usd']:.6f}" if r["cost_usd"] is not None else "—",
+                    with_coverage(f"${r['cost_usd']:.6f}", r.get("cost_coverage"))
+                    if r["cost_usd"] is not None
+                    else "—",
                     r["how"],
                 ]
                 for r in d["run_list"]

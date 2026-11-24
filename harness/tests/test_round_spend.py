@@ -145,6 +145,41 @@ try:
             "over-budget" in msg and "2 runs recorded no cost" in msg,
             msg,
         )
+
+    # A run that recorded a cost for 40 of its 65 items: its total is of those, and every cell that shows it says so.
+    _runstore.write_text(proj, "systems/sys_d.yaml", "system_id: sys_d\n")
+    _runfix.put_run(
+        DATA,
+        {"run_id": "d_1", "config_id": "sys_d", "system_id": "sys_d", "dataset_id": "ds_v1", "primary_metric": "acc",
+         "scores": {"acc": 1.0, "total_cost_usd": 0.012}, "cost_coverage": {"items_with_cost": 40, "items": 65}},
+        [{"item_id": "i1", "acc": 1.0, "cost_usd": 0.012}],
+    )  # fmt: skip
+    shown = evh("arm-show", "runs", "ds_v1", "sys_d")
+    check(
+        "arm-show: a run's cost that covers 40 of 65 items says so",
+        "$0.012000 (on 40 of 65 items)" in shown.stdout,
+        shown.stdout[-600:] + shown.stderr[-300:],
+    )
+    page = evh("arm-show", "runs", "ds_v1", "sys_a")
+    check(
+        "arm-show: a run whose every item reported a cost is shown plain",
+        "(on " not in page.stdout,
+        page.stdout[-600:],
+    )
+    report = evh("cost-report", "--dataset-id", "ds_v1")
+    check(
+        "cost-report: a run with no bill and a partial cost says what the cost covers",
+        "$0.0120 (on 40 of 65 items)" in report.stdout,
+        report.stdout[-800:] + report.stderr[-300:],
+    )
+    from evaluation_harness import axes
+
+    check(
+        "axes.with_coverage: only a partial coverage is worded",
+        axes.with_coverage("$0.01", {"items_with_cost": 1, "items": 2}) == "$0.01 (on 1 of 2 items)"
+        and axes.with_coverage("$0.01", None) == "$0.01",
+        axes.with_coverage("$0.01", None),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 summary()
