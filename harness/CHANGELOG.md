@@ -10,7 +10,7 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.8.1 — unreleased
+## 0.8.1 — 2026-11-24
 
 What 0.8.0 left open, and what three projects found in their first day on it. **Some results move** (below, by rule; by
 project in the full notes). No data format, fingerprint version or scorer changed, and nothing is re-scored.
