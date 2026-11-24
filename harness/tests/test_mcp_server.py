@@ -21,8 +21,10 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
-from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._check import check, store_under_test, summary  # noqa: E402
 
+# The project names its store as `evh init` would; run on its own (no EVAL_STORE), the server refused it (not-configured).
+os.environ.setdefault("EVAL_STORE", store_under_test())
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
