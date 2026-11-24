@@ -248,7 +248,7 @@ def body(**inputs: Any) -> int:
         ]
         from evaluation_harness import _spend  # noqa: PLC0415
 
-        # a child prints in its console's encoding: UTF-8 with replacement, never a crash
+        # the child is told to write UTF-8 (_spend.run_child); replacement keeps a stray byte from crashing here
         out, _paid = _spend.run_child(
             cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
         )  # given what is left of the cap

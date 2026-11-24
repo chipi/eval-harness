@@ -58,7 +58,7 @@ def main() -> int:
         r = subprocess.run(
             cmd,
             cwd=cwd,
-            env=env,
+            env={**env, "PYTHONIOENCODING": "utf-8"},
             capture_output=True,
             text=True,
             timeout=900,

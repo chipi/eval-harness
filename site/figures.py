@@ -524,6 +524,9 @@ def _has_frontier(e) -> bool:
 
 
 if __name__ == "__main__":
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     f = compute()
     for e in f["evals"]:
         print(

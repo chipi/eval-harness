@@ -141,6 +141,7 @@ def run_child(cmd: list[str], **kw: Any) -> tuple[Any, float]:
     fd, name = tempfile.mkstemp(prefix="evh-spent-", suffix=".json")
     os.close(fd)
     env["EVH_SPENT_TO"] = name
+    env["PYTHONIOENCODING"] = "utf-8"  # the callers read the child's answer as UTF-8
     try:
         r = subprocess.run(cmd, env=env, **kw)
         try:

@@ -77,6 +77,7 @@ def _run(
 
     env.setdefault("EVH_P_CACHE", p_cache_path(project))
     env.pop("EVH_PUBLIC", None)
+    env["PYTHONIOENCODING"] = "utf-8"  # this reads the answer as UTF-8, whatever the console is
     p = subprocess.Popen(
         cmd,
         cwd=project,
@@ -86,7 +87,7 @@ def _run(
         stderr=subprocess.PIPE,
         text=True,
         start_new_session=True,
-        # the child prints in its console's encoding: UTF-8 with replacement, never a crash here
+        # the child is told to write UTF-8 (PYTHONIOENCODING); replacement keeps a stray byte from crashing here
         encoding="utf-8",
         errors="replace",
     )

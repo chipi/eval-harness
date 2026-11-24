@@ -139,4 +139,13 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _sys.path.insert(
+        0, str(_Path(__file__).resolve().parents[2] / "harness")
+    )  # the evaluation_harness package
+    from evaluation_harness._console import degrade_unencodable
+
+    degrade_unencodable()
     sys.exit(main(sys.argv[1:]))

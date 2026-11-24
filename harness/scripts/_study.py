@@ -251,7 +251,7 @@ def run_system(
     argv += ["--round", round_id] if round_id else []
     argv += ["--repeat", str(repeats)] if repeats > 1 else []
     argv += ["--items", str(items)] if items is not None else []
-    # the arm is a child process that prints in its console's encoding: UTF-8 with replacement, never a crash
+    # the arm is a child told to write UTF-8 (_spend.run_child); replacement keeps a stray byte from crashing here
     r, paid = _spend.run_child(
         argv, capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8", errors="replace"
     )

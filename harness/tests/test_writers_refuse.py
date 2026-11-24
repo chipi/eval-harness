@@ -87,8 +87,24 @@ def put(proj: Path, rel: str, text: str) -> None:
     _runstore.write_text(proj, rel, text)
 
 
+try:
+    "x\u00e9".encode(sys.getfilesystemencoding(), sys.getfilesystemencodeerrors())
+    FS_HOLDS_UNICODE = True
+except (
+    UnicodeEncodeError
+):  # an ASCII filesystem encoding (LC_ALL=C) cannot pass a non-ASCII argument to a child
+    FS_HOLDS_UNICODE = False
+SKIPPED: list[str] = []
+
+
 def refused(label: str, proj: Path, env: dict[str, str], args: tuple, kind: str, names: str = "") -> None:
     """`evh <args>` refuses with `kind`, names what is wrong (`names`, when given), and writes nothing."""
+    if not FS_HOLDS_UNICODE and any(not str(a).isascii() for a in args):
+        SKIPPED.append(label)
+        print(
+            f"  skip refused: {label}: the filesystem encoding is {sys.getfilesystemencoding()}, it cannot exec a non-ASCII argument"
+        )
+        return
     before = snapshot(proj)
     r = evh(proj, env, *args)
     out = r.stdout + r.stderr

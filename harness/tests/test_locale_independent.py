@@ -192,6 +192,44 @@ try:
         ok and json.loads(r.stdout)["command"] == "validate",
         r.stdout[:200] + r.stderr[-300:],
     )
+
+    # A harness process that parses another's answer: the parent's console encoding does not reach the child's pipe.
+    from evaluation_harness import _cmdline, _spend
+
+    echo = proj / "echo.py"
+    echo.write_text("print('x\\u00e9 \\u2014 \\u00d7')\n", encoding="utf-8")
+    (proj / "fakecli").mkdir()
+    (proj / "fakecli" / "cli.py").write_text(echo.read_text(encoding="utf-8"), encoding="utf-8")
+    want = "x\u00e9 \u2014 \u00d7"
+    saved_env = os.environ.get("PYTHONIOENCODING")
+    os.environ["PYTHONIOENCODING"] = "cp1252:replace"
+    saved_here = _cmdline.HERE
+    try:
+        done, _paid = _spend.run_child(
+            [sys.executable, str(echo)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            stdin=subprocess.DEVNULL,
+        )
+        check(
+            "run_child reads an \u00e9 \u2014 \u00d7 exactly from a child, the parent's console being cp1252",
+            done.stdout.strip() == want,
+            done.stdout,
+        )
+        _cmdline.HERE = proj / "fakecli"
+        code, out, err = _cmdline._run(proj, [], 60, None)
+        check(
+            "_cmdline reads the same exactly, the parent's console being cp1252",
+            code == 0 and out.strip() == want,
+            (code, out, err),
+        )
+    finally:
+        _cmdline.HERE = saved_here
+        if saved_env is None:
+            os.environ.pop("PYTHONIOENCODING", None)
+        else:
+            os.environ["PYTHONIOENCODING"] = saved_env
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

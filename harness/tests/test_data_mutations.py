@@ -719,6 +719,15 @@ def judge(o: Outcome, control: Outcome | None) -> dict[str, str]:
     return {"cell": "ok" if not flags else ",".join(dict.fromkeys(flags))}
 
 
+def _fs_holds_unicode() -> bool:
+    """Whether this process can create a file named in other scripts (an ASCII filesystem encoding cannot: LC_ALL=C)."""
+    try:
+        "x\u00e9".encode(sys.getfilesystemencoding(), sys.getfilesystemencodeerrors())
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 def main() -> int:
     """Build the four projects once, read every mutation of each in parallel, check each; print the table."""
     t0 = time.time()
@@ -729,6 +738,11 @@ def main() -> int:
         print(f"no such mutation: {unknown}; the table has {[m.name for m in MUTATIONS]}")
         return 2
     table = [m for m in MUTATIONS if not wanted or m.name in wanted or m.name == "control"]
+    if not _fs_holds_unicode():
+        print(
+            f"  skip the unicode_ids mutation: the filesystem encoding is {sys.getfilesystemencoding()}, it cannot name its files"
+        )
+        table = [m for m in table if m.name != "unicode_ids"]
     check(
         "unit: a p-value of None (a pair whose differences do not vary) prints as n/a, the others as ever",
         (stats.fmt_p(None), stats.fmt_p(0.5), stats.fmt_p(0.00001)) == ("n/a", "0.5000", "<0.0001"),

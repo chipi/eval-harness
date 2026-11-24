@@ -148,6 +148,7 @@ def _dry_run(todo: list[Any]) -> None:
             "EVAL_DATA_DIR": str(rel),
             "EVAL_STORE": _common.store(),
             SCRATCH_MARK: str(scratch),
+            "PYTHONIOENCODING": "utf-8",
         }
         done = subprocess.run(  # nosec B603 - this script again, fixed arguments, on the copy
             [sys.executable, str(_Path(__file__).resolve())],
@@ -158,7 +159,7 @@ def _dry_run(todo: list[Any]) -> None:
             stdin=subprocess.DEVNULL,
             timeout=None,
             check=False,
-            # the child prints in its console's encoding: UTF-8 with replacement, never a crash here
+            # the child is told to write UTF-8 (PYTHONIOENCODING); replacement keeps a stray byte from crashing here
             encoding="utf-8",
             errors="replace",
         )
