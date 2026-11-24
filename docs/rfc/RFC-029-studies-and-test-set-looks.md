@@ -93,7 +93,7 @@ looking again and again cannot manufacture a result; a check refuses a look that
   study), `measure` (a metric of the goal), `space`, `sampler` (`grid`, `command`, `agent`), `accept` (`point:
   {min_gain, relative}` or `test`), `limits` (`[{metric, direction, limit}]`), `stop` (`trials`, `usd`, `wall_h`,
   `patience`, `ask_timeout_h`, default 2), `repeats`, `frozen` (paths), `directions` (the person's instructions,
-  autoresearch's `program.md`). With no `trials`, the study runs until stopped, and `usd` and `wall_h` are required.
+  autoresearch's `program.md`). A `stop` needs one bound, `trials`, `usd` or `wall_h` (0.8.1: it was `trials`, or both `usd` and `wall_h`); the study ends at the first rule that fires.
 - **The log**, `data/studies/<goal>/<study_id>.events.jsonl`, one JSON line per event: `start` (the spec's hash, the
   frozen files', the scorer's, the references', the actor and the instruction), `ask`, `trial` (k, the change, the
   hypothesis and rationale, its runs, the comparison with the best so far and with the baseline, kept, dropped,

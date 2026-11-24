@@ -300,11 +300,14 @@ def _measure_of(proj: Path, run_id: str) -> str | None:
         )
 
 
+#: The direction each primary measure of the four projects is declared with, written here and not asked of the name table
+#: the mutation is there to test.
+GOAL_DIRECTION = {"overlap_f1": "higher", "pass": "higher", "wer": "lower"}
+
+
 def two_goals_two_baselines(proj: Path) -> None:
     """Two goals on one dataset (the one with the most systems), each promoting another system's latest run as its
     baseline, made by the harness's own commands."""
-    from evaluation_harness import _common  # noqa: PLC0415
-
     per = by_dataset(proj)
     ds = max(per, key=lambda d: len({r["system_id"] for _i, r in per[d]}))
     latest: dict[str, str] = {}
@@ -312,7 +315,7 @@ def two_goals_two_baselines(proj: Path) -> None:
         latest[rec["system_id"]] = rid
     systems = sorted(latest)
     measure = _measure_of(proj, latest[systems[0]]) or "overlap_f1"
-    direction = "lower" if _common.lower_is_better(measure) else "higher"
+    direction = GOAL_DIRECTION[measure]
     b = build(proj)
     for gid, system in zip(("mutation_goal_a", "mutation_goal_b"), systems[:2], strict=False):
         b.must(

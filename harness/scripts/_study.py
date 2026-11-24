@@ -125,8 +125,8 @@ def problems(goal: str, sid: str, s: dict[str, Any]) -> list[str]:
     if not (acc == "test" or (isinstance(acc, dict) and ("point" in acc or acc.get("rule") == "test"))):
         out.append("accept: {point: {min_gain: 0}} or test")
     stop = s.get("stop") or {}
-    if not stop.get("trials") and not (stop.get("usd") is not None and stop.get("wall_h") is not None):
-        out.append("stop: trials, or (to run until stopped) both usd and wall_h")
+    if not stop.get("trials") and stop.get("usd") is None and stop.get("wall_h") is None:
+        out.append("stop: at least one bound: trials, usd or wall_h")
     if name == "grid" and not ((s.get("space") or {}).get("groups")):
         out.append("space.groups: what the grid sampler tries")
     return out

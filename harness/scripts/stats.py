@@ -42,6 +42,9 @@ from collections.abc import Callable
 from itertools import chain, compress
 from typing import Any
 
+from evaluation_harness._number import counted as _counted
+from evaluation_harness._number import is_number, is_scored
+
 PERMUTATIONS = 20000
 SEED = 20260926
 ALPHA = 0.05
@@ -105,16 +108,17 @@ def _signed_sums(xs: list) -> list:
     return sums
 
 
-def finite_only(xs: list) -> list:
-    """The values that are numbers (not NaN, not infinite). A run recorded before a score that is not a number became a
-    failed item (RFC-041 F7) can still hold one; the tests below leave it out, as an item the other arm did not score,
-    and `compare` says how many (`non_finite`) instead of answering a p above 1 or NaN."""
-    return [x for x in xs if math.isfinite(x)]
+def counted(xs: list) -> list:
+    """The values as the tests count them (`_number.counted`): a number as it is, a NaN, an infinity or a None as 0, the
+    score of a failed item; a boolean or text is no score and is left out, as `_runs.score_of` leaves it. A run recorded
+    before a score that is not a number became a failed item (RFC-041 F7) can still hold one, and the tests read it as
+    `evh run` records it now, instead of answering a p above 1 or NaN."""
+    return [_counted(x) for x in xs if is_scored(x)]
 
 
 def exact_p(deltas: list) -> float:
     """Exact two-sided sign-flip p: the share of all 2^n sign patterns with |sum| >= |observed|."""
-    deltas = finite_only(deltas)
+    deltas = counted(deltas)
     n = len(deltas)
     if n == 0:
         return 1.0
@@ -151,7 +155,7 @@ def sign_flip_p(
     advance: with rng, from LARGE_SAMPLE items, move the stream on as if the signs were drawn (about 2 s at
     10,000 items); a caller with no resampled opponent after this one passes False.
     """
-    deltas = finite_only(deltas)
+    deltas = counted(deltas)
     if not deltas:
         return 1.0
     if len(deltas) <= EXACT_UP_TO:
@@ -533,7 +537,7 @@ def exact_p_one_sided(deltas: list) -> float:
     """Exact one-sided sign-flip p (RFC-029): the share of the 2^n sign patterns whose sum is at least the observed
     one, the deltas taken in the better direction (positive: the arm is better). Computed directly, not by halving
     the two-sided p, which differs from it when the observed sum is negative or the distribution has ties."""
-    deltas = finite_only(deltas)
+    deltas = counted(deltas)
     n = len(deltas)
     if n == 0:
         return 1.0
@@ -549,7 +553,7 @@ def exact_p_one_sided(deltas: list) -> float:
 def sign_flip_p_one_sided(deltas: list, permutations: int = PERMUTATIONS, seed: int = SEED) -> float:
     """One-sided paired sign-flip p, H1: the mean difference is above 0 (RFC-029's looks decide one-sided): exact up
     to EXACT_UP_TO items, a seeded estimate below LARGE_SAMPLE, the normal limit from LARGE_SAMPLE."""
-    deltas = finite_only(deltas)
+    deltas = counted(deltas)
     if not deltas:
         return 1.0
     if len(deltas) <= EXACT_UP_TO:
@@ -629,7 +633,7 @@ def cluster_ci(totals: list, sizes: list, alpha: float = ALPHA):
     the clusters' residuals, G/(G-1), G-1 degrees of freedom). With one item per cluster both are the
     item-level interval exactly. None below 2 clusters, or when no shift can be rejected (5 clusters
     and fewer, where the smallest attainable p is over alpha)."""
-    kept_ = [(t, m) for t, m in zip(totals, sizes, strict=True) if math.isfinite(t)]  # see finite_only
+    kept_ = [(_counted(t), m) for t, m in zip(totals, sizes, strict=True) if is_scored(t)]
     totals, sizes = [t for t, _ in kept_], [m for _, m in kept_]
     g, n = len(totals), sum(sizes)
     if g < 2 or min_attainable_p(g) > alpha:
@@ -1042,8 +1046,8 @@ def compare(
     groups: p and the interval then come from one sign per cluster (`clustered`), and each row says how
     many clusters it had. Returns {"items": [...], "rows": [...]} where each row has n (shared items),
     mean, baseline_mean, delta (arm - baseline), wins/losses/ties (by direction), p, ci, threshold,
-    verdict, and with clusters "clusters". An item either arm scored with a number that is not finite is left out of n, the
-    mean and the test, and the row says how many (`non_finite`, `note`).
+    verdict, and with clusters "clusters". An item either arm scored with a value that is not a number (a run from before RFC-041 F7) counts as 0, as a failed
+    item does, and the row says how many (`non_finite`, `note`).
     """
     base = arms.get(baseline) or {}
     # The pairs' sign-flips drawn at once in child processes first, the same p's; only when one of them resamples
@@ -1058,20 +1062,21 @@ def compare(
     for arm, scores in arms.items():
         if arm == baseline:
             continue
-        both = sorted(set(scores) & set(base))
-        shared = [i for i in both if math.isfinite(scores[i]) and math.isfinite(base[i])]
-        deltas = [scores[i] - base[i] for i in shared]
+        both = sorted(i for i in set(scores) & set(base) if is_scored(scores[i]) and is_scored(base[i]))
+        mine = {i: _counted(scores[i]) for i in both}
+        theirs = {i: _counted(base[i]) for i in both}
+        deltas = [mine[i] - theirs[i] for i in both]
         # The unit the test counts: an item, or with clusters a cluster's summed difference.
         if clusters is not None:
-            units, sizes = clustered(dict(zip(shared, deltas, strict=True)), clusters)
+            units, sizes = clustered(dict(zip(both, deltas, strict=True)), clusters)
         else:
             units, sizes = deltas, [1] * len(deltas)
         sign = 1 if higher_is_better else -1
         row = {
             "arm": arm,
-            "n": len(shared),
-            "mean": statistics.fmean(scores[i] for i in shared) if shared else None,
-            "baseline_mean": statistics.fmean(base[i] for i in shared) if shared else None,
+            "n": len(both),
+            "mean": statistics.fmean(mine.values()) if both else None,
+            "baseline_mean": statistics.fmean(theirs.values()) if both else None,
             "delta": statistics.fmean(deltas) if deltas else None,
             "wins": sum(1 for d in deltas if d * sign > 0),
             "losses": sum(1 for d in deltas if d * sign < 0),
@@ -1081,12 +1086,10 @@ def compare(
         }
         if clusters is not None:
             row["clusters"] = len(units)
-        if len(both) > len(
-            shared
-        ):  # a score that is not a number (a run from before RFC-041 F7): named, left out
-            row["non_finite"] = len(both) - len(shared)
+        if unnumbered := [i for i in both if not (is_number(scores[i]) and is_number(base[i]))]:
+            row["non_finite"] = len(unnumbered)
             row["note"] = (
-                f"{row['non_finite']} item(s) with a score that is not a number are left out of this test"
+                f"{len(unnumbered)} item(s) with a score that is not a number count as 0, as a failed item does"
             )
         if len(units) >= 2 and any(deltas):
             row["p"] = sign_flip_p(units)

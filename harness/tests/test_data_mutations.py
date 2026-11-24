@@ -74,6 +74,9 @@ class Mutation:
     #: projects it lists. Where it is None the data is legal, and validate must fail the same checks as on the control and
     #: print no traceback.
     names: str | dict[str, str] | None = None
+    #: what `evh validate` says of it (RUNBOOK exit codes): exit 6 and a `FAIL <check>` line, or exit 0 and no new FAIL
+    #: line (the `names` match is a `note:`; the bakeoff control fails V5 on its own). None: either exit is taken (no document says which).
+    verdict: tuple[int, str] | None = None
 
 
 MUTATIONS: tuple[Mutation, ...] = (
@@ -90,12 +93,14 @@ MUTATIONS: tuple[Mutation, ...] = (
         "a system, a dataset and run ids in other scripts",
         "unicode_ids",
         names=rf"(?s){re.escape(MUT.UNICODE_DATASET)}[^\n]*\n.*FAIL V1 ",
+        verdict=(6, "V1"),
     ),
     Mutation(
         "underscore_r_not_a_set",
         "<id>_r1 and <id>_r2 made by hand, no repeat_index",
         "underscore_r_not_a_set",
         names=r"(?s)\d+ runs claim '[^']+' on \S+ — [^\n]*_r1[^\n]*\n.*FAIL V8 ",
+        verdict=(6, "V8"),
     ),
     Mutation(
         "missing_optional_fields",
@@ -107,12 +112,14 @@ MUTATIONS: tuple[Mutation, ...] = (
         "n_items, which the run schema requires, is missing",
         "n_items_missing",
         names=r"'n_items' is a required property",
+        verdict=(6, "V1"),
     ),
     Mutation(
         "extra_unknown_fields",
         "fields no release defines, in the record, build and fingerprint",
         "extra_unknown_fields",
         names=r"Additional properties are not allowed \('future', 'tags', 'x_ticket' were unexpected\)",
+        verdict=(6, "V1"),
     ),
     Mutation(
         "two_goals_two_baselines",
@@ -136,18 +143,20 @@ MUTATIONS: tuple[Mutation, ...] = (
         "the reference a run was scored against no longer exists",
         "reference_gone",
         names=r"note: V16 references: \d+ run\(s\) scored against (gold|silver)/\S+, which is not under data/references",
+        verdict=(6, "V30"),
     ),
     Mutation(
         "goal_measure_unrecorded",
         "a goal's primary measure no run records",
         "goal_measure_unrecorded",
         names=rf"primary measure '{MUT.NO_SUCH_MEASURE}' is recorded by no run",
+        verdict=(0, ""),
     ),
     Mutation(
         "no_fingerprint",
         "every second run has no fingerprint (a repeat that joined its run through it joins no more)",
         "no_fingerprint",
-        names={"fleet": r"is not scored under 'the plain runs'"},
+        names={"fleet": r"where it is no longer read: it is a repeat of \S+, which is not the run it joined"},
     ),
 )
 BY_NAME = {m.name: m for m in MUTATIONS}
@@ -672,12 +681,33 @@ def judge(o: Outcome, control: Outcome | None) -> dict[str, str]:
     names = m.names.get(o.copy.project) if isinstance(m.names, dict) else m.names
     if names:
         chk("validate names it", bool(re.search(names, o.validate)), o.validate[-700:], "validate silent")
-        chk(
-            "validate: refuses with a failing check, or says it in a note",
-            o.validate_exit in (0, 6),
-            o.validate_exit,
-            "validate exit",
-        )
+        if m.verdict is None:
+            chk(
+                "validate: refuses with a failing check, or says it in a note",
+                o.validate_exit in (0, 6),
+                o.validate_exit,
+                "validate exit",
+            )
+        elif m.verdict[0] == 6:
+            chk(
+                f"validate: exit 6, and a FAIL {m.verdict[1]} line",
+                o.validate_exit == 6
+                and re.search(rf"^\s+FAIL {m.verdict[1]}\b", o.validate, re.M) is not None,
+                (o.validate_exit, fail_labels(o.validate)),
+                "validate exit",
+            )
+        else:
+            base = fail_labels(control.validate) if control else []
+            chk(
+                "validate: exit 0 and no FAIL line (the control's own, where it has any), and the mutation is in a note",
+                o.validate_exit == (control.validate_exit if control else 0)
+                and fail_labels(o.validate) == base
+                and any(
+                    ln.lstrip().startswith("note:") and re.search(names, ln) for ln in o.validate.splitlines()
+                ),
+                (o.validate_exit, fail_labels(o.validate)),
+                "validate exit",
+            )
     else:
         base = fail_labels(control.validate) if control else []
         chk(

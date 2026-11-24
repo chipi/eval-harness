@@ -340,7 +340,7 @@ def _arm_problems(rel: str, rnd: dict[str, Any], data: Path | None = None) -> li
             run = model_runs.run(str(rid), data)
             if run is None or run.get("system_id") != a["system"] or run.get("dataset_id") != ds:
                 out.append(f"rounds/{rel}: arm {arm}: {rid} is not a run of {a['system']} on {ds}")
-            elif not any(model_runs.label(sd) == lbl for sd in model_runs.scores_of(str(rid), data)):
+            elif not any(model_runs.read_under(sd, lbl) for sd in model_runs.scores_of(str(rid), data)):
                 out.append(f"rounds/{rel}: arm {arm}: {rid} is not scored under {lbl or 'the plain runs'!r}")
     return out
 

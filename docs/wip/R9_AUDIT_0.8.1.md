@@ -1,0 +1,300 @@
+# R9: tests that assert behaviour "as intended", against the documents (0.8.1)
+
+Read-only audit of `harness/tests/` at `5f2f05ad5` (branch `081-r9`). Done-when of PLAN_0.8.1 section R, row R9: a table, each row kept, changed or removed, with a reason grounded in RUNBOOK (`harness/docs/RUNBOOK.md`), the PRDs (`docs/prd/`), and the RFCs/ADRs/UXS where they decide it. Nothing was fixed. A test's passing was not used as evidence; the one test I ran (`test_stats_edges.py`, $0, offline) was run to read what the code prints, not to judge.
+
+## 0. Scope, and two corrections to the brief
+
+- **The range given (`b063595f9..5f2f05ad5`) is the second half of the RFC-041 work.** F1, F2, F3-F6, R2 and part of R7 merged earlier (`v0.8.0..b063595f9`: `test_direction.py`, `test_arm_membership.py`, `test_unknown_and_zero.py`, `test_today.py`, `test_cap_shown.py`, `test_metric_direction.py`, `test_no_nan_shown.py`, `test_foreign_projects.py`, `_foreign.py`, `test_public_gate.py`, `test_public_leak.py`, `test_stats_edges.py`, `test_leaderboard_prose_measure.py`, ...). I audited `v0.8.0..5f2f05ad5`. Merges read: `git log --merges v0.8.0..5f2f05ad5` (X2, X3, X4, R3, R4, R5, R6, F1, F2, F3-F6, R2, R7a, R7b, x1).
+- **SLIP_ANALYSIS section 3 places the repeat bug at `test_rounds.py:870-889`. It was in `test_label_sets.py:870` at v0.8.0** ("the same run once more, as a repeat of it (its own arm)"; `git grep "its own arm" v0.8.0 -- harness/tests` finds no such text in `test_rounds.py`). It is already rewritten (row L1). The second named test, `test_runs_adapter.py:288` ("without a goal or a declaration, wer is not known to go down"), is also already changed (row A1).
+- **Verdict words.** keep / change / remove. "DECISION n" in the source column means no document decides it and the code does; section 4 lists what the owner must decide. Where a document is itself stale, the row says so and section 5 lists the document.
+
+## 1. The table
+
+Line numbers are in the tests at `5f2f05ad5`.
+
+### 1.1 The two named 0.8.0 tests, as they stand now
+
+| test file:line | what it asserts | source (doc:line) | verdict | reason |
+| --- | --- | --- | --- | --- |
+| L1 `test_label_sets.py:870-895` | a `--purpose repeat --of` run made with `temperature: 0.7` appended to the system file does not join its original (`same_measurement` is `(False, [..settings..])`) | RFC-041:92-97 (equal data, deployment, settings, adapter parts) | keep | The 0.8.0 version hand-wrote `hash: "e"*64` and asserted "its own arm". The new one is made by the real writer; the "settings differ" part comes from the same code that is asserted (writer and reader cancel). `test_arm_membership.py:331-371` holds the independent hand-built fingerprint cases, so the rule itself is pinned. |
+| A1 `test_runs_adapter.py:284-297` | goal named by the run decides; with no goal or declaration a name the table does not know (`my_rate`) goes up; adapter declaration beats name; goal beats declaration; flag beats goal | RFC-041:49-56; REFERENCE.md:29-33 | keep | The 0.8.0 line pinned `wer` as "not known to go down"; it now asks `my_rate`. `wer` lower is RFC-041:56, :204. |
+
+### 1.2 F1, which way is better
+
+| test file:line | what it asserts | source | verdict | reason |
+| --- | --- | --- | --- | --- |
+| D1 `test_direction.py:61-66` | a goal the runs do not name decides when the question names no dataset (`der` lower) | RFC-041:49-53 | keep | Stated for "a question with no dataset". |
+| D2 `test_direction.py:67-70` | with no goal `der`, `wer`, `cer` are lower | RFC-041:56, :204 | keep | REFERENCE.md:32 says only costs, latencies, tokens go down: that sentence is stale (section 5). |
+| D3 `test_direction.py:71-78` | `cost_usd`, `latency_ms`, `total_tokens_in` lower; `f1` higher; `output_chars` neutral | RFC-041:42-43, :56 | keep | Which names are "descriptive keys" is the list `_common.DESCRIPTIVE_KEYS` (`output_words`, `output_chars`, `lines`, `chars`, `n_items`, `reasoning_tokens`, `_common.py:1055`). No document lists them except `reasoning_tokens` (REFERENCE.md:120): DECISION 7. |
+| D4 `test_direction.py:79-99` | a goal that lists the dataset beats a goal the runs name, and beats one that does not | none found | keep, pending DECISION 3 | RFC-041:50-51 gives two classes (lists the dataset, or the runs name it) as equals. The order between them is only in the header of this test. |
+| D5 `test_direction.py:100-108` | among goals that list no dataset, the goal the runs name beats the rest | none found (RFC-041:52-53: "any goal that declares it") | keep, pending DECISION 3 | Two goals that disagree with no dataset in the question: the RFC says nothing of which wins. |
+| D6 `test_direction.py:109-118` | an axis with a direction declares it; a primary `non_inferior` does not (`q` stays higher, `wer` goes by the table) | RFC-041:49, :67-69; RUNBOOK:566 | keep | |
+| D7 `test_direction.py:119-127` | an axis with no `direction` is no declaration; the runs' recorded direction stands | RFC-041:54; RUNBOOK:570 ("`direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`") | keep | RUNBOOK:570 is stale for an axis on `wer`/cost names: code asks `_runs.direction`, which ends at the name table (`test_one_source.py:419-422`). Fix the RUNBOOK (section 5). |
+| D8 `test_direction.py:128-139` | adapter's recorded direction beats the name table (a cost it says higher); a goal beats the adapter's | RFC-041:49-56; REFERENCE.md:29-32 | keep | |
+| D9 `test_direction.py:140-154` | a kind declared descriptive is neutral; declared quality beats the table's neutral; a declared direction beats neutral | RFC-041:54-58; INTEGRATION.md:192 | keep | |
+| D10 `test_direction.py:155-183` | a goal on another dataset does not decide this one; a goal the runs name does, even if it lists another dataset; one measure follows each dataset's own goal | RFC-041:50-51 | keep | |
+| D11 `test_direction.py:165-171`, `test_direction_assumed.py:30,35,47-50` | the strings `"goal a"`, `"the runs' directions"`, `"the name table"`, and the line `weird_score: no goal or adapter says which way is better; read as higher-is-better (declare it)` | none found | keep, pending DECISION 10 | Wording pinned by the code's text only. RFC-041:67-71 names V14's warnings but not their words. |
+| D12 `test_direction.py:184-188` | `better_word`: `lower`, `higher`, `neutral: a description` | UXS-001:572, :843 | keep | |
+| D13 `test_direction.py:189-195` | datasets that differ give `mixed`, worded `lower on asr_v1; higher on dev_v1` | none found (UXS-001:572 mentions only "neutral" when every dataset declares it) | keep, pending DECISION 10 | The behaviour (each dataset by its own goal) is RFC-041:50-51; the word is code. |
+| D14 `test_direction.py:196-206` | `verdict_for` on a neutral measure with no goal is `changed`; on a lowered measure a rise is `worse` | none found for `changed` (RUNBOOK:939-945 and PRD-004:143-145 name `better`/`worse` verdicts only) | keep, pending DECISION 10 | |
+| D15 `test_direction.py:281-309` | on one project `run-compare`, `leaderboard`, `metric-list`, `metric-show` agree for `err` (goal), `output_chars` (goal axis), `wer`, `cost_usd` (table) | RFC-041:46-62; REFERENCE.md:29-33 | keep | |
+| D16 `test_direction.py:311-354` | catalog goal page, metric pages and metrics table, and the study (`_study.lower_is_better`) give the same direction | RFC-041:38-39, :60-62; UXS-001:424, :572, :843 | keep | |
+| D17 `test_direction.py:371-385` | opposite goal directions for one measure on one dataset fail V14; on different datasets they do not fail and V14 notes that the goal that does not list the dataset is read as the other's | RFC-041:50-51, :65-66 | keep | |
+| D18 `test_direction.py:386-392` | a goal that lists no dataset does not clash with one that lists `tickets_v1` | none found | keep, pending DECISION 4 | RFC-041:65-66 says "on one dataset"; RUNBOOK:575 says an empty `datasets` is a goal "checked by a gate rather than measured on a dataset". |
+| D19 `test_direction.py:393-400` | two goals that list no dataset and say opposite directions FAIL V14 | none found; RUNBOOK:575 points the other way | keep, pending DECISION 4 | If an empty-`datasets` goal is not measured on any dataset it has nothing to disagree on. The test pins a FAIL no document asks for. |
+| D20 `test_direction.py:401-419` | `non_inferior` and an unrecorded prose measure are notes and do not fail V14; the note names what the runs record | RFC-041:67-71; RUNBOOK:566 | keep | RFC-041 says "warns"; the code prints `note:` (`validate_tree.py` comment "A NOTE, never a failure"). Same fact, two words (section 5). |
+| D21 `test_direction.py:420-468` | the metric `my_rate` is `mixed` across two datasets, each dataset's table sorted by its own direction | RFC-041:50-51 | keep | |
+| D22 `test_direction.py:472-557` (`ALLOWED_ASKS`) | the name table is asked by `_runs.direction_source` only; an adapter's `lower_is_better`/`is_neutral` only at 12 listed places | RFC-041:59-60, :220 | keep | Each listed place has a reason in a comment, written by the same authors as the code. |
+| D23 `test_deciding_metric.py:59-86` | with no `--metric`: the goal that lists the dataset and whose measure a run records, else the runs' primary metric, else a refusal naming `recorded: x, y`, the goal's unrecorded measure and `--metric` | RUNBOOK:988-991 | keep | When two goals both record their measure, which wins is not said (and not tested). |
+| D24 `test_deciding_metric.py:190-204` | leaderboard, pair-test, family-test, rank-stability, goal-leaderboard, inspector and sheet all read `words_out`; `run-compare` judges a rise `worse` by the goal's `lower` | RUNBOOK:988-991; RFC-041:46-53 | keep | RUNBOOK:991-993 on direction is stale (section 5). |
+| D25 `test_direction_assumed.py:33-37, 110-124` | a measure nothing declares is read higher and says so (a NOTE); `--desc` and the table's names print no NOTE | REFERENCE.md:32 (the default is "everything else up"); RFC-041:208 (a result does not move) | keep | The default is documented. That it prints a note is DECISION 10. |
+| D26 `test_direction_assumed.py:130-134` | `run-compare` prints the NOTE once "and the verdict is the default's (a rise is better)": `count(LINE) == 1 and "better" in said(r)` | REFERENCE.md:32 | change | The second clause is vacuous: `LINE` contains `higher-is-better`, so `"better" in said(r)` is true whatever the verdict. Replace with the verdict cell of `weird_score` for `good -> bad` (0.1 -> 0.4) read from `--json` (`blocks[].rows[].verdict`), expected `better`. |
+| D27 `test_direction_assumed.py:147-163`, `test_goal_block_direction.py:108-150`, `test_metric_direction.py:34-40` | goals written `{measure: weird_score}` / `{measure: wer}` / `spend` with no `direction` (and in `test_metric_direction.py` no `statement`, `decision` or `datasets`) are read by every reader, and the page says `wer, lower is better` | `goal.schema.json:6` (required: `statement`, `decision`, `datasets`), `:28` (primary requires `direction`, enum `higher`, `lower`, `non_inferior`); RUNBOOK:531, :566; the test's own comment `test_direction_assumed.py:148-149`: "its schema fails on that" | change | The fixture is data the schema rejects, so V1 would FAIL it, and the tests never ask validate. Replacement: keep the readers' checks, and add `evh validate` on the same project expecting a V1/V14 FAIL naming `direction` (goal.schema.json:28). If the owner means a missing direction to be legal, the schema, RUNBOOK:531/566 and UXS-001:424 change first (DECISION 5). Today the premise ("a goal that leaves its direction out") cannot occur in a validated project, and SLIP_ANALYSIS finding 3 (podcast goals say `lower`) is a different case. |
+| D28 `test_goal_block_direction.py:116-160` | every reader names the lowest-`wer` arm the leader for a no-direction goal; a goal saying `higher` keeps `higher` | RFC-041:46-58 | keep | Subject to D27 for the fixture. |
+| D29 `test_goal_block_direction.py:164-227` (`READS`) | the places that compare a goal's own `direction` to `lower`/`higher` are 17 listed sites | RFC-041:59-60, :220 | keep | |
+| D30 `test_leaderboard_neutral.py:74-104` | with no goal or primary metric, the leaderboard ranks the first metric by name, headed `ranked by: output_words (neutral`, JSON `direction: neutral`, warning `RANKED ON A DESCRIPTIVE METRIC (output_words)`, `--asc` still decides | REFERENCE.md:24-30; RFC-041:41-43, :56; UXS-001:572 | keep | |
+| D31 `test_metric_show_wording.py:82-125` | `decides   goals headline_short, headline_tight (their primary measure)`; `weighed as an axis by  no goal`; `weighed by` is gone; JSON `decides`/`weighs`; metric page and table say the same | UXS-001:573-576, :848-849 | keep | UXS-001:849 says "no goal beside a decides goal is not a contradiction". |
+| D32 `test_metric_direction.py:48-83` | a goal's measure no run records, goal `lower`: `metric-list`, `metric-show`, the catalog pages say `lower` | RFC-041:51-53 | keep | Fixture caveat in D27. |
+| D33 `test_leaderboard_prose_measure.py:102-197` | `leaderboard <dataset>` on a goal whose measure no arm records ranks on the arms' own `wer`, lower first, with one NOTE; `--goal` refuses `not-found`; goal pages say why empty | RFC-041:243-244 (V14 warns, the project renames); RUNBOOK:565 ("an arm that does not record it is not listed"); RUNBOOK:2187 | keep, pending DECISION 11 | Ranking on the arms' headline is code (merge `b0b0e14ac`). RUNBOOK:2187 defines `not-found` as "the thing named does not exist"; here the goal exists and the measure is not recorded. |
+| D34 `test_one_source.py:410-653` (`ALLOWED`) F1 entries | places that read a declared direction or the table's names may do so, each with a one-line reason | RFC-041:219-221 | keep | |
+| D35 `test_charts_gain_cost.py:46-65` (Stub) | `Stub.direction()` returns the goal's word for every metric | none | keep | A stub; it answers "the goal's direction" whatever the metric. `_goal_fixture.py:56` (`Stand.lower_is_better`) still returns False for every metric (the stub SLIP_ANALYSIS names), used by `test_goal_views.py`; its "lowest where lower is better" (`:117`) is never exercised through it. |
+
+### 1.3 F2, arms, repeats, sets, the latest run
+
+| test file:line | what it asserts | source | verdict | reason |
+| --- | --- | --- | --- | --- |
+| M1 `test_arm_membership.py:134-152` | a `--purpose repeat --of` run on the same configuration reads in its original's arm: one arm of three runs; `runs-list`, `pair-test`, leaderboard, `cost-report`, catalog arm, V8 all agree | RFC-041:86-98; UXS-001:311 ("its repeats averaged per item"); PRD-001:63 | keep | **RUNBOOK:707-708 says the opposite** ("a repeat ... is read under `repeats`") and has not been updated (RFC-041 order of work step 4). |
+| M2 `test_arm_membership.py:140-144, 149, 307` | names and set-up checks say "same fingerprint hash" / "hash differs" | RFC-041:95-98 ("Not the whole `hash`"; parts) | keep | The names state a rule the RFC rejects; the assertions hold because the cases differ in a part too. The case that separates hash from parts is `:373-400` (another harness build joins). Rename. |
+| M3 `test_arm_membership.py:195-208` | `evh run --purpose repeat --of` says before its first call that it joins the arm, and in its last line | RFC-041:92-94 ("says which, before its first call and in its last line") | keep | |
+| M4 `test_arm_membership.py:220-228` | a repeat made in a round joins the round's arm: one arm, three runs, no `repeats` label | RFC-041:116 | keep | |
+| M5 `test_arm_membership.py:244-258` | a repeat of a retired arm's run is refused before any call, naming the retirement | RFC-041:104-105 | keep | |
+| M6 `test_arm_membership.py:271-285` | a closed round's numbers do not change when a repeat joins later; named `round_v1: 1 run(s) since then not read here` | RFC-041:104; RUNBOOK:1531 (the exact wording) | keep | |
+| M7 `test_arm_membership.py:346-371` | `same_measurement`: equal parts same; another harness build still same and named; another setting, deployment, data, adapter, system or dataset not, and named; no fingerprint, another version or a part one side lacks not, and named | RFC-041:92-103 | keep | Hand-built fingerprints: independent of the writer. |
+| M8 `test_arm_membership.py:385-400` | a repeat on another harness build joins; `runs-list` marks `{"of": b1, "differs": ["harness build"]}` | RFC-041:95-98 | keep | The JSON shape of `joined` is code. |
+| M9 `test_arm_membership.py:417-433` | a repeat of a repeat follows `of` to the root; one that names a repeat read under `repeats` is read under `repeats`, with the reason | RFC-041:100-102 | keep | |
+| M10 `test_arm_membership.py:450-458` | a repeat of a deleted run is read under `repeats`, "is not there"; validate only notes it | RFC-041:101-102 reads; none found for note vs fail (RFC-041:99-100 says validate fails `of` that is not a run of the same system and dataset, silent on a missing run) | keep, pending DECISION 1 | `data-rm` of a run is documented (RUNBOOK:777), so a note is plausible; undecided in a document. |
+| M11 `test_arm_membership.py:462-481` | `evh run --purpose repeat --of` another system's run is refused before any call; a committed repeat naming another system's run FAILS V29 | RFC-041:99-100; RUNBOOK:880-882, :1111 | keep | |
+| M12 `test_arm_membership.py:506-518` | a closed round (`r9`) that recorded a repeat under `repeats` which now joins its arm FAILS V29: "The round's arm needs relabelling (a migration)" | none found. RFC-041:104-105 and RUNBOOK:1531 say a round reads what it recorded and a closed round's numbers never change | keep, pending DECISION 2 | A project upgraded from 0.8.0 whose round recorded a repeat as `repeats` (the fleet's shape) fails validate after upgrade. There is no migration (`scripts/migrations/` ends at `m0007`) and `docs/UPGRADING.md` has no V29 line. |
+| M13 `test_arm_membership.py:529-540` | latest run is `(created_at, run_id)`; system `smoke` is not `smoke_v1`'s | RFC-041:123-125 | keep | |
+| M14 `test_arm_membership.py:542-553`, `test_data_mutations.py:98, 491-517`, `self_test.py:2760-2765` | two plain runs named `foo_r1`, `foo_r2` (no `repeat_index`) are not a set and fail V8; they read as three runs of one arm | RFC-041:111-114, :245; RUNBOOK:633 | keep | |
+| M15 `test_arm_membership.py:555-600` | an arm's runs scored against another reference than its latest run's are named and not averaged | RFC-041:118-121 | keep | |
+| M16 `test_arm_membership.py:602-611`, `test_one_source.py:229-268` | the `_rN` suffix is read in `model/runs.py` only | RFC-041:219-221 | keep | |
+| M17 `test_judge_score.py:1921-1944` | arm's latest run: `created_at` first; a date `2026-01-02` sorts before the same day's timestamp | RFC-041:123 | keep | The date-vs-timestamp tie is string order in the code; no document says it. |
+| M18 `test_scores_once.py:36-86` | the number of narrower round views is recomputed from the run files by a hand-written copy of the parts rule | RFC-041:92-97 | keep | Independent of the code: reads this repository's committed data. |
+| M19 `test_label_sets.py:868-895` | see L1 | | | |
+| M20 `test_writers_refuse.py:161-168` | `--purpose repeat` with no `--of`: `bad-argument`; `--purpose retime`/`pair` `--of` another system's run: `mismatch` | RUNBOOK:881-882; owner 2026-11-23 in merge `80b724ad9` | keep | **RFC-041:107 says "A repeat with no `of`: under `repeats`, as today"**, and F7 was not amended. The RFC describes reading old data; the writer now refuses. Update the RFC. |
+| M21 `test_writers_refuse.py:489-492` | a repeat's `of` naming a run that is not there: V29 `fails=False` | none found | change | The check passes whether V29 FAILs or notes: `broken()` evaluates `(f"FAIL {tag}" in out if fails else True)`, a constant `True`. The label says "a note". Replacement: assert V29 prints a `note:` line naming the run and that no `FAIL V29` and exit 0 appear, or (DECISION 1) `FAIL V29` and exit 6 per RUNBOOK:2156-2170. |
+
+(M19 repeats L1 and is not counted.)
+
+### 1.4 F3, unknown, none and zero
+
+| test file:line | what it asserts | source | verdict | reason |
+| --- | --- | --- | --- | --- |
+| U1 `test_unknown_and_zero.py:83-87` | git that cannot say records `dirty` null, a dirty tree true, a clean one false | RFC-041:133; RUNBOOK:630 | keep | |
+| U2 `test_unknown_and_zero.py:126-139, 171-198` | a run whose build git could not read (`source: git`, `dirty: null`) is refused by `run-promote` and `label-from-run` ("could not say"; `--allow-dirty` overrides), `run-compare` says the build is unknown (`dirty_build: null`), `runs-list` shows `?` | RFC-041:133; RUNBOOK:628-630, :1019 | keep | |
+| U3 `test_unknown_and_zero.py:140-149` | an imported build (`source: import-run --build-ref`), a declared one (`EVAL_BUILD_REF`) and a record with `dirty: null` and no `source` ("legacy") all promote | imported and declared: RFC-041:133; legacy: none found | keep, pending DECISION 8 | Legacy records are the 0.8.0 behaviour (unknown read as clean) kept on purpose; no document says so. |
+| U4 `test_unknown_and_zero.py:150-170` | no git at all (`ref: unknown`) is refused as `does not identify its build`; `--allow-unknown-build` alone takes it | RUNBOOK:1019; PRD-001:124 | keep | |
+| U5 `test_unknown_and_zero.py:211-216, 226-230` | an arm that recorded $0 shows `$0` on the systems table; `fmt_spend` gives `["—", "$0", "$0", "$0.5000"]` | UXS-001:628, :665 (`$0`); RFC-041:134 says `$0.00` | keep | RFC-041:134 and :196 disagree with each other and with UXS (`$0.00` vs `$0`). `$0.5000` (four places up to a dollar) is `axes.fmt_usd` (`axes.py:621-628`), while UXS-001:849-850 says "six places ($0.000012)" (DECISION 9). |
+| U6 `test_unknown_and_zero.py:250-259` | a study's `stop` is a rule with `usd: 0` and `wall_h`; `{"usd": 1}` alone, `{"wall_h": 2}` alone and `{}` are problems; `{"trials": 5}` is not | RFC-041:136; RUNBOOK:685 (example `{trials, usd, patience}`) | keep, pending DECISION 13 | RFC says `is not None`. That `usd` needs `wall_h` is the code's (`_study.problems`); RUNBOOK:685's example has `usd` without `wall_h` beside `trials`. |
+| U7 `test_arm_smoke.py:54-60` | projection of cost 0.0 is `$0`, of a cost nobody recorded is `None` (unknown) | RUNBOOK:886-887; RFC-041:131 | keep | |
+| U8 `test_writers_refuse.py:337-354` | all items cost 0.0: `total_cost_usd == 0.0`, no `cost_coverage`; no item reported: no `total_cost_usd`, no `cost_usd`; some reported: `cost_coverage == {items_with_cost: 3, items: 6}` | RUNBOOK:886-887 | keep | The `3` and `6` come from the fixture (six items, every other call priced), worked by hand, not read from output. |
+| U9 `test_data_mutations.py:141-159, 414-421, 588-597` | a run recording cost 0 beside one recording none: the arm's cost state is `zero` / `unknown` as the files say | RUNBOOK:886-887 | keep | The oracle recomputes from the files (independent). |
+| U10 `test_ops_commands.py:332-377` | `runs-list --json` `dirty` is true/false/null, never coerced; `?` legend | RUNBOOK:628-630 | keep | |
+| U11 `test_foreign_projects.py:436-451` | zero-price arm shows `\$0(\.00)?` in the systems table and the arm page runs table | UXS-001:665, :628 (`$0`) | change | Accepts two outcomes where UXS-001:665 decides one. Replace both regexes with `\$0` exactly (and `fullmatch`). Fix RFC-041:134 to say `$0`. |
+| U12 `test_foreign_projects.py:458-474`, `test_providers.py` (env-check, cap 0), `test_run_progress.py` (dry run, cap 0) | cap of 0 prints `$0.00` and `spend nothing`; unset prints `NONE`; cap 1 prints `$1.00` | RUNBOOK:832 ("A cap of 0 means spend nothing"); RFC-041:139 | keep | `$0.00` for a cap is code (the RFC's `_spend.shown`); `NONE` for unset is code. |
+| U13 `test_no_nan_shown.py:92-120` | `cost-report` of $0 billed against $0 recorded prints `—` in the ratio column; `rank-stability` of tied arms prints `—` and JSON `null` | none found (UXS-001 uses `—` for "not recorded"; here it means "undefined") | keep, pending DECISION 10 | RFC-041:134 reserves `—` for "not recorded"; a 0/0 ratio is a third meaning. |
+| U14 `test_one_source.py:526-583` (F3 `ALLOWED`) | totals that read an unrecorded cost as 0 (`_jobs.spent`, `_spend`, `smoke_spend`, `rounds._evidence`, `studies.state`, ...) | RUNBOOK:886-887 ("a total ... of those") | keep | |
+| U15 `test_one_source.py:541-545` | `charts._claim` and `charts.gain_cost` read an unknown cost as zero ("reads the same unknown or zero") | none found; RUNBOOK:886 says unknown is never 0 | keep, pending DECISION 12 | A gain-against-cost chart draws a free arm and an unpriced arm alike. |
+| U16 `test_catalog_display.py:80-84, 116-121` | cost format `["$0", "$0", "$0.00000015", "$0.000018", "$0.0027", "$0.1992", "$1.00", "$12.35"]`, `$0 · 106 tok` | UXS-001:665 (`$0`); UXS-001:849-850 ("six places ($0.000012)") | keep, pending DECISION 9 | The list comes from `axes.fmt_usd`'s docstring, not a document. UXS-001:849 contradicts it (six places vs four up to a dollar, two significant digits under a cent). |
+
+### 1.5 F4, F5, F6: public, the day, the baseline
+
+| test file:line | what it asserts | source | verdict | reason |
+| --- | --- | --- | --- | --- |
+| P1 `test_public_gate.py:46-66` | `_visibility.public()` is true with hosts, inside `public_call(True)` and under `EVH_PUBLIC`; the comparison keeps no copy | RFC-041:141-149 | keep | |
+| P2 `test_public_gate.py:61-132` | an in-process public call (no hosts) is refused an item's source, labels and judge reasons; a hidden dataset's text never; outputs withheld when nothing is published; the sheet 403 | RFC-039:108-111; RFC-041:141-149 | keep | |
+| P3 `test_public_gate.py:134-158` | `hidden` fails closed on a public server (missing and unparseable datasets hidden), open locally (`[False, False, False, True]`) | RFC-041:146-149 (fails closed on public) | keep | The local half ("nothing is claimed of it") is only the test's comment. |
+| P4 `test_public_gate.py:160-181` | an in-process public call is told only `internal error` | none found (RFC-041 F4 is about text, not errors) | keep, pending DECISION 10 | Leaking an exception text is a leak of a path; no document says errors are in scope. |
+| P5 `test_public_leak.py:392-436, 444-454` | the `owner 2026-11-23` rules: a system's own prompt parameter and prompt text only with `--publish prompts`; a reference's promotion reason and a prompt version's note always public | RFC-039:111; UXS-002:34; UXS-005:612; INTEGRATION.md:447 | keep | The owner's decision is in the documents. RFC-039:211-213 ("prompts ... served, as recommended", open question 1) is now superseded by :111. |
+| P6 `test_one_source.py:585-620` (F4 `ALLOWED`) | `catalog_serve` may read `LIMITS["hosts"]` for transport (allowed hosts, origins, token) | none found | keep, pending DECISION 12 | RFC-041:146-149 says every reader calls `_visibility.public()`; the exception "transport, not whether a read is public" exists only in this table. |
+| P7 `test_today.py:41-68, 106-138` | `today()` is the UTC date in a far zone; stale after `STALE_DAYS` UTC days; the page cache is kept for the UTC day; no `date.today()` / naive `now()` elsewhere | RFC-041:151-155 | keep | |
+| P8 `test_data_mutations.py:122-127, 565-574` | two far time zones read an arm's latest day as the UTC day (`2026-11-30`, `2026-12-01`) | RFC-041:151-155 | keep | The stamps are constants in `_mutations.py`, set by hand. |
+| P9 `test_goal_baseline_per_goal.py:35-85`, `test_baselines.py:170-177`, `test_foreign_projects.py:393-403` | each goal's baseline is its own everywhere: goal-leaderboard (`answer`, `datasets[]`, `groups[]`, `arms[]`), `evh baselines`, the goal page tags one arm, the datasets page names each goal's baseline | RFC-041:157-160; PRD-005:56 | keep | |
+
+### 1.6 F7, writers record or refuse, and validate's links
+
+| test file:line | what it asserts | source | verdict | reason |
+| --- | --- | --- | --- | --- |
+| W1 `test_writers_refuse.py:141-158` | `--run-id`, `--system-id`, `--name` with unicode, a space or a path: `bad-argument` naming the option; nothing written | RUNBOOK:879-881 | keep | |
+| W2 `test_writers_refuse.py:170-182` | import-run `--reference-id` not there `not-found`; a tier with no reference `bad-argument`; a tier the id contradicts `mismatch` | RUNBOOK:883-884 | keep | |
+| W3 `test_writers_refuse.py:184-195` | `arm-smoke --goal`/`--round` not there `not-found`; `--round` with no `--goal` `bad-argument` | RUNBOOK:885-886 | keep | |
+| W4 `test_writers_refuse.py:197-269` | NaN, infinity and a text cost in import-run: `invalid-file` "not a number"; `run-promote` for a goal that lists another dataset `mismatch`; goal, labels, reference, run not there `not-found`; unicode label set `bad-argument`; `goal-new` naming a missing dataset `invalid-file` | RUNBOOK:874-877, :879-889, :2178-2200 (kinds) | keep | The kind chosen for a goal that names a dataset that is not there (`invalid-file` rather than `not-found`) is code (RUNBOOK:2187 defines `not-found` as "does not exist"). |
+| W5 `test_writers_refuse.py:272-287` | with `goals/policy.yaml` `required_from`, `evh run` and `import-run` with no goal: `bad-argument`; `--goal` not there `not-found`; `--goal` is recorded on the run | RUNBOOK:580-581, :884-885 | keep | |
+| W6 `test_writers_refuse.py:290-305` | import-run `--reference-id` alone records the tier `gold` (from the id); with none, no tier | RUNBOOK:883 | keep | |
+| W7 `test_writers_refuse.py:357-391` | `goal-new` and `run-promote` print `WARNING` naming the unrecorded prose measure and the non-direction `non_inferior` | RUNBOOK:888-889; RFC-041:179-180 | keep | |
+| W8 `test_writers_refuse.py:477-508` | validate names each broken link with its file: a reference gone (V30, `runs/<id>/run.json`), a label set gone (V30), a baseline's run (V6), a goal's dataset (V30), a round's run (V14); a sound project passes | RUNBOOK:1101-1111 | keep | The links are broken by hand (`lose_*`), not by a writer: independent. |
+
+### 1.7 R2, R3, R5, R6, R7 gates
+
+| test file:line | what it asserts | source | verdict | reason |
+| --- | --- | --- | --- | --- |
+| G1 `test_foreign_projects.py:143-158` | on all three projects validate exits 0 with no `FAIL` and no warning; the only notes are V14's margin note per goal and its direction notes | RUNBOOK:570 (a note per goal on a default margin); RFC-041:67-71 ("warns") | keep | RFC says the direction and prose-measure cases "warn"; they print as `note:`. The check requires no `WARN` line. Same fact, two words (section 5). |
+| G2 `test_foreign_projects.py:213-278` | on an import with `wer` undeclared on two datasets and `--asc` on a third, `pair-test`, `metric-show`, `run-compare`, `metric-list`, the metrics page all say `wer` lower; V14 notes `english_transcription`, `speaker_attribution` (unrecorded) and `regression_detection` (`non_inferior`) | RFC-041:201-204, :67-71 | keep | |
+| G3 `test_foreign_projects.py:280-288` | an import records `dirty: null` and `runs-list --json` says null | RFC-041:133; RUNBOOK:630 | keep | |
+| G4 `test_foreign_projects.py:339-391` | the fleet's three-run arm: `pair-test` run ids, leaderboard `n_runs == 3`, no `· repeats` row, runs-list, the arm page `runs 3`; the changed-setting repeat stays under `repeats` | RFC-041:86-98, :198-199 | keep | `_foreign.fleet` makes these runs with `evh run`: writers only (section 3). |
+| G5 `test_reader_agreement.py:561-631` (`hand_checks`) | tutorial: `s1_v1` two runs; `overlap_f1` up, `cost_usd` down, `output_words` neutral; the arm run before its dataset had a reference reads against gold, its latest run's; `tk_hidden_v1` not public. fleet: three runs, the changed-setting repeat its own arm. bakeoff: zero price `zero`, no price `unknown`; `turns` neutral, `pass` higher. imported: 64 arms, none with a reference | RFC-041:86-98, :118-121, :131-134; UXS-001:572; RUNBOOK:886-887 | keep | These are the only values in the file known without asking the readers. `64` is `_foreign.IMPORTED_ARMS`; `none` reference is the podcast shape (SLIP_ANALYSIS section 4). |
+| G6 `test_reader_agreement.py:260-266` | a cost cell with no `$` ("`—`, or `63 tok`") counts as `unknown` | RFC-041:134 | keep | That a tokens-only cell means "not recorded" is the test helper's decision, not a document's. |
+| G7 `test_reader_agreement.py:503-551` | every reader that gives a fact agrees with the others | RFC-041:217-218 | keep | Readers share `_runs`/`model.runs`, so agreement alone is weak; the stubs (`_reader_stubs.py`) show it can fail. |
+| G8 `test_data_mutations.py:88-115, 134-139` | `unicode_ids`: validate FAILs V1 naming the unicode dataset; `n_items_missing`: the schema message; `extra_unknown_fields`: `Additional properties are not allowed ('future', 'tags', 'x_ticket' were unexpected)`; `reference_gone`: a V16 note (`validate_tree.py:2392`: "never a failure"), while the same mutation FAILs V30 in W8 | `dataset.schema.json:9` (`^[a-z0-9_]+$`); `metrics.schema.json:6-7` (`additionalProperties: false`, `required`); RUNBOOK:1111 | keep | Decided by the schemas. |
+| G9 `test_data_mutations.py:672-678` | for every mutation `validate` names, the exit is `0` or `6` (`o.validate_exit in (0, 6)`) | RUNBOOK:2156-2170 (`6`: checks ran and some failed; `0`: done) | change | Accepts both outcomes for all of them. Replace per mutation: exit `6` and a `FAIL Vn` line for `unicode_ids` (V1), `underscore_r_not_a_set` (V8), `n_items_missing` and `extra_unknown_fields` (schema) and `reference_gone` (V30: RUNBOOK:1111, and W8 expects FAIL V30 for the same state, which the V16 note regex here does not look at); exit `0` and a `note:` line for `goal_measure_unrecorded`. |
+| G10 `test_data_mutations.py:146-151` | `no_fingerprint`: the fleet project's validate output matches `is not scored under 'the plain runs'` | RFC-041:103 (no fingerprint: under `repeats`, with the reason) | keep, pending DECISION 10 | The text is `_rounds.py:344`. Whether the V14 line fails the project is not in any document. |
+| G11 `_mutations.py:315` | the goal fixture's direction is `lower` if `_common.lower_is_better(measure)` else `higher` | none | change | The expected value of the mutation is taken from the name table under test. Replace with a literal per measure (`overlap_f1` higher, `wer` lower) written beside the fixture. |
+| G12 `test_data_mutations.py:700-703` | `stats.fmt_p(None) == "n/a"`, `fmt_p(0.5) == "0.5000"`, `fmt_p(0.00001) == "<0.0001"` | none found | keep, pending DECISION 10 | A unit check on a formatter. |
+| G13 `test_one_source.py:410-653, 685-768` | every site found is a fix or an ALLOWED line with a reason; each pattern bites on a probe; the owner's own code is not flagged | RFC-041:219-221 | keep | The reasons are code-authored (see D22, U15, P6). |
+| G14 `self_test.py:2746-2765` | two runs sharing a `system_id` are refused; a `--repeat` set (`repeat_index` 1..3) loads as one arm | RUNBOOK:633; RFC-041:111-114 | keep | |
+
+### 1.8 R7: statistics edges
+
+| test file:line | what it asserts | source | verdict | reason |
+| --- | --- | --- | --- | --- |
+| S1 `test_stats_edges.py:221-223`, `:259-264` | `nan_scores`, `none_scores`: pair-test `"any"` (a refusal or any verdict with a p in [0,1]); the header says "the shape has no right one in the docs" | RUNBOOK:858-859, :874-877 (a score that is not a number is a failed item, "scored as a failed item is", "0 on most measures") | change | The documents now decide. Exact two-sided sign-flip over the 8 items, a scored 0 at the failed item, brute-forced by me over all 2^8 sign patterns (a_i = 0.5 + i/20, b_i = 0.4 + i/30, a_2 := 0 or a_5 := 0), and `stats.exact_p` agrees: `nan_scores` (a loses item 2, wins 7 of 8): 68 of 256 = 0.2656, `NOT-SIGNIFICANT`; `none_scores` (item 5): 118 of 256 = 0.4609, `NOT-SIGNIFICANT` (the harness prints `0.4609`, `7/8` for it). Replacement: `pair: "NOT-SIGNIFICANT"` for both. |
+| S2 `test_stats_edges.py:220-221` (comment) | "a wins 7 of 8 and loses that one, sign-flip p 18/256" | none; RUNBOOK:858-859 | change | The number is wrong: `stats.exact_p` and an independent enumeration both give 68/256 for these deltas. 18/256 matches nothing I could construct. Delete the figure or write 68/256. |
+| S3 `test_stats_edges.py:222` | `nan_scores` goal page matches `too few items\|not separated\|shares fewer` | ADR-0006:33-36 for `shares fewer than two items`; RUNBOOK:570 for `too few items to call a tie` | change | Three outcomes accepted. With p = 0.2656 on 8 items the page should say one thing; I could not read it (the project was cleaned up). Replace by the single phrase the page prints after confirming it (`not separated` is the likely one, as in `three_items`). |
+| S4 `test_stats_edges.py:211, 217` | `one_item` and `one_cluster` boards match `Not enough paired data\|is out` and `is out\|Not enough paired data` | none found for either phrase | change | Two outcomes where one is true. I read `one_item`'s page: `e_one_item_b ... shares fewer than 2 items with the leader` (ADR-0006:35-36) and the verdict `too few items`. Replace the alternation with the one string the leaderboard prints; "Not enough paired data" and "NO detectable arm effect" are in no document (DECISION 10). |
+| S5 `test_stats_edges.py:211-219` | `stats.compare` verdicts: `untestable` (1 item), `not significant`, `identical`, `significant: better`, and disjoint/one-cluster `untestable` | PRD-004:143-145 | keep | |
+| S6 `test_stats_edges.py:213, 215, 219` | disjoint: `shares fewer than 2 items`; half of 22 missing: `is out: n 11 of 22`, `n 11 of 22 items` | ADR-0006:33-36 | keep | |
+| S7 `test_stats_edges.py:265-270` | disjoint and one-cluster `pair-test`: `ERROR (not-enough)` | RUNBOOK:2193 | keep | |
+| S8 `test_stats_edges.py:402-414` | "old data": a run recorded with a NaN in an item and its mean: leaderboard, pair-test, catalog give no traceback and a p in [0,1] | none found | keep, pending DECISION 6 | I read the result: `pair-test` on the same data now says `N=7`, `items A wins 7/7`, p 0.0156 `SIGNIFICANT`: the old NaN item is left out (`stats.compare` docstring), while a new run scores that item 0 and gets p 0.2656 `NOT-SIGNIFICANT`. One shape, opposite verdicts. |
+
+
+### 1.9 Other tests touched by the RFC-041 work (diffs)
+
+| test file:line | what it asserts | source | verdict | reason |
+| --- | --- | --- | --- | --- |
+| N1 `test_newcomer_cli_views.py:164-171` | the judge leaderboard's table is at most 100 columns, now with lines that contain `NOTE:` left out ("a NOTE is a sentence, not the table") | RUNBOOK:958 ("the columns that fit the terminal"); the number 100 in no document | keep, pending DECISION 10 | The exclusion was added when the new NOTE lines (D25, D30) made the old check fail: an expectation widened to match output. Each NOTE line is still a line a terminal wraps. |
+| N2 `test_goals.py:296-307` | a metric's page and `metric-list --metric` say `weighed as an axis by` | UXS-001:574-576, :848-849 | keep | |
+| N3 `test_family_marks.py:115` | runs that declare different primary metrics are named, now through `deciding_metric` | RUNBOOK:988-991 | keep | |
+| N4 `test_api.py` (public-server cases), `test_openapi.py` | a server started `--public` answers reads with no token, refuses `POST /estimate` (403), serves `openapi.json`; `--behind-proxy` answers none | RFC-039:21, :34, :50-51, :71 | keep | Decided by RFC-039 (Accepted). |
+
+## 2. Counts
+
+Rows: 1.1 has 2, 1.2 has 35, 1.3 has 20 (M19 repeats L1 and is not counted), 1.4 has 16, 1.5 has 9, 1.6 has 8, 1.7 has 14, 1.8 has 8, 1.9 has 4: 116 rows. A row groups the `check(...)` calls that assert one behaviour.
+
+| verdict | rows |
+| --- | --- |
+| keep (a document decides it, and the test agrees) | 85 |
+| keep, pending an owner DECISION (no document decides it; the code does) | 21 |
+| change | 10 |
+| remove | 0 |
+
+Total 116 (85 + 21 + 10 + 0), counted by a script over the rows of section 1; M19 repeats L1 and is excluded. "Assertions reviewed" below means rows, not `check(` calls.
+
+`check(` call sites in the 22 files named below (a site in a loop runs many times and is not expanded; `test_catalog_display`, `test_public_leak`, `test_leaderboard_prose_measure` were read in part): `test_arm_membership` 44, `test_direction` 41, `test_stats_edges` 37, `test_catalog_display` 35, `test_foreign_projects` 31, `test_reader_agreement` 21, `test_unknown_and_zero` 21, `test_direction_assumed` 17, `test_writers_refuse` 17, `test_public_gate` 16, `test_data_mutations` 15, `test_leaderboard_prose_measure` 14, `test_deciding_metric` 11, `test_public_leak` 10, `test_goal_block_direction` 9, `test_metric_show_wording` 8, `test_one_source` 7, `test_today` 7, `test_leaderboard_neutral` 6, `test_dry_run_label` 6, `test_metric_direction` 5, `test_goal_baseline_per_goal` 3: 381.
+
+**Remove: none.** Candidates I considered and kept pending a decision: D19 (a FAIL no document asks for) and U3 (the legacy build).
+
+### The change rows in full
+
+| id | file:line | replacement expectation | source |
+| --- | --- | --- | --- |
+| D26 | `test_direction_assumed.py:130-134` | the `weird_score` row of `run-compare --json` for `good -> bad` has verdict `better`; keep `count(LINE) == 1` | REFERENCE.md:32 |
+| D27 | `test_direction_assumed.py:147-163`, `test_goal_block_direction.py:108-150`, `test_metric_direction.py:34-40` | add `evh validate` on the same project: exit `6`, a `FAIL V1` or `FAIL V14` naming `direction`; or the schema is changed first | `goal.schema.json:6, :28`; RUNBOOK:531, :566 |
+| M21 | `test_writers_refuse.py:489-492` (`broken(... fails=False)`) | `FAIL V29` absent, exit `0`, a `note:` line naming `ghost_run` (or, if DECISION 1 says fail: `FAIL V29`, exit `6`) | RUNBOOK:2156-2170; DECISION 1 |
+| U11 | `test_foreign_projects.py:436-451` | regex `\$0` and `fullmatch`, not `\$0(\.00)?` | UXS-001:665, :628 |
+| G9 | `test_data_mutations.py:672-678` | exit `6` for `unicode_ids`, `underscore_r_not_a_set`, `n_items_missing`, `extra_unknown_fields`, `reference_gone` (FAIL V30); exit `0` for `goal_measure_unrecorded` (a note) | RUNBOOK:2156-2170 |
+| G11 | `_mutations.py:315` | direction written as a literal beside each measure | none (the expectation must not come from `_common.lower_is_better`) |
+| S1 | `test_stats_edges.py:221-223, :259-264` | pair-test `NOT-SIGNIFICANT` for `nan_scores` (p 68/256 = 0.2656) and `none_scores` (p 118/256 = 0.4609) | RUNBOOK:858-859, :874-877; arithmetic: enumerate the 2^8 sign patterns of d_i = a_i - b_i, a_i = 0.5 + i/20 (a_2 := 0, or a_5 := 0), b_i = 0.4 + i/30, count |sum| >= observed |
+| S2 | `test_stats_edges.py:220-221` | strike `18/256`; 68/256 | the same |
+| S3 | `test_stats_edges.py:222` | one phrase for the page (to be read from the page of the 8-item, p 0.27 shape) | ADR-0006:33-36 |
+| S4 | `test_stats_edges.py:211, 217` | one board string each, read from the output | none: DECISION 10 |
+
+
+## 3. Fixtures built only by the harness's own writers
+
+A writer bug and a reader bug cancel in these. Each is marked with what, if anything, is independent.
+
+| fixture | built by | independent part |
+| --- | --- | --- |
+| `_foreign.fleet` (used by `test_foreign_projects`, `test_goal_baseline_per_goal`, `test_writers_refuse`, `test_reader_agreement`, `test_data_mutations`) | `evh run`, `--repeat 3`, `data-rm`, `--purpose repeat --of`, `run-promote`, `round-open`, `reference-promote`, `label-import` | the run ids are chosen by the test; nothing is hand-written. The repeat's "same fingerprint" is whatever `evh run` recorded. |
+| `_foreign.bakeoff` | `evh run` on a custom adapter that returns `cost_usd` | `usd_per_mtok_*: 0` in the system file and the adapter's `None` are hand-set. |
+| `_agree_projects.tutorial` | `evh init --tutorial`, `dataset-create`, `label-import`, `reference-promote`, `run`, `goal-new`, `run-promote` | only the `text: hidden` flag on `tk_hidden_v1` is hand-written. |
+| `_foreign.imported` | `import-run` with hand-written score rows (an `import-run` writer is the reader's source) | the rows' numbers, goals, builds are hand-set; run ids and `dirty: null` come from the writer. |
+| `test_arm_membership` (all but `:331-400`, `:504-511`) | `evh run`, `--purpose repeat`, `data-rm` | `:331-371` (`same_measurement`), `:373-400` (another harness build hand-written into `run.json`), `:473` (`of` forged), `:506-511` (a round written by hand). |
+| `test_label_sets.py:868-895` | `evh run --purpose repeat --of` with a yaml edit | none (it replaced a hand-built record). |
+| `test_unknown_and_zero` | `evh run` on `echo` | `clone()` writes the builds by hand (`:53-66, :122-151`): independent. |
+| `test_direction`, `test_direction_assumed`, `test_deciding_metric`, `test_goal_block_direction`, `test_leaderboard_neutral`, `test_metric_show_wording` | `evh run` on an adapter whose scores are literals | values are independent; run records (goal, fingerprint, `metric_kinds`) are the writer's. `test_goal_block_direction` and `test_direction_assumed` also hand-write goals the schema rejects (D27). |
+| `test_data_mutations` | hand edits of the four built projects | independent, except `two_goals_two_baselines` (`_mutations.py:303-327` uses `goal-new` and `run-promote`, and G11). |
+| `test_reader_agreement` | the four built projects | readers share `_runs`/`model.runs`; `hand_checks` (G5) and the two stubs are the independent part. |
+| `_goal_fixture.Stand` | a stub class | `lower_is_better` is `False` for every metric (`:56`). |
+| `test_scores_once.narrowed` | reads this repository's committed files | independent. |
+| `test_public_leak`, `test_stats_edges` (values), `test_writers_refuse.lose_*` | sentinels / literal scores / hand-deleted files | independent. |
+
+## 4. DECISIONS the owner needs to make ("none found")
+
+1. **A repeat's `of` names a run that is not there: note or fail?** Tests: `test_arm_membership.py:450-458`, `test_writers_refuse.py:489-492`. Documents: RFC-041:99-100 (fail when not the same system and dataset), RFC-041:101-102 (a missing link reads under `repeats`, with the reason), RUNBOOK:1111 ("holds a run's `of` to a run of its own system and dataset"). `data-rm` of a run is documented (RUNBOOK:777), so the case is reachable.
+2. **V29 fails a round that recorded a repeat under `repeats` which now joins its arm (`test_arm_membership.py:506-518`, `validate_tree.py` v29).** A 0.8.0 project whose round recorded such a repeat (the fleet's shape) fails validate after upgrading. The message says "(a migration)"; none exists and `docs/UPGRADING.md` has no V29 line. RUNBOOK:1531 and RFC-041:104 say a round reads what it recorded. Choose: a note, a migration, or the failure with an UPGRADING line.
+3. **Precedence among goals that declare a measure.** The code and the test header say: a goal that lists the dataset, then a goal the runs name, then any goal. RFC-041:50-53 treats "lists the dataset" and "the runs name it" as equals. Rows D4, D5.
+4. **A goal with `datasets: []` and V14's clash.** Two such goals with opposite directions FAIL; one beside a listing goal does not. RUNBOOK:575 calls an empty list "a goal checked by a gate rather than measured on a dataset". Rows D18, D19.
+5. **Is a goal's `primary.direction` optional?** `goal.schema.json:28` and RUNBOOK:566 make it required and limit it to `higher`, `lower` or `non_inferior`; three test files and the SLIP finding ("a goal with no direction") assume it can be absent. Either the schema, RUNBOOK:531 and UXS-001:424 change, or those fixtures must fail validate (row D27).
+6. **Old data with a recorded NaN: left out or scored 0?** New runs score the item 0 (RUNBOOK:874-877). Old runs hold the NaN and `stats.compare` leaves it out. Same arms: p 0.0156 `SIGNIFICANT` (N=7) vs p 0.2656 `NOT-SIGNIFICANT` (N=8). Row S8.
+7. **Which names are descriptive (neutral).** `_common.DESCRIPTIVE_KEYS` = `output_words`, `output_chars`, `lines`, `chars`, `n_items`, `reasoning_tokens`. Only `reasoning_tokens` (REFERENCE.md:120) and `output_chars` (RFC-041:42-43) are in a document. A custom adapter's `chars` or `lines` is neutral by name. Row D3.
+8. **Builds recorded `dirty: null` with no `source` ("legacy") promote.** Imported and declared builds are RFC-041:133; the legacy case is the 0.8.0 behaviour (unknown read as clean), kept. Row U3.
+9. **The currency format.** UXS-001:665 says `$0`; RFC-041:134 says `$0.00` (and :196 says `$0`); UXS-001:849-850 says "six places ($0.000012)" while `axes.fmt_usd` gives two significant digits under a cent and four places up to a dollar (`$0.1992`). Rows U5, U11, U16.
+10. **Pinned wording no document gives.** `NO detectable arm effect`, `Not enough paired data`, `lower on X; higher on Y`, the `changed` verdict, the assumed-direction line, `internal error`, `—` for a 0/0 ratio, `fmt_p(None) == "n/a"`, `is not scored under 'the plain runs'`. Decide whether tests pin the string or the fact. Rows D11, D13, D14, D25, U13, P4, G10, G12, S4.
+11. **`leaderboard` on a goal whose measure no arm records** ranks on the arms' own headline with a NOTE; `--goal` refuses as `not-found`. RFC-041:243-244 says V14 warns and the project renames; RUNBOOK:2187 defines `not-found` as "does not exist". Row D33.
+12. **Two `ALLOWED` exceptions in `test_one_source.py` with no document.** `catalog_serve` reading `LIMITS["hosts"]` as "transport" (RFC-041:146-149 says every reader calls `_visibility.public()`), and `charts._claim`/`gain_cost` reading an unknown cost as zero (RUNBOOK:886-887). Rows P6, U15.
+13. **A study's `stop`:** `{"usd": 1}` alone is a problem and needs `wall_h`; RUNBOOK:685's example gives `usd` with `trials`, and RFC-041:136 says only `is not None`. Row U6.
+
+## 4b. Decided (owner, 2026-11-23)
+
+The owner delegated to the recommendations. Decisions 3, 4, 7, 9 and 10 are the docs agent's (`081-docs`); the others are in `081-r9`.
+
+1. A repeat whose `of` names a run that is not there: V29 prints a note, not a FAIL (`data-rm` is documented). Row M21.
+2. A round that recorded a repeat under `repeats` which now joins its arm: V29 notes it and does not fail, and V14 no longer names the arm: a round reads what it recorded (RUNBOOK 1531), and there is no migration. Row M12.
+3. docs.
+4. docs.
+5. `primary.direction` is required, as `goal.schema.json` and RUNBOOK 531/566 say. The three tests that write goals without it also assert that `evh validate` fails naming `direction`. No schema changed. Row D27.
+6. One rule for a score that is not a number, on read as on write: `_common.counted` (a number as it is, 0 for a NaN, an infinity, a None, a boolean or text, the score of a failed item). `_record.non_number` (write), `_runs.score_of`, `model.runs.record` (a non-finite mean is worked again over the items), `stats.exact_p`, `sign_flip_p`, `exact_ci` and `compare()` (read) use it. Row S8.
+7. docs.
+8. A legacy run (`dirty: null`, no `source`) is an unknown build: `run-promote` and `label-from-run` refuse it without `--allow-dirty` (`_common.tree_state`). An imported or declared (`EVAL_BUILD_REF`) build is still accepted (RFC-041 F3). Row U3.
+9. docs.
+10. docs.
+11. `leaderboard --goal G`, where G exists and no run records its measure: `ERROR (nothing-measured)`, exit 7, not `not-found`. Row D33.
+12. `charts._claim` and `charts.gain_cost` no longer read an unknown cost as zero: an arm with an unknown cost is left off the cost axis and named in the caption. The `catalog_serve` `LIMITS["hosts"]` entries stay allowed, each reason saying "transport: the listener's host allow-list, not whether the surface is public". Rows U15, P6.
+13. A study's `stop` needs at least one bound (`trials`, `usd` or `wall_h`); `{"usd": 1}` alone is valid. Row U6.
+
+## 5. Documents that disagree with the code and the tests (fix the document)
+
+| document:line | says | now |
+| --- | --- | --- |
+| RUNBOOK:707-708 | a `--purpose repeat --of` run "is a run of its own, read under `repeats`" | joins its original's arm when the parts agree (RFC-041:86-98); RFC-041's order of work puts this at step 4 |
+| RUNBOOK:570 | an axis's `direction` defaults to the adapter's `METRIC_DIRECTIONS`, else `higher` | the rule ends at the name table (`_runs.direction`) |
+| RUNBOOK:991-993 | direction is "a flag, else the goal the runs name, else METRIC_DIRECTIONS, else the name (cost, latency and token metrics go down)" | RFC-041:46-58 (a goal that lists the dataset; kinds; `wer`/`cer`/`der` lower; descriptive neutral) |
+| REFERENCE.md:29-33 | the same chain, "costs, latencies and token counts go down, everything else up" | the same |
+| UXS-001:849-850 | cost "to six places ($0.000012)" | `axes.fmt_usd` (D-9) |
+| RFC-041:107 | a repeat with no `of`: under `repeats`, as today | the writer refuses it (RUNBOOK:881; merge `80b724ad9`) |
+| RFC-041:134 vs :196 | `$0.00` and `$0` | UXS-001:665: `$0` |
+| RFC-041:67-71 | V14 "warns" (direction not lower/higher, measure no run records) | `validate` prints `note:` and never fails (`validate_tree.py` v14) |
+
+## 6. Not covered
+
+What was read, exactly.
+
+- **Whole file:** `test_deciding_metric`, `test_direction_assumed`, `test_goal_block_direction`, `test_leaderboard_neutral`, `test_metric_show_wording`, `test_one_source`, `test_reader_agreement`, `test_writers_refuse`, `test_data_mutations`, `test_foreign_projects`, `test_arm_membership`, `test_direction`, `test_unknown_and_zero`, `test_today`, `test_dry_run_label`, `test_goal_baseline_per_goal`, `test_stats_edges`, `test_public_gate`, `test_metric_direction`, `test_scores_once` (diff and the new code), `_agree_projects`, `_reader_proc`, `_reader_stubs`, `_foreign`.
+- **In part:** `test_public_leak.py` (lines 1-120 and 372-470, and its diff; the fixture build at 120-372 and the surface drivers at 470-611 not read), `_mutations.py` (70-196 and 303-459; 1-69 and 196-303, the `unicode_ids`/`underscore_r_not_a_set`/`missing_optional_fields`/`n_items_missing` bodies, not read beyond their docstrings), `test_leaderboard_prose_measure.py` and `test_no_nan_shown.py` (the header and every `check(` line, not the fixtures), `test_catalog_display.py` (the header and the cost/latency/ratio/id checks, not the SVG overlap code), `test_rounds.py` (`:684-700`, `:860-975`), `self_test.py` (`:2700-2800` and the `+`/`-` lines of its diff from v0.8.0).
+- **Diff only (`v0.8.0..5f2f05ad5`):** `test_arm_smoke`, `test_charts_gain_cost`, `test_family_marks`, `test_goals`, `test_judge_score`, `test_label_sets`, `test_newcomer_cli_views`, `test_store`, `check_upgrade_install`, `test_baselines`, `test_catalog_real_browser`, `test_ops_commands`, `test_results_e2e`, `test_runs_adapter`, `test_api`, `test_openapi`, `test_providers`, `test_run_progress`, `test_view_cache`, `test_view_ops`, `test_artifact`, `test_catalog`, `test_stat_commands`.
+
+The brief's `b063595f9..5f2f05ad5` `--stat` lists 32 files. All were at least diffed except the parts of `test_public_leak.py` and `_mutations.py` named above. `test_providers.py` and `test_run_progress.py` were diffed for their cap-of-0 checks (U12) and not read further.
+
+**Not read at all (about 200 of the 258 `.py` files in `harness/tests/`, and `fixtures/`, `fonts/`):**
+
+- **Browser and UI:** `test_inspector_browser.py` (not even its 15-line diff), `test_inspector_names_browser.py`, `test_judge_gold_browser.py`, `test_workbench_*_browser.py`, `test_workbench_viewer.py`, `test_workbench_live_browser.py` (61-line diff not read), `test_workbench_paid_browser.py`, `test_workbench_spend_browser.py`, `_viewer_fixture.py`, `_wbreview.py`, `_slow.py`. They assert layout and page script behaviour and need Playwright, which I did not run. RFC-041:135 (`workbench/live.js` shows an unknown trial cost as `$0.0000`) is checked by a source test I did not open.
+- **Catalog rendering and site (RFC-040, not RFC-041):** `test_catalog_fresh.py` (a 387-line rewrite), `test_catalog_render.py`, `test_catalog_render_real.py`, `test_catalog_warm.py`, `test_site_build_atomic.py`, `test_site_releases.py`, `test_check_hf_source.py`, `test_prefetch.py`, `test_stats_threads.py`. Whether any of them pins a RFC-041 fact (for example a value printed on a rendered page) was not checked.
+- **`test_cap_shown.py`:** not opened. Row U12 relies on the three tests that call the cap's display (`test_foreign_projects`, `test_providers`, `test_run_progress`) and on the RUNBOOK sentence (RUNBOOK:832); `test_cap_shown.py` reads the tokens of every command and has its own `ALLOWED` list that I did not audit.
+- **The older suite (about 190 files):** `test_judge_*.py`, `test_stat_commands.py`, `test_cluster_commands.py`, the capture, replay, outcome-label, hypothesis, fieldset, mcp tests, `check_*.py`, and the rest. They predate RFC-041 and RFC-041 did not touch them; a wrong expectation there is a 0.8.0 bug that nobody has noticed, and finding one means reading each against the RUNBOOK section it exercises. That is an audit of its own.
+- **Criterion 2 (wording).** Hits in `harness/tests/*.py`: `as intended` 0; `by design` 3 lines in 3 files; `on purpose` 8 in 6; `deliberately` 4 in 3; `is meant to` 1; `documented` 9 in 5; `contract` 13 in 9 (most are `output_contract`); `pinned` 47 in 14 (mostly the word for a pinned install or a pinned model); `expected` 36 in 13; `should` 12 in 10. I opened `self_test.py:2753-2765` (rows M14, G14) and `test_rounds.py:689, 935-957`, and read the others only as the comment lines grep printed (`test_outcome_rules.py:213`, `test_outputs.py:174`, `test_render_data.py:11`, `test_checks_can_fail.py:117`, `test_judge_score.py:1378, 1425`, `_runstore.py:212`, `test_results_e2e.py:311`, `self_test.py:373, 435, 559, 1859`): comments on fixtures or on a narrow rule, none an expectation about a document. I did not trace `self_test.py:435` ("the committed runs DO depend on ignored references, deliberately and permanently") or `:559` ("the rule is narrow on purpose") to RFC-028 or RUNBOOK:651-652. I did not read the `expected`/`should` hits in context.
+- **Criterion 3 (values derived from running the harness).** I looked for hard-coded numbers, verdict strings and `a|b` regexes only in the files named above; I did not scan the older files. Found: the wrong `18/256` (S2); alternations in S3, S4, U11, G9, D26's vacuous clause, `test_dry_run_label.py:102` (`val.get("provider") in (None, "")`, which accepts a null and an empty string; no document says which, so no row), and the pinned strings listed under DECISION 10. The numbers `3` and `6` (U8), `64` (G5) are hand-derived or fixture constants.
+- **Whether the "keep" rows pass.** Not evaluated, by instruction. The one test I ran, `test_stats_edges.py`, was run only to read the output of its project (it printed `207/207 assertions passed`); the project it left in `/tmp` was removed.
+- **Documents.** I read RFC-041, SLIP_ANALYSIS_0.8.1 (from the `081` worktree), PLAN_0.8.1 row R9, RUNBOOK §4c, 5, 6, 7, 7b, 9, 13 (the lines cited), Exit codes and Refusals, and the lines cited in REFERENCE.md, INTEGRATION.md, UXS-001/002/005, RFC-039, ADR-0006 and PRD-001/004/005. I did not read PRD-002, 003, 006, 007, 014-017, any other RFC or ADR, or the rest of the RUNBOOK. Where I say "none found" I mean a grep of RUNBOOK, `docs/prd`, `docs/rfc`, `docs/adr`, `docs/uxs`, REFERENCE.md, CONCEPTS.md and INTEGRATION.md for the phrase, not a reading of each.
+- **Other RUNBOOK sections that RFC-041 changes** (the would-overwrite refusal, `ops/run_jobs.py`, UXS-003) are RFC-041's step 4 and were not searched for further stale text.

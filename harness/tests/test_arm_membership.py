@@ -501,20 +501,27 @@ try:
         (out(r)[-300:], arms_of("shape_v1"), text[-300:]),
     )
 
-    # -- a round that recorded a repeat under `repeats` no longer reads it there once it joins its original's arm:
-    # validate names it
+    # -- a round that recorded a repeat under `repeats` no longer reads it there once it joins its original's arm: a round
+    # reads what it recorded (RUNBOOK:1531) and there is no migration, so validate notes it and does not fail
     _runstore.write_text(
         proj,
         "rounds/tickets_summary/r9.yaml",
         "round_id: r9\ngoal: tickets_summary\ndataset_id: tickets_v1\nstatus: closed\nopened_at: '2026-11-01T00:00:00Z'\n"
-        f"arms:\n- system: chain_v1\n  label: repeats\n  runs:\n  - {c1}\n",
+        f"arms:\n- system: chain_v1\n  label: repeats\n  runs:\n  - {c1}\n  entered: {{how: ran, at: '2026-11-01T00:00:00Z'}}\n"
+        "conclusion:\n  text: closed under 0.8.0\n",
     )
-    ok, text = v8()
+    r = evh("validate")
+    text = out(r)
     check(
-        "validate: V29 names a round arm that records a repeat under `repeats` where it is no longer read",
-        "FAIL V29" in text
-        and f"round r9 of tickets_summary records {c1} in its arm repeats/tickets_v1/chain_v1" in text,
-        [ln for ln in text.splitlines() if "r9" in ln][:3],
+        "validate: V29 notes a round arm that records a repeat under `repeats` where it is no longer read; no FAIL, exit 0",
+        "FAIL V29" not in text
+        and r.returncode == 0
+        and any(
+            ln.lstrip().startswith("note:")
+            and f"round r9 of tickets_summary records {c1} in its arm repeats/tickets_v1/chain_v1" in ln
+            for ln in text.splitlines()
+        ),
+        ([ln for ln in text.splitlines() if "r9" in ln or "FAIL" in ln][:4], r.returncode),
     )
     _runstore.unlink(proj, "rounds/tickets_summary/r9.yaml")
 

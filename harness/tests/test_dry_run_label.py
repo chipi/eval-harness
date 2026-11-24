@@ -71,6 +71,7 @@ try:
     system("bundled_model_v1", "params:\n  provider: openai\n  model: gpt-x\n")
     system("custom_v1", "adapter: adapters/mine.py\nparams:\n  words: 6\n")
     system("custom_provider_v1", "adapter: adapters/mine.py\nparams:\n  provider: openai\n  model: gpt-x\n")
+    system("custom_model_v1", "adapter: adapters/mine.py\nparams:\n  model: alias-x\n")
 
     check(
         "bundled adapter, no provider: echo, the bundled adapter's default",
@@ -92,6 +93,14 @@ try:
     check(
         "a project's adapter whose system names a provider: both are named",
         "adapters/mine.py" in line and "openai" in line and "gpt-x" in line and "echo" not in line,
+        line,
+    )
+    # The bake-off's shape (R8, 2026-11-24): a project's adapter whose system sets a model and no provider. 0.8.0 named
+    # the model; the adapter label must not drop it, since systems that differ only in their model differ only there.
+    line = system_line("custom_model_v1")
+    check(
+        "a project's adapter whose system names a model and no provider: the adapter and the model are named",
+        line == "system      custom_model_v1  (adapter adapters/mine.py / alias-x)",
         line,
     )
     r = evh("run", "--system", "custom_v1", "--dataset", "tickets_v1", "--dry-run", "--json")

@@ -21,7 +21,6 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import contextvars
-import math
 import re
 import statistics
 import sys
@@ -31,6 +30,7 @@ from typing import Any, Literal, overload
 
 from evaluation_harness import _common, _outputs
 from evaluation_harness._common import is_descriptive, lower_is_better
+from evaluation_harness._number import counted, is_scored
 from evaluation_harness.axes import BUILTIN, axes_of
 from evaluation_harness.model import runs as _model_runs
 
@@ -103,12 +103,13 @@ def item_rows(run_dir: Path, strict: bool = True, meta: bool = True) -> Iterator
 
 
 def score_of(row: dict, metric: str) -> float | None:
-    """The row's value for `metric` when it is a number; a boolean is not a score, nor is a NaN or an infinity (a run
-    recorded before RFC-041 F7 can hold one: the item is read as not scored, as one the arm has no row for)."""
-    v = row.get(metric)
-    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+    """The row's value for `metric`, None where the row holds none (the item was not scored for it: no field, or a boolean
+    or text in it). A value that is not a number (a NaN, an infinity or a None, as a run recorded before RFC-041 F7 can
+    hold) is a failed item's score, 0 (`_number.counted`), as `evh run` records one now. The item id and the `_` fields
+    are no scores."""
+    if metric == "item_id" or metric.startswith("_") or metric not in row or not is_scored(row[metric]):
         return None
-    return float(v)
+    return counted(row[metric])
 
 
 # The call's, not the process's (the MCP server answers calls at once, in threads): `not_scorable()`, `confound()`.

@@ -39,8 +39,8 @@ def goal(gid: str, measure: str, direction: str | None) -> None:
     _runstore.write_text(
         proj,
         f"goals/{gid}.yaml",
-        f'goal_id: {gid}\nschema_version: "0.1"\ntitle: {gid}\nstatus: active\n'
-        f"success_criteria:\n  primary: {primary}\n",
+        f'goal_id: {gid}\nschema_version: "0.1"\ntitle: {gid}\nstatement: {gid}\ndecision: {gid}\nstatus: active\n'
+        f"datasets: []\nsuccess_criteria:\n  primary: {primary}\n",
     )
 
 
@@ -88,6 +88,12 @@ try:
         "the catalog's page for der says lower is better",
         ">lower<" in own and ">higher<" not in own,
         own[own.find("better") :][:300] if own else "no m/der.html",
+    )
+    r = evh("validate")
+    check(
+        "validate: the goal that leaves `direction` out fails, naming direction (goal.schema.json)",
+        r.returncode == 6 and "goals/spend.yaml: 'direction' is a required property" in r.stdout,
+        "\n".join(x for x in r.stdout.splitlines() if "FAIL" in x or "goals/" in x)[:800],
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

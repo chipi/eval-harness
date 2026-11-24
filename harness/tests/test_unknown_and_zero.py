@@ -137,16 +137,34 @@ try:
         r.returncode == 0,
         out(r)[-300:],
     )
-    # import-run writes `dirty: null` with its own source, and a record older than `source` has neither: neither is
-    # "git was asked and could not say", so each promotes (and labels) as before.
+    # import-run writes `dirty: null` with its own source, and so does a declared EVAL_BUILD_REF: that is "the owner's
+    # word", not "git was asked and could not say", so each promotes (and labels) as before (RFC-041 F3).
     for name, build in (
         ("imported", {"ref": "abc123def456", "dirty": None, "source": "import-run --build-ref"}),
         ("declared", {"ref": "v1.2.3", "dirty": None, "source": "EVAL_BUILD_REF"}),
-        ("legacy", {"ref": "abc123def456", "dirty": None}),
     ):
         run = clone(two, f"two_v1_{name}", build)
         r = evh("run-promote", "--run", run, "--reason", f"a {name} build, dirty unknown by its source")
         check(f"run-promote takes a {name} build whose dirty is null", r.returncode == 0, out(r)[-300:])
+    # A record older than `source` with `dirty: null` is an unknown build (owner 2026-11-23): refused as git's null is,
+    # and the same flag takes it.
+    legacy = clone(two, "two_v1_legacy", {"ref": "abc123def456", "dirty": None})
+    r = evh("run-promote", "--run", legacy, "--reason", "a legacy build, dirty unknown")
+    check(
+        "run-promote refuses a legacy build (dirty null, no source), saying git could not say",
+        r.returncode != 0 and "could not say" in out(r) and "--allow-dirty" in out(r),
+        out(r)[-400:],
+    )
+    r = evh("label-from-run", "--run", legacy, "--set", "s_legacy")
+    check(
+        "label-from-run refuses it too, and leaves no set",
+        r.returncode != 0
+        and "could not say" in out(r)
+        and not _runstore.exists(proj, "labels/tk_v1/s_legacy"),
+        out(r)[-400:],
+    )
+    r = evh("run-promote", "--run", legacy, "--reason", "a legacy build, dirty unknown", "--allow-dirty")
+    check("run-promote --allow-dirty takes it", r.returncode == 0, out(r)[-300:])
     # A project outside git has no ref and no tree status: the unknown build is what is refused, and one flag allows it.
     nogit = clone(two, "two_v1_nogit", {"ref": "unknown", "dirty": None, "source": "git"})
     r = evh("run-promote", "--run", nogit, "--reason", "a project outside git, its build unknown")
@@ -199,7 +217,8 @@ try:
     check(
         "build: the three are told apart by one function",
         [_common.tree_state(b) for b in (unknown, dirty, clean)] == [None, True, False]
-        and _common.tree_state({"ref": "v1", "dirty": None, "source": "EVAL_BUILD_REF"}) is False,
+        and _common.tree_state({"ref": "v1", "dirty": None, "source": "EVAL_BUILD_REF"}) is False
+        and _common.tree_state({"ref": "v1", "dirty": None}) is None,
         None,
     )
 
@@ -248,14 +267,18 @@ try:
         return [p for p in _study.problems("g", "s1", spec) if p.startswith("stop")]
 
     check(
-        "a study's stop of usd 0 with wall_h is a rule (open_study caps the spend at 0); no usd or no wall_h is not",
+        "a study's stop needs one bound, not two (RUNBOOK 685, owner 2026-11-23): usd 0 is a bound (open_study caps the "
+        "spend at 0), so is usd, wall_h or trials alone; none is not",
         stop_problems({"usd": 0, "wall_h": 2}) == []
+        and stop_problems({"usd": 0}) == []
         and stop_problems({"usd": 1, "wall_h": 0}) == []
-        and stop_problems({"usd": 1}) != []
-        and stop_problems({"wall_h": 2}) != []
+        and stop_problems({"usd": 1}) == []
+        and stop_problems({"wall_h": 2}) == []
+        and stop_problems({"trials": 5}) == []
+        and stop_problems({"trials": 20, "usd": 5, "patience": 5}) == []
         and stop_problems({}) != []
-        and stop_problems({"trials": 5}) == [],
-        [stop_problems(s) for s in ({"usd": 0, "wall_h": 2}, {"usd": 1, "wall_h": 0}, {"usd": 1})],
+        and stop_problems({"patience": 5}) != [],
+        [stop_problems(s) for s in ({"usd": 0}, {"usd": 1}, {"wall_h": 2}, {}, {"patience": 5})],
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

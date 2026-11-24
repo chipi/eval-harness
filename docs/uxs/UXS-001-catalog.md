@@ -846,8 +846,9 @@ carries a judge's reply, a verdict or an item's text.
   quality; a metric declared quality on some datasets and descriptive on others is a quality
   that names the others, "quality: … (descriptive on summeval_100)", and each dataset's tables
   read it by that dataset's declaration), **decides** (the goals whose primary measure it is), **weighed as an axis by** (the goals that
-  take it as an axis; "no goal" beside a **decides** goal is not a contradiction), **recorded on** (its datasets). A cost in USD is shown to six places
-  ($0.000012) in its tables, here and on the arm page.
+  take it as an axis; "no goal" beside a **decides** goal is not a contradiction), **recorded on** (its datasets). A cost in USD is written one way everywhere (`axes.fmt_usd`), here, in its
+  tables and on the arm page: `$0` for none, two significant digits under a cent (`$0.000012`), four places from a cent to
+  a dollar (`$0.1992`), two above (`$1.25`); "—" only for a cost nobody recorded.
 - `01 what it measures, and how`: the one-line summary, then the longer explanation: the
   project's `METRIC_DESCRIPTIONS` `details`, else the harness's own for its metrics. A project
   metric with only one line says how to add the details.

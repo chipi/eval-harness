@@ -537,10 +537,11 @@ def build_info() -> dict[str, Any]:
 
 
 def tree_state(build: dict[str, Any]) -> bool | None:
-    """Whether a run's build came from a dirty tree: True when it did, None when git was asked and could not say, False
-    when it was clean or the ref is one its owner declared (EVAL_BUILD_REF, an import), whose tree nobody looked at."""
+    """Whether a run's build came from a dirty tree: True when it did, None when git was asked and could not say (or a
+    record older than `source` holds a null: an unknown build, owner 2026-11-23), False when it was clean or the ref is
+    one its owner declared (EVAL_BUILD_REF, an import), whose tree nobody looked at."""
     dirty = build.get("dirty")
-    if dirty is None and build.get("source") == "git":
+    if dirty is None and build.get("source", "git") == "git":
         return None
     return bool(dirty)
 
@@ -904,6 +905,7 @@ REFUSALS = {
     "invalid-file": "a file the project wrote (a system, a scorer, a sheet, records) is malformed",
     "not-materialized": "the data is not on this machine: fetch or materialize it first",
     "not-enough": "too little to work on: too few items, arms or outputs",
+    "nothing-measured": "the thing named is there and nothing it reads was measured (exit 7)",
     "not-public": "the text asked for is not shown on a public server or for a hidden dataset",
     "not-allowed": "a rule refuses it: a dirty build, a closed round, a bind beyond this machine",
     "not-configured": "a key, a cost cap, a build ref, an endpoint or the project's store is not set",

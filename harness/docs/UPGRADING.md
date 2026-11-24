@@ -5,6 +5,99 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.8.0 to 0.8.1
+
+Change the pin to `@v0.8.1` and reinstall. No format changes: `evh migrate --check` finds nothing to do, and no run, baseline
+or fingerprint is rewritten or re-scored. **Some numbers read differently**, and some commands refuse what they used to write;
+the full list, by project, is in the [0.8.1 notes](../../docs/releases/0.8.1.md). Run `evh validate` after upgrading: it
+has two new checks (V29 for every `of`, V30), and a note for each measure whose direction nobody declares.
+
+- **What reads differently** (nothing is re-scored; the runs are the same, their reading is not):
+  - **A repeat joins its arm.** A run made with `--purpose repeat --of RUN`, as RUN was run (the same data, deployment,
+    settings and adapter; a later harness build does not matter), is now read in RUN's arm, which gains a run: its mean,
+    its pair tests and its goal page can change, and so can the count of arms. It was a separate `repeats` arm. A repeat that
+    differs in one of those is still read under `repeats`, and `evh run --purpose repeat` says which before its first call.
+    A closed round's numbers do not change.
+  - **A repeat set is what the runs record, not what they are called.** `--repeat N` records `repeat_index`, and that, or a
+    joined repeat, makes a set. Two runs named `foo_r1` and `foo_r2` by hand (copied in, or made before 0.6.0 recorded
+    `repeat_index`) are two plain runs: `evh validate` fails them as V8 does any two measurements of one system. List the pair
+    under `duplicate_ok` in `validate.json`, or put each run's `repeat_index` in its `run.json`.
+  - **An arm is read against one reference in every view.** `leaderboard`, `pair-test`, `cost-report` and the other commands
+    that read runs by arm now leave out a run scored against another reference than its latest run's, as the catalog did, and
+    name it in a `WARNING` line, where they averaged it in.
+  - **`wer`, `cer` and `der` read lower-is-better** wherever no goal, adapter (`METRIC_DIRECTIONS`) or `import-run --asc`
+    says otherwise; they read as higher before, so a project whose datasets rank on one of them (the podcast project's `wer`)
+    sees every ranking and test on it turn the right way up. A declaration still wins.
+  - **A goal that lists the dataset is heard before a goal the runs name** when both declare a measure's direction on it
+    (a goal that names the dataset speaks for it; a run's `goal` only says what the run was made for). A goal with
+    `datasets: []` is heard only through a run that names it, or by a question with no dataset (`metric-list`,
+    `metric-show`). `output_words`, `output_chars`, `lines`, `chars`, `n_items` and `reasoning_tokens` are neutral by name:
+    an adapter's own `chars` or `lines` that is a quality measure needs a `METRIC_DIRECTIONS` entry or a goal.
+  - **A measure nothing declares is still read as higher-is-better**, as before, and now says so: `leaderboard`,
+    `run-compare` and `goal-leaderboard` print a `NOTE`, and `evh validate` prints a `V14` note for each goal measure and
+    each primary metric that rests on it. Declare the direction in the goal (`direction:`) or the adapter.
+  - **A command that is not given `--metric` reads the measure that decides on the dataset**: the goal's, when a run records
+    it, else the runs' primary metric (`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `holdout`,
+    the sheet and the inspector's first metric). Where a goal's measure is not the runs' primary metric, the default changes;
+    pass `--metric` to pin one.
+  - **A measure whose datasets disagree reads "mixed"** on the metric pages and the goal's pages, with each dataset's answer;
+    a descriptive measure reads "neutral", never "higher is better", in the leaderboard's heading.
+  - **A baseline is the goal's own.** The datasets page names the goal beside each baseline, and a goal's page shows the
+    baseline its own goal promoted, not the latest of any goal on the dataset.
+  - **A score that is not a number is a failed item.** A NaN, an infinity or a None from an adapter's `score()` fails the item
+    in `evh run` (scored as a failed item is, never averaged; `--resume` calls it again). A run already recorded with one
+    is read the same way, as a failed item scored 0, on read as on write. The tests used to leave such an item out and say
+    how many (`non_finite`), so the verdict on old data with a NaN can move: an arm that was significant on N-1 items can
+    stop being so on N.
+  - **A cost nobody reported is unknown, not `$0`.** `arm-smoke`'s full-run projection says "cost unknown" instead of
+    `about $0`, the cost charts leave an arm with an unknown cost off the cost axis and name it (they read it as 0), and refuse
+    (`not-enough`) when no arm has a known cost, where they drew every arm at 0; and a
+    run where only some items reported a cost records `cost_coverage` (its `total_cost_usd` is of those items). A recorded
+    cost of 0 shows `$0` where a table showed "—".
+- **What a script or a pipeline must change** (each is refused by name, before anything is spent or written):
+  - `--purpose repeat` without `--of RUN` (`bad-argument`): name the run it repeats, or leave `--purpose` out. A `--scratch`
+    pass is exempt.
+  - `--of` on a `repeat`, `retime` or `pair` run that names another system's or dataset's run (`mismatch`). V29 fails one
+    already committed: correct the `of` in its `run.json`.
+  - `--purpose repeat --round R --of RUN` where RUN's arm is retired in round R (`bad-argument`): it would bring the arm
+    back into play. Repeat the run outside the round, or bring the arm back on purpose with a run of its own.
+  - A `--run-id`, `import-run --system-id` or `reference-promote --name` that is not a plain name (ASCII letters, digits, `.`,
+    `_`, `-`; `bad-argument`).
+  - `run-promote` of a run whose build records `dirty: null` and no `source` (a run from before 0.8.0, which says nothing of
+    its tree): it refused only a build git could not read; `--allow-dirty` overrides, as for `label-from-run`.
+  - `evh leaderboard --goal G` where no run records the goal's measure: exit 7, `ERROR (nothing-measured)`, naming what
+    the runs record. It was `not-found` (exit 1): a script that matched `not-found` there must match the new kind. Without `--goal` it ranks each arm on its own headline with one `NOTE`.
+  - `import-run` with a `--reference-id` that is not there (`not-found`), a `--reference-tier` that contradicts the id
+    (`mismatch`; the id says the tier: `gold/x`), or a tier with no reference (`bad-argument`).
+  - `arm-smoke` with a `--goal` or `--round` that is not there (`not-found`), or a `--round` with no `--goal`.
+  - **A run with no goal, once the goal policy says so.** If `data/goals/policy.yaml` has a `required_from` date that has
+    come, `evh run` (not `--scratch`) and `evh import-run` refuse a run with no `--goal` (`bad-argument`); validate's V14
+    only failed it afterwards. `import-run` takes `--goal G` now: add it to the scripts that bring runs in.
+- **`evh validate` has two checks that can fail a tree that passed.**
+  - **V30:** a run the harness scored (`evh run`, `rescore`, `judge-score`, `sheet-import`) whose reference or label set
+    is gone fails, named with the file that holds the link (`runs/<id>/run.json`). A goal's `datasets:` entry that names
+    no dataset (a plain id, prose or a pattern) is a warning, and an imported run's reference kept outside `data/` is a
+    note: neither fails. From 0.9, a plain id that names no dataset fails: make the dataset (`evh dataset-create`),
+    remove the entry, or write it as prose. A project that deleted a reference its harness-scored runs were scored
+    against fails it: restore the folder (`evh reference-promote`), re-score against a reference that is
+    there (`evh rescore --reference-id`), or remove the runs. `evh validate` also notes (V16) each run scored against a
+    reference that is no longer under `data/references/`.
+  - **V29** now holds a `retime` and a `pair` run's `of` too, not a repeat's alone: it fails one that names a run of another
+    system or dataset. It only notes an `of` whose run was deleted (the repeat is read under `repeats`), and a round that
+    recorded a repeat under `repeats` where the repeat now joins its arm (the round reads what it recorded; the repeat is
+    listed in its "since then"): no migration, and nothing to do.
+- **A study's `stop` takes one bound** (`trials`, `usd` or `wall_h`): a spec that needed `trials`, or both `usd` and `wall_h`,
+  still works.
+- **A public deployment shows less.**
+  - A system's `params.prompt` (any prompt text its yaml carries) and a recorded prompt file's text (`prompt-show --text`,
+    `prompt-diff`) are shown on a public surface only with `--publish prompts` (`evh catalog-serve`) or `catalog: {publish:
+    [prompts]}` in `config.yaml` (the catalog's pages and the public MCP server). Without it a page shows `(prompt text: not
+    published here)` where `params.prompt` stood. A reference's promotion reason and a prompt version's note stay public.
+  - A read a public server leaves out (`judge-verdicts`, `comparison-item`, `comparison-items`, `sheet-show`, `exposure`, `sealed-counts`,
+    `validate`, `data-ls`, `data-show`, `label-mutants`, `label-coverage-show`) now refuses in-process too (`not-allowed`)
+    when the call is a public one (`EVH_PUBLIC` set, or `--public` hosts), not only over HTTP. A script that called them with `EVH_PUBLIC` set must run without it.
+  - A dataset whose file is missing or unreadable is hidden on a public server, not shown.
+
 ## From 0.7.2 to 0.8.0
 
 - **A pin on a commit of the 0.8.0 branch, from before the release, installed `0.8.0.dev0`**, the version every commit of
@@ -625,7 +718,7 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
 | re-scored against a gold set that had changed | the rescored run **asserted the old reference hash** while scoring against the new files | `ebd54b60` |
 | used a cost cap (`EVAL_MAX_COST_USD`) in scripts or CI | a cap that stopped the run before any item **exited 0**, leaving an empty run that looked complete. Exit codes are now 0 complete, 2 stopped early, 1 nothing measured | `2b6a129a` |
 | ran `silver_calibrate` on exactly 3 arms | it crashed; the minimum is now stated as 4, with the reason | `ebd54b60` |
-| read `dirty: true` on your runs | every run after the first on a machine was marked dirty, because earlier run directories are untracked files. Untracked paths under `data/runs*/` no longer count | `9ec2513a` |
+| read `dirty: true` on your runs | every run after the first on a machine was marked dirty, because earlier run directories are untracked files. Untracked paths under `data/runs/` no longer count | `9ec2513a` |
 | relied on parser hashes | the scoring-code hash covered the function but not the module-level regexes it reads, so a parser change could leave the hash identical. Copy `examples/_shared/codehash.py` and hash with `code_digest(fn, consts=…)` | `3f16a79b`, `c6e8365f` |
 
 ### 2. Changes that break an old adapter or an old run
