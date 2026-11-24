@@ -66,6 +66,7 @@ class Session:
         return subprocess.CompletedProcess([*map(str, args)], got["rc"], got["out"], got["err"])
 
     def close(self) -> None:
+        """Ends the worker: its input closed, then waited for."""
         if self.proc.stdin:
             self.proc.stdin.close()
         try:

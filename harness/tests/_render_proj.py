@@ -54,4 +54,5 @@ _BUILT = re.compile(r"Built \d{4}-\d\d-\d\d \d\d:\d\d UTC")
 
 
 def mask_built(html: str) -> str:
+    """The page with its footer's build time masked: the one part two renders of one state may differ in."""
     return _BUILT.sub("Built <time>", html)

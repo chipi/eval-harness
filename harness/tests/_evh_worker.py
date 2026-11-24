@@ -27,11 +27,14 @@ def capture() -> io.TextIOWrapper:
 
 
 def text(stream: io.TextIOWrapper) -> str:
+    """What a command wrote to `stream`, as the console shows it."""
     stream.flush()
     return stream.buffer.getvalue().decode(ENCODING, errors="replace")  # type: ignore[attr-defined]
 
 
 def main() -> int:
+    """Runs one `evh` command per JSON line on standard input, in this one process, and answers each with its exit
+    code and output on one JSON line."""
     channel = os.fdopen(os.dup(1), "w", encoding="utf-8")
     os.dup2(os.open(os.devnull, os.O_WRONLY), 1)
     from evaluation_harness import cli  # noqa: PLC0415
