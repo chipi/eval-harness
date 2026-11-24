@@ -162,6 +162,18 @@ try:
         (dry, old_sha[:8]),
     )
     (proj / "a.py").write_text(ADAPTER, encoding="utf-8")
+    system("fleet_v1", n=30, machine="box-b")
+    r = evh(*base, "--dry-run")
+    dry = says(r)
+    check(
+        "B: a changed deployment field is named under deployment with its value now (the fleet's fleet_commit case)",
+        "not the same measurement" in dry
+        and "deployment." in dry
+        and "box-b now" in dry
+        and "settings" not in dry,
+        dry,
+    )
+    system("fleet_v1", n=30)
 
     # D: a subset is other data; it joins RUN's arm only if RUN ran exactly these items
     items = proj / "three.txt"
@@ -258,6 +270,12 @@ try:
         and "not-materialized" in out(real)
         and want in out(real),
         (out(r)[-500:], out(real)[-300:]),
+    )
+    listed = evh("runs-list", "--json")
+    check(
+        "C: the real run refuses before it starts: no STOPPED run is left behind to delete (point B, fleet)",
+        real.returncode != 0 and "STOPPED" not in out(real) and "raw_v1" not in listed.stdout,
+        (out(real)[-400:], listed.stdout[-300:]),
     )
 finally:
     _store.close()

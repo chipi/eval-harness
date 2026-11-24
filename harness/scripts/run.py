@@ -1627,8 +1627,8 @@ def _run(args: argparse.Namespace) -> int:
         _faithfulness_gate(plan, ds, adapter_id, adapter_path, ref_tier, args) if plan is not None else None
     )
 
+    _refuse_unmaterialized(cfg["dataset_id"])
     if args.dry_run:
-        _refuse_unmaterialized(cfg["dataset_id"])
         calls_only, note = None, None
         if args.resume and declared_once:  # what the resume would call, not the whole dataset
             rdir, prows = _resume_source(args.resume, cfg, runs)
