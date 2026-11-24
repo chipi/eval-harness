@@ -1,5 +1,7 @@
-// The Workbench mockup (UXS-005, round 1 of the mockup): the app's first, static form. Every value shown is read from
-// this project by mock.js's extractor; what the mockup only pretends (jobs, saving) is labelled where it happens.
+// The Workbench's shared file, loaded by the live Workbench (index.html, whose screens are live.js's, built on what this
+// file exports as WB) and by the mockup (mockup/mockup.html, frozen as a design reference, D7). The screens below
+// are the mockup's: every value they show is read from this project by mock.js's extractor, and what the mockup only
+// pretends (jobs, saving) is labelled where it happens.
 (() => {
   const M = window.MOCK, H = window.HELP, G = window.GLOSSARY;
   const KEY = "wb-mock-r1";
@@ -441,7 +443,14 @@ success_criteria:
   // ── step 4: models ───────────────────────────────────────────────────────
   const ONB = { pass: "probed and passed", probed: "probed, not yet run on an arm", check: "a probe flagged something to read", none: "never probed (run before onboarding existed)" };
   const armOf = (m) => M.arms.find((a) => a.rank === m.cnn_rank);
-  const usd = (x, d = 4) => (x == null ? "—" : x === 0 ? "$0" : `$${x.toFixed(d)}`);
+  // The one amount, as scripts/axes.py fmt_usd writes it (RFC-041 F3: unknown is "—", a known $0 is "$0"): live.js uses this one.
+  const usd = (x) => {
+    if (x == null) return "—";
+    const v = Number(x);
+    if (v === 0) return "$0";
+    if (Math.abs(v) >= 1) return `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${v.toFixed(Math.max(4, 1 - Math.floor(Math.log10(Math.abs(v)))))}`;
+  };
   const perM = (x) => (x == null ? "—" : x === 0 ? "$0" : `$${Math.round(x * 1e6).toLocaleString("en")}`);
   const words = (t) => String(t || "").trim().split(/\s+/).filter(Boolean).length;
   const secs = (ms) => (ms == null ? "—" : ms < 1 ? "<1 ms" : ms < 100 ? `${ms.toFixed(0)} ms` : `${(ms / 1000).toFixed(1)} s`);
@@ -472,9 +481,11 @@ success_criteria:
     const smoke = checked.length ? checked.map((id) => {
       const m = M.models.find((x) => x.id === id), a = armOf(m);
       if (!a) return `<div class="part"><div class="parthead"><h3 class="mono">${esc(id)}</h3><span class="grow"></span><span class="status">no replies to show</span></div>${note("this model has no CNN run, so the mockup has no real replies for it.")}</div>`;
-      const spent = a.replies.reduce((s, r) => s + (r.cost_usd || 0), 0);
+      // Only the replies that recorded a cost are summed; an unknown one is not $0 (RFC-041 F3).
+      const known = a.replies.filter((r) => r.cost_usd != null), unknown = a.replies.length - known.length;
+      const spent = known.length ? known.reduce((s, r) => s + r.cost_usd, 0) : null;
       return `<details class="part smokecard"><summary class="parthead"><h3 class="mono">${esc(id)}</h3><span class="muted" style="font-size:13px">arm ${esc(a.arm)}</span><span class="grow"></span>
-          <span class="status ok">3 replies · spent ${usd(spent, 5)} · all 200 ≈ ${usd(a.usd_per_item * 200, 2)}</span></summary>
+          <span class="status ok">3 replies · spent ${usd(spent)}${unknown ? ` (${unknown} repl${unknown === 1 ? "y" : "ies"} recorded no cost)` : ""} · all 200 ≈ ${usd(a.usd_per_item * 200)}</span></summary>
         <div class="body">${a.replies.map((r, i) => `<div class="reader"><div class="pane"><div class="kicker">item ${i + 1} · its reply · ${secs(r.latency_ms)}</div>${esc(r.text)}</div>
           <div class="pane"><div class="kicker">the reference · ${w("coverage")} ${r.coverage == null ? "—" : r.coverage.toFixed(2)}</div>${esc(M.items[i].highlights)}</div></div>`).join("")}</div></details>`;
     }).join("") + note("the replies, their cost and timing are the r1 run's real first three items.")
@@ -535,7 +546,7 @@ success_criteria:
     const [v] = VERD(a);
     return `<section class="part armpanel"><div class="parthead"><h2 class="mono">${esc(a.arm)}</h2>${a.baseline ? '<span class="tag gold">baseline</span>' : ""}${a.recommended ? '<span class="tag rec">recommended</span>' : ""}<span class="grow"></span><button type="button" class="round" data-closearm aria-label="Close">×</button></div>
       <div class="stats" style="margin-top:12px"><div><b>${a.coverage.toFixed(3)}</b><span>coverage</span></div><div><b>${esc(v)}</b><span>${a.p ? `vs the leader, raw p ${esc(a.p)}` : "the best mean"}</span></div>
-        <div><b>${usd(a.total_usd, 2)}</b><span>for all 200</span></div><div><b>${secs(a.p50_ms)}</b><span>per article, median</span></div></div>
+        <div><b>${usd(a.total_usd)}</b><span>for all 200</span></div><div><b>${secs(a.p50_ms)}</b><span>per article, median</span></div></div>
       <div class="note mono" style="margin-top:12px">${esc(a.model || "a rule: the article's first three sentences")}${a.temperature != null ? ` · temperature ${a.temperature}` : ""}${a.max_tokens ? ` · max ${a.max_tokens} tokens` : ""}${a.prompt_file ? ` · ${esc(a.prompt_file)}` : ""} · run ${esc(a.run_id)}</div>
       <div class="body">${a.replies.map((r, i) => `<div class="reader"><div class="pane"><div class="kicker">item ${M.items[i].row + 1} · its summary · coverage ${r.coverage == null ? "—" : r.coverage.toFixed(2)}</div>${esc(r.text)}</div>
         <div class="pane"><div class="kicker">the reference</div>${esc(M.items[i].highlights)}</div></div>`).join("")}</div></section>`;
@@ -645,8 +656,8 @@ success_criteria:
       <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length + 1} arms: ${own.length} re-run, bart_l carried${clones.length ? ` · ${clones.length} cloned` : ""}${hosted.length ? ` · your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} stay in r1` : ""}</span></div>
         ${r4.closed ? `<details class="adv armsfold"><summary>the round's ${own.length + 1} arms</summary>` : ""}<div class="body">${hosted.length ? `<p class="picks">Your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} from step 4 (${hosted.map((a) => esc(a.arm)).join(", ")}) ha${hosted.length === 1 ? "s" : "ve"} no re-run in the project, so this round re-runs the ${own.length} local arms that have one; ${hosted.length === 1 ? "it stays" : "they stay"} in r1, where ${hosted.length === 1 ? "it was" : "they were"} compared.</p>` : ""}<div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th>${costs ? `<th class="num">${ran ? "cost of 200 items" : "dry run: 200 items"}</th>` : ""}</tr></thead><tbody>
           <tr><td class="mono">bart_l <span class="tag gold">baseline</span><div class="muted runof">carried from r1 (--keep)</div></td><td class="mono">${esc(base.model)}</td>${costs ? '<td class="num">carried</td>' : ""}</tr>
-          ${own.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td>${costs ? `<td class="num">${usd(a.usd_per_item * 200, 2)}</td>` : ""}</tr>`).join("")}
-          ${clones.map((c, ci) => { const f = M.arms.find((a) => a.config_id === c.from); return `<tr><td class="mono">${esc(f.arm)} · ${esc(c.change)} <span class="tag new">clone</span>${ran || r4.closed ? "" : ` <button class="linkbtn" type="button" data-unclone="${ci}">Remove</button>`}</td><td class="mono">${esc(f.model || "—")}</td>${costs ? `<td class="num">${usd(f.usd_per_item * 200, 2)}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>
+          ${own.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td>${costs ? `<td class="num">${usd(a.usd_per_item * 200)}</td>` : ""}</tr>`).join("")}
+          ${clones.map((c, ci) => { const f = M.arms.find((a) => a.config_id === c.from); return `<tr><td class="mono">${esc(f.arm)} · ${esc(c.change)} <span class="tag new">clone</span>${ran || r4.closed ? "" : ` <button class="linkbtn" type="button" data-unclone="${ci}">Remove</button>`}</td><td class="mono">${esc(f.model || "—")}</td>${costs ? `<td class="num">${usd(f.usd_per_item * 200)}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>
           <div class="muted fine">${costs ? "Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's); a local arm costs nothing but the machine's time." : "Every arm here runs locally: $0 for the 200 items, only the machine's time; bart_l is carried, not run again."}</div>
           ${ran || r4.closed ? "" : `<details class="adv" id="clonebox" ${r4.cloneOpen ? "open" : ""}><summary>Clone an arm and change one thing</summary><div class="inline" style="margin-top:10px">
             <select id="clfrom" aria-label="the arm to clone">${[...own].map((a) => `<option value="${esc(a.config_id)}">${esc(a.arm)}</option>`).join("")}</select>
@@ -654,7 +665,7 @@ success_criteria:
             <input type="text" id="clto" placeholder="its new value" aria-describedby="clmsg" style="width:220px"><button class="btn" type="button" id="cladd">Add the clone</button></div><div class="why-off" id="clmsg" role="status"></div>
             <div class="hint" style="margin:6px 0 0">one change, so a difference in its score is that change's; a clone runs once its config is written (not in this mockup)</div></details>`}</div>${r4.closed ? "</details>" : ""}</div>
       <div class="part"><div class="parthead"><span class="letter">2</span><h3>Run</h3><span class="grow"></span>${ran ? `<span class="status ok">${own.length} runs · 200 items each</span>` : ""}</div>
-        ${ran ? "" : `<div class="body"><div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length} arms · ${est > 0 ? `about ${usd(est, 2)}` : "local, no API cost"}</button><span class="muted" id="r4hint" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob" role="status" aria-live="polite"></div></div>`}</div>
+        ${ran ? "" : `<div class="body"><div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length} arms · ${est > 0 ? `about ${usd(est)}` : "local, no API cost"}</button><span class="muted" id="r4hint" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob" role="status" aria-live="polite"></div></div>`}</div>
       <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3 id="results-h">Results</h3>${q("eval.compare")}</div>
         ${ran ? `<div class="body">${(() => { const by = (x) => inPlay.filter((a) => verdictOf(a)[0] === x).map((a) => a.arm);
             const ahead = by("significantly ahead"), worse = by("significantly worse"), same = by("not significantly different");

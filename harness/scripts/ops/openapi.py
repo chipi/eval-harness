@@ -641,7 +641,10 @@ def document() -> dict[str, Any]:
                                 "at": {"type": "string"},
                             },
                         },
-                        "spent_usd": {"type": "number", "description": "what it has spent so far"},
+                        "spent_usd": {
+                            "type": ["number", "null"],
+                            "description": "what it has spent so far; null when it recorded nothing",
+                        },
                     },
                     "required": ["id", "operation", "inputs", "state"],
                     "additionalProperties": True,

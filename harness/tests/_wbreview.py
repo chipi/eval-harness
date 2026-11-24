@@ -173,10 +173,14 @@ def run(
     )
     L.settled(page)
     spent = page.locator("main tbody tr").first.locator("td").nth(6).inner_text().strip()
+    page.locator("main tbody tr").first.locator("a").first.click()
+    page.wait_for_selector("#jb-log", timeout=15000)
+    on_page = page.locator("main tr:has(th:text-is('spent')) td").inner_text().strip()
+    # A job that recorded nothing is unknown (—), one that spent is its dollars: the same on the list and on its page.
     check(
-        "review #6: the jobs list shows what a job spent the way its own page does ($0), not a dash",
-        spent.startswith("$"),
-        spent,
+        "review #6: the jobs list shows what a job spent the way its own page does",
+        on_page.startswith(spent) and (spent == "—" or spent.startswith("$")),
+        (spent, on_page),
     )
 
     # ── the eval: charts that contradict their evidence (#2), always resolve (#3) ──────────────────────────────

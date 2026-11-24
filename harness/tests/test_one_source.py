@@ -523,7 +523,6 @@ ALLOWED: dict[tuple[str, str, str], str] = {
     ): "a writer: names the passes of `--repeat N`; membership is `repeat_index` (`model.runs.set_of`)",
     ("F2/run-id-suffix", "run.py", "_run"): "the same",
     # F3
-    ("F3/cost-or-zero", "_jobs.py", "spent"): "a total: a job that recorded no spend has spent nothing yet",
     ("F3/cost-or-zero", "_spend.py", "run_child"): "a total of what a child recorded",
     (
         "F3/cost-or-zero",

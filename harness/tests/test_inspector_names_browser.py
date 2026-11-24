@@ -9,6 +9,7 @@ is the path's last segment (the system id), its dataset id's prefix dropped, the
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import signal
@@ -70,6 +71,43 @@ def drive(base: str) -> None:
         )
         check("... the whole path is the tooltip", [t for _, t in got] == [ORRERY, ORRERY2], got)
         page.unroute("**/api/sheet**")
+
+        def relabel(*pairs):
+            def go(route):
+                d = json.loads(route.fetch().text())
+                for a, (label, ds) in zip(d["arms"], pairs):
+                    a["label"], a["dataset"] = label, ds
+                route.fulfill(status=200, content_type="application/json", body=json.dumps(d))
+
+            return go
+
+        def baseline_names() -> list:
+            page.goto(f"{base}inspect.html?runs={TWO}")
+            page.wait_for_selector("#baseline", timeout=15000)
+            return page.locator("#baseline option").evaluate_all("els => els.map(e => e.textContent)")
+
+        page.route(
+            "**/api/compare**",
+            relabel(("runs/new_intents_v1", "new_intents_v1"), ("runs/intents_v1", "intents_v1")),
+        )
+        got = baseline_names()
+        check(
+            "names: a stem that would leave only a version suffix is not cut, so two arms stay apart",
+            got == ["new_intents_v1", "intents_v1"],
+            got,
+        )
+        page.unroute("**/api/compare**")
+        page.route(
+            "**/api/compare**",
+            relabel(("runs/intents_v1 · acc", "intents_v1"), ("runs/tickets_v1", "tickets_v1")),
+        )
+        got = baseline_names()
+        check(
+            "names: `intents_v1 · acc` on intents_v1 keeps its stem (not `v1 · acc`)",
+            got[0] == "intents_v1 · acc",
+            got,
+        )
+        page.unroute("**/api/compare**")
 
         def same_system(route):
             body = route.fetch().text()

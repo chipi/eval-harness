@@ -341,6 +341,15 @@ try:
         stopped_q.get("state") == "cancelled" and sup_gone and first_free,
         (stopped_q.get("state"), sup_gone, first_free),
     )
+    # RFC-041 F3: a job that recorded nothing spent is unknown, never $0; one that recorded $0 is $0.
+    unrecorded = _jobs.read(qid)["spent_usd"]
+    (_jobs.job_dir(qid) / "spent.json").write_text(json.dumps({"spent_usd": 0}), encoding="utf-8")
+    recorded_zero = _jobs.read(qid)["spent_usd"]
+    check(
+        "a job with no spent.json reads spent_usd null; one that recorded 0 reads 0",
+        unrecorded is None and recorded_zero == 0 and recorded_zero is not None,
+        (unrecorded, recorded_zero),
+    )
     # Stop waits for the supervisor itself, not only its lock: the kernel frees a dying process's locks before it ends
     # (CI, 2026-11-13: the lock free, the supervisor not yet gone). Ended = gone or a zombie, never a live process.
     live = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])

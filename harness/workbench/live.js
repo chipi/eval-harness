@@ -8,6 +8,15 @@
   const LIVE = { on: false, viewer: false, catalogAt: "/", cache: {}, pending: {}, wanted: {}, quiet: new Set(), into: {}, failed: null };
   window.LIVE = LIVE;
   const esc = WB.esc;
+  // Every amount is written by this one (workbench.js, as scripts/axes.py fmt_usd): "—" unknown, "$0" a known $0.
+  const usd = WB.usd;
+  // Where the catalog is served comes from a response header: used only as a path on this origin, and escaped where it is written.
+  const catalogAt = () => location.origin + (String(LIVE.catalogAt).startsWith("/") ? LIVE.catalogAt : "/");
+  // A round's spend as the server's own line says it (model/rounds.py): unknown when no run recorded a cost, and how many did not.
+  const spentLine = (ev) => {
+    const none = (ev.notes || []).map((n) => /\d+ runs? recorded no cost/.exec(n)).find(Boolean);
+    return `spent ${ev.spent_usd == null ? "unknown" : usd(ev.spent_usd)}${none ? ` (${none[0]})` : ""}`;
+  };
 
   // A server that restarted has a new token: every call of a page left open answers 401 with the server's own words
   // ("no valid token"). The page says what happened and what to do, wherever the answer is shown.
@@ -130,7 +139,7 @@
       ${goals.goals.length ? `<div class="tablewrap" style="margin-top:18px"><table><thead><tr><th>goal</th><th>decides</th><th>datasets</th><th class="num">rounds</th><th>next</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
         : `<div class="answer" style="margin-top:18px"><p><b>What should this project help you decide?</b></p><p>An evaluation starts with a goal: the decision you need to make, and how you will know which system is better for it.</p></div>`}
       ${WB.cmd("evh goal-list\nevh goal-status <goal>\nevh jobs-status --state queued,running", "the commands that show this")}
-      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#prompts">Prompts</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${location.origin}${LIVE.catalogAt}">The catalog ↗</a></div></div>`;
+      <div class="actions"><a class="btn primary" href="#goal-new">${goals.goals.length ? "New goal" : "Start with a goal"}</a><a class="btn" href="#models">Models</a><a class="btn" href="#prompts">Prompts</a><a class="btn" href="#settings">Settings</a><a class="btn" href="${esc(catalogAt())}">The catalog ↗</a></div></div>`;
   }
 
   // ── a goal: where it stands, and the next step ─────────────────────────────
@@ -712,8 +721,8 @@
     const v = r.values || {}, pj = v.projection || {};
     // A check is kept on a model's deployment (RFC-032): a system naming no model record has none to keep it on.
     const unkept = sysRec && !sysRec.error && sysRec.record && !sysRec.record.model_record;
-    return `<p><span class="status ${v.status === "pass" ? "ok" : "warn"}">${esc(v.status || "?")}</span> · ${v.calls ?? 0} call(s) · spent $${Number(v.spent_usd || 0).toFixed(5)}
-      · all ${esc(pj.items ?? "?")} items ≈ $${esc(pj.usd ?? "?")}, about ${esc(pj.minutes ?? "?")} min</p>
+    return `<p><span class="status ${v.status === "pass" ? "ok" : "warn"}">${esc(v.status || "?")}</span> · ${v.calls ?? 0} call(s) · spent ${usd(v.spent_usd)}
+      · all ${esc(pj.items ?? "?")} items ≈ ${typeof pj.usd === "number" ? usd(pj.usd) : "?"}, about ${esc(pj.minutes ?? "?")} min</p>
       ${unkept ? '<p class="muted">not kept: this system names no model record, and a check is kept on a model\'s deployment. Set the cap from the cost above.</p>' : ""}
       ${(v.flags || []).length ? `<ul>${v.flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
       ${(v.items || []).map((it) => `<details><summary class="mono">${esc(it.item)}</summary><pre class="reply">${esc(it.reply || "")}</pre>${artifactLink(it.artifact)}</details>`).join("")}`;
@@ -978,7 +987,7 @@
     return `<div class="screen wide">${head}${tabs}
       <h2>${esc(r.hypothesis || "(no question)")}</h2>
       ${byField("ev-by")}
-      <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.study ? ` · opened by study <a href="#study/${enc(goal)}/${enc(r.study)}">${esc(r.study)}</a>` : ""}${r.budget_usd != null ? ` · budget $${esc(r.budget_usd)}` : ""} · spent $${num(ev.spent_usd, 4)}</p>
+      <p class="muted">${esc(r.round_id)} · ${esc(r.status)} · on ${esc(r.dataset_id)}${r.from ? ` · from ${esc(r.from)}` : ""}${r.study ? ` · opened by study <a href="#study/${enc(goal)}/${enc(r.study)}">${esc(r.study)}</a>` : ""}${r.budget_usd != null ? ` · budget ${usd(r.budget_usd)}` : ""} · ${spentLine(ev)}</p>
       ${r.conclusion ? `<div class="answer"><div class="kicker">its conclusion</div><p>${esc(typeof r.conclusion === "string" ? r.conclusion : r.conclusion.text || JSON.stringify(r.conclusion))}</p></div>` : ""}
       <section class="part"><div class="parthead"><h2>The evidence</h2><span class="grow"></span><span class="muted">${esc(ev.metric || "")} · each arm against the leader, Holm</span></div><div class="body">
         ${chartBox("gain-cost", { goal, round: cur }, !ev.leader)}
@@ -1098,7 +1107,7 @@
         for (;;) {
           const jr = await fetch(`/api/v1/jobs/${enc(j.id)}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
           const pg = jr.progress ? ` · ${jr.progress.done} of ${jr.progress.total}` : "";
-          out.innerHTML = `<p class="muted">sweep ${esc(jr.state || "…")}${pg}${jr.spent_usd ? ` · spent $${Number(jr.spent_usd).toFixed(4)}` : ""}</p>`;
+          out.innerHTML = `<p class="muted">sweep ${esc(jr.state || "…")}${pg}${jr.spent_usd != null ? ` · spent ${usd(jr.spent_usd)}` : ""}</p>`;
           if (!["queued", "running", "running (unsupervised)"].includes(jr.state)) {
             if (jr.state !== "succeeded") out.innerHTML = await jobRefusal(jr);
             else again(null, out);
@@ -1492,7 +1501,7 @@
   }
 
   // ── step 3: prepare a dataset (UXS-005 step 3): fetch it, look inside, its reference set ────────────────────────
-  const catalogPage = (ds) => `${location.origin}${LIVE.catalogAt}d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
+  const catalogPage = (ds) => `${catalogAt()}d/${String(ds || "none").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "x"}.html`;
   async function runJob(path, body, box, what) {
     const j = await send("POST", path, body);
     const done = await watchJob(j.id, box, what);
@@ -1519,7 +1528,7 @@
         ${fetched ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-fetch">Fetch them</button></div>`}<div id="pp-fetch-out" data-out></div></div></section>
       <section class="part"><div class="parthead"><span class="letter">b</span><h2>Look inside</h2><span class="grow"></span>${looked ? done(true) : '<span class="status">optional</span>'}</div><div class="body">
         <p class="muted">How many items, how long, each field's values: most surprises show here, before anything runs.</p>
-        ${looked ? `<p><a href="${catalogPage(ds)}">Open its page in the catalog ↗</a></p>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-look" ${fetched ? "" : "disabled"}>Profile it</button>${fetched ? "" : '<span class="muted">after it is fetched</span>'}</div>`}
+        ${looked ? `<p><a href="${esc(catalogPage(ds))}">Open its page in the catalog ↗</a></p>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="pp-look" ${fetched ? "" : "disabled"}>Profile it</button>${fetched ? "" : '<span class="muted">after it is fetched</span>'}</div>`}
         <div id="pp-look-out" data-out></div></div></section>
       <section class="part"><div class="parthead"><span class="letter">c</span><h2>Its reference set</h2><span class="grow"></span>${done(refs.length)}</div><div class="body">
         <p class="muted">The expected answer for each item, that outputs are scored against. Gold is checked by people; silver is a model's answers, enough to rank systems. Who and why are recorded.</p>
@@ -1760,7 +1769,7 @@
       const vr = one.validation_runs || [];
       const vruns = vr.length ? `<p class="muted" style="margin-bottom:4px">Its judges on rated datasets:</p><div class="tablewrap"><table><thead><tr><th>judge</th><th>dataset</th><th>metric</th><th class="num">value</th><th class="num">items</th><th>not validated</th><th>run</th></tr></thead><tbody>${vr.map((x) => `<tr><td class="mono">${esc(x.judge)}</td><td class="mono">${esc(x.dataset)}</td><td>${esc(x.metric)}</td><td class="num">${fx(x.value)}</td><td class="num">${esc(x.n_items)}</td><td>${(x.not_validated || []).map((d) => esc(`${d}: not validated on ${x.dataset}`)).join("<br>") || '<span class="muted">none</span>'}</td><td class="mono">${esc(x.run)}</td></tr>`).join("")}</tbody></table></div>` : "";
       shown = `<section class="part"><div class="parthead"><span class="letter">b</span><h2>How ${esc(cur)} judges</h2></div><div class="body">
-          <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · ${r.explain === true ? "each judge says why" : "no reasons asked"} · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most $${esc(r.cost_cap_usd ?? "—")} a pass</p>
+          <p><b>${esc((MODES.find(([m]) => m === (r.mode || "grade")) || [])[1] || r.mode)}</b> · ${r.explain === true ? "each judge says why" : "no reasons asked"} · on <span class="mono">${esc(r.dataset_id)}</span> · the prompt <span class="mono">${esc(dig(r, "prompt.file") || "—")}</span> · at most ${usd(r.cost_cap_usd)} a pass</p>
           <p class="muted">${guards}</p>
           <div class="tablewrap"><table><thead><tr><th>judge</th><th>model or system</th><th>family</th></tr></thead><tbody>${(one.judges || []).map((j) => `<tr><td class="mono">${esc(j.judge)}</td><td class="mono">${esc(j.model || j.system || "")}</td><td>${esc(j.family || "—")}</td></tr>`).join("")}</tbody></table></div>
           ${one.problem ? `<p class="note" role="alert">${md(one.problem)}</p>` : ""}${edit}</div></section>
@@ -2056,9 +2065,6 @@
   const progressOf = (p) => (p ? `${p.done ?? p.n ?? "?"} / ${p.total ?? "?"}${p.unit ? ` ${esc(p.unit)}` : ""}` : "—");
   // What a job spent, one way on the list and on its page. A catalog job nobody asked for is the server's own, from before
   // 0.8.1: it rebuilt the pages when the data changed; since RFC-040 it renders them on request and starts none.
-  const usd = (x) => (x ? `$${Number(x).toFixed(4)}` : "$0");
-  // A study's or a trial's cost: "—" when none was recorded, $0.0000 when $0 was.
-  const spent = (x) => (x == null ? "—" : `$${Number(x).toFixed(4)}`);
   const SERVER_JOBS = ["catalog"];
   const sameLines = (a, b) => { const n = (t) => String(t).split("\n").map((x) => x.trim()).filter(Boolean).join("\n"); return n(a) === n(b); };
   const askedBy = (j) => (j.by ? `asked by <span class="mono">${esc(j.by)}</span>` : SERVER_JOBS.includes(j.operation) ? "started by the server, which rebuilt the catalog when the data changed (before 0.8.1)" : "asked by nobody recorded");
@@ -2082,7 +2088,7 @@
     const opt = (xs, sel, none) => `<option value="">${esc(none)}</option>` + xs.map((x) => `<option value="${esc(x)}" ${x === sel ? "selected" : ""}>${esc(x)}</option>`).join("");
     const from = (f.offset || 0) + 1, to = (f.offset || 0) + js.jobs.length;
     const rows = js.jobs.map((j) => `<tr><td class="mono"><a href="#jobs/${enc(j.id)}">${esc(j.id)}</a></td><td class="mono">${esc(j.operation)}</td><td>${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` <small class="muted">waits for ${esc(j.waiting_for)}</small>` : ""}</td>
-      <td class="mono">${esc(j.by || (SERVER_JOBS.includes(j.operation) ? "the server" : "—"))}</td><td class="num">${esc((j.created_at || "").replace("T", " ").slice(0, 16))}</td><td class="num">${progressOf(j.progress)}</td><td class="num">${j.spent_usd == null ? "—" : usd(j.spent_usd)}</td></tr>`).join("");
+      <td class="mono">${esc(j.by || (SERVER_JOBS.includes(j.operation) ? "the server" : "—"))}</td><td class="num">${esc((j.created_at || "").replace("T", " ").slice(0, 16))}</td><td class="num">${progressOf(j.progress)}</td><td class="num">${usd(j.spent_usd)}</td></tr>`).join("");
     return `<div class="screen wide">${head}
       <div class="inline"><select id="jf-state" aria-label="state">${STATE_SETS.map(([v, t]) => `<option value="${esc(v)}" ${v === f.state ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>
         <select id="jf-op" aria-label="operation">${opt(ops, f.operation, "every operation")}</select><select id="jf-goal" aria-label="goal">${opt(goalIds, f.goal, "every goal")}</select></div>
@@ -2116,7 +2122,7 @@
       <p class="lead">${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · ${askedBy(j)} · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
       <div class="tablewrap"><table><tbody>
         <tr><th>progress</th><td>${progressOf(j.progress)}</td></tr>
-        <tr><th>spent</th><td>${usd(j.spent_usd)}${cap ? ` of at most $${Number(cap).toFixed(2)}` : ""}</td></tr>
+        <tr><th>spent</th><td>${usd(j.spent_usd)}${cap ? ` of at most ${usd(Number(cap))}` : ""}</td></tr>
         <tr><th>holds</th><td class="mono">${(j.locks || []).map(([k, ex]) => `${esc(k)}${ex ? " (alone)" : ""}`).join(", ") || "—"}</td></tr>
         ${j.run_id ? `<tr><th>its run</th><td class="mono">${esc(j.run_id)}</td></tr>` : ""}
         <tr><th>inputs</th><td><pre class="reply">${esc(JSON.stringify(j.inputs || {}, null, 2))}</pre></td></tr>
@@ -2444,7 +2450,7 @@
     if (!sid) {
       const draft = (WB._study || {})[goal] || specOf(vals[0] || "<dataset>", blSys || "<system>", measure, "grid");
       return `<div class="screen wide">${head}${byField("st6-by")}
-        ${list.studies.length ? tbl(["study", "state", "on", "from", "trials", "kept", "spent", "confirmed"], list.studies.map((x) => `<tr><td class="mono"><a href="#study/${enc(goal)}/${enc(x.study.split("/").pop())}">${esc(x.study)}</a></td><td>${esc(x.status)}</td><td class="mono">${esc(x.dataset)}</td><td class="mono">${esc(x.baseline)}</td><td class="num">${x.trials}</td><td class="num">${x.kept}</td><td class="num">${spent(x.spent_usd)}</td><td class="num">${x.confirms}</td></tr>`)) : '<p class="muted">No study yet.</p>'}
+        ${list.studies.length ? tbl(["study", "state", "on", "from", "trials", "kept", "spent", "confirmed"], list.studies.map((x) => `<tr><td class="mono"><a href="#study/${enc(goal)}/${enc(x.study.split("/").pop())}">${esc(x.study)}</a></td><td>${esc(x.status)}</td><td class="mono">${esc(x.dataset)}</td><td class="mono">${esc(x.baseline)}</td><td class="num">${x.trials}</td><td class="num">${x.kept}</td><td class="num">${usd(x.spent_usd)}</td><td class="num">${x.confirms}</td></tr>`)) : '<p class="muted">No study yet.</p>'}
         ${part("a", "A new study", `<div data-form="study-new"><div class="inline"><input type="text" id="sn6-id" placeholder="its id: s1" autocapitalize="off" spellcheck="false">
             <select id="sn6-ds" aria-label="the validation dataset">${opt(vals)}</select><select id="sn6-base" aria-label="the system it starts from">${opt(sysIds, blSys)}</select>
             <select id="sn6-sampler" aria-label="how it chooses"><option value="grid">grid: every value in turn</option><option value="agent">agent: proposals asked and told</option></select>
@@ -2466,9 +2472,9 @@
     const agent = sp.sampler === "agent", open = one.status !== "ended";
     return `<div class="screen wide">${head}<span id="st6-cur" data-study="${esc(goal)}/${esc(sid)}" hidden></span>${byField("st6-by")}
       ${part(1, "What it searches", `<div class="stats"><div><b>${esc(one.baseline || "")}</b><span>from</span></div><div><b>${esc(sp.sampler || "")}</b><span>how it chooses</span></div><div><b>${(one.trials || []).length}</b><span>trials</span></div><div><b>${esc(one.status || "")}</b><span>its state</span></div></div>
-        <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent ${spent(one.spent_usd)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
+        <p class="muted">On <span class="mono">${esc(sp.dataset || "")}</span>, decided on ${esc(sp.measure || "")}; round ${esc(one.round || "")}; spent ${usd(one.spent_usd)}.${one.end ? ` Ended: ${esc(one.end)}.` : ""}</p>
         <details><summary>Its spec</summary><pre class="reply">${esc(JSON.stringify(sp, null, 2))}</pre></details>`)}
-      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.change && x.hypothesis.startsWith(x.change) ? x.hypothesis.slice(x.change.length).trim() : x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">${spent(x.cost_usd)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
+      ${part(2, "Its trials", `${(one.trials || []).length ? chartBox("study-progress", { goal, study: sid }) + chartBox("gain-cost", { goal, study: sid }) : ""}${(one.rows || []).length ? tbl(["trial", "what changed", "outcome", "why", "vs the best", "cost"], one.rows.map((x) => `<tr><td class="mono">t${x.k}</td><td>${esc(x.change || "")}${x.hypothesis && x.hypothesis !== x.change ? `<div class="muted">${esc(x.change && x.hypothesis.startsWith(x.change) ? x.hypothesis.slice(x.change.length).trim() : x.hypothesis)}</div>` : ""}</td><td><span class="verdict ${x.outcome === "kept" ? "v-lead" : "v-ns"}">${esc(x.outcome || "")}</span></td><td>${esc(x.reason || "")}</td><td class="num">${typeof x.delta === "number" ? (x.delta >= 0 ? "+" : "") + x.delta.toFixed(4) : "—"}</td><td class="num">${usd(x.cost_usd)}</td></tr>`)) : '<p class="muted">No trial yet.</p>'}
         <p class="note">Best so far: <span class="mono">${esc(one.best || one.baseline || "")}</span>. Research on validation items: no evidence until it is confirmed.</p>
         ${open ? `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="so-stop">Stop it</button>${agent ? "" : '<label>at most (USD) <input type="number" id="so-cap" value="1" min="0.01" step="0.01" style="width:6rem"></label><button class="btn" type="button" id="so-resume">Continue it</button>'}</div><div id="so-out" data-out></div>` : ""}`)}
       ${agent && open ? part(3, "Propose the next trial", `<p class="muted">The agent sampler: ask for the study's state (its weakest items, what was tried), then tell a proposal, which runs as the next trial.</p>
@@ -2583,6 +2589,8 @@
 
   // ── prompts (RFC-028): every prompt with its versions, the runs that sent each, two versions' diff; a version recorded
   // or written out. A manual eval's systems and a study's trials both make versions; this is where their history is read ──
+  // A server that does not publish prompts sends no text (`text_hidden` on a diff, no `text` on a version): said, not an empty box.
+  const TEXT_HIDDEN = "the text is not published here (--publish prompts)";
   function screenPrompts(param) {
     const name = String(param || "");
     const head = `<div class="kicker">Prompts${name ? ` · ${esc(name)}` : ""}</div><h1>${name ? esc(name) : "Prompts"}</h1>
@@ -2603,11 +2611,11 @@
     return `<div class="screen wide">${head}${byField("pp6-by")}
       <section class="part"><div class="parthead"><span class="letter">1</span><h2>Its versions</h2></div><div class="body">
         ${vs.map((x) => `<details class="version" ${x === last ? "open" : ""}><summary><b>v${x.n}</b> <span class="mono">${esc(x.id)}</span> · ${esc(String(x.created_at || "").slice(0, 16).replace("T", " "))} · by ${esc(actorSaid(x.actor))}${x.parent ? ` · from <span class="mono">${esc(x.parent)}</span>` : ""} · ${x.runs.length} run(s)</summary>
-          <p class="muted">${esc(x.note || "")}</p><pre class="reply">${esc(x.text || "")}</pre>
+          <p class="muted">${esc(x.note || "")}</p>${"text" in x ? `<pre class="reply">${esc(x.text)}</pre>` : `<p class="muted">${TEXT_HIDDEN}</p>`}
           ${x.runs.length ? tbl(["run", "measure", "score"], x.runs.map((r) => `<tr><td class="mono">${idw(r.run_id)}</td><td>${esc(r.metric || "")}</td><td class="num">${typeof r.score === "number" ? r.score.toFixed(4) : esc(r.score ?? "")}</td></tr>`)) : '<p class="muted">No run sent it yet.</p>'}</details>`).join("")}</div></section>
       <section class="part"><div class="parthead"><span class="letter">2</span><h2>What changed between two</h2></div><div class="body">
         ${ids.length > 1 ? `<div class="inline"><select id="pd-a" aria-label="from">${opt((df || {}).a || ids[ids.length - 2])}</select><span class="muted">to</span><select id="pd-b" aria-label="to">${opt((df || {}).b || ids[ids.length - 1])}</select><button class="btn" type="button" id="pd-go">Compare</button></div>
-          <div id="pd-out" data-out>${df && df.diff ? `<pre class="reply diff">${esc(df.diff)}</pre>` : ""}</div>` : '<p class="muted">One version: nothing to compare yet.</p>'}</div></section>
+          <div id="pd-out" data-out>${df && df.hidden ? `<p class="muted">${TEXT_HIDDEN}</p>` : df && df.diff ? `<pre class="reply diff">${esc(df.diff)}</pre>` : ""}</div>` : '<p class="muted">One version: nothing to compare yet.</p>'}</div></section>
       <section class="part"><div class="parthead"><span class="letter">3</span><h2>A new version</h2></div><div class="body" data-form="prompt-new">
         <p class="muted">Made from ${esc(last.id)}. A system points at it once it is recorded (step 4: clone a system, change its prompt).</p>
         <textarea id="pn-text" rows="5" style="width:100%" aria-label="its text">${esc(last.text || "")}</textarea>
@@ -2629,7 +2637,7 @@
       const b = await r.json().catch(() => ({}));
       if (!r.ok) { box.innerHTML = `<p class="note" role="alert">${esc(b.error || r.status)}</p>`; return; }
       const res = b.result || {};
-      WB._pdiff = { name, a: v("pd-a"), b: v("pd-b"), diff: (res.diff || []).join ? (res.diff || []).join("") : String(res.diff || "") || "(the same text)" };
+      WB._pdiff = { name, a: v("pd-a"), b: v("pd-b"), hidden: !!res.text_hidden, diff: (res.diff || []).join ? (res.diff || []).join("") : String(res.diff || "") || "(the same text)" };
       WB.render();
     });
     holds("prompt-new", () => `Record a new version of ${name}`);

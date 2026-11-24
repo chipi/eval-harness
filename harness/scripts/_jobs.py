@@ -199,12 +199,13 @@ def new_id() -> str:
     return time.strftime("%Y%m%dT%H%M%S", time.gmtime()) + "-" + secrets.token_hex(3)
 
 
-def spent(job_id: str) -> float:
-    """What a job's command counted as spent, as it went (0 when it made no paid call)."""
+def spent(job_id: str) -> float | None:
+    """What a job's command counted as spent, as it went; None when it recorded nothing (RFC-041 F3: not $0)."""
     try:
-        return float(_read_json(job_dir(job_id) / "spent.json").get("spent_usd") or 0)
+        v = _read_json(job_dir(job_id) / "spent.json").get("spent_usd")
+        return None if v is None else float(v)
     except (OSError, ValueError, TypeError):
-        return 0.0
+        return None
 
 
 def create(

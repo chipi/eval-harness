@@ -123,6 +123,25 @@ try:
                     bool(to_catalog) and all(p.startswith("/catalog/") for p in to_catalog),
                     to_catalog,
                 )
+                # the catalog's place comes from a response header: put into an href escaped, and only as a path
+                kept_at = page.evaluate("LIVE.catalogAt")
+                hrefs = {}
+                for hostile in ('/c/"><i id=injected>', "javascript:alert(1)"):
+                    page.evaluate("(at) => { LIVE.catalogAt = at; WB.render(true); }", hostile)
+                    page.wait_for_selector("main h1", timeout=20000)
+                    hrefs[hostile] = [
+                        page.locator("main a.btn:has-text('The catalog')").get_attribute("href"),
+                        page.locator("#injected").count(),
+                    ]
+                page.evaluate("(at) => { LIVE.catalogAt = at; WB.render(true); }", kept_at)
+                check(
+                    f"{tag}: a hostile catalog place is escaped in the link, and one that is not a path is not used",
+                    hrefs['/c/"><i id=injected>'][1] == 0
+                    and hrefs['/c/"><i id=injected>'][0]
+                    == base.split("/workbench")[0] + '/c/"><i id=injected>'
+                    and hrefs["javascript:alert(1)"][0] == base.split("/workbench")[0] + "/",
+                    hrefs,
+                )
 
                 seen: dict[str, str] = {}
                 todo = ["#home", "#models", "#prompts", "#glossary", "#goal/hg"]
@@ -217,6 +236,18 @@ try:
                         and page.locator("#wb-viewer").count() == 1,
                         shown[:200],
                     )
+
+                # a prompt's text is published only with --publish prompts: its views say so, not an empty box
+                page.goto(base + "#prompts/hg%2Fprompt")
+                settled(page)
+                shown = page.inner_text("main")
+                check(
+                    f"{tag}: a prompt's version says the text is not published here (--publish prompts), and shows none",
+                    "the text is not published here (--publish prompts)" in shown
+                    and "Keep what support needs." not in shown
+                    and "Keep what support needs." not in page.content(),
+                    shown[:400],
+                )
 
                 # a screen that needs a refused read says so where the read would have shown
                 page.goto(base + "#home")

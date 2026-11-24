@@ -248,7 +248,7 @@ try:
                     f"estimate answer: result={json.dumps(api_est.get('result'))[:600]} text_lines={len(str(api_est.get('text')).splitlines())}",
                 )
                 reach = {}
-                for w_, h_ in ((1280, 900), (390, 800)):
+                for w_, h_ in ((1400, 900), (390, 800)):
                     page.set_viewport_size({"width": w_, "height": h_})
                     reach[w_] = {
                         k: seen(page, rx)
