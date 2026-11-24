@@ -128,7 +128,7 @@ OPS = (
            "metric_kind": {"type": "array", "items": {"type": "string"}, "x-metavar": "METRIC=KIND", "description": "quality | descriptive | cost | speed (repeatable)"},
            "allow_subset": {"type": "boolean", "description": "accept scores for only part of the dataset, recorded as coverage"},
            "run_id": {"type": "string", "description": "default: <system-id>_<timestamp>"},
-           "goal": {"type": "string", "description": "the goal this run answers (data/goals/<goal_id>.yaml); required from the date data/goals/policy.yaml says"},
+           "goal": {"type": "string", "description": "the goal this run answers (data/goals/<goal_id>.yaml); required from the date data/goals/policy.yaml gives (one line there: required_from: YYYY-MM-DD; the file is yours to create)"},
        }),
     Op("capture", "work", "keep a production system's records as a capture (data/captures/)",
        "POST", "/captures/{capture}", "evaluation_harness.capture:body", "",

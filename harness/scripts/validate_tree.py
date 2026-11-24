@@ -1580,7 +1580,7 @@ def v16_references() -> None:
         d for tier in ("gold", "silver") for d in sorted(_store.glob(base / tier, "*")) if _store.is_dir(d)
     ]
     if not dirs:
-        print("  --   V16 references (none)")
+        print("  --   V16 references (none under data/references to check against a manifest)")
         return
     schema = json.loads(_store.read_text(SCHEMAS / "reference.schema.json")) if jsonschema else None
     bad: list[str] = []
@@ -2230,20 +2230,6 @@ def _imported(rec: dict[str, Any]) -> bool:
     return bool(rec.get("imported")) or str(rec.get("adapter") or "").startswith("imported:")
 
 
-def _missing_reference_note(ref: str, runs: set[str]) -> str:
-    """The note for a reference or label set imported runs were scored against and that is not here (V16's wording).
-    An importer keeps its reference where it likes, so the note says the harness cannot find it, not that it is gone
-    (the podcast project keeps them under records/references/). A harness-scored run's is V30's failure, said once."""
-    shown = sorted(runs)
-    where = "data/labels" if ref.startswith("labels/") else "data/references"
-    return (
-        f"V16 references: {len(runs)} run(s) scored against {ref}, which is not under {where} "
-        f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): the harness cannot find it, so it cannot re-check "
-        "what they measured; the import named it, and it may be kept elsewhere. To make it checkable here, promote it "
-        "(evh reference-promote)."
-    )
-
-
 def v30_recorded_links() -> None:
     """V30: the links the harness wrote resolve. A goal's `datasets:` entry that is not a dataset of the project is a
     note naming the goal and the entry (a goal file is the project's own text; a plain id that names no dataset
@@ -2253,7 +2239,7 @@ def v30_recorded_links() -> None:
     whose importer named it and kept it where it likes (a bare name, a folder outside data/), one note says a missing
     one once. A link is named with the file that holds it: the score's metrics.json for a score with a fingerprint of
     its own (a re-score), else its run's run.json (RFC-041 F7)."""
-    from evaluation_harness._common import DATASET_ID, scored_against_dir  # noqa: PLC0415
+    from evaluation_harness._common import DATASET_ID, missing_reference_note, reference_found  # noqa: PLC0415
 
     found: dict[str, bool] = {}
     bad: list[str] = []
@@ -2281,15 +2267,7 @@ def v30_recorded_links() -> None:
                 continue
             named += 1
             if ref not in found:
-                where = scored_against_dir(ref)
-                found[ref] = bool(
-                    where is not None
-                    and (
-                        _store.is_file(where / "labels.json")
-                        if ref.startswith("labels/")
-                        else _store.is_dir(where)
-                    )
-                )
+                found[ref] = reference_found(ref)
             if found[ref]:
                 continue
             if _imported(rec):
@@ -2304,7 +2282,7 @@ def v30_recorded_links() -> None:
                 f"{held}: {'label set' if ref.startswith('labels/') else 'reference'} {ref!r} is not there"
             )
     for ref, runs in sorted(imported_missing.items()):
-        notes.append(_missing_reference_note(ref, runs))
+        notes.append(missing_reference_note(ref, runs))
     for b in bad[:10]:
         print(f"       {b}")
     if len(bad) > 10:

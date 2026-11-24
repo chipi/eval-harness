@@ -732,6 +732,35 @@ def scored_against_dir(reference_id: str | None) -> Path | None:
     return _paths()["REFERENCES"] / reference_id
 
 
+def reference_found(reference_id: str) -> bool:
+    """Whether what a run is scored against is under data/: a reference's folder, a label set's labels.json."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    where = scored_against_dir(reference_id)
+    if where is None:
+        return False
+    return (
+        _store.is_file(where / "labels.json")
+        if reference_id.startswith(LABELS_PREFIX)
+        else _store.is_dir(where)
+    )
+
+
+def missing_reference_note(ref: str, runs: set[str]) -> str:
+    """The note for a reference or label set imported runs were scored against and that is not here (V16's wording; validate
+    and import-run say it alike). An importer keeps its reference where it likes, so the note says the harness cannot find
+    it, not that it is gone (the podcast project keeps them under records/references/). A harness-scored run's is V30's
+    failure, said once."""
+    shown = sorted(runs)
+    where = "data/labels" if ref.startswith(LABELS_PREFIX) else "data/references"
+    return (
+        f"V16 references: {len(runs)} run(s) scored against {ref}, which is not under {where} "
+        f"({', '.join(shown[:3])}{', ...' if len(shown) > 3 else ''}): the harness cannot find it, so it cannot re-check "
+        "what they measured; the import named it, and it may be kept elsewhere. To make it checkable here, promote it "
+        "(evh reference-promote)."
+    )
+
+
 def labels_reference(spec: str, dataset_id: str) -> str:
     """The reference_id a run scored against labels records, from `SET` or `DATASET/SET`; refused when the set is on
     another dataset (its item ids are that dataset's) or does not exist."""

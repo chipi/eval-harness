@@ -290,7 +290,8 @@ should do against which system, committed before the run so a test of it counts 
 by name), `prompt_root`, `code`, `replay`, and `expect_identical_to` (the system whose output this run
 must match exactly); the schema is `schemas/system.schema.json`, and any other key is refused by `evh validate` (V1). What a system is
 run for is the run's: `--dataset`, `--goal` (what the evaluation is for, `data/goals/<goal_id>.yaml`)
-and `--round` (an eval round of that goal, `rN`).
+and `--round` (an eval round of that goal, `rN`). To make `--goal` required, write `required_from: YYYY-MM-DD` in
+`data/goals/policy.yaml` ([RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)); without that file it is optional.
 
 `adapter:` names a file, or one of the package's own adapters by the id a run records: the bundled
 `scripts/adapter.py`, and `scripts/judge_validation.py`, the adapter of `evh judge-validate`. The

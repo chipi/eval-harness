@@ -183,11 +183,52 @@ for purpose in ("retime", "pair"):
         "mismatch", "system differ",
     )  # fmt: skip
 
-print("\n-- a reference import-run names is there, and its tier is the reference's")
-refused(
-    "import-run --reference-id that is not there",
-    P, E, import_args(reference_id="gold/nope", reference_tier="gold"), "not-found", "gold/nope",
-)  # fmt: skip
+print(
+    "\n-- import-run takes the reference id free-form (0.8.0 did) and says when it is not under data/references"
+)
+NOTE_RE = re.compile(r"V16 references: 1 run\(s\) scored against (\S+), which is not under data/references")
+
+
+def imported_with(label: str, ref: str, tier: str | None, want_tier: str | None, run_id: str) -> None:
+    """import-run names `ref` (not under data/references) and `tier`: it imports, records `want_tier`, and says on stderr
+    what validate's V16 says of a reference it cannot find."""
+    proj, env = fresh()
+    (proj / "s.jsonl").write_text(SCORES, encoding="utf-8")
+    r = evh(proj, env, *import_args(reference_id=ref, reference_tier=tier, run_id=run_id))
+    rec = score_record(proj, run_id) if r.returncode == 0 else {}
+    held = ((rec.get("fingerprint") or {}).get("data") or {}).get("reference_id")
+    note = NOTE_RE.search(r.stderr)
+    check(
+        f"recorded: {label}: imports, records tier {want_tier!r} and id {ref!r}, and notes it is not under data/references",
+        r.returncode == 0
+        and rec.get("reference_tier") == want_tier
+        and held == ref
+        and note is not None
+        and note.group(1) == ref
+        and "the harness cannot find it" in r.stderr
+        and "Traceback" not in r.stderr,
+        f"exit {r.returncode}, tier {rec.get('reference_tier')!r}, id {held!r}: {(r.stdout + r.stderr)[-400:]}",
+    )
+
+
+imported_with(
+    "a bare --reference-id with --reference-tier silver",
+    "silver_opus47_smoke_v2",
+    "silver",
+    "silver",
+    "bare_ref",
+)
+imported_with(
+    "a silver/NAME id not under data/references, no tier",
+    "silver/kept_elsewhere",
+    None,
+    "silver",
+    "tiered_ref",
+)
+imported_with("a bare --reference-id alone", "kept_elsewhere_v1", None, None, "bare_alone")
+imported_with("a gold/NAME id with its own tier", "gold/kept_elsewhere", "gold", "gold", "tiered_own")
+
+
 refused(
     "import-run --reference-tier with no --reference-id",
     P, E, import_args(reference_tier="gold"), "bad-argument", "--reference-id",
@@ -292,6 +333,25 @@ put(P2, "goals/policy.yaml", "required_from: 2026-01-01\n")
 refused("evh run with no goal under the policy", P2, E2, RUN, "bad-argument", "--goal")
 refused("import-run with no goal under the policy", P2, E2, import_args(), "bad-argument", "--goal")
 refused("import-run --goal that is not there", P2, E2, import_args(goal="nope"), "not-found", "nope")
+refused(
+    "import-run with no goal and a tier its reference contradicts: the goal is said first, the reference once it is named",
+    P2, E2, import_args(reference_id=REF, reference_tier="silver"), "bad-argument", "--goal",
+)  # fmt: skip
+refused(
+    "import-run with a goal and a tier its reference contradicts",
+    P2, E2, import_args(goal="triage_a", reference_id=REF, reference_tier="silver"), "mismatch", "silver",
+)  # fmt: skip
+for cmd in ("import-run", "run"):
+    helped = evh(P2, E2, cmd, "--help")
+    check(
+        f"evh {cmd} --help says what data/goals/policy.yaml holds: required_from, a date",
+        "required_from: YYYY-MM-DD" in helped.stdout + helped.stderr,
+        (helped.stdout + helped.stderr)[-300:],
+    )
+refused(
+    "import-run with no goal and a reference kept elsewhere",
+    P2, E2, import_args(reference_id="silver/kept_elsewhere"), "bad-argument", "--goal",
+)  # fmt: skip
 r = evh(P2, E2, *import_args(goal="triage_a", run_id="named_run"))
 check("recorded: import-run --goal names the goal the run answers", r.returncode == 0 and (
     _runstore.record_of(P2, "named_run").get("goal") == "triage_a"), (r.stdout + r.stderr)[-300:])  # fmt: skip

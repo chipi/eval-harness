@@ -233,7 +233,7 @@ the readers rely on:
   change.
 - **podcast-scraper-eval-data.** F1: `wer` on `curated_5feeds_dev_v1` (68 arms) and `curated_5feeds_benchmark_v1`
   (8 arms) is read as higher-is-better today, because nothing there declares it and the name table does not know it.
-  With `wer` in the name table it is lower. Every ranking on `wer` there turns the right way up. The V14 warnings
+  With `wer` in the name table it is lower. Every ranking on `wer` there turns the right way up. The V14 notes
   name the goals whose measures no run records.
 - **A study** on a cost, speed or token measure with no `direction` in its spec or goal: its keep/discard decisions
   were made the wrong way round. No study in the four projects is on such a measure (to check in step 1).
@@ -273,7 +273,7 @@ for F1, F2 and F3. Every difference is listed and explained.
 - Facts outside the eleven found: the search read the Python in `scripts/` and part of the JavaScript. It did not
   read `catalog_assets/arms.js`, `overview.js`, `period.js`, `group.js`, `workbench/workbench.js`, `importers/`,
   `sweep.py` or `rescore.py`'s cost reconciliation.
-- A goal's prose measure (`DER`) is not matched to a recorded metric (`der`) by name or alias: V14 warns, and the project
+- A goal's prose measure (`DER`) is not matched to a recorded metric (`der`) by name or alias: V14 notes it, and the project
   renames it. A matching rule would guess.
 - Plain runs of one system on one dataset with equal hashes are not merged into a set: V8 still refuses two plain
   measurements, as `duplicate_ok` allows on purpose.

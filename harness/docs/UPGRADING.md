@@ -7,8 +7,9 @@ correctness bugs, not just missing features.
 
 ## From 0.8.0 to 0.8.1
 
-Change the pin to `@v0.8.1` and reinstall. No format changes: `evh migrate --check` finds nothing to do, and no run, baseline
-or fingerprint is rewritten or re-scored. **Some numbers read differently**, and some commands refuse what they used to write;
+Change the pin to `@v0.8.1` and reinstall; `evh --version` prints `0.8.1` when the upgrade took. No format changes: you need
+no `evh migrate` (only `evh migrate --check`, which finds nothing to do), and no run, baseline or fingerprint is rewritten or
+re-scored. **Some numbers read differently**, and some commands refuse what they used to write;
 the full list, by project, is in the [0.8.1 notes](../../docs/releases/0.8.1.md). Run `evh validate` after upgrading: it
 has two new checks (V29 for every `of`, V30), and a note for each measure whose direction nobody declares.
 
@@ -72,8 +73,11 @@ has two new checks (V29 for every `of`, V30), and a note for each measure whose 
     its tree): it refused only a build git could not read; `--allow-dirty` overrides, as for `label-from-run`.
   - `evh leaderboard --goal G` where no run records the goal's measure: exit 7, `ERROR (nothing-measured)`, naming what
     the runs record. It was `not-found` (exit 1): a script that matched `not-found` there must match the new kind. Without `--goal` it ranks each arm on its own headline with one `NOTE`.
-  - `import-run` with a `--reference-id` that is not there (`not-found`), a `--reference-tier` that contradicts the id
-    (`mismatch`; the id says the tier: `gold/x`), or a tier with no reference (`bad-argument`).
+  - `import-run` with a `--reference-tier` that contradicts the id (`mismatch`; the id says the tier: `gold/x`), or a tier with
+    no reference (`bad-argument`). A `--reference-id` is still free-form, as in 0.8.0: a bare name (`silver_x_v2`, with
+    `--reference-tier silver`) or a `gold/NAME` or `silver/NAME` id kept outside `data/references/` imports, records the id
+    and the tier you gave (the id's, when it is `gold/` or `silver/` and no tier is given), and prints a note on stderr in
+    V16's words that the harness cannot find it. `rescore` still needs the reference's content, so it still refuses.
   - `arm-smoke` with a `--goal` or `--round` that is not there (`not-found`), or a `--round` with no `--goal`.
   - **A run with no goal, once the goal policy says so.** If `data/goals/policy.yaml` has a `required_from` date that has
     come, `evh run` (not `--scratch`) and `evh import-run` refuse a run with no `--goal` (`bad-argument`); validate's V14
@@ -81,7 +85,7 @@ has two new checks (V29 for every `of`, V30), and a note for each measure whose 
 - **`evh validate` has two checks that can fail a tree that passed.**
   - **V30:** a run the harness scored (`evh run`, `rescore`, `judge-score`, `sheet-import`) whose reference or label set
     is gone fails, named with the file that holds the link (`runs/<id>/run.json`). A goal's `datasets:` entry that names
-    no dataset (a plain id, prose or a pattern) is a warning, and an imported run's reference kept outside `data/` is a
+    no dataset (a plain id, prose or a pattern) is a note, and an imported run's reference kept outside `data/` is a
     note: neither fails. From 0.9, a plain id that names no dataset fails: make the dataset (`evh dataset-create`),
     remove the entry, or write it as prose. A project that deleted a reference its harness-scored runs were scored
     against fails it: restore the folder (`evh reference-promote`), re-score against a reference that is

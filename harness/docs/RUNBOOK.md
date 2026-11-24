@@ -577,8 +577,8 @@ references:
 | `measures[]` | `{id, kind, validity}`, all strings; `validity` says how far the measure is trusted (`unvalidated`, or what it was validated against) | nothing (for the reader) |
 | `links[]` | `{url, note}` | nothing (for the reader) |
 
-`data/goals/policy.yaml` is not a goal: `required_from: YYYY-MM-DD` makes every run created on or
-after that date name a goal (V14). From that date `evh run` and `evh import-run` refuse a run with no `--goal`
+`data/goals/policy.yaml` is not a goal: its one key, `required_from: YYYY-MM-DD` (a file of that single line;
+you create it), makes every run created on or after that date name a goal (V14). From that date `evh run` and `evh import-run` refuse a run with no `--goal`
 (`bad-argument`; `evh run --scratch` is exempt), where validate only failed it afterwards. Without it, goals are optional.
 
 ---
@@ -891,9 +891,9 @@ scored 0, on read as on write, so the verdict on old data with one can move.
 A writer records a fact a reader will follow, or refuses it by name (RFC-041 F7), before it spends or writes: a `--run-id` (and
 import-run's `--system-id`, and reference-promote's `--name`) is a plain name, ASCII letters, digits, `.`, `_`, `-`, never a path,
 a space or unicode (`bad-argument`); `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
-names a run of the same system and dataset (`mismatch`); import-run's `--reference-id` is a reference that is there
-(`not-found`), its tier is the id's (`gold/x` is gold; a `--reference-tier` that contradicts it is `mismatch`, one with no
-reference is `bad-argument`), and `--goal` names the goal the run answers, which `evh run` and import-run both require from the
+names a run of the same system and dataset (`mismatch`); import-run's `--reference-id` is free-form and may be kept outside `data/references/` (it
+imports, with a note on stderr that the harness cannot find it), its tier is the one given, else the id's (`gold/x` is gold; a
+`--reference-tier` that contradicts a `gold/` or `silver/` id is `mismatch`, one with no reference is `bad-argument`), and `--goal` names the goal the run answers, which `evh run` and import-run both require from the
 date `data/goals/policy.yaml` gives as `required_from` (`bad-argument` without one); `arm-smoke` refuses a `--goal` or `--round`
 that is not there, or a `--round` with no `--goal`. A cost no item reported is no `total_cost_usd` (unknown, never `0`); every item
 reporting `0` is `0.0`; only some items reporting one records `cost_coverage: {items_with_cost, items}` (the total is of those).
@@ -1152,7 +1152,7 @@ every run that must name one, every item field declared, typed and matching its 
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the systems naming it consistent, and every label set
 matching its hashes and its dataset, every `hypothesis:` in a system sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
-on the list, its source block in form and its card's keys Croissant RAI's (V22); V24 checks every prompt version against its bytes, V25 reports a look number two questions took, V26 checks every faithfulness record and the systems naming it, and V27 examines every study and V28 names a row that is not a JSON object with an `item_id`. V29 fails a run's `of` (a repeat's, a re-timing's, a pair's) that names a run of another system or dataset, and notes, without failing, an `of` whose run is gone (the repeat is read under `repeats`) and a round that recorded a repeat under `repeats` where it now joins its arm (the round reads what it recorded), and V30 fails a harness-scored run whose reference or label set is gone, named with the file that holds the link (as V6 names a baseline's run and V14 a round's run); a goal `datasets:` entry that names no dataset is a warning (a plain id fails from 0.9), and an imported run's reference outside `data/` is a note. V4
+on the list, its source block in form and its card's keys Croissant RAI's (V22); V24 checks every prompt version against its bytes, V25 reports a look number two questions took, V26 checks every faithfulness record and the systems naming it, and V27 examines every study and V28 names a row that is not a JSON object with an `item_id`. V29 fails a run's `of` (a repeat's, a re-timing's, a pair's) that names a run of another system or dataset, and notes, without failing, an `of` whose run is gone (the repeat is read under `repeats`) and a round that recorded a repeat under `repeats` where it now joins its arm (the round reads what it recorded), and V30 fails a harness-scored run whose reference or label set is gone, named with the file that holds the link (as V6 names a baseline's run and V14 a round's run); a goal `datasets:` entry that names no dataset is a note (a plain id fails from 0.9), and an imported run's reference outside `data/` is a note. V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters). Every run's outputs are readable: a derived run finds its source's (V23).
 

@@ -104,6 +104,16 @@ try:
         out[-900:],
     )
 
+    v16 = [ln for ln in out.splitlines() if "V16 references" in ln and "scored against" not in ln]
+    check(
+        "the V16 summary line does not say (none) while a V16 note says runs were scored against a reference outside data/references",
+        "scored against" in out
+        and len(v16) == 1
+        and "(none)" not in v16[0]
+        and "under data/references" in v16[0],
+        v16,
+    )
+
     goal([PROSE, GLOB, ds])
     code, out = validate()
     check(
