@@ -72,7 +72,7 @@ from evaluation_harness._common import (
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._number import counted, is_scored
-from evaluation_harness._providers import priced_by_table, secret_params
+from evaluation_harness._providers import priced_by_table, secret_params, temperature
 from evaluation_harness._record import (
     aggregate_scores,
     cut_off_items,
@@ -1702,7 +1702,7 @@ def _run(args: argparse.Namespace) -> int:
         dep = _models.deployment_of(rec, cfg["deployment"]) or {}
         # Determinism is a deployment's, not a model's: the same weights differ between machines.
         same = (((dep.get("onboarding") or {}).get("report") or {}).get("deterministic")) is True
-        if same and float((cfg.get("params") or {}).get("temperature") or 0) == 0:
+        if same and temperature(cfg.get("params") or {}) == 0:
             where = f" on {cfg['deployment']}"
             print(
                 f"  NOTE: {cfg['model_record']} gave the same output twice{where} when it was onboarded, and this arm "

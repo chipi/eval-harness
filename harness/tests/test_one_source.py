@@ -775,6 +775,23 @@ for rel in ("model/rounds.py", "_spend.py"):
         rel,
     )
 
+# -- an unset temperature is the provider's default, read in one place: `_providers.temperature` (RFC-041 F3) -----------
+DEFAULTED = re.compile(r"""get\(\s*["']temperature["']\s*(,[^)]*\)|\)\s*or\b)""")
+read_own = sorted(
+    p.relative_to(SCRIPTS).as_posix()
+    for p in SCRIPTS.rglob("*.py")
+    if p.name != "_providers.py" and DEFAULTED.search(p.read_text(encoding="utf-8"))
+)
+prov = (SCRIPTS / "_providers.py").read_text(encoding="utf-8")
+check(
+    "an unset temperature is read through _providers.temperature, not given a default of its own",
+    not read_own
+    and "def temperature(" in prov
+    and "DEFAULT_TEMPERATURE" in prov
+    and not DEFAULTED.search(prov),
+    read_own,
+)
+
 # -- the other source checks of these facts are still there ------------------------------------------------------------
 suite = (HARNESS / "tests" / "self_test.py").read_text(encoding="utf-8")
 for name in (
