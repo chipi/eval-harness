@@ -544,8 +544,8 @@ def gain_cost(goal: str, round: str | None = None, study: str | None = None) -> 
             f"{round or study}: no arm or trial shares an {A.item_word} with {base_name}: nothing to compare",
             "not-enough",
         )
-    # The axis: cost where some arm's cost moves; else tokens where any arm's are known (a known zero is a value: free
-    # local models, or an echo run that prices nothing but counts tokens); else a cost that is known and zero everywhere.
+    # The axis: cost where some arm's cost moves; else tokens where any arm's difference is known (a known zero is a
+    # value: two arms with the same tokens); else a cost that is known and zero everywhere.
     priced = any(r["cost_delta_per_item"] not in (None, 0) for r in drawn)
     by_tokens = not priced and any(r["tokens_delta_per_item"] is not None for r in drawn)
     x_key = "tokens_delta_per_item" if by_tokens else "cost_delta_per_item"

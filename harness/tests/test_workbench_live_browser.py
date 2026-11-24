@@ -69,7 +69,9 @@ SENT: list[str] = []
 
 
 class Fake(http.server.BaseHTTPRequestHandler):
-    """An OpenAI-shaped server whose model reasons unless told not to: its onboarding is flagged."""
+    """An OpenAI-shaped server whose model reasons unless told not to: its onboarding is flagged. It bills $0, as a
+    proxy over a local model does: an unpriced, unbilled arm has no cost to draw (RFC-041 F3), and the round's chart
+    against the echo arm (a known $0, no tokens) needs one."""
 
     def _send(self, doc):
         data = json.dumps(doc).encode()
@@ -96,7 +98,7 @@ class Fake(http.server.BaseHTTPRequestHandler):
             msg["reasoning"] = "Let me think. 17 divided by 2, 3, 5 ... prime."
         self._send({"id": "x", "object": "chat.completion", "created": 0, "model": "fake:1b",
                     "choices": [{"index": 0, "message": msg, "finish_reason": "stop"}],
-                    "usage": {"prompt_tokens": 40, "completion_tokens": 60, "total_tokens": 100}})  # fmt: skip
+                    "usage": {"prompt_tokens": 40, "completion_tokens": 60, "total_tokens": 100, "cost": 0.0}})  # fmt: skip
 
     def log_message(self, *a):
         pass
