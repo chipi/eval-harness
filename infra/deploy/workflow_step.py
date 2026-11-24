@@ -17,6 +17,7 @@ EXPR = re.compile(r"\$\{\{\s*(.*?)\s*\}\}")
 
 
 def main(argv: list) -> int:
+    sys.stdout.reconfigure(encoding="utf-8")  # bash reads this as the script: UTF-8, whatever the locale
     path, job, name, *rest = argv
     subs = dict(a.split("=", 1) for a in rest if "=" in a)
     steps = yaml.safe_load(Path(path).read_text(encoding="utf-8"))["jobs"][job]["steps"]
