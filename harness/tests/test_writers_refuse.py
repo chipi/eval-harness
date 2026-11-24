@@ -183,11 +183,52 @@ for purpose in ("retime", "pair"):
         "mismatch", "system differ",
     )  # fmt: skip
 
-print("\n-- a reference import-run names is there, and its tier is the reference's")
-refused(
-    "import-run --reference-id that is not there",
-    P, E, import_args(reference_id="gold/nope", reference_tier="gold"), "not-found", "gold/nope",
-)  # fmt: skip
+print(
+    "\n-- import-run takes the reference id free-form (0.8.0 did) and says when it is not under data/references"
+)
+NOTE_RE = re.compile(r"V16 references: 1 run\(s\) scored against (\S+), which is not under data/references")
+
+
+def imported_with(label: str, ref: str, tier: str | None, want_tier: str | None, run_id: str) -> None:
+    """import-run names `ref` (not under data/references) and `tier`: it imports, records `want_tier`, and says on stderr
+    what validate's V16 says of a reference it cannot find."""
+    proj, env = fresh()
+    (proj / "s.jsonl").write_text(SCORES, encoding="utf-8")
+    r = evh(proj, env, *import_args(reference_id=ref, reference_tier=tier, run_id=run_id))
+    rec = score_record(proj, run_id) if r.returncode == 0 else {}
+    held = ((rec.get("fingerprint") or {}).get("data") or {}).get("reference_id")
+    note = NOTE_RE.search(r.stderr)
+    check(
+        f"recorded: {label}: imports, records tier {want_tier!r} and id {ref!r}, and notes it is not under data/references",
+        r.returncode == 0
+        and rec.get("reference_tier") == want_tier
+        and held == ref
+        and note is not None
+        and note.group(1) == ref
+        and "the harness cannot find it" in r.stderr
+        and "Traceback" not in r.stderr,
+        f"exit {r.returncode}, tier {rec.get('reference_tier')!r}, id {held!r}: {(r.stdout + r.stderr)[-400:]}",
+    )
+
+
+imported_with(
+    "a bare --reference-id with --reference-tier silver",
+    "silver_opus47_smoke_v2",
+    "silver",
+    "silver",
+    "bare_ref",
+)
+imported_with(
+    "a silver/NAME id not under data/references, no tier",
+    "silver/kept_elsewhere",
+    None,
+    "silver",
+    "tiered_ref",
+)
+imported_with("a bare --reference-id alone", "kept_elsewhere_v1", None, None, "bare_alone")
+imported_with("a gold/NAME id with its own tier", "gold/kept_elsewhere", "gold", "gold", "tiered_own")
+
+
 refused(
     "import-run --reference-tier with no --reference-id",
     P, E, import_args(reference_tier="gold"), "bad-argument", "--reference-id",

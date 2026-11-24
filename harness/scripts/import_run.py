@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -43,7 +44,6 @@ from evaluation_harness import _jsonout, _outputs, _store
 from evaluation_harness._common import (
     DATA,
     DATASETS,
-    REFERENCES,
     ROOT,
     dataset_id_ok,
     die,
@@ -51,9 +51,11 @@ from evaluation_harness._common import (
     imported_scorer_key,
     jsonl_lines,
     load_goals,
+    missing_reference_note,
     now,
     plain_id_ok,
     read_json,
+    reference_found,
     sha256,
 )
 from evaluation_harness._fingerprint import build_fingerprint
@@ -78,23 +80,22 @@ def _rows(path: Path) -> list:
 
 
 def _reference_tier(reference_id: str | None, tier: str | None) -> str | None:
-    """The tier of the reference the scores are against, from its id (`gold/my_v1` is gold): the reference must be there,
-    and a tier given must be the id's. A tier with no reference is refused: it would say scored against nothing."""
+    """The tier recorded for the reference the scores are against: the one given, else the one a `gold/<name>` or
+    `silver/<name>` id names. The id is otherwise free-form (0.8.0 took any, and a project keeps its references where it
+    likes). A tier with no reference is refused: it would say scored against nothing."""
     if tier and not reference_id:
         die(f"--reference-tier {tier} names a tier of --reference-id, and none is given", "bad-argument")
     if not reference_id:
         return None
     found, _, name = reference_id.partition("/")
     if found not in ("gold", "silver") or not name:
-        die(f"--reference-id {reference_id!r}: a reference is <tier>/<name>, gold or silver", "bad-argument")
+        return tier
     if tier and tier != found:
         die(
             f"--reference-tier {tier} but --reference-id {reference_id} is {found}: a reference's tier is the one its id "
             "names",
             "mismatch",
         )
-    if not _store.is_dir(REFERENCES / reference_id):
-        die(f"--reference-id {reference_id}: no reference set at {REFERENCES / reference_id}", "not-found")
     return found
 
 
@@ -121,8 +122,8 @@ def body(**inputs: Any) -> int:
     plain_id_ok(args.system_id, "--system-id")
     if args.run_id:
         plain_id_ok(args.run_id, "--run-id")
-    reference_tier = _reference_tier(args.reference_id, args.reference_tier)
     _goal_named(args.goal)
+    reference_tier = _reference_tier(args.reference_id, args.reference_tier)
     ds_file = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     if not _store.is_file(ds_file):
         die(
@@ -259,5 +260,7 @@ def body(**inputs: Any) -> int:
         f"{args.primary_metric}={scores[args.primary_metric]}"
     )
     print(f"  {run_dir}")
+    if args.reference_id and not reference_found(args.reference_id):
+        print(f"note: {missing_reference_note(args.reference_id, {run_id})}", file=sys.stderr)
     _jsonout.values({"run_id": run_id, "dir": str(run_dir), "items": len(seen), "scores": scores})
     return 0
