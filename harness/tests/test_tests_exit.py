@@ -17,7 +17,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from evaluation_harness._check import check, summary  # noqa: E402
 
-BARE = re.compile(r"^summary\(", re.M)
+BARE = re.compile(r"^\s*summary\(", re.M)
 
 
 def bare(text: str) -> bool:
@@ -27,7 +27,10 @@ def bare(text: str) -> bool:
 
 check(
     "the scan finds a bare summary() and passes sys.exit(summary())",
-    bare("x = 1\nsummary()\n") and not bare("sys.exit(summary())\n") and not bare("    return summary()\n"),
+    bare("x = 1\nsummary()\n")
+    and bare("try:\n    summary()\n")
+    and not bare("sys.exit(summary())\n")
+    and not bare("    return summary()\n"),
 )
 found = sorted(
     p.name for p in HERE.glob("*.py") if p.name != Path(__file__).name and bare(p.read_text(encoding="utf-8"))
