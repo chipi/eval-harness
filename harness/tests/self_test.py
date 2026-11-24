@@ -1050,6 +1050,10 @@ def test_example_scorer_suites_pass() -> None:
             "jobs (RFC-026): locks, queue, stop, resume, unsupervised and lost; catalog as a swap, a migration's 503",
         ),
         (
+            "test_job_stop_race.py",
+            "a stop while a job's command is starting (its group not yet recorded, a slow fsync) stops the command: no orphan under a cancelled job",
+        ),
+        (
             "test_op_declarations.py",
             "what a decision or a work operation declares (RFC-032 step 9 P3): locks, route, why, a word on every file input, no two routes alike, each rule failing on its planted defect; the command line made from the schema, a positional refused, the old parsers' parity",
         ),
