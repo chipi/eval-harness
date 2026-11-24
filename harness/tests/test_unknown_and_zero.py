@@ -290,7 +290,14 @@ from evaluation_harness import _number, _runs  # noqa: E402
 
 slow: list[object] = []
 _is_scored = _number.is_scored
-_runs.is_scored = lambda v: slow.append(v) or _is_scored(v)
+
+
+def _counting(v: object) -> bool:
+    slow.append(v)
+    return _is_scored(v)
+
+
+_runs.is_scored = _counting
 try:
     got = [_runs.score_of({"acc": v}, "acc") for v in (1, 0, 0.5, True, "x", None, float("nan"))]
 finally:
@@ -313,12 +320,12 @@ class _Float(float):
 
 
 def _rule(v: object) -> tuple[bool, bool, float]:
-    num = not isinstance(v, bool) and isinstance(v, (int, float)) and math.isfinite(v)  # type: ignore[arg-type]
+    num = not isinstance(v, bool) and isinstance(v, (int, float)) and math.isfinite(v)
     scored = v is None or (not isinstance(v, (bool, str, list, dict)) and isinstance(v, (int, float)))
     return num, scored, (float(v) if num else 0.0)  # type: ignore[arg-type]
 
 
-values = [
+values: list[object] = [
     1,
     0,
     -3,
