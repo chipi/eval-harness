@@ -119,9 +119,9 @@ try:
 
     with _runstore._InProject(proj):
         _outputs.reset()
-        r1 = _rounds.load_rounds("g1")
-        r1 = next(r for r in r1 if r["round_id"] == "r1")
-        r2 = next(r for r in _rounds.load_rounds("g1") if r["round_id"] == "r2")
+        rounds = _rounds.load_rounds("g1")
+        r1 = next(r for r in rounds if r["round_id"] == "r1")
+        r2 = next(r for r in rounds if r["round_id"] == "r2")
         got1, got2 = _rounds.spend_of(r1), _rounds.spend_of(r2)
         check(
             "_rounds.spend_of: the sum of the runs that recorded a cost, and how many recorded none",
