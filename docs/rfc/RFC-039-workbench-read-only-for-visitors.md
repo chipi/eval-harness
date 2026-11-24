@@ -208,7 +208,6 @@ The page hides a control; it does not decide what is allowed. A request the page
 
 ## Open questions
 
-1. Prompts: `prompt-show` (with `text`) and `prompt-diff` show a project's prompt text, which `text: hidden` does not
-   cover. Served, as recommended: this deployment's copy holds no prompt registry (`harness/data/prompts/` has no
-   tracked file). A project that keeps private prompts in its registry should not deploy a viewer until a prompt can
-   be withheld; that rule is for a later release.
+1. Prompts: decided (owner, 2026-11-23). A prompt's text is served publicly only with `--publish prompts` (see "Text
+   under the public rules" above); without it, `prompt-show` and `prompt-diff` answer without the text, and the viewer
+   says the text is not published. The deployment does not set it.

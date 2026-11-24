@@ -316,7 +316,8 @@ pass.
 **Built (2026-11-23):** RFC-040's "Built in 0.8.1" says how. The export of this repository's runs is identical to a build
 of the code before, file by file (1,917 files, the footer's time masked); `test_catalog_render.py` 13/13 and
 `test_catalog_fresh.py` 33/33 on files and on SQLite; `test_catalog_render_real.py` 5/5 (1,906 pages rendered on their
-own, in a shuffled order, equal to the export). The full gates: see the commit that closes F3.
+own, in a shuffled order, equal to the export). The full gates: see the commit that closes F3. At the 0.8.1 candidate
+(2026-11-24) they are 39/39 and 6/6, on 1,898 pages, and the final gates pass on it.
 
 **Moves a result:** no.
 

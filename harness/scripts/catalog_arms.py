@@ -55,7 +55,7 @@ def _cost_coverage(means: dict) -> dict | None:
     items = max(
         (m[1] for m in means.values() if isinstance(m, (list, tuple)) and len(m) > 1 and m[1]), default=0
     )
-    if not cost or cost[0] is None or len(cost) < 2 or not cost[1] or cost[1] >= items:
+    if cost is None or len(cost) < 2 or cost[0] is None or cost[1] is None or cost[1] >= items:
         return None
     return {"items_with_cost": cost[1], "items": items}
 

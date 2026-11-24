@@ -1231,7 +1231,7 @@ def home(f: dict) -> str:
     <div class="habit-card"><span class="n">decisions</span><b>Decisions kept with their evidence</b><span>A promoted baseline keeps the test that justified it, in versions you can roll back; every record says who acted, a person or an agent and the person it acted for.</span></div>
     <div class="habit-card"><span class="n">test sets</span><b>Studies, and a test set that stays sealed</b><span>A study searches on a validation set and its winner is confirmed on a test set; every look at a test set counts against its limit.</span></div>
   </div>
-  <p class="dek-note">Served by <code>evh catalog-serve</code> on this machine only, behind a token it prints; <a href="docs/tutorials/8-the-workbench/">tutorial 8</a> walks it.</p>
+  <p class="dek-note">Served by <code>evh catalog-serve</code>: on your machine behind a token it prints, or read-only to a deployment's visitors (<code>--public</code>: nothing that writes or spends); <a href="docs/tutorials/8-the-workbench/">tutorial 8</a> walks it.</p>
 </div></section>
 
 <section class="block" id="lasting" data-nav="Rounds"><div class="wrap">

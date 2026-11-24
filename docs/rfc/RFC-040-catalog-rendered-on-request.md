@@ -241,7 +241,7 @@ A review's finding that `goal_views._KEPT` could be dropped by one thread while 
 - Pages are rendered one at a time per process: a request for a page not yet rendered waits for the render under way,
   at most a goal page (0.84 s here). A page already rendered is served without the lock. Not measured under concurrent
   load beyond the fresh test's six readers.
-- The day in the cache's key is the server's local date, as `date.today()` is in the models page.
+- The day in the cache's key is the UTC day (`_common.today()`, RFC-041 F5), as everywhere else.
 - The deployment (`--public`) is unchanged: it serves the export from nginx. The homelab (`agentic-ai-homelab`,
   `infra/fleet-evals`) builds a static catalog from a read-only copy of its data and rebuilds it when the data is
   updated, so its pages are never behind its data: nothing there writes in place.
