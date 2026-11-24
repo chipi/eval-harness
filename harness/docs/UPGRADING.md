@@ -21,7 +21,12 @@ has two new checks (V29 for every `of`, V30), and a note for each measure whose 
   - **A repeat set is what the runs record, not what they are called.** `--repeat N` records `repeat_index`, and that, or a
     joined repeat, makes a set. Two runs named `foo_r1` and `foo_r2` by hand (copied in, or made before 0.6.0 recorded
     `repeat_index`) are two plain runs: `evh validate` fails them as V8 does any two measurements of one system. List the pair
-    under `duplicate_ok` in `validate.json`, or put each run's `repeat_index` in its `run.json`.
+    under `duplicate_ok` in `validate.json`, or put each run's `repeat_index` in its `run.json`. Runs that carry the same
+    `repeat_index` (two `--repeat` invocations of one system, each with an `r1`) are two sets, not one: V8 fails them, or
+    notes them where `duplicate_ok` lists the pair.
+  - **`evh leaderboard` reads an arm's value as `arm-show` does:** the mean over its items, repeats pooled per item, not the mean
+    of its runs' means. The two differ only where an arm's runs score different item counts; the `spread` is still of the runs.
+  - **A 0.7-era `--repeat` set with no `of` stays under `repeats`.** A `--repeat N` set recorded with `purpose: repeat` and no `of` (0.7 and earlier) is read as it was in 0.8.0: under `repeats`, as an arm of its own beside the plain run. Only a repeat that names the run it repeats (`--of`) joins that run's arm, and `evh run --purpose repeat` now refuses to write one without `--of`.
   - **An arm is read against one reference in every view.** `leaderboard`, `pair-test`, `cost-report` and the other commands
     that read runs by arm now leave out a run scored against another reference than its latest run's, as the catalog did, and
     name it in a `WARNING` line, where they averaged it in.

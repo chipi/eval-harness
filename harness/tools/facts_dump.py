@@ -43,6 +43,7 @@ SUFFIXES = ("group", "arm flag", "answer")
 KINDS = {
     "arms": "the arms on a dataset (key: dataset)",
     "ranked": "the arms a leaderboard ranks on a dataset: those that record its ranking metric, so some of its arms (key: dataset)",
+    "superseded_by": "the arm whose re-score a leaderboard ranks in place of this arm (key: arm)",
     "value": "the mean of a metric over the arm's items (key: arm, metric)",
     "n_items": "the items behind that mean (key: arm, metric)",
     "direction": "which way is better for a metric on a dataset: lower, higher or neutral (key: dataset, metric)",
@@ -185,10 +186,11 @@ def newest(runs: list[tuple[str, str]]) -> str | None:
 
 # ── one extractor per command: result -> facts ───────────────────────────────────────────────────────────────────────
 def from_runs_list(r: dict[str, Any], label: str) -> list[Fact]:
-    """Facts from `evh runs list`: each arm's runs, latest run, mean values and cost state."""
+    """Facts from `evh runs list`: each arm's runs, latest run and cost state. Not its value: that is the item-pooled mean the
+    readers that state it give; a mean of the runs' means differs where runs have different item counts."""
     arms: dict[str, list[dict[str, Any]]] = {}
     for run in r.get("runs") or []:
-        arms.setdefault(arm_id(label, run["dataset_id"], run["system_id"]), []).append(run)
+        arms.setdefault(run.get("arm") or arm_id(label, run["dataset_id"], run["system_id"]), []).append(run)
     out: list[Fact] = []
     for arm, runs in arms.items():
         ds = runs[0]["dataset_id"]
@@ -197,11 +199,6 @@ def from_runs_list(r: dict[str, Any], label: str) -> list[Fact]:
         out += [("runs", (arm,), ids), ("n_runs", (arm,), len(ids))]
         out.append(("latest", (arm,), newest([(x.get("created_at") or "", x["run_id"]) for x in runs])))
         out.append(("latest_day", (arm,), max((x.get("created_at") or "")[:10] for x in runs) or None))
-        keys = {k for x in runs for k in x.get("scores") or {}}
-        for k in sorted(keys):
-            vals = [x["scores"][k] for x in runs if isinstance(x.get("scores", {}).get(k), (int, float))]
-            if vals:
-                out.append(("value", (arm, k), sum(vals) / len(vals)))
         costs = [x["scores"]["cost_usd"] for x in runs if (x.get("scores") or {}).get("cost_usd") is not None]
         out.append(("cost_state", (arm,), cost_state(sum(costs) / len(costs) if costs else None)))
     return out
@@ -218,6 +215,8 @@ def from_arm_list(r: dict[str, Any]) -> list[Fact]:
             ("reference", (arm,), ref(a.get("reference"))),
             ("cost_state", (arm,), cost_state(a.get("cost"))),
         ]
+        if a.get("superseded_by"):
+            out.append(("superseded_by", (arm,), a["superseded_by"]))
         if a.get("repeats") is not None:
             out.append(("n_runs", (arm,), a["repeats"]))
         if a.get("last"):
@@ -267,7 +266,7 @@ def from_metric_show(r: dict[str, Any]) -> list[Fact]:
         out.append(("direction", (ds, m), word(on.get(ds, r.get("better")))))
         for a in d.get("arms") or []:
             label, system, n = parse_arm_label(a["arm"])
-            arm = arm_id(label, ds, system)
+            arm = a.get("arm_id") or arm_id(label, ds, system)
             out += [
                 ("value", (arm, m), a.get("mean")),
                 ("n_items", (arm, m), a.get("n")),
@@ -288,14 +287,26 @@ def from_leaderboard(r: dict[str, Any], dataset: str) -> list[Fact]:
     tables = [
         b for b in r.get("blocks") or [] if "system_id" in (b.get("columns") or [])
     ]  # one per reference scored against
+    named = [a for g in (r.get("values") or {}).get("groups") or [] for a in g.get("arms") or []]
+    # the arms by id, as the leaderboard says them; an evh that says them only by label is read by the rows below
+    if named:
+        rows = [
+            {"arm": a["arm"], "n_runs": a.get("n_runs"), **(a.get("metrics") or {})}
+            for a in named
+            if a.get("arm")
+        ]
+    else:
+        rows = []
+        for row in (row for t in tables for row in t.get("rows") or []):
+            label, system, _n = parse_arm_label(row["system_id"])
+            rows.append({**row, "arm": arm_id(label, dataset, system)})
     arms = []
-    for row in (row for t in tables for row in t.get("rows") or []):
-        label, system, _n = parse_arm_label(row["system_id"])
-        arm = arm_id(label, dataset, system)
+    for row in rows:
+        arm = row["arm"]
         arms.append(arm)
         out.append(("n_runs", (arm,), row.get("n_runs")))
         for k, v in row.items():
-            if k not in ("system_id", "n_runs", "tier") and isinstance(v, (int, float)):
+            if k not in ("arm", "system_id", "n_runs", "tier") and isinstance(v, (int, float)):
                 out.append(("value", (arm, k), v))
         if "cost_usd" in row:
             out.append(("cost_state", (arm,), cost_state(row["cost_usd"])))

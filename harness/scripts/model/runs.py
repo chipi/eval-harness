@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import re
+import statistics
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
@@ -339,6 +340,15 @@ def arm_of(score_dir: Path, rec: dict[str, Any] | None = None) -> str:
     return f"{arm_prefix(label(score_dir, rec))}/{rec.get('dataset_id')}/{rec.get('system_id')}"
 
 
+def pooled_mean(values: Iterable[float]) -> float | None:
+    """An arm's value on a metric: the mean over its items of each item's score, where an item's score is already the
+    mean of its repeats' (`HarnessAdapter.scores`); None for no item. The one place that says it: `arm-show`,
+    `metric-show`, the goal views and the leaderboard read it, so runs that score different item counts give one number
+    (a mean of the runs' means is another)."""
+    xs = list(values)
+    return statistics.fmean(xs) if xs else None
+
+
 def latest_key(rec: dict[str, Any]) -> tuple[str, str]:
     """What orders runs by how late they were measured: (created_at, run_id). A run id can be anything (`--run-id`), so
     it only breaks a tie."""
@@ -385,14 +395,23 @@ def read_arms(
 def set_of(runs: Iterable[tuple[Path, dict[str, Any]]]) -> list[tuple[Path, dict[str, Any]]]:
     """The runs of one arm that make up its repeat set: those whose record has `repeat_index` (`evh run --repeat N`),
     those that join the run they repeat (`joins`), and the runs those name. What the run is called says nothing: a
-    user's `--run-id foo_r1` and `foo_r2` are two plain runs."""
+    user's `--run-id foo_r1` and `foo_r2` are two plain runs. A `repeat_index` that two runs of the arm both carry
+    (two `r1`) comes from two `--repeat` invocations, which are two sets and not one: none of the arm's `repeat_index`
+    runs is then a member by it (a run that joins the run it repeats still is)."""
     runs = list(runs)
     joining = {run_of(sd).name: joins(sd, rec) for sd, rec in runs}
     named = {j for j in joining.values() if j}
+    holders: dict[Any, set[str]] = {}
+    for sd, rec in runs:
+        if rec.get("repeat_index"):
+            holders.setdefault(rec["repeat_index"], set()).add(run_of(sd).name)
+    one_invocation = all(len(names) == 1 for names in holders.values())
     return [
         (sd, rec)
         for sd, rec in runs
-        if rec.get("repeat_index") or joining[run_of(sd).name] or run_of(sd).name in named
+        if (rec.get("repeat_index") and one_invocation)
+        or joining[run_of(sd).name]
+        or run_of(sd).name in named
     ]
 
 

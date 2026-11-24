@@ -7,13 +7,16 @@
 
 Why: each reader was tested alone, so a fact that two of them work out apart (the direction of a measure, the runs of an
 arm, the baseline of a goal) was right in each test and wrong between them (SLIP_ANALYSIS_0.8.1 section 3, six of the ten
-bugs). Here four projects (the tutorial's, and R2's three look-alikes of the beta projects) are built in the store
-EVAL_STORE names, and each reader is asked for the facts it states:
+bugs). Here five projects (the tutorial's, R2's three look-alikes of the beta projects, and a 0.7 repeat set that was re-scored)
+are built in the store EVAL_STORE names, and each reader is asked for the facts it states:
 
   - the value, the items behind it, the direction word, for every (arm, metric);
   - for every arm: its run ids, their number, its latest run, the reference it is read against, its cost state (unknown,
     zero or an amount);
-  - for every goal on a dataset: the baseline (the run and the arm); for a dataset: whether its text is shown publicly.
+  - for every goal on a dataset: the baseline (the run and the arm); for a dataset: whether its text is shown publicly;
+  - for every arm `arm-list` lists: that `arm-show` shows it. A refusal is a disagreement, not "unavailable": an arm
+    a reader lists and refuses is no arm (the 0.8.0 dump named arms by their label, `rescored 3d3a6afd, repeats`, where
+    the id is its slug, `rescored-3d3a6afd-repeats`).
 
 The readers: `evh <command> --json` (tools/facts_dump.py, the dumper the beta projects run), the same commands through
 the API of `evh catalog-serve` (local, and `--public` for the public flag), through the MCP server's read operations
@@ -63,7 +66,7 @@ CLI = HARNESS / "scripts" / "cli.py"
 STORE = os.environ.get("EVAL_STORE", "").strip() or "files"
 LIMITS = ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_BUILD_REF", "EVAL_GOALS_DIR", "EVH_PUBLIC")
 KINDS = list(FD.KINDS)
-BUILDERS = ("tutorial", "imported", "fleet", "bakeoff")
+BUILDERS = ("tutorial", "imported", "fleet", "bakeoff", "rescored")
 PROJECTS: list[Path] = []
 SPENT: dict[str, dict[str, float]] = {}
 FactMap = dict[tuple, Any]
@@ -572,7 +575,7 @@ def matrix(per_project: dict[str, dict[str, FactMap]]) -> list[str]:
             for kind, _key in d:
                 gives[r][kind] += 1
     short = {
-        "arms": "arms", "ranked": "ranked", "value": "value", "n_items": "items", "direction": "dir", "runs": "runs", "n_runs": "n_runs",
+        "arms": "arms", "ranked": "ranked", "superseded_by": "superseded", "value": "value", "n_items": "items", "direction": "dir", "runs": "runs", "n_runs": "n_runs",
         "latest": "latest", "latest_day": "l_day", "reference": "ref", "cost_state": "cost", "baseline_run": "b_run",
         "baseline_arm": "b_arm", "public": "public",
     }  # fmt: skip
@@ -617,6 +620,50 @@ def assert_agreement(project: str, facts: dict[str, FactMap]) -> None:
                 any(matches(entry, d) for d in dis),
                 "it no longer differs: remove it from KNOWN",
             )
+
+
+def superseded_ranked(project: str, facts: dict[str, FactMap]) -> None:
+    """Wherever arm-list says an arm is `superseded_by` its re-score, the leaderboard ranks the re-score and leaves the
+    superseded arm out (the goals, the rounds and the catalog read a re-score in its place: RFC-022, `rescore.py`)."""
+    n = 0
+    for reader in ("cli", "api", "mcp"):
+        sup = {
+            k[0]: v for (kind, k), v in facts.get(f"{reader}:arm-list", {}).items() if kind == "superseded_by"
+        }
+        n += len(sup)
+        bad = []
+        for arm, by in sorted(sup.items()):
+            ranked = set(facts.get(f"{reader}:leaderboard", {}).get(("ranked", (arm.split("/")[1],)), ()))
+            if by not in ranked or arm in ranked:
+                bad.append((arm, by, by in ranked, arm in ranked))
+        check(
+            f"superseded: {project}: {reader}: the leaderboard ranks the re-score and leaves the superseded arm out",
+            not bad,
+            bad[:3],
+        )
+    if project == "rescored":
+        check(
+            "superseded: rescored: arm-list names a superseded arm (else the check above is vacuous)",
+            n > 0,
+            n,
+        )
+
+
+def arms_shown(project: str, facts: dict[str, FactMap], why: dict[str, list[str]]) -> None:
+    """Every arm `arm-list` lists, `arm-show` shows, through the CLI, the API and the MCP reads: the arm-show answer of an
+    arm is its `runs` fact (its `reference` is none for a judged arm). A reader's refusal of a listed arm (`not-found`) is a disagreement, not an arm this evh
+    is unable to say."""
+    for reader in ("cli", "api", "mcp"):
+        listed = {
+            a for (kind, _k), v in facts.get(f"{reader}:arm-list", {}).items() if kind == "arms" for a in v
+        }
+        shown = {key[0] for kind, key in facts.get(f"{reader}:arm-show", {}) if kind == "runs"}
+        refused = why.get(f"{reader}:arm-show", [])
+        check(
+            f"arms: {project}: {reader}: every arm arm-list lists ({len(listed)}) is shown by arm-show",
+            bool(listed) and not listed - shown and not refused,
+            (sorted(listed - shown)[:3], refused[:2]),
+        )
 
 
 def hand_checks(project: str, facts: dict[str, FactMap]) -> None:
@@ -704,6 +751,13 @@ def hand_checks(project: str, facts: dict[str, FactMap]) -> None:
             == ("neutral", "higher"),
             None,
         )
+    if project == "rescored":
+        arm = "rescored-3d3a6afd-repeats/tickets_rescored_v1/arm_w_v1"
+        check(
+            "hand: rescored: the re-scored 0.7 repeat set is one arm of two runs, named by the label's slug",
+            say("n_runs", arm) == 2 and say("n_runs", "repeats/tickets_rescored_v1/arm_w_v1") == 2,
+            (say("n_runs", arm), say("n_runs", "repeats/tickets_rescored_v1/arm_w_v1")),
+        )
     if project == "imported":
         bare = sum(
             1
@@ -785,6 +839,21 @@ def dumper_checks(p: Project) -> None:
     )
 
 
+def runs_list_states_no_value() -> None:
+    """runs-list gives an arm's runs, not its value: the dump takes `value` from the readers that state one. Two runs of
+    one arm with different item counts: a mean of the runs' means (0.75) is not the arm's item-pooled mean (arm-show)."""
+    runs = [
+        {"run_id": "a", "dataset_id": "d", "system_id": "s", "arm": "runs/d/s", "scores": {"m": 1.0}},
+        {"run_id": "b", "dataset_id": "d", "system_id": "s", "arm": "runs/d/s", "scores": {"m": 0.5}},
+    ]
+    got = FD.from_runs_list({"runs": runs}, "")
+    check(
+        "facts_dump: runs-list states an arm's runs and no value of it (a mean of run means is no arm's mean)",
+        any(f[0] == "runs" for f in got) and not any(f[0] == "value" for f in got),
+        [f for f in got if f[0] == "value"],
+    )
+
+
 def thin(facts: dict[str, FactMap]) -> int:
     """How many facts two readers or more give: what the agreement was checked over."""
     n: dict[tuple, int] = {}
@@ -850,6 +919,8 @@ def main() -> int:
                     n,
                 )
             assert_agreement(name, facts)
+            arms_shown(name, facts, why)
+            superseded_ranked(name, facts)
             if EXISTING:
                 arms = sum(
                     len(v)
@@ -867,7 +938,8 @@ def main() -> int:
             print(f"\nwhole test {time.time() - t0:.0f}s")
             return summary()
         dumper_checks(projects["tutorial"])
-        print("\nfact x reader (gives / -), over the four projects:")
+        runs_list_states_no_value()
+        print("\nfact x reader (gives / -), over the five projects:")
         print("\n".join(matrix(per_project)))
 
         # ── it bites ────────────────────────────────────────────────────────────────────────────────────────────
