@@ -830,7 +830,8 @@ def main() -> int:
                         n: {r: [[k, list(key), v] for (k, key), v in d.items()] for r, d in f.items()}
                         for n, f in per_project.items()
                     }
-                )
+                ),
+                encoding="utf-8",
             )
         for name in names:
             facts, why = gathered[name]
