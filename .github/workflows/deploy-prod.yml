@@ -105,6 +105,12 @@ jobs:
           echo "SHA=${GITHUB_SHA::12}" >> "$GITHUB_ENV"
           bash infra/deploy/render.sh _release "${GITHUB_SHA::12}"
 
+      # The release's inspector and MCP server, started as compose.yml starts them on the box (its image, its
+      # PYTHONPATH, read-only), asked what a visitor asks: CI's venv holds every dependency, the box only what
+      # render.sh vendors (EVALS-INSPECTOR-3).
+      - name: Smoke the release
+        run: python infra/deploy/smoke_release.py _release
+
       # NOTHING DEPLOYS BEFORE CI HAS PASSED ON THE SAME COMMIT. A push to main used to deploy at
       # once while reproduce was still running: c91d48b0 deployed at 11:01Z on 2026-10-27, its
       # verify failed at 11:32Z (a stale releases.html), and prod served it until the next deploy.
@@ -253,6 +259,11 @@ jobs:
             health="$(curl -fsS https://evals.humancopilot.eu/catalog/api/health)"
             grep -qF '"ok": true' <<<"$health" \
               || { echo "::error::the inspector API does not answer on the public host"; exit 1; }
+            # The Workbench and its first read, the public /api/v1 (0.8.1 shipped it a 500 behind a green health).
+            probe https://evals.humancopilot.eu/workbench/ "<header"
+            goals="$(curl -fsS https://evals.humancopilot.eu/catalog/api/v1/goals)"
+            grep -qF '"result"' <<<"$goals" \
+              || { echo "::error::the public read API (/catalog/api/v1/goals) does not answer"; exit 1; }
             # The MCP server through the edge (Caddy routes /mcp to evals-mcp).
             mcp="$(curl -fsS https://evals.humancopilot.eu/mcp/health)"
             grep -qE '"ok": *true' <<<"$mcp" \

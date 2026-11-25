@@ -64,8 +64,11 @@ services:
       EVAL_BUILD_REF: deployed
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
-      # The observability SDKs render.sh vendored for hooks.py (not the harness's dependencies).
-      PYTHONPATH: /srv/evals/current/inspector/vendor
+      # The observability SDKs render.sh vendored for hooks.py (not the harness's dependencies), then
+      # the MCP server's pinned musl wheels for the harness's own: the public /api/v1 validates a
+      # read's inputs with jsonschema, which vendor/ never held (EVALS-INSPECTOR-3, every Workbench
+      # read a 500 on 0.8.1; infra/deploy/smoke_release.py asks it before an upload).
+      PYTHONPATH: /srv/evals/current/inspector/vendor:/srv/evals/current/inspector/mcpvendor
       # The goals' tests, precomputed by render.sh as the MCP server's are: the server's own default is a file under
       # the release's .cache/, which the read-only mount cannot hold, so every restart drew them again (~10 s).
       EVH_P_CACHE: /srv/evals/current/inspector/cache/evh-p.jsonl
