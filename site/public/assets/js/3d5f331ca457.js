@@ -5,6 +5,7 @@ const follow=()=>{delete r.dataset.theme;try{localStorage.removeItem('theme');}c
 if(r.dataset.theme===sys())follow();
 const show=()=>{const on=!!r.dataset.theme;b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',`Use the ${on?r.dataset.theme:other()} theme`);
 b.title=on?`The ${r.dataset.theme} theme; press to follow the system's (${sys()})`:`Following the system's theme (${sys()}); press for ${other()}`;};show();
+document.querySelectorAll('[data-theme-toggle]').forEach(x=>x.addEventListener('click',()=>b.click()));
 b.addEventListener('click',()=>{if(r.dataset.theme)follow();else{r.dataset.theme=other();try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}}show();});
 mq.addEventListener('change',()=>{if(r.dataset.theme===sys())follow();show();});})();
 /* the on-this-page line: the section in view marked, its link kept in sight on a narrow screen */

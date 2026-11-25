@@ -494,7 +494,7 @@ footer .wrap.foot { display: block; }
    phone (the releases page quotes field names and install lines). Only where it would overflow. */
 :not(pre) > code { overflow-wrap: anywhere; }
 
-/* Harness · Catalog · Docs: the same switcher heads the site, the catalog and the docs, the part
+/* Harness · Catalog · Workbench · Docs · MCP: the same switcher heads the site, the catalog, the Workbench and the docs, the part
    you are in marked; each part's own pages stay in its nav (the ☰ menu on phones). */
 .sections { display: inline-flex; flex: none; gap: 2px; padding: 3px; border: 1px solid var(--hair);
   border-radius: 999px; font: 500 12px/1 var(--mono); letter-spacing: .03em; }
@@ -549,9 +549,29 @@ footer .wrap.foot { display: block; }
 .bar .nav a.hbtn { padding: 0; }
 /* the smallest phones (320 px): the bar stays on one row */
 @media (max-width: 359px) { .bar .wrap { gap: 4px; } .hbtn, .menu > summary.hbtn { width: 32px; height: 32px; } .bar .nav { gap: 4px; } .bar .sections { letter-spacing: 0; } .bar .sections a { padding: 8px 3px; } }
-/* MCP, the switcher's fourth entry, leaves the bar on phones: four entries no longer fit 390 px beside
-   the search, GitHub and theme buttons (the home page's "For agents" section links it still). */
-@media (max-width: 560px) { .bar .sections a[href$="#mcp"] { display: none; } }
+/* The switcher's five pills on every width (the operator, 2026-11-25): on a phone the bar is the ☰, the logo and
+   the pills, nothing else; search and the theme are in the menu. The same numbers in site/assets/style.css,
+   harness/catalog_assets/catalog.css, docs/assets/docs.css and harness/workbench/workbench.css
+   (infra/deploy/headers_check.py reads the four). */
+.menu-links .menu-theme { padding: 12px 14px; border: 0; border-radius: 8px; background: none; color: var(--ink);
+  font: 500 14px/1.2 var(--mono); text-align: left; cursor: pointer; }
+.menu-links .menu-theme:hover { background: var(--surface-2); }
+@media (max-width: 760px) {
+  .bar .nav, .bar .search-btn, .bar .theme { display: none; }
+  .bar .sections { font-size: 11px; letter-spacing: 0; }
+  .bar .sections a { padding: 8px 5px; }
+}
+@media (max-width: 374px) { .bar .sections a { padding: 8px 3px; } }
+@media (max-width: 339px) { .bar .brand { display: none; } }
+/* Tablets and phones (up to 1000 px, where the page's links no longer fit beside the five pills): the page's links
+   in the ☰, which sits at the bar's right end, so the logo and the switcher keep their place on every width. */
+.menu-links .menu-phone { display: none; }
+@media (max-width: 1000px) {
+  .bar .menu { display: block; order: 99; }
+  .bar .menu .menu-links { left: auto; right: 0; }
+  .bar .nav > a:not(.hbtn) { display: none; }
+}
+@media (max-width: 760px) { .menu-links .menu-phone { display: block; } }
 
 /* the home page's critique (2026-11-12): the question and the chart that answers it on the first screen; the notes
    about the site below them */

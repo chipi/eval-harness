@@ -5,6 +5,13 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.8.1 to 0.8.2
+
+Change the pin to `@v0.8.2` and reinstall; `evh --version` prints `0.8.2` when the upgrade took. Nothing to migrate and
+no number moves: the release fixes a public server's Workbench and aligns the header of the site, the catalog, the
+Workbench and the docs. A deployment that runs `evh catalog-serve --public` and wants the Workbench headed by its
+publication's switcher passes the same `--link` and `--brand` its `evh catalog` build takes.
+
 ## From 0.8.0 to 0.8.1
 
 Change the pin to `@v0.8.1` and reinstall; `evh --version` prints `0.8.1` when the upgrade took. No format changes: you need

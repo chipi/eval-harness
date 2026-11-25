@@ -10,6 +10,26 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.8.2 — 2026-11-25
+
+The Workbench's reads on a public server, and one bar across the publication. **No result moves:** no data format,
+fingerprint, scorer or reader changed, and nothing is re-scored.
+
+- **Fixed, a public server's Workbench:** on the deployment, every read of the Workbench's public API answered 500
+  (`/api/v1/goals`, `/api/v1/models`): the inspector imported `jsonschema`, which its container did not carry
+  (EVALS-INSPECTOR-3). A local `evh catalog-serve` was never affected (the package depends on `jsonschema`).
+  The deploy now starts the release's inspector and MCP server in the box's image and asks them what a visitor asks
+  before it uploads (`infra/deploy/smoke_release.py`), and probes the public read API after it activates.
+- **Changed, the header:** the site, the catalog, the Workbench and the docs carry one bar: the logo, the switcher's
+  five pills (Harness · Catalog · Workbench · Docs · MCP) on every width, the menu at the bar's right end, and a second
+  row: the page's own sections (the catalog's pages too), the Workbench's screens in the Workbench. On a phone the bar is
+  the logo, the pills and the menu; search and the light/dark theme are in the menu, and the MCP pill no longer leaves
+  the bar. The Workbench keeps the theme as the other three do. `infra/deploy/headers_check.py` reads the four bars in
+  a browser at five widths.
+- **New, `evh catalog-serve --link` and `--brand` head the Workbench:** a server given its publication's parts shows
+  them as the Workbench's switcher, the Workbench marked, as `evh catalog --link` does for the catalog's pages. Without
+  `--link`, a project's own Workbench is as it was, its bar in the same geometry.
+
 ## 0.8.1 — 2026-11-24
 
 What 0.8.0 left open, and what three projects found in their first day on it. **Some results move** (below, by rule; by
