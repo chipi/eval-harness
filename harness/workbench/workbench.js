@@ -841,6 +841,14 @@ success_criteria:
   function resay(kept) {
     for (const [id, old] of Object.entries(kept)) { const el = document.getElementById(id); if (el && el !== old && !el.innerHTML.trim()) el.replaceWith(old); }
   }
+  // The bar's second row is the Workbench's screens (the operator, 2026-11-25): the one shown marked, as the site marks
+  // the section in view. A model's or a prompt's screen is under Models or Prompts; a goal's, under Home.
+  function onpage(base) {
+    const links = [...document.querySelectorAll("#nav a[href^='#']")];
+    const on = links.find((a) => a.getAttribute("href") === `#${base}`) || links.find((a) => a.getAttribute("href") === `#${base}s`) || links.find((a) => a.getAttribute("href") === "#home");
+    links.forEach((a) => (a === on ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
+    if (on) { const n = on.parentElement; n.scrollLeft = Math.max(0, on.offsetLeft - n.clientWidth / 3); }
+  }
   function render(newScreen, landed = false) {
     const kept = newScreen ? {} : typed(landed);
     const told = newScreen ? {} : said();
@@ -861,6 +869,7 @@ success_criteria:
     retype(kept);
     if (wire) wire();
     resay(told);
+    onpage(base);
     const h1 = main.querySelector("h1");
     if (h1) h1.tabIndex = -1;
     const next = focusNext && main.querySelector(focusNext);
@@ -920,8 +929,12 @@ success_criteria:
   $("#theme").addEventListener("click", () => {
     const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;
     r.dataset.theme = dark ? "light" : "dark";
+    // kept as the site, the catalog and the docs keep it (the same origin, the same key): one choice for all four
+    try { localStorage.setItem("theme", r.dataset.theme); } catch (e) { /* storage off: this page only */ }
   });
-  $("#menubtn").addEventListener("click", () => { const n = $("#nav"), o = n.classList.toggle("open"); $("#menubtn").setAttribute("aria-expanded", String(o)); });
-  window.addEventListener("hashchange", () => { $("#nav").classList.remove("open"); $("#menubtn").setAttribute("aria-expanded", "false"); });
+  // a phone: hints and the theme behind the ☰ (the screens stay in sight, the bar's second row)
+  $("#menubtn").addEventListener("click", () => { const n = $("#tools"), o = n.classList.toggle("open"); $("#menubtn").setAttribute("aria-expanded", String(o)); });
+  window.addEventListener("hashchange", () => { $("#tools").classList.remove("open"); $("#menubtn").setAttribute("aria-expanded", "false"); });
+  document.querySelectorAll("[data-theme-toggle]").forEach((b) => b.addEventListener("click", () => $("#theme").click()));
   window.addEventListener("DOMContentLoaded", () => render());
 })();

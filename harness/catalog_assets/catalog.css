@@ -535,8 +535,39 @@ input.pick { width: 16px; height: 16px; accent-color: var(--accent); }
 #arms td:nth-child(2) { min-width: 18ch; }
 /* The footer's "this page elsewhere": a long tool call wraps inside the footer, never past a phone's edge. */
 footer .elsewhere code { overflow-wrap: anywhere; }
-/* MCP, the switcher's fourth entry, leaves the bar on phones, as on the site. */
-@media (max-width: 560px) { .bar .sections a[href$="#mcp"] { display: none; } }
+/* The switcher's five pills on every width (the operator, 2026-11-25): on a phone the bar is the ☰, the logo and
+   the pills, nothing else; search and the theme are in the menu. The same numbers in site/assets/style.css,
+   docs/assets/docs.css and harness/workbench/workbench.css (infra/deploy/headers_check.py reads the four). */
+.menu-links .menu-theme { display: none; padding: 12px 14px; border: 0; border-radius: 8px; background: none;
+  color: var(--ink); font: 500 14px/1.2 var(--mono); text-align: left; cursor: pointer; }
+.menu-links .menu-theme:hover { background: var(--surface-2); }
+@media (max-width: 760px) {
+  .menu-links .menu-theme { display: block; }
+  .bar .search-btn, .bar .theme { display: none; }
+  .bar .sections { font-size: 11px; letter-spacing: 0; }
+  .bar .sections a { padding: 8px 5px; }
+}
+@media (max-width: 374px) { .bar .sections a { padding: 8px 3px; } }
+@media (max-width: 339px) { .bar .brand { display: none; } }
+/* the page's links end where the site's do, 22 px before the round buttons */
+.bar .nav { margin-right: 14px; }
+/* Tablets and phones (up to 1000 px, where the page's links no longer fit beside the five pills): the page's links
+   in the ☰, which sits at the bar's right end, so the logo and the switcher keep their place on every width. */
+@media (max-width: 1000px) {
+  .bar .nav { display: none; }
+  .bar .menu { display: block; order: 99; }
+  .bar .menu .menu-links { left: auto; right: 0; }
+}
+/* the bar's second row: the page's own sections, as on the site */
+.onpage { border-top: 1px solid var(--hair); }
+.bar .onpage nav.wrap { display: flex; flex-wrap: nowrap; justify-content: flex-start; gap: 22px; height: 34px;
+  padding-top: 0; padding-bottom: 0; align-items: center; overflow-x: auto; scrollbar-width: none;
+  font: 500 12px/1 var(--mono); letter-spacing: .03em; }
+.onpage nav::-webkit-scrollbar { display: none; }
+.onpage a { color: var(--muted); text-decoration: none; white-space: nowrap; padding: 9px 0; border-bottom: 2px solid transparent; }
+.onpage a:hover { color: var(--ink); }
+.onpage a[aria-current="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+@media (max-width: 480px) { .bar .onpage nav.wrap { gap: 16px; } }
 
 /* RFC-023: a reference's tier is a pill in its own colour; a label set's source is a chip in a neutral colour of its
    own, never a tier's; an arm scored against a label set is tinted t-labels; production's recorded arm is badged. */

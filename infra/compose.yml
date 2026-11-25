@@ -101,6 +101,20 @@ services:
       # The Workbench, read-only, links to the catalog where this site serves it (RFC-039).
       - --catalog-at
       - /catalog/
+      # The Workbench's bar: the publication's parts and name, as render.sh gives the catalog's pages (the
+      # switcher on all four parts; infra/deploy/headers_check.py).
+      - --brand
+      - eval-harness
+      - --link
+      - Harness=https://evals.humancopilot.eu/
+      - --link
+      - Catalog=.
+      - --link
+      - Workbench=https://evals.humancopilot.eu/workbench/
+      - --link
+      - Docs=https://evals.humancopilot.eu/docs/
+      - --link
+      - MCP=https://evals.humancopilot.eu/#mcp
       - --warm
       - /srv/evals/current/sites/evals.humancopilot.eu/public/catalog
       # This deployment's observability (infra/inspector/hooks.py): errors to GlitchTip, a span

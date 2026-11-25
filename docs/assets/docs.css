@@ -192,5 +192,21 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .md-copyright { font: .6rem/1.4 var(--eh-mono); color: var(--eh-muted); }
 /* the smallest phones (320 px): the bar stays on one row */
 @media (max-width: 359px) { .md-header__inner.eh-bar { gap: 4px; } .eh-bar .hbtn { width: 32px; height: 32px; } .eh-bar > .md-search { margin-left: -4px; } .eh-bar .sections { letter-spacing: 0; } .eh-bar .sections a { padding: 8px 3px; } }
-/* MCP, the switcher's fourth entry, leaves the bar on phones, as on the site and the catalog. */
-@media (max-width: 560px) { .eh-bar .sections a[href$="#mcp"] { display: none; } }
+/* The switcher's five pills on every width (the operator, 2026-11-25): on a phone the bar is the ☰, the logo and
+   the pills, nothing else; search and the theme are at the drawer's top (partials/nav.html). The same numbers in
+   site/assets/style.css, harness/catalog_assets/catalog.css and harness/workbench/workbench.css
+   (infra/deploy/headers_check.py reads the four). */
+.eh-drawer-tools { display: none; }
+@media (max-width: 760px) {
+  .eh-bar .eh-search, .eh-bar .eh-theme, .eh-bar .eh-github { display: none; }
+  .eh-bar .sections { font-size: 11px; letter-spacing: 0; }
+  .eh-bar .sections a { padding: 8px 5px; }
+  .eh-drawer-tools { display: flex; flex-direction: column; padding: .3rem .6rem; border-bottom: 1px solid var(--eh-hair); }
+  .eh-drawer-tools label, .eh-drawer-tools button { padding: .7rem .2rem; border: 0; background: none; cursor: pointer;
+    color: var(--eh-ink); font: 500 .7rem/1.2 var(--eh-mono); text-align: left; }
+}
+@media (max-width: 374px) { .eh-bar .sections a { padding: 8px 3px; } }
+@media (max-width: 339px) { .eh-brand { display: none; } }
+/* the ☰ (Material's drawer, below 1220 px) at the bar's right end, as on the site, in the catalog and in the
+   Workbench: the logo and the switcher keep their place on every width */
+.eh-bar .eh-menu { order: 99; }

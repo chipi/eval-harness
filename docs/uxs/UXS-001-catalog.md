@@ -117,9 +117,10 @@ tables 15px.
   name after the brand, muted ("eval catalog · triage"), and in the tab title, so two catalogs open side by side
   are never confused; `catalog-serve` prints its port and the project. A deployment's header is unchanged.
 - **Switcher (with `--link`):** the parts of the publication the catalog belongs to, in the
-  order given, e.g. **Harness · Catalog · Docs**, the catalog marked, after the brand; the brand
-  then opens the first part. The same control heads the deployment's site and docs, ☰ at the
-  left in all three, so each part keeps its own navigation and any other is one tap away.
+  order given, e.g. **Harness · Catalog · Workbench · Docs · MCP**, the catalog marked, after the brand; the brand
+  then opens the first part. The same bar heads the deployment's site, Workbench and docs: the five pills on every
+  width, the ☰ at the right end (on a phone the bar is the logo, the pills and the ☰; search and the theme are in the
+  menu), and the second row the page's own sections (the operator, 2026-11-25; infra/deploy/headers_check.py).
 - **Counts on the overview:** a count longer than 7 characters shows in short form on a phone
   (19.5M); the tile's title keeps the exact number.
 - **Tables:** a cell breaks between words, never inside a name; a table wider than the screen

@@ -56,33 +56,47 @@ def get(port: int, path: str) -> tuple[int, str]:
         return exc.code, exc.read().decode("utf-8", "replace")
 
 
-def run(release: Path, name: str, svc: dict) -> list[str]:
-    """The service started from the release, each of its ASKS put to it; what failed, or nothing."""
+def start(release: Path, name: str) -> tuple[int, str, str]:
+    """The release's service `name`, started as its compose.yml says: (port, container, why it never answered or '')."""
+    svc = yaml.safe_load((release / "compose.yml").read_text(encoding="utf-8"))["services"][name]
     port = free_port()
     cname = f"evals-smoke-{name}-{uuid.uuid4().hex[:8]}"
     env = [x for k, v in (svc.get("environment") or {}).items() for x in ("-e", f"{k}={v}")]
     cmd = [
         "docker", "run", "-d", "--rm", "--name", cname,
-        "--user", str(svc["user"]), "--read-only", "--tmpfs", "/tmp",
+        "--user", str(svc["user"]), "--read-only", "--tmpfs", "/tmp",  # noqa: S108  # nosec B108 - the container's own tmpfs, as compose.yml mounts it
         "-v", f"{release.resolve()}:{MOUNT}:ro", "-w", svc["working_dir"],
         "-p", f"127.0.0.1:{port}:8080", *env, svc["image"], *[str(c) for c in svc["command"]],
     ]  # fmt: skip
-    subprocess.run(cmd, check=True, capture_output=True, text=True)
-    failed: list[str] = []
+    subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8")
+    deadline = time.monotonic() + 120
+    while True:
+        try:
+            code, _ = get(port, ASKS[name][0][0])
+        except (urllib.error.URLError, ConnectionError, OSError):
+            code = 0
+        if code == 200:
+            return port, cname, ""
+        alive = subprocess.run(["docker", "inspect", cname], capture_output=True).returncode == 0
+        if not alive or time.monotonic() > deadline:
+            return (
+                port,
+                cname,
+                f"{name}: never answered {ASKS[name][0][0]} (container {'up' if alive else 'gone'})",
+            )
+        time.sleep(1)
+
+
+def stop(cname: str) -> None:
+    subprocess.run(["docker", "stop", "-t", "2", cname], capture_output=True)
+
+
+def run(release: Path, name: str) -> list[str]:
+    """The service started from the release, each of its ASKS put to it; what failed, or nothing."""
+    port, cname, why = start(release, name)
+    failed: list[str] = [why] if why else []
     try:
-        deadline = time.monotonic() + 120
-        while True:
-            try:
-                code, _ = get(port, ASKS[name][0][0])
-            except (urllib.error.URLError, ConnectionError, OSError):
-                code = 0
-            if code == 200:
-                break
-            alive = subprocess.run(["docker", "inspect", cname], capture_output=True).returncode == 0
-            if not alive or time.monotonic() > deadline:
-                return [f"{name}: never answered {ASKS[name][0][0]} (container {'up' if alive else 'gone'})"]
-            time.sleep(1)
-        for path, text in ASKS[name]:
+        for path, text in () if why else ASKS[name]:
             code, body = get(port, path)
             ok = code == 200 and text in body
             print(f"  {'ok' if ok else 'FAIL'}  {name} GET {path}: {code}")
@@ -90,9 +104,11 @@ def run(release: Path, name: str, svc: dict) -> list[str]:
                 failed.append(f"{name} GET {path}: {code} {body[:200]!r}")
     finally:
         if failed:
-            logs = subprocess.run(["docker", "logs", "--tail", "40", cname], capture_output=True, text=True)
+            logs = subprocess.run(
+                ["docker", "logs", "--tail", "40", cname], capture_output=True, text=True, encoding="utf-8"
+            )
             print(logs.stdout + logs.stderr)
-        subprocess.run(["docker", "stop", "-t", "2", cname], capture_output=True)
+        stop(cname)
     return failed
 
 
@@ -104,8 +120,7 @@ def main() -> int:
     if not shutil.which("docker"):
         print("SMOKE: FAIL - docker is not on PATH")
         return 1
-    services = yaml.safe_load((release / "compose.yml").read_text(encoding="utf-8"))["services"]
-    failed = [f for name in ASKS for f in run(release, name, services[name])]
+    failed = [f for name in ASKS for f in run(release, name)]
     for f in failed:
         print(f"::error::{f}")
     print(f"SMOKE: {'FAIL' if failed else 'PASS'} ({json.dumps(sorted(ASKS))})")

@@ -31,6 +31,18 @@ document.addEventListener('click',ev=>{const s=ev.target.closest('.search');pair
 const sb=document.querySelector('.search-btn'),bar=document.querySelector('.bar');
 if(sb)sb.addEventListener('click',()=>{const on=bar.classList.toggle('searching');sb.setAttribute('aria-expanded',on);
 if(on)q.focus();else{box.hidden=true;q.blur();}});})();
+/* phones: the menu's search and theme lines do what the bar's buttons do on a wide screen */
+document.querySelectorAll('[data-theme-toggle]').forEach(x=>x.addEventListener('click',()=>document.getElementById('theme').click()));
+document.querySelectorAll('[data-search-open]').forEach(x=>x.addEventListener('click',()=>{const m=x.closest('details');if(m)m.open=false;
+const sb=document.querySelector('.search-btn');if(sb&&!document.querySelector('.bar').classList.contains('searching'))sb.click();}));
+/* the bar's second row, the page's sections: the one in view marked, its link kept in sight on a narrow screen (as on the site) */
+(()=>{const links=[...document.querySelectorAll('.onpage a')];if(!links.length)return;
+const secs=links.map(a=>[a,document.getElementById(decodeURIComponent(a.hash.slice(1)))]).filter(x=>x[1]);
+let cur=null,queued=false;
+const mark=()=>{queued=false;let on=null;for(const[a,s]of secs){if(s.getBoundingClientRect().top<=120)on=a;}
+if(on===cur)return;if(cur)cur.removeAttribute('aria-current');cur=on;
+if(on){on.setAttribute('aria-current','true');const n=on.parentElement;n.scrollLeft=Math.max(0,on.offsetLeft-n.clientWidth/3);}};
+addEventListener('scroll',()=>{if(!queued){queued=true;requestAnimationFrame(mark);}},{passive:true});mark();})();
 document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.getElementById(inp.dataset.filter);
 inp.addEventListener('input',()=>{const w=inp.value.toLowerCase().split(/\s+/).filter(Boolean);let n=0;
 t.querySelectorAll('tbody tr').forEach(r=>{if(r.classList.contains('grouphead'))return;const ok=w.every(x=>r.textContent.toLowerCase().includes(x));const show=ok&&!r.classList.contains('pout')&&!r.classList.contains('fout');r.hidden=!show;n+=show;});

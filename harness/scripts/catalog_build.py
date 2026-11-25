@@ -471,6 +471,44 @@ def slug(s: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", s).strip("-") or "x"
 
 
+_BLOCK = re.compile(
+    r'<section class="block([^"]*)"([^>]*)><div class="wrap"><h2 class="eyebrow">(?:<span class="num">[^<]*</span>)?(.*?)</h2>',
+    re.S,
+)
+
+
+def onpage_nav(body: str) -> tuple[str, str]:
+    """The page's own sections as the bar's second row, as the site has it (site/build.py onpage_nav): a link to each
+    numbered block, the one in view marked as the reader scrolls (catalog.js), on a page with three or more. A block
+    with no id is given one from its heading. (body, the row's HTML or '')."""
+    items: list[str] = []
+    used = set(re.findall(r'\bid="([^"]+)"', body))
+
+    def one(m: re.Match) -> str:
+        label = re.sub(r"<[^>]+>", "", m.group(3)).strip()
+        sid = re.search(r'\bid="([^"]+)"', m.group(2))
+        if sid:
+            anchor, attrs = sid.group(1), m.group(2)
+        else:
+            anchor = base = "s-" + slug(label.lower())[:40]
+            n = 2
+            while anchor in used:
+                anchor, n = f"{base}-{n}", n + 1
+            used.add(anchor)
+            attrs = f'{m.group(2)} id="{anchor}"'
+        if label:
+            items.append(f'<a href="#{e(anchor)}">{e(label[:1].upper() + label[1:40])}</a>')
+        return m.group(0).replace(m.group(2) + ">", attrs + ">", 1) if not sid else m.group(0)
+
+    body = _BLOCK.sub(one, body)
+    if len(items) < 3:
+        return body, ""
+    return (
+        body,
+        f'<div class="onpage"><nav class="wrap" aria-label="On this page">{"".join(items)}</nav></div>',
+    )
+
+
 def page(
     title: str,
     body: str,
@@ -516,12 +554,12 @@ def page(
         else link(*x)
         for x in nav
     )
-    # A part of the publication the bar hides on phones (an MCP section, catalog.css) goes in the menu.
-    flat += "".join(
-        f'<a class="menu-mcp" href="{e(href)}">Ask it from your agent (MCP)</a>'
-        for _label, href in SECTIONS
-        if href.endswith("#mcp")
+    # On a phone the bar holds the ☰, the logo and the switcher only: search and the theme are in the menu.
+    flat += (
+        '<button type="button" class="menu-theme" data-search-open>Search the catalog</button>'
+        '<button type="button" class="menu-theme" data-theme-toggle>Light or dark</button>'
     )
+    body, onpage = onpage_nav(body)
     # The parts of the publication (--link), this catalog marked: the logo opens the first.
     here_href = f"{up}index.html"
     parts = [(label, here_href if href == "." else href, href == ".") for label, href in SECTIONS]
@@ -578,7 +616,7 @@ def page(
   <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{flat}</nav></details>
   <button class="hbtn search-btn" type="button" aria-label="Search" aria-expanded="false" aria-controls="q">{ICON["search"]}</button>
   <button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button>
-</div></header>
+</div>{onpage}</header>
 <main id="main" tabindex="-1">
 {body}
 </main>

@@ -287,7 +287,7 @@ try:
             beside = sorted(
                 x.name
                 for x in (HARNESS / "workbench").iterdir()
-                if x.is_file() and x.suffix in (".js", ".html", ".css", ".py")
+                if x.is_file() and x.suffix in (".js", ".html", ".css", ".py", ".svg")
             )
             check(
                 "the package ships the live Workbench's files, the ones the server serves and nothing else of the folder: "

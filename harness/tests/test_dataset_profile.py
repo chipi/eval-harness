@@ -358,10 +358,17 @@ try:
         "--link",
         "MCP=https://evals.example.test/#mcp",
     )
-    menu = (out / "goals.html").read_text(encoding="utf-8").split('class="menu-links"')[-1].split("</nav>")[0]
+    page_ = (out / "goals.html").read_text(encoding="utf-8")
+    menu = page_.split('class="menu-links"')[-1].split("</nav>")[0]
+    switcher = page_.split('<nav class="sections"')[-1].split("</nav>")[0]
     check(
-        "phone menu: an MCP section the bar hides on phones is in the menu",
-        r.returncode == 0 and 'class="menu-mcp" href="https://evals.example.test/#mcp"' in menu,
+        "phone menu: the MCP section stays a pill of the switcher (every pill on every width, 2026-11-25); the menu "
+        "holds search and the theme, which leave the bar on a phone",
+        r.returncode == 0
+        and 'href="https://evals.example.test/#mcp">MCP</a>' in switcher
+        and "menu-mcp" not in menu
+        and "data-search-open" in menu
+        and "data-theme-toggle" in menu,
         menu[-300:],
     )
     r = evh("catalog", "--out", str(out), "--mcp", "javascript:alert(1)")
