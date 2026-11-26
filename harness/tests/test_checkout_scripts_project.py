@@ -31,7 +31,7 @@ for d in ("examples", "harness/tools", "research", "site"):
         puts = [
             m
             for m in PUTS.finditer(text)
-            if not m.group(1).endswith('"scripts"')
+            if not m.group(1).endswith(('"scripts"', '"tools"'))
             and ("harness" in m.group(1) or "HARNESS" in m.group(1) or "evaluation_harness" in m.group(2))
         ]
         if puts and "from evaluation_harness" in text and 'os.environ.setdefault("EVAL_HOME"' not in text:
