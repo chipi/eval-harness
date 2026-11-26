@@ -1440,7 +1440,14 @@ class Handler(SimpleHTTPRequestHandler):
         except _api.Refused as exc:
             return self._json(exc.status, {"error": str(exc)}, cache=False)
         watch_write_job(j)
-        return self._json(202, j, cache=False)
+        from evaluation_harness._jobs_cmd import start_warnings  # noqa: PLC0415
+
+        # What `evh jobs-start` prints as the job starts: the answer only, not the job's record.
+        return self._json(
+            202,
+            {**j, "warnings": start_warnings(name, inputs if isinstance(inputs, dict) else {})},
+            cache=False,
+        )
 
     def _start_operation_reply(self, body: dict) -> None:
         """POST /api/v1/jobs: `{operation, inputs, by, for, max_cost_usd}` and nothing else."""
