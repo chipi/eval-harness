@@ -1,0 +1,101 @@
+{
+  "run_id": "arm_q_v1_20261121T023000Z",
+  "dataset_id": "triage_v1",
+  "system_id": "arm_q_v1",
+  "created_at": "2026-11-21T02:30:00Z",
+  "build": {
+    "ref": "6f1c2b9d0a4e8f7351c3d2e9a8b7c6d5e4f30a12",
+    "dirty": null,
+    "source": "EVAL_BUILD_REF"
+  },
+  "n_items": 6,
+  "params": {
+    "provider": "echo",
+    "sentences": 1
+  },
+  "adapter": "scripts/adapter.py",
+  "providers_seen": {},
+  "fingerprint": {
+    "version": 5,
+    "instrument": {
+      "harness": {
+        "commit": null,
+        "dirty": null,
+        "version": "0.8.2",
+        "code_sha256": "13aa349e45249fbb0d816222ad7939c47847a677eac1b6c9c7d73d77af322489",
+        "installed": false
+      },
+      "adapter": {
+        "id": "scripts/adapter.py",
+        "sha256": "636dda5de1db9d26aa95cb0239c6412865876e0dff3eaf5cdbb96d650019ec63"
+      }
+    },
+    "data": {
+      "dataset_id": "triage_v1",
+      "items_sha256": "6b6875d7b9b168a602222cb1692b503f0398ad65930eb5c1a2aeb435f92d02bc",
+      "n_items": 6,
+      "reference_id": "gold/triage_v1",
+      "reference_tier": "gold",
+      "references_sha256": "c47735f808e91b6c3f05c16aa0d751839897b5da97e48659b7a5b3043c2aeaca"
+    },
+    "deployment": {
+      "id": null,
+      "model": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "revision": null,
+        "revision_source": null,
+        "file_hash": null,
+        "quantization": null,
+        "precision": null
+      },
+      "server": null,
+      "where": {
+        "machine": null,
+        "backend": null,
+        "device": null
+      },
+      "hosted": null,
+      "provider": "echo",
+      "in_process": true,
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.57.0",
+        "anthropic": "2.12.0",
+        "rouge-score": "0.1.2"
+      },
+      "declared": null
+    },
+    "settings": {
+      "sentences": 1
+    },
+    "runner": {
+      "label": null,
+      "platform": "Linux/x86_64",
+      "release": "7.2.5-3-omarchy",
+      "processor": null,
+      "cpu_count": 32,
+      "python": "3.11.17",
+      "libraries": null
+    },
+    "arm": {
+      "config_id": "arm_q_v1",
+      "labels": null
+    },
+    "instrument_sha256": "984d0e7f33922c831855c926dee6be98d1a4e3576a404ad843ddb03f37c67ba9",
+    "data_sha256": "f0b978bf6996924df958414498c70de229e67b26cf9c934de656b718c8bf6589",
+    "deployment_sha256": "5ad68ed95115b1dcfe48fe93c35098ac48d2f36d5ff7ece90e695fe3f7206cf9",
+    "settings_sha256": "8e18ba7d5ad60542aa0b088c7d44f3d3031db903457845a6a1d6532b5259342a",
+    "hash": "bfcd141730bea587720aa114a559a80efc43308e80f2185e78ca691ade87b9ff"
+  },
+  "goal": "triage_b",
+  "actor": {
+    "type": "person",
+    "name": "fixture",
+    "from": "environment"
+  },
+  "started_at": "2026-11-21T02:30:00Z",
+  "purpose": "run",
+  "machine": "linux"
+}

@@ -1,0 +1,6 @@
+system_id: local_c
+params:
+  provider: stub
+  model: local_c-7b
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0

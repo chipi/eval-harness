@@ -1,0 +1,34 @@
+{
+  "actor": {
+    "from": "environment",
+    "name": "fixture",
+    "type": "person"
+  },
+  "created_at": "2026-11-19T10:00:00Z",
+  "dataset_id": "episodes_dev_v1",
+  "description": "4 item(s) from episodes_dev_v1/",
+  "items": [
+    {
+      "item_id": "p01_e01",
+      "source_path": "p01_e01.txt",
+      "source_sha256": "d928724460a43961dcd431c192eb9495e3d38afb415b7ad8c56f6dcd465bf1dd"
+    },
+    {
+      "item_id": "p01_e02",
+      "source_path": "p01_e02.txt",
+      "source_sha256": "4245f2dacca03e995954e8e1b5a6b64835a36855e34488eebe7ac6bb7195ecc1"
+    },
+    {
+      "item_id": "p02_e01",
+      "source_path": "p02_e01.txt",
+      "source_sha256": "cdaf5896970e787179a40fa15c339275d875d066a520bc38efa927d3327ca8e3"
+    },
+    {
+      "item_id": "p02_e02",
+      "source_path": "p02_e02.txt",
+      "source_sha256": "b12959ee03846d8e91b7a671bfd66bcb290596f4e9153d8b9f8f9ab0a5d5db1d"
+    }
+  ],
+  "source_dir": "sources/episodes_dev_v1",
+  "version": "1.0"
+}

@@ -1,0 +1,50 @@
+{
+  "actor": {
+    "from": "flag",
+    "name": "ana",
+    "type": "person"
+  },
+  "adapter": "scripts/adapter.py",
+  "build": {
+    "dirty": null,
+    "ref": "6f1c2b9d0a4e8f7351c3d2e9a8b7c6d5e4f30a12",
+    "source": "EVAL_BUILD_REF"
+  },
+  "dataset_id": "triage_v1",
+  "evidence": {
+    "compared_to": null
+  },
+  "fingerprint_hash": "dc02e0ad4e08e56684090aa47e45ae6c168c9a1b349c3ec0a5956759a378aa7d",
+  "goal": "triage_a",
+  "promoted_at": "2026-11-19T10:00:00Z",
+  "promoted_from": "arm_p_v1_20261120T233000Z_r1",
+  "reason": "arm p leads goal a.",
+  "reference_tier": "gold",
+  "repeats": {
+    "mean_scores": {
+      "cost_usd": 0.0,
+      "failed": 0.0,
+      "latency_ms": 0.009,
+      "output_words": 28.5,
+      "overlap_f1": 0.243426,
+      "resumed": 0.0,
+      "total_cost_usd": 0.0
+    },
+    "runs": [
+      "arm_p_v1_20261120T233000Z_r1",
+      "arm_p_v1_20261120T233000Z_r2",
+      "arm_p_v1_20261121T003000Z"
+    ]
+  },
+  "replaces": null,
+  "scores": {
+    "cost_usd": 0.0,
+    "failed": 0.0,
+    "latency_ms": 0.011667,
+    "output_words": 28.5,
+    "overlap_f1": 0.243426,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  },
+  "version": 1
+}

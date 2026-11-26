@@ -1,0 +1,6 @@
+{
+  "dataset_id": "données_日本語_v1",
+  "materialized_at": "2026-11-19T10:00:00Z",
+  "n_items": 3,
+  "verified": "every item matched its frozen sha256"
+}

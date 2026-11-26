@@ -1,0 +1,13 @@
+goal_id: transcript_quality
+schema_version: '0.1'
+title: Transcript quality
+statement: A transcript a reader trusts.
+decision: Which ASR model.
+status: active
+success_criteria:
+  primary:
+    measure: rougeL vs the silver summary
+    direction: higher
+datasets:
+  - {dataset_id: episodes_dev_v1, role: dev}
+  - {dataset_id: episodes_not_yet_made, role: test}

@@ -1,0 +1,6 @@
+{
+  "dataset_id": "tasks_wide_v1",
+  "materialized_at": "2026-11-19T10:00:00Z",
+  "n_items": 22,
+  "verified": "every item matched its frozen sha256"
+}

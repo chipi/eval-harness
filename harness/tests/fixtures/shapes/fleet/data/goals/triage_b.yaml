@@ -1,0 +1,12 @@
+goal_id: triage_b
+schema_version: "0.1"
+title: triage b
+statement: An invented goal for a fixture.
+decision: An invented decision.
+status: active
+success_criteria:
+  primary:
+    measure: overlap_f1
+    direction: higher
+datasets:
+  - {dataset_id: triage_v1, role: validation}
