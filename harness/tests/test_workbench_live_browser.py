@@ -930,6 +930,15 @@ try:
             page.click("#rc-go")
             page.wait_for_url("**#jobs/*", timeout=20000)
             page.wait_for_function(f"location.hash !== '#jobs/{first}'", timeout=20000)
+            page.wait_for_selector("[data-start-warning]", timeout=20000)
+            check(
+                "a run started from the Workbench says, on the job's page, what jobs-start says as it starts: "
+                "no reference set, no goal",
+                "no reference set for tk_once_v1"
+                in " ".join(page.locator("[data-start-warning]").all_inner_texts())
+                and "no goal" in " ".join(page.locator("[data-start-warning]").all_inner_texts()),
+                page.locator("main").inner_text()[:600],
+            )
             for _try in range(120):
                 if len(calls_log.read_text(encoding="utf-8").splitlines()) > n_calls:
                     break

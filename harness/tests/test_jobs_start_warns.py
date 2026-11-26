@@ -12,9 +12,12 @@ with a goal get no warning.
 import json
 import os
 import shutil
+import socket
+import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
@@ -35,6 +38,43 @@ for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVH_ACTOR", "EVAL_GO
 
 def evh(*args):
     return _cli.run(proj, env, *args)
+
+
+SERVERS: list[subprocess.Popen] = []
+
+
+def serve() -> tuple[int, str]:
+    with socket.socket() as sk:
+        sk.bind(("127.0.0.1", 0))
+        port = sk.getsockname()[1]
+    p = subprocess.Popen(
+        [sys.executable, str(HARNESS / "scripts" / "cli.py"), "catalog-serve", "--port", str(port)],
+        cwd=proj, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+    )  # fmt: skip
+    SERVERS.append(p)
+    for _ in range(300):
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                break
+        except OSError:
+            time.sleep(0.1)
+    return port, (proj / ".build" / "api-token").read_text(encoding="utf-8").strip()
+
+
+def start_job(port: int, token: str, inputs: dict) -> dict:
+    """POST /api/v1/jobs a run, as the Workbench does: the 202's body, once the job it started has ended."""
+    body = {"operation": "run", "inputs": inputs, "by": "person:t", "max_cost_usd": 0.01}
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}/api/v1/jobs",
+        data=json.dumps(body).encode(),
+        headers={"Host": f"127.0.0.1:{port}", "Authorization": f"Bearer {token}", "X-EVH-Data": "1"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310 — the test's own server  # nosec B310
+        assert r.status == 202, r.status
+        j = json.loads(r.read())
+    finished(j["id"])
+    return j
 
 
 def finished(out: str) -> None:
@@ -68,6 +108,17 @@ try:
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: a dataset with no reference", r.returncode == 0, (r.stdout + r.stderr)[-300:])
+    PORT, TOKEN = serve()
+    j = start_job(PORT, TOKEN, {"system": "tickets_lead1_v1", "dataset": "tickets_v1"})
+    check(
+        "the API's 202 carries the same warnings jobs-start prints: no reference, no goal",
+        any(
+            "no reference set for tickets_v1" in w and "evh reference-promote" in w
+            for w in j.get("warnings", [])
+        )
+        and any("no goal" in w and "--arg goal=" in w for w in j.get("warnings", [])),
+        str(j.get("warnings")),
+    )
 
     start = (
         "jobs-start",
@@ -111,7 +162,18 @@ try:
         r.returncode == 0 and "WARNING" not in r.stdout,
         r.stdout + r.stderr,
     )
+    j = start_job(
+        PORT, TOKEN, {"system": "tickets_lead1_v1", "dataset": "tickets_v1", "goal": "tickets_summary"}
+    )
+    check(
+        "the API, a reference and a goal: an empty warnings list",
+        j.get("warnings") == [],
+        str(j.get("warnings")),
+    )
 finally:
+    for sp in SERVERS:
+        sp.terminate()
+        sp.wait(timeout=10)
     shutil.rmtree(proj, ignore_errors=True)
 
 sys.exit(summary())

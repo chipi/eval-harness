@@ -518,7 +518,9 @@
     for (const [k, v] of Object.entries(d.q || {})) if (String(v).trim()) q[k] = NUMBERS.has(k) && /^\d+$/.test(String(v).trim()) ? Number(v) : String(v).trim();
     return q;
   };
-  async function watchJob(id, box, what) {
+  // What the API said as the job started (the same lines `evh jobs-start` prints): the job runs all the same.
+  const startWarnings = (j) => ((j && j.warnings) || []).map((w) => `<p class="note" role="status" data-start-warning>${esc(w)}</p>`).join("");
+  async function watchJob(id, box, what, extra = "") {
     for (;;) {
       const r = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" }).catch(() => null);
       if (!r || r.status === 503) {
@@ -527,7 +529,7 @@
         continue;
       }
       const j = await r.json().catch(() => ({}));
-      if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: ${esc(j.state || "…")}</p>`;
+      if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: ${esc(j.state || "…")}</p>${extra}`;
       if (!["queued", "running", "running (unsupervised)"].includes(j.state)) return j;
       await nap(1000);
     }
@@ -2140,6 +2142,7 @@
     const res = (j.result || {}).result;
     return `<div class="screen wide">${head}<h1 class="mono">${esc(j.operation)}</h1>
       <p class="lead">${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · ${askedBy(j)} · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
+      ${startWarnings({ warnings: (WB._startWarned || {})[id] })}
       <div class="tablewrap"><table><tbody>
         <tr><th>progress</th><td>${progressOf(j.progress)}</td></tr>
         <tr><th>spent</th><td>${usd(j.spent_usd)}${cap ? ` of at most ${usd(Number(cap))}` : ""}</td></tr>
@@ -2209,6 +2212,7 @@
       try {
         const { system, ...rest } = recall();
         const n = await send("POST", `/systems/${enc(system)}/runs`, { ...rest, by, max_cost_usd: cap });
+        (WB._startWarned = WB._startWarned || {})[n.id] = n.warnings || [];
         forget("jobs:"); location.hash = `#jobs/${enc(n.id)}`;
       } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
     });
@@ -2404,7 +2408,7 @@
         if (!((((LIVE.cache[`dataset:${theSide()}`] || {}).parts || {}).materialized || {}).present) && !(await runJob(`/datasets/${enc(theSide())}/materialize`, { by: who_ }, box, "fetching its items"))) { ev.target.disabled = false; return; }
         for (const s of [u.system_id, (u.hypothesis || {}).against].filter(Boolean)) {
           const j = await send("POST", "/jobs", { operation: "run", inputs: { system: s, dataset: theSide() }, by: who_, max_cost_usd: cap });
-          const done = await watchJob(j.id, box, `running ${s}`);
+          const done = await watchJob(j.id, box, `running ${s}`, startWarnings(j));
           if (done.state !== "succeeded") { box.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
         }
         again(box, { result: {} }, [`pairtest:${theSide()}`, `arms:${theSide()}`]);

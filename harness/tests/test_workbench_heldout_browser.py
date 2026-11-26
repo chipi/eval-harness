@@ -421,6 +421,12 @@ try:
             )
             page.fill("#hr-cap", "1")
             page.click("#hr-go")
+            page.wait_for_selector("#hr-out [data-start-warning]", timeout=120000)
+            check(
+                "Run both on it: the screen says, next to what it is doing, the warning jobs-start prints as a run starts (no goal)",
+                "no goal" in page.locator("#hr-out [data-start-warning]").first.inner_text(),
+                page.locator("#hr-out").inner_text(),
+            )
             page.wait_for_selector("#hr-out:has-text('Done.'), #hr-out [role=alert]", timeout=120000)
             again("#hr-out")
             page.wait_for_selector("text=the number that counts", timeout=30000)

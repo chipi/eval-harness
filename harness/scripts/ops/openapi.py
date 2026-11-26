@@ -645,6 +645,13 @@ def document() -> dict[str, Any]:
                             "type": ["number", "null"],
                             "description": "what it has spent so far; null when it recorded nothing",
                         },
+                        "warnings": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "only in the answer that starts a job: what the job cannot do, as `evh "
+                            "jobs-start` prints it (a run with no goal, or on a dataset with no reference set); "
+                            "the job starts all the same",
+                        },
                     },
                     "required": ["id", "operation", "inputs", "state"],
                     "additionalProperties": True,
