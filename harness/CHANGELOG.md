@@ -27,7 +27,7 @@ now refuses an arm it cannot price.
 - **New, `references: {roots: [...]}` in `config.yaml`:** where a project keeps references besides `data/references`.
   With it, `import-run --reference-id` refuses an id found in none; without it, as 0.8.1.
 - **New, `evh mcp --no-agent-tools`:** every read a local server serves, text included, neither `study-ask` nor `study-tell`. `evh mcp --help` now says a local server has those two; it said every tool reads.
-- **New, `dataset-create --fields-from-item` and `--exclude GLOB`:** JSON items give their own field values (a field's `from` JSON pointer, `reduce: count`), no `--fields` file to drift; `--exclude` drops what `--glob` matched (an export `manifest.json`).
+- **New, `dataset-create --fields-from-item` and `--exclude GLOB`:** JSON items give their own field values (a field's `from` JSON pointer, `reduce: count`), no `--fields` file to drift; `--exclude` drops what `--glob` matched (an export `manifest.json`); the folder source's query takes `exclude` too.
 - **New, `evh docs`:** UPGRADING, RUNBOOK and INTEGRATION ship in the package; `evh docs NAME [--print]` prints the
   installed copy and its page. `evh --help` opens with "Start here".
 - **Changed, the dry run:** the "no reference" lines come after its header and say what `evh run` will score; the
@@ -39,13 +39,12 @@ now refuses an arm it cannot price.
   says which files it read.
 - **Fixed, the Workbench:** the eval screen's charts read at once (0.75 s, from 2.5 s); "Open the next round"
   says why an arm is not offered; a dismissed "Close" says the round stays open; "Make a system from a model" says why
-  a model is missing; a page reaches `networkidle` (a response body was left unread) and a hidden tab asks nothing.
-  The mockup's notes left `workbench.js`.
+  a model is missing; a page reaches `networkidle` and a hidden tab asks nothing.
 - **Fixed, reads of an id that exists:** `dataset-items` and the readers behind it no longer refuse an id for its
   spelling (accents, other scripts); writers refuse what they did.
 - **New, `evh catalog-serve --link` and `--brand`** head the Workbench with its publication's parts.
 - **Tests:** projects shaped like the beta ones' data (imported, unpriced, unicode, format 0), read by every reader
-  in three time zones; on a machine of more than 8 CPUs the test runners take 4 suites, niceness 10 and 2 stats workers
+  in three time zones; on more than 8 CPUs the runners take 4 suites, niceness 10, 2 stats workers
   (`EVH_TEST_JOBS`, `EVH_TEST_NICE`, `EVH_WORKERS`).
 
 ## 0.8.1 — 2026-11-24
