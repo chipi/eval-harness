@@ -539,4 +539,7 @@ From earlier runs:
   does not. `tests/_shots.py` (`full_page`, `static_sticky`) holds every sticky element static for a capture, and
   `tests/test_screenshot_sticky_browser.py` counts the header per scroll slice with and without it. A run that
   screenshots by another tool captures one viewport at a time, or sets `.bar { position: static }` first.
-- Not exercised by a run yet: the direct OpenAI, Anthropic and OpenRouter paths (every run went through a LiteLLM proxy).
+- Not exercised by a real call, by choice: the direct OpenAI, Anthropic and OpenRouter paths. A project may use any of
+  them or any OpenAI-compatible endpoint; the harness's own development reaches models only through the homelab LiteLLM
+  gateway (OpenAI-compatible, so the real OpenAI client runs against a real server there). The direct paths are covered
+  by the real SDKs against a fake of each API (`tests/test_providers_wire.py`).

@@ -704,7 +704,7 @@ def dataset_id_read_ok(dataset_id: str) -> str:
 def plain_id_ok(value: str, option: str) -> str:
     """The id a writer is given for `option` (a run, a system, a reference's name), or SystemExit when it is not a plain
     name: an id with a path or a space in it would be a folder of its own, and the arm ids that join
-    `<label>/<dataset>/<system>` could not be split back (RFC-041 F7). Letters of any script pass (0.8.2)."""
+    `<label>/<dataset>/<system>` could not be split back (RFC-041 F7)."""
     why = _ids.NAME.problem(value)
     if why:
         die(

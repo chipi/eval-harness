@@ -96,7 +96,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _fetch, _jsonout, _store
+from evaluation_harness import _fetch, _ids, _jsonout, _store
 from evaluation_harness._common import (
     BASELINES,
     CAPTURES,
@@ -217,6 +217,28 @@ def check(label: str, ok: object, detail: str = "") -> None:
         problems.append(label)
 
 
+def schema_error(validator: Any, doc: Any) -> Any:
+    """The schema's best violation of `doc`, or None. A letter outside ASCII in an id is not one: 0.8.2 let ids be spelled in
+    any script and 0.8.3 did not, so a project may hold some, which every command still reads. It is a note."""
+    errs = []
+    for e in validator.iter_errors(doc):
+        if (
+            e.validator == "pattern"
+            and isinstance(e.instance, str)
+            and not e.instance.isascii()
+            and any(e.validator_value == r.pattern and r.ok(e.instance, True) for r in _ids.NAMED)
+        ):
+            note = (
+                f"id {e.instance!r} has letters outside ASCII (0.8.2 allowed them): it is read as it is; "
+                "a command that writes takes ASCII ids only"
+            )
+            if note not in notes:
+                notes.append(note)
+        else:
+            errs.append(e)
+    return jsonschema.exceptions.best_match(errs) if errs else None
+
+
 def parsed(path: Path) -> Any:
     """The JSON at `path`, or None when it does not parse. V1 names every dataset, run, baseline and capture
     that does not; the checks after it skip such a file, and a check of any other kind of file reports it
@@ -277,7 +299,7 @@ def v1_schemas() -> None:
             bad += 1
             print(f"       {data_rel(sd)}: {exc.message[:90]}")
     for files, schema_name in pairs:
-        schema = json.loads(_store.read_text(SCHEMAS / schema_name))
+        validator = jsonschema.Draft202012Validator(json.loads(_store.read_text(SCHEMAS / schema_name)))
         for f in files:
             if not _store.is_file(Path(f)):
                 continue
@@ -288,10 +310,10 @@ def v1_schemas() -> None:
                     if f.suffix == ".yaml"
                     else read_json(f)
                 )
-                jsonschema.validate(doc, schema)
-            except jsonschema.ValidationError as exc:
-                bad += 1
-                print(f"       {data_rel(f)}: {exc.message[:90]}")
+                exc = schema_error(validator, doc)
+                if exc:
+                    bad += 1
+                    print(f"       {data_rel(f)}: {exc.message[:90]}")
             except (ValueError, yaml.YAMLError) as exc:
                 bad += 1
                 print(f"       {data_rel(f)}: does not parse ({type(exc).__name__})")
@@ -1347,17 +1369,15 @@ def v14_goals() -> None:
 
     goals, bad = load_goals(), []
     schema = json.loads(_store.read_text(SCHEMAS / "goal.schema.json"))
+    goal_validator = jsonschema.Draft202012Validator(schema) if jsonschema is not None else None
     # The file name is the goal's id; read from the files, since load_goals keys by goal_id.
     for f in sorted(_store.glob(GOALS, "*.yaml")):
         doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) if f.name != "policy.yaml" else None
         if isinstance(doc, dict) and doc.get("goal_id") != f.stem:
             bad.append(f"goals/{f.name}: goal_id {doc.get('goal_id')!r} is not its file name")
     for gid, g in goals.items():
-        if jsonschema is not None:
-            try:
-                jsonschema.validate(g, schema)
-            except jsonschema.ValidationError as exc:
-                bad.append(f"goals/{gid}.yaml: {exc.message[:90]}")
+        if jsonschema is not None and (exc := schema_error(goal_validator, g)):
+            bad.append(f"goals/{gid}.yaml: {exc.message[:90]}")
         # The tie-break names axes the goal weighs: quality, cost, speed or one of its own, not ignored.
         weighed = {a["name"] for a in axes_of(g) if a["role"] != "ignore"}
         for name in (g.get("success_criteria") or {}).get("tie_break") or []:
@@ -1737,7 +1757,7 @@ def v19_label_sets() -> None:
         if not isinstance(doc, dict):
             bad.append(f"{rel}: labels.json does not parse")
             continue
-        if schema is not None and (err := next(iter(schema.iter_errors(doc)), None)):
+        if schema is not None and (err := schema_error(schema, doc)):
             bad.append(f"{rel}: {err.message[:90]}")
             continue
         if not _store.is_file(_common.DATASETS / f"{doc.get('dataset_id')}.json"):
@@ -1819,13 +1839,9 @@ def v21_failure_modes() -> None:
         except yaml.YAMLError as e:
             bad.append(f"{rel}: does not parse ({str(e).splitlines()[0]})")
             continue
-        if schema is not None:
-            errs = sorted(
-                jsonschema.Draft202012Validator(schema).iter_errors(doc), key=lambda e: list(e.path)
-            )
-            if errs:
-                bad.append(f"{rel}: {errs[0].message[:90]}")
-                continue
+        if schema is not None and (err := schema_error(jsonschema.Draft202012Validator(schema), doc)):
+            bad.append(f"{rel}: {err.message[:90]}")
+            continue
         if not isinstance(doc, dict):
             bad.append(f"{rel}: not a mapping")
             continue
@@ -1844,7 +1860,7 @@ def v21_failure_modes() -> None:
         if not isinstance(doc, dict):
             bad.append(f"{rel}: tags.json does not parse")
             continue
-        if tag_schema is not None and (err := next(iter(tag_schema.iter_errors(doc)), None)):
+        if tag_schema is not None and (err := schema_error(tag_schema, doc)):
             bad.append(f"{rel}: {err.message[:90]}")
             continue
         ds = parsed(DATASETS / f"{doc.get('dataset_id')}.json")
@@ -2135,7 +2151,7 @@ def v27_studies() -> None:
         goal, sid = rid.split("/", 1)
         if goal not in goals:
             bad.append(f"{rid}: no goal {goal!r} (data/goals/)")
-        if not _study.STUDY_ID.fullmatch(sid):
+        if not _study.STUDY_ID.ok(sid, True):
             bad.append(f"{rid}: study id {sid!r}: lower-case letters, digits, '_' or '-'")
         bad += [
             f"{rid}: {'.'.join(map(str, p['path'])) or '(top)'}: {p['message']}"
@@ -2281,7 +2297,7 @@ def v30_recorded_links() -> None:
     for gid, g in sorted(load_goals().items()):
         for ds in goal_datasets(g):
             listed += 1
-            if not DATASET_ID.fullmatch(ds) or ".." in ds:
+            if not DATASET_ID.ok(ds, True):
                 notes.append(
                     f"V30 goal {gid}: datasets entry {ds!r} is not a dataset id (prose, a pattern or a list), so "
                     "nothing checks it; name each dataset by its id"

@@ -9,7 +9,9 @@ correctness bugs, not just missing features.
 release-smoke's version check (RELEASING.md). Write it when 0.8.3 is dated. It says the 0.8.2 section below was corrected
 (two changes that can stop a run were missing), and names each 0.8.3 change that can stop a run (a 403 stops the run; the
 SDKs' own retries are off) in a bullet whose bold lead carries "can stop a run that worked" and whose CHANGELOG bullet
-carries it too: tests/test_upgrading_stops.py fails a section with fewer such leads than the CHANGELOG has bullets. -->
+carries it too: tests/test_upgrading_stops.py fails a section with fewer such leads than the CHANGELOG has bullets.
+0.8.3 makes ids ASCII again (the owner's decision, 2026-11-26): a writer refuses a non-ASCII id, an id 0.8.2 made is still read,
+and validate notes it. -->
 
 ## From 0.8.1 to 0.8.2
 

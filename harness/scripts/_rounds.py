@@ -52,7 +52,7 @@ def load_rounds(goal: str | None = None, data: Path | None = None) -> list[dict[
         return []
     # A goal is a plain name: `..`, a path separator or a glob character would reach (or probe for)
     # files outside data/rounds, and an agent can pass any string as --goal.
-    if goal is not None and not _ids.NAME.ok(goal):
+    if goal is not None and not _ids.NAME.ok(goal, True):
         return []
     ent = _entity(data)
     ids = [

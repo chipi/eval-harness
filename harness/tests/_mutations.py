@@ -195,9 +195,9 @@ def clone_run(
 
 
 def unicode_ids(proj: Path) -> None:
-    """A system and a dataset whose ids are in other scripts, as a hand-edited or imported project holds them (the
-    writers take such ids since 0.8.2, and the schemas too, so validate says nothing of them; these are written as files): runs of the new system on an existing dataset, of
-    an existing system on the new dataset, and of both."""
+    """A system and a dataset whose ids are in other scripts, as a project made under 0.8.2 or edited by hand holds them (no
+    writer takes such an id now, so these are written as files; validate notes them and every reader still reads them):
+    runs of the new system on an existing dataset, of an existing system on the new dataset, and of both."""
     first_id, first = ordered(proj)[0]
     ds, system = first["dataset_id"], first["system_id"]
     _runstore.write_text(

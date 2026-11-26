@@ -926,8 +926,8 @@ item was not scored. A run recorded before this can hold such a score; every rea
 scored 0, on read as on write, so the verdict on old data with one can move.
 
 A writer records a fact a reader will follow, or refuses it by name (RFC-041 F7), before it spends or writes: a `--run-id` (and
-import-run's `--system-id`, and reference-promote's `--name`) is a plain name: letters and digits of any script, `.`, `_`, `-`, in Unicode NFC (one that is not is
-refused naming its NFC form), never a path, a space or a control character (`bad-argument`); `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
+import-run's `--system-id`, and reference-promote's `--name`) is a plain name: ASCII letters and digits, `.`, `_`, `-` (any other letter is refused, naming the rule), never a path, a space or a
+control character (`bad-argument`); an id a 0.8.2 project made in another script is still read, and `evh validate` notes it; `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
 names a run of the same system and dataset (`mismatch`); import-run's `--reference-id` is free-form and may be kept outside `data/references/` (it
 imports, with a note on stderr that the harness cannot find it; a project that keeps references in other folders names
 them in its `config.yaml`, `references: {roots: [records/references]}`, each holding `<tier>/<name>` as `data/references/` does:

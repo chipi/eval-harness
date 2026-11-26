@@ -23,6 +23,7 @@ _RELEASE = """() => { for (const [e, v, p] of window.__stickyHeld || []) e.style
 
 @contextmanager
 def static_sticky(page: Any) -> Iterator[None]:
+    """Every element whose computed position is sticky held static for the block, its inline value given back after."""
     page.evaluate(_HOLD)
     try:
         yield
@@ -31,5 +32,6 @@ def static_sticky(page: Any) -> Iterator[None]:
 
 
 def full_page(page: Any, path: str | None) -> bytes:
+    """A full-page screenshot with the sticky header held static, so a tool that stitches viewports shows it once."""
     with static_sticky(page):
         return page.screenshot(path=path, full_page=True)

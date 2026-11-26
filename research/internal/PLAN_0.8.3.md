@@ -59,7 +59,7 @@ What exists in 0.8.2:
 "From 0.8.2 to 0.8.3" section and its CHANGELOG bullets are written when 0.8.3 is dated, an HTML comment in
 UPGRADING says what they must hold), S2 (`max_retries=0`), S3 (a 403 stops the run), S4, S7 (`tests/_shots.py`), S8
 (not reproduced; SCENARIO says what was checked). Gates on that commit: `make test` "all self-tests passed",
-`make browser-check` EXIT=0, `mkdocs build --strict` EXIT=0. Left: S5 (at release), S6 and S9 (open), S10 (the owner's
+`make browser-check` EXIT=0, `mkdocs build --strict` EXIT=0. Left: S5 (at release), S9 (open; S6 dropped by the owner, ids ASCII only), S10 (the owner's
 choice of where).
 
 | Item | What | Done when | Moves a result |
@@ -69,7 +69,7 @@ choice of where).
 | S3 | A 403 is not treated as a key refusal; only a 401 stops the run | a 403 stops it too, naming the key variable, or the reason it should not is written down | no |
 | S4 | `env-check` and the dry run show a `key_file`'s key but not the address it brings (`LITELLM_BASE_URL`) | both lines say where the address came from, as for the key | no |
 | S5 | The newcomer scenario was not run for 0.8.2, although the newcomer's path changed (`evh --help`, `evh docs`, the dry run's lines, the unpriced refusal). release-smoke's newcomer section and the real-call run covered part | the scenario run on 0.8.3's candidate (under $1, through the gateway); its "Still open" list rechecked | no |
-| S6 | **Open:** ids take no combining marks (`isalnum`), so a word that needs a vowel sign (Devanagari) cannot be an id. Allowing them needs the `regex` dependency or a generated range class | the owner's choice; if allowed, the 35-id table in `test_unicode_ids.py` grows a row each way | no |
+| S6 | **Dropped** by the owner's decision (2026-11-26): ids are ASCII only again in 0.8.3; a writer refuses a non-ASCII id, an id 0.8.2 made is still read, validate notes it. There is no combining-mark question left | none | no |
 | S7 | Full-page screenshots repeat the sticky header mid-page (the scenario's "Still open") | the header is not repeated in a full-page capture, or the screenshot helper captures without it | no |
 | S8 | The inspector's Conditions header reported to leave out `t5_small_v1` (not reproduced) | reproduced and fixed, or closed with the screenshot that shows it is there | no |
 | S9 | The direct OpenAI, Anthropic and OpenRouter paths are covered offline only (`test_providers_wire.py`, real SDKs against fakes). The owner's machines reach models through the LiteLLM gateway only | **open:** whether a real direct call is ever wanted; if not, the scenario's "Not exercised" line says why | no |
@@ -105,7 +105,7 @@ goes into 0.9.0.
   - EVALS-INSPECTOR-3 (`No module named 'jsonschema'`) is still unresolved in GlitchTip. It was last seen
     2026-11-26T15:57Z, before the deploy; the read tokens cannot resolve it.
   - The remote branch `0811-fix` (PR #39's head) was kept.
-  - The decisions marked **open** above (K3, K4, S6, S9).
+  - The decisions marked **open** above (K3, K4, S9).
 - **Cleaned up:** the 081, 0811-fix and 082-* worktrees and local branches. Still there, from other work: 044, 080,
   080-rfc038, mbpp-code and the backup branches.
 - **This worktree's venv** is a link to `/work/eval-harness/main/harness/.venv`; a dry-run install of the three

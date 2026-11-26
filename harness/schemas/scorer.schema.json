@@ -25,7 +25,7 @@
         "additionalProperties": false,
         "properties": {
           "id": {"type": "string", "minLength": 1},
-          "system": {"type": "string", "pattern": "^(?!.*\\.\\.)[^\\W_][\\w.-]*$", "description": "Instead of params: the system (data/systems/<id>.yaml) this judge is, read as its settings under the record of the model it names, so the judge is called, priced and fingerprinted as the system is. Its settings must carry what params requires (provider, model, both prices) and the family."},
+          "system": {"type": "string", "pattern": "^(?!.*\\.\\.)[A-Za-z0-9][A-Za-z0-9._-]*$", "description": "Instead of params: the system (data/systems/<id>.yaml) this judge is, read as its settings under the record of the model it names, so the judge is called, priced and fingerprinted as the system is. Its settings must carry what params requires (provider, model, both prices) and the family."},
           "params": {
             "type": "object",
             "required": ["provider", "model", "usd_per_mtok_in", "usd_per_mtok_out"],

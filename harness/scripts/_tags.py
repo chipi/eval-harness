@@ -45,8 +45,8 @@ def load_modes(modes_id: str) -> dict[str, Any]:
     """A failure-mode list by id; refused when it does not exist or names a mode twice."""
     import yaml  # noqa: PLC0415
 
-    if not SET_ID.ok(modes_id):
-        die(f"--modes {modes_id!r}: {SET_ID.problem(modes_id)} ({SET_ID.says()})", "bad-argument")
+    if not SET_ID.ok(modes_id, True):
+        die(f"--modes {modes_id!r}: {SET_ID.problem(modes_id, True)} ({SET_ID.says()})", "bad-argument")
     f = model_datasets.FAILURE_MODES.path(modes_id)
     if not _store.is_file(f):
         die(

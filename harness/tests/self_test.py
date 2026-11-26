@@ -1239,7 +1239,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_reader_agreement_shapes.py",
-            "every reader says the same of a fact on committed projects this checkout did not make (a fleet's, a podcast's, a bake-off's with no run, unicode ids, a format-0 project migrated), in UTC and in UTC+14 and UTC-11, and a zone changes no fact",
+            "every reader says the same of a fact on committed projects this checkout did not make (a fleet's, a podcast's, a bake-off's with no run, a format-0 project migrated), in UTC and in UTC+14 and UTC-11, and a zone changes no fact",
         ),
         (
             "test_arm_list_baseline_retired.py",
@@ -1251,11 +1251,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_read_ids.py",
-            "a writer takes the letters and digits of any script and refuses a non-NFC, control or path-like id; a read of an id that exists is refused only for being a path",
+            "a writer takes ASCII letters and digits and refuses a non-ASCII, control or path-like id; a read of an id that exists is refused only for being a path",
         ),
         (
-            "test_unicode_ids.py",
-            "one rule for every id a person names, on a table of ids, the JSON schemas' patterns agreeing with it; a dataset, a system and a run with a unicode id made and read back (CLI, API by a percent-encoded id, catalog export) in the store the suite runs in",
+            "test_ascii_ids.py",
+            "one rule for every id a person names (ASCII), on a table of ids, the JSON schemas' patterns agreeing with it; a writer refuses a non-ASCII id by name; a record a 0.8.2 project made under one is still read, and validate notes it, in the store the suite runs in",
         ),
         (
             "test_foreign_projects.py",

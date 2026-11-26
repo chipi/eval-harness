@@ -53,12 +53,13 @@ def including() -> Iterator[None]:
         _INCLUDE.reset(token)
 
 
-def path(dataset_id: str, data: Path | None = None) -> Path:
+def path(dataset_id: str, data: Path | None = None, read: bool = False) -> Path:
     """data/exposure/<dataset_id>.jsonl, in the project's data or in `data` (another data directory: a deployment's copy
-    of it, whose register is its own); the id is checked first, so it can never leave data/exposure/."""
+    of it, whose register is its own); the id is checked first, so it can never leave data/exposure/
+    (`read`: a dataset 0.8.2 made under a non-ASCII id is read as it is)."""
     from evaluation_harness import _common  # noqa: PLC0415
 
-    if not DATASET_ID.ok(dataset_id):
+    if not DATASET_ID.ok(dataset_id, read):
         die(f"not a dataset id: {dataset_id!r}", "bad-argument")
     return (_common.DATA if data is None else Path(data)) / "exposure" / f"{dataset_id}.jsonl"
 
@@ -81,7 +82,7 @@ def applies(dataset_id: str | None, data: Path | None = None) -> bool:
 
 def rows(dataset_id: str, data: Path | None = None) -> list[dict[str, Any]]:
     """Every row of a dataset's register, oldest first."""
-    p = path(dataset_id, data)
+    p = path(dataset_id, data, read=True)
     if not _store.is_file(p):
         return []
     return [json.loads(x) for x in jsonl_lines(_store.read_text(p, encoding="utf-8")) if x.strip()]

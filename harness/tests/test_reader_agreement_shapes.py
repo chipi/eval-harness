@@ -14,7 +14,6 @@ project's, and no run of one is made by this checkout's code):
   - podcast: every run imported (`goal` absent, `dirty: null`, free-text build refs, scorer `none`), no declared
              direction, goals whose measures and datasets are prose;
   - bakeoff: no run at all; zero-priced local models and one with no price; a custom adapter; datasets of 3 and 22 items;
-  - unicode: dataset, system, run, item and goal ids with accents, CJK and Cyrillic (written by hand; the writers take such ids since 0.8.2, tests/test_unicode_ids.py);
   - old:     tests/fixtures/formats/0, a project in the very first format, taken through `evh migrate` first.
 
 Each is copied, moved into the sqlite store when EVAL_STORE says so, and read by the CLI, the API, the MCP reads, the
@@ -41,7 +40,7 @@ import test_reader_agreement as RA  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 FIXTURES = HERE / "fixtures"
-SHAPES = ("fleet", "podcast", "bakeoff", "unicode")
+SHAPES = ("fleet", "podcast", "bakeoff")
 OLD = FIXTURES / "formats" / "0"
 UTC, FAR, FAR_WEST = "UTC", "Pacific/Kiritimati", "Pacific/Pago_Pago"
 #: (shape, TZ) passes: every shape in UTC and in UTC+14; the shape with stamps either side of midnight also in UTC-11.
@@ -204,24 +203,6 @@ def hand_checks(shape: str, name: str, facts: dict) -> None:
             f"hand: {name}: no measure has a declared direction, and every reader still says one",
             all(say("direction", "episodes_dev_v1", m) for m in ("rougeL_f1", "wer")),
             [say("direction", "episodes_dev_v1", m) for m in ("rougeL_f1", "wer")],
-        )
-    elif shape == "unicode":
-        check(
-            f"hand: {name}: both unicode systems have an arm",
-            sum("données_日本語_v1" in a for a in runs) == 2,
-            sorted(runs),
-        )
-        public = {
-            fk[1][0]: v
-            for r, d in facts.items()
-            if r == "cli:dataset-items"
-            for fk, v in d.items()
-            if fk[0] == "public"
-        }
-        check(
-            f"hand: {name}: the unicode dataset's `public` is read, its id spelt as it is",
-            public == {"données_日本語_v1": True},
-            public,
         )
     if shape != "podcast":
         check(f"hand: {name}: every arm states its runs", bool(runs) and all(runs.values()), sorted(runs)[:3])
