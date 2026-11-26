@@ -274,20 +274,26 @@ def _goal_lock(goal: str):
         yield
 
 
-def refuse_unpriced(rnd: dict[str, Any], system_id: str, params: dict[str, Any], allow: bool = False) -> None:
+def refuse_unpriced(
+    rnd: dict[str, Any], system_id: str, params: dict[str, Any], allow: bool = False, bundled: bool = False
+) -> None:
     """Before an arm of a round with budget_usd starts: refused (`not-configured`) when its system declares no price
     (usd_per_mtok_in and usd_per_mtok_out; an explicit 0 is a price), because what it spends could not be counted
-    against the budget. With `allow` (--allow-unpriced) it goes through and the round records that, so the budget
-    reads as leaving the arm out."""
+    against the budget. An arm on the bundled adapter (`bundled`) whose provider makes no paid call (`known_free`:
+    echo) costs nothing, priced or not; a project adapter's provider name proves nothing. With `allow`
+    (--allow-unpriced) it goes through and the round records that, so the budget reads as leaving the arm out."""
     if rnd.get("budget_usd") is None:
         return
     if params.get("usd_per_mtok_in") is not None and params.get("usd_per_mtok_out") is not None:
         return
+    if bundled and known_free({**params, "provider": params.get("provider", "echo")}):
+        return
     model = params.get("model") or "no model named"
+    named = f"model {model}" if params.get("model") else model
     if not allow:
         _common.die(
             f"round {rnd['round_id']} of {rnd['goal']} has a budget (${float(rnd['budget_usd']):.2f}), and arm "
-            f"{system_id} (model {model}) declares no price, so what it costs cannot be counted against it: nothing "
+            f"{system_id} ({named}) declares no price, so what it costs cannot be counted against it: nothing "
             "is called. Put usd_per_mtok_in and usd_per_mtok_out in the system's params (0 is a price, for a model "
             "that costs nothing per token), or start it with --allow-unpriced: the budget then leaves it out, and "
             "the round records that",

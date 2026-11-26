@@ -870,7 +870,8 @@ nothing per token) would be counted as $0. `evh run` and `evh arm-smoke` refuse 
 (not-configured)`), naming the arm, its model and where the prices go. `--allow-unpriced` (on `run`, `arm-smoke` and
 `sweep`) starts it anyway: the round records it (`unpriced_allowed` in the round file: the system, its model, who and
 when), and `evh round-show` and `evh round-evidence` say the budget leaves that arm's cost out. A round without a
-budget never asks.
+budget never asks, and neither does an arm on the bundled adapter whose provider makes no paid call (`echo`): it
+costs nothing. A project adapter is asked whatever its `provider` says: the name proves nothing of what it spends.
 
 `evh run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness

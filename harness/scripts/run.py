@@ -1759,7 +1759,13 @@ def _run(args: argparse.Namespace) -> int:
 
     if rnd is not None and recorded is None:
         # Before the warm-up's call, which is paid too: an arm with no price in a budgeted round is refused here.
-        _spend.refuse_unpriced(rnd, cfg["system_id"], dict(cfg.get("params") or {}), args.allow_unpriced)
+        _spend.refuse_unpriced(
+            rnd,
+            cfg["system_id"],
+            dict(cfg.get("params") or {}),
+            args.allow_unpriced,
+            bundled=adapter_id == BUNDLED_ADAPTER_ID,
+        )
 
     if declared_once:
         print(CALL_ONCE_LINE)

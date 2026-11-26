@@ -3,10 +3,13 @@
 
     python tests/test_round_unpriced.py
 
-In a throwaway project, $0 and offline (the echo provider): `evh run` and `evh arm-smoke` of an arm in a budgeted
-round whose system declares no usd_per_mtok_in / usd_per_mtok_out are refused before a call, naming the arm, its model
-and where the price goes; a declared price of 0 is a price; a round without a budget never asks; --allow-unpriced lets
-the arm through and the round records that it did, so round-show and round-evidence say its budget leaves the arm out.
+In a throwaway project, $0 and offline: `evh run` and `evh arm-smoke` of an arm in a budgeted round whose system
+declares no usd_per_mtok_in / usd_per_mtok_out are refused before a call, naming the arm, its model and where the price
+goes; the arm runs through a project's own adapter (one that passes to the bundled echo), because a project adapter's
+provider says nothing of what it spends. A bundled provider that makes no paid call (echo) costs nothing, priced or not
+(tutorial 4's round r2 runs one). A declared price of 0 is a price; a round without a budget never asks;
+--allow-unpriced lets the arm through and the round records that it did, so round-show and round-evidence say its
+budget leaves the arm out.
 """
 
 from __future__ import annotations
@@ -38,11 +41,10 @@ def evh(*args):
     return _cli.run(proj, env, *args)
 
 
-def system(system_id: str, **params) -> list[str]:
+def system(system_id: str, adapter: str | None = None, **params) -> list[str]:
     body = "".join(f"\n  {k}: {v}" for k, v in params.items())
-    _runstore.write_text(
-        proj, f"systems/{system_id}.yaml", f"system_id: {system_id}\nparams:\n  provider: echo{body}\n"
-    )
+    head = f"system_id: {system_id}\n" + (f"adapter: {adapter}\n" if adapter else "")
+    _runstore.write_text(proj, f"systems/{system_id}.yaml", f"{head}params:\n  provider: echo{body}\n")
     return ["--system", system_id, "--dataset", "tickets_v1", "--goal", GOAL, "--round", "r1"]
 
 
@@ -67,7 +69,12 @@ try:
         (r.stdout + r.stderr)[-400:],
     )
 
-    up = system("up_v1", model="tiny-1b")
+    # A project's own adapter: it passes to the bundled echo, but a project adapter's provider proves nothing of cost.
+    (proj / "own_adapter.py").write_text(
+        '"""Passes to the bundled adapter."""\n\nfrom evaluation_harness.adapter import call_system, score  # noqa: F401\n',
+        encoding="utf-8",
+    )
+    up = system("up_v1", adapter="own_adapter.py", model="tiny-1b")
     r = evh("run", *up)
     err = r.stderr
     check(
@@ -134,6 +141,14 @@ try:
         ev.stdout[-700:] + ev.stderr[-300:],
     )
 
+    echo = system("echo_v1", model="tiny-1b")
+    r = evh("run", *echo)
+    check(
+        "run: the bundled echo provider costs nothing, so a budgeted round runs it with no price declared",
+        r.returncode == 0 and len(runs_of("echo_v1")) == 1,
+        (r.returncode, (r.stdout + r.stderr)[-500:]),
+    )
+
     free = system("free_v1", model="local-1b", usd_per_mtok_in=0, usd_per_mtok_out=0)
     r = evh("run", *free)
     check(
@@ -154,7 +169,7 @@ try:
     r = r if r.returncode else evh("round-open", "--goal", GOAL, "--dataset", "tickets_v1", "--from", "r1",
                                    "--hypothesis", "no budget")  # fmt: skip
     check("setup: round r2 with no budget", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    nb = system("nb_v1", model="tiny-1b")
+    nb = system("nb_v1", adapter="own_adapter.py", model="tiny-1b")
     nb[-1] = "r2"
     r = evh("run", *nb)
     check(
