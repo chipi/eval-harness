@@ -378,7 +378,7 @@ def read_under(score_dir: Path, lbl: str) -> bool:
 
 def arm_prefix(lbl: str) -> str:
     """The first part of an arm's id: `runs` for a label of none, else the label as a slug (`rescored-cd35dc1f`)."""
-    return "runs" if not lbl else re.sub(r"[^a-z0-9]+", "-", lbl.lower()).strip("-")
+    return "runs" if not lbl else re.sub(r"[\W_]+", "-", lbl.lower()).strip("-")
 
 
 def arm_of(score_dir: Path, rec: dict[str, Any] | None = None) -> str:

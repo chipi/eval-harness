@@ -18,7 +18,7 @@ import sys
 from typing import Any
 
 import yaml
-from evaluation_harness import _fields, _jsonout, _sources, _store
+from evaluation_harness import _fields, _ids, _jsonout, _sources, _store
 from evaluation_harness._common import FIELDS, die, write_text_atomic
 from evaluation_harness.ops import legacy
 
@@ -70,8 +70,11 @@ def propose(
 def body(**inputs: Any) -> int:
     """Print (or write) a field set proposed from a source's features."""
     args = legacy.namespace(inputs, "fieldset-propose")
-    if not re.fullmatch(r"[a-z0-9_]+", args.fieldset_id):
-        die("--fieldset-id: lowercase letters, digits and _", "bad-argument")
+    if not _ids.SNAKE.ok(args.fieldset_id):
+        die(
+            f"--fieldset-id {args.fieldset_id!r}: {_ids.SNAKE.problem(args.fieldset_id)} ({_ids.SNAKE.says()})",
+            "bad-argument",
+        )
     try:
         query = json.loads(args.query)
     except ValueError as e:

@@ -13,7 +13,7 @@ writing nothing (a `refused:` check), or record the fact where a reader finds it
 The inventory (what each writer does with each shape) is in the commit that added this file; the checks below are the
 shapes a writer used to take silently:
 
-  - an id with unicode, a space or a path in it (evh run and import-run `--run-id`, import-run `--system-id`, a reference
+  - an id not in Unicode NFC (letters of any script are ids, 0.8.2), a space or a path in it (evh run and import-run `--run-id`, import-run `--system-id`, a reference
     promoted `--name`);
   - a repeat with no `of`, and an `of` that names another system's run (a retime or a pair as well);
   - a reference named in import-run that is not there, a tier with no reference, a tier the reference's id contradicts;
@@ -154,17 +154,27 @@ P, E = fresh()
 (P / "s.jsonl").write_text(SCORES, encoding="utf-8")
 RUN = ("run", "--system", "arm_z_v1", "--dataset", DS)
 
-print("\n-- an id with unicode, a space or a path in it")
-for what, bad in (("unicode", "café_run"), ("a path", "../evil"), ("a slash", "a/b"), ("a space", "a b")):
+print("\n-- an id not in Unicode NFC, a space or a path in it")
+for what, bad in (
+    ("a spelling that is not NFC", "cafe\u0301_run"),
+    ("a path", "../evil"),
+    ("a slash", "a/b"),
+    ("a space", "a b"),
+):
     refused(f"evh run --run-id with {what}", P, E, (*RUN, "--run-id", bad), "bad-argument", "--run-id")
     refused(f"import-run --run-id with {what}", P, E, import_args(run_id=bad), "bad-argument", "--run-id")
 refused(
-    "import-run --system-id with unicode", P, E, import_args(system_id="sysé"), "bad-argument", "--system-id"
+    "import-run --system-id not in NFC",
+    P,
+    E,
+    import_args(system_id="syse\u0301"),
+    "bad-argument",
+    "--system-id",
 )
 refused(
     "import-run --system-id with a slash", P, E, import_args(system_id="a/b"), "bad-argument", "--system-id"
 )
-for what, bad in (("unicode", "café"), ("a space", "up per")):
+for what, bad in (("a spelling that is not NFC", "cafe\u0301"), ("a space", "up per")):
     refused(
         f"reference-promote --name with {what}",
         P, E,
@@ -312,7 +322,7 @@ refused(
     "nope",
 )
 refused(
-    "label-from-run --set with unicode", P, E, ("label-from-run", "--run", FIRST_Y, "--set", "café", "--allow-dirty"),
+    "label-from-run --set not in NFC", P, E, ("label-from-run", "--run", FIRST_Y, "--set", "cafe\u0301", "--allow-dirty"),
     "bad-argument", "label set",
 )  # fmt: skip
 refused(

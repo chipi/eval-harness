@@ -4,15 +4,14 @@ data/systems/<system_id>.yaml, or a folder validate.json's `systems` names (this
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _ids, _store
 from evaluation_harness.model.entity import Entity
 
 #: A system id kept from a system id may carry capitals (`se_rougeL_n100_v1`).
-SYSTEM_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
+SYSTEM_ID = _ids.NAME
 
 
 def _found() -> dict[str, Path]:

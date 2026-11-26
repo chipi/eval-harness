@@ -14,7 +14,6 @@ import functools
 import hashlib
 import json
 import os
-import re
 import socket
 import subprocess
 import sys
@@ -22,6 +21,8 @@ import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, NoReturn
+
+from evaluation_harness import _ids
 
 #: Where the harness CODE lives: this directory. Schemas and sibling scripts are found
 #: relative to it, so they travel with the code whether it runs from a checkout or from an
@@ -671,14 +672,16 @@ def goal_policy() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
-#: A dataset id: a file name under data/, never a path (`../x` or `/etc/x` would read outside it).
-DATASET_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+#: A dataset id: a file name under data/, never a path (`../x` or `/etc/x` would read outside it). The rule is `_ids`'s,
+#: for every kind of id a person names.
+DATASET_ID = _ids.NAME
 
 
 def dataset_id_ok(dataset_id: str) -> str:
     """The id, or SystemExit when it is not a plain name (a path would leave data/)."""
-    if not DATASET_ID.fullmatch(dataset_id or "") or ".." in dataset_id:
-        die(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')", "bad-argument")
+    why = _ids.NAME.problem(dataset_id)
+    if why:
+        die(f"not a dataset id: {str(dataset_id)[:60]!r}: {why} ({_ids.NAME.says()})", "bad-argument")
     return dataset_id
 
 
@@ -700,12 +703,12 @@ def dataset_id_read_ok(dataset_id: str) -> str:
 
 def plain_id_ok(value: str, option: str) -> str:
     """The id a writer is given for `option` (a run, a system, a reference's name), or SystemExit when it is not a plain
-    name: an id with a path, a space or a letter outside ASCII in it would be a folder of its own, and the arm ids that
-    join `<label>/<dataset>/<system>` could not be split back (RFC-041 F7)."""
-    if not DATASET_ID.fullmatch(value or "") or ".." in value:
+    name: an id with a path or a space in it would be a folder of its own, and the arm ids that join
+    `<label>/<dataset>/<system>` could not be split back (RFC-041 F7). Letters of any script pass (0.8.2)."""
+    why = _ids.NAME.problem(value)
+    if why:
         die(
-            f"{option} {str(value)[:60]!r}: an id is a plain name (ASCII letters, digits, '.', '_', '-'), "
-            "not a path, a space or unicode",
+            f"{option} {str(value)[:60]!r}: {why}. An id is a plain name ({_ids.NAME.says()}), not a path",
             "bad-argument",
         )
     return value
@@ -835,11 +838,18 @@ def scored_against_dir(reference_id: str | None) -> Path | None:
 
 def refuse_unknown_reference(reference_id: str) -> None:
     """A project that declares where its references are (`references.roots`) has said where to look: a reference id found
-    in none of them is refused, naming what was searched, where a project that declares nothing only gets V16's note. A
-    label set has no roots, and keeps the note."""
+    in none of them is refused, naming what was searched, and so is a label-set id (`labels/<dataset>/<set>`) that is not
+    among the project's label sets, where a project that declares nothing only gets V16's note."""
     roots = reference_roots()
-    if not roots or reference_id.startswith(LABELS_PREFIX) or reference_found(reference_id):
+    if not roots or reference_found(reference_id):
         return
+    if reference_id.startswith(LABELS_PREFIX):
+        die(
+            f"--reference-id {reference_id}: not found in data/labels (no label set "
+            f"{reference_id[len(LABELS_PREFIX) :]}; the project declares references.roots in config.yaml, so an "
+            "unknown id is refused). Name a label set that is there (evh label-set-list), or make it first",
+            "not-found",
+        )
     searched = ["data/references", *(data_rel(r) for r in roots)]
     die(
         f"--reference-id {reference_id}: not found in {', '.join(searched)} (the project's references.roots in "

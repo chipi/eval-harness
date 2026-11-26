@@ -5,7 +5,7 @@
   "type": "object",
   "required": ["goal_id", "title", "statement", "decision", "success_criteria", "datasets"],
   "properties": {
-    "goal_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_]*$", "description": "Permanent; equals the file name. A materially different purpose is a new goal."},
+    "goal_id": {"type": "string", "pattern": "^(?!.*[A-Z])[^\\W_]\\w*$", "description": "Permanent; equals the file name. A materially different purpose is a new goal."},
     "schema_version": {"type": "string"},
     "title": {"type": "string"},
     "statement": {"type": "string", "description": "One sentence: X for Y so that Z."},

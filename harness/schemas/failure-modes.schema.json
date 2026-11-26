@@ -6,7 +6,7 @@
   "required": ["failure_modes_id", "modes"],
   "additionalProperties": false,
   "properties": {
-    "failure_modes_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,99}$", "description": "Equals the file name."},
+    "failure_modes_id": {"type": "string", "pattern": "^(?!.*\\.\\.)(?!.*[A-Z])[^\\W_][\\w.-]{0,99}$", "description": "Equals the file name."},
     "description": {"type": "string"},
     "modes": {
       "type": "array",

@@ -13,7 +13,6 @@ import copy
 import hashlib
 import json
 import os
-import re
 import secrets
 import subprocess
 import sys
@@ -22,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _ids, _store
 from evaluation_harness.model import runs as _model_runs
 from evaluation_harness.model.entity import Problem
 from evaluation_harness.model.studies import (
@@ -43,7 +42,7 @@ def fmt_delta(v: Any) -> str:
     return f"{v:+.4g}" if isinstance(v, (int, float)) else "none"
 
 
-STUDY_ID = re.compile(r"[a-z0-9][a-z0-9_-]{0,60}")
+STUDY_ID = _ids.STUDY
 
 
 # ── files ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -102,7 +101,7 @@ def problems(goal: str, sid: str, s: dict[str, Any]) -> list[str]:
 
     out = []
     if not STUDY_ID.fullmatch(sid):
-        out.append(f"study id {sid!r}: lower-case letters, digits, '_' or '-'")
+        out.append(f"study id {sid!r}: {STUDY_ID.problem(sid)} ({STUDY_ID.says()})")
     goals = _common.load_goals()
     if goal not in goals:
         out.append(f"goal {goal!r} does not exist (data/goals/)")

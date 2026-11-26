@@ -6,7 +6,7 @@
   "required": ["fieldset_id", "fields"],
   "additionalProperties": false,
   "properties": {
-    "fieldset_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "fieldset_id": {"type": "string", "pattern": "^(?!.*[A-Z])[^\\W_]\\w*$"},
     "description": {"type": "string"},
     "fields": {
       "type": "array",

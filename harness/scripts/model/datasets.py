@@ -16,18 +16,17 @@ The picks are one log for the project, data/picks.jsonl.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _ids, _store
 from evaluation_harness.model.entity import Entity
 
 #: A dataset id as dataset-create allows it (capitals too): an id the model's lists would leave out is never made.
-DATASET_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+DATASET_ID = _ids.NAME
 #: A label set's or tag set's own name.
-SET_NAME = re.compile(r"[a-z0-9][a-z0-9_.-]{0,99}")
-_PARTS = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+SET_NAME = _ids.SET
+_PARTS = _ids.NAME
 
 
 def _dataset_links(record: dict[str, Any]) -> list[dict[str, Any]]:
