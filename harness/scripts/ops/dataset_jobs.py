@@ -32,7 +32,7 @@ OPS = (
            "from": {"type": "string", "x-metavar": "DATASET_ID", "description": "the dataset this version is made from: recorded with the items added, removed and changed"},
            "fieldset": {"type": "string", "description": "the field set (data/fields/<id>.yaml) that declares the items' fields"},
            "fields": {"type": "string", "format": "path", "description": "a .csv or .jsonl of field values, one row per item_id", "x-file": "upload"},
-           "fields_from_item": {"type": "boolean", "description": "the items are JSON objects: read each field's value from the item itself (its key of the field's name, or the field's `from` JSON pointer; `reduce: count` takes a list's length); needs --fieldset, not with --fields"},
+           "fields_from_item": {"type": "boolean", "description": "the items are JSON objects: read each field's value from the item itself (its key of the field's name, or the field's `from` JSON pointer; `reduce: count` takes a list's length); needs --fieldset, not with --fields; with --update-fields, read from the dataset's frozen items"},
            "manifest": {"type": "string", "format": "path", "description": "a .csv or .jsonl of items: item_id, source_url [, source_sha256] [, field columns]", "x-file": "upload"},
            "source": {"type": "string", "x-metavar": "NAME", "description": "read the items from a dataset source: folder, manifest, huggingface, kaggle, zenodo, openml, croissant, the project's own (data/dataset_sources/NAME.py) or path/to/source.py:Class", "pattern": "^[a-z0-9][a-z0-9_]*$"},
            "query": {"type": "string", "default": "{}", "description": "with --source: what to read, as JSON (each source says its keys; \"answer\": COLUMN names the expected answer's column)"},

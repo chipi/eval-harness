@@ -23,13 +23,16 @@ Items can carry fields a project declares (ADR-0003), and can live at a URL:
                                                itself (a field's `from` pointer, `reduce: count`)
     --update-fields --fields fields.csv        new values on an existing dataset whose items are
                                                unchanged: fields are not its identity, so no run
-                                               measured on it is invalidated
+                                               measured on it is invalidated; with --fields-from-item
+                                               instead of --fields, read again from the items' frozen bytes
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -56,6 +59,7 @@ from evaluation_harness._common import (
     sha256,
     write_json,
 )
+from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.ops import legacy
 
 
@@ -157,13 +161,14 @@ def _attach(items: list, fieldset: dict, path: Path) -> None:
         die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
 
 
-def _attach_from_items(items: list, fieldset: dict, source_dir: Path) -> None:
+def _attach_from_items(items: list, fieldset: dict, read: Callable[[dict], bytes]) -> None:
     """Put the values the items' own JSON holds on the items, typed as `_attach` types a file's rows. Every item file
-    is one JSON object; a field set field reads its key, or where its `from` pointer lands."""
+    is one JSON object (`read` gives an item's bytes); a field set field reads its key, or where its `from` pointer
+    lands. A field the item does not hold keeps the value the item had, as a --fields row without that column does."""
     bad = []
     for it in items:
         try:
-            doc = json.loads(_store.read_bytes(source_dir / it["source_path"]).decode("utf-8"))
+            doc = json.loads(read(it).decode("utf-8"))
         except ValueError as exc:  # a UnicodeDecodeError is one
             bad.append(f"item {it['item_id']}: not JSON ({exc})")
             continue
@@ -173,9 +178,33 @@ def _attach_from_items(items: list, fieldset: dict, source_dir: Path) -> None:
         vals, errs = _fields.values_from_item(fieldset, doc)
         bad += [f"item {it['item_id']}: {e}" for e in errs]
         if vals:
-            it["fields"] = vals
+            it["fields"] = {**it.get("fields", {}), **vals}
     if bad:
         die(f"--fields-from-item: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
+
+
+def _frozen_reader(record: dict) -> Callable[[dict], bytes]:
+    """Each item's bytes as the dataset froze them: its materialized copy, else the folder its record names, the first
+    that still hashes to the item's `source_sha256` (a file changed since is not what the dataset measured)."""
+    roots = (_datasets.materialized_dir(record["dataset_id"]), _datasets.source_dir(record))
+
+    def read(it: dict) -> bytes:
+        rel = it.get("source_path") or it["item_id"]
+        seen = False
+        for root in roots:
+            if _store.is_file(root / rel):
+                seen = True
+                data = _store.read_bytes(root / rel)
+                if not it.get("source_sha256") or hashlib.sha256(data).hexdigest() == it["source_sha256"]:
+                    return data
+        die(
+            f"--fields-from-item: item {it['item_id']} is "
+            + ("changed since the dataset was frozen" if seen else "not found")
+            + f"; `evh dataset-materialize --dataset-id {record['dataset_id']}` says which items and why",
+            "not-materialized",
+        )
+
+    return read
 
 
 def _local_refusal(url: str, sha: str) -> str | None:
@@ -572,10 +601,10 @@ def body(**inputs: Any) -> int:
                 "--fields-from-item needs --fieldset <id> (data/fields/<id>.yaml declares the fields to read)",
                 "bad-argument",
             )
-        if args.manifest or args.source_name or args.update_fields or args.lineage_only:
+        if args.manifest or args.source_name or args.lineage_only:
             die(
-                "--fields-from-item reads the JSON files of --source-dir: not with --manifest, --source, "
-                "--update-fields or --lineage-only",
+                "--fields-from-item reads the JSON files of --source-dir (with --update-fields, of the dataset's "
+                "own items): not with --manifest, --source or --lineage-only",
                 "bad-argument",
             )
     if args.exclude and (args.manifest or args.source_name or args.update_fields or args.lineage_only):
@@ -590,11 +619,14 @@ def body(**inputs: Any) -> int:
     if args.update_fields:
         if not previous:
             die(f"--update-fields: no dataset at {out} to update", "not-found")
-        if not args.fields:
-            die("--update-fields needs --fields FILE", "bad-argument")
+        if not (args.fields or args.fields_from_item):
+            die("--update-fields needs --fields FILE or --fields-from-item", "bad-argument")
         # Merged: a value in the file replaces that value; every other value is kept.
         items = [dict(it) for it in previous["items"]]
-        _attach(items, fieldset, args.fields)
+        if args.fields:
+            _attach(items, fieldset, args.fields)
+        else:
+            _attach_from_items(items, fieldset, _frozen_reader({**previous, "dataset_id": args.dataset_id}))
         _write(
             out,
             args.dataset_id,
@@ -768,7 +800,7 @@ def body(**inputs: Any) -> int:
     if args.fields:
         _attach(items, fieldset, args.fields)
     if args.fields_from_item:
-        _attach_from_items(items, fieldset, args.source_dir)
+        _attach_from_items(items, fieldset, lambda it: _store.read_bytes(args.source_dir / it["source_path"]))
 
     lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
     _write(

@@ -872,6 +872,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
+        (
+            "test_mcp_health.py",
+            "evh mcp --http: every field of /mcp/health, with and without --no-agent-tools and --public",
+        ),
         ("test_mcp_cancel.py", "evh mcp: a cancelled call stops being waited for and gives its slot back"),
         (
             "test_mcp_in_process.py",
@@ -1598,6 +1602,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_key_file.py",
             "a system's key_file: its own key in each request, key_file then shell then .env, refused unreadable, warned uncovered, in env-check and the dry run, outside the fingerprint, no value leaked",
+        ),
+        (
+            "test_providers_wire.py",
+            "hosted providers on the wire: the real SDKs against a fake of each API; request, record, 429/500, 401",
         ),
         ("test_leaderboard_refs.py", "the leaderboard: one table per reference, never averaged across them"),
         (

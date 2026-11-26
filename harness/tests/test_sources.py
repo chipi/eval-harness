@@ -100,6 +100,37 @@ try:
         and len(ident(ds("fold_v1"))) == 3,
         (r2.stdout + r2.stderr)[-300:],
     )
+    (raw / "sub").mkdir()
+    (raw / "sub" / "d.txt").write_text("item d\n", encoding="utf-8")
+    (raw / "export.json").write_text("{}\n", encoding="utf-8")
+    q: dict = {"path": "raw", "glob": "*", "exclude": ["export.json", "b.txt"]}
+    r = evh("dataset-create", "--dataset-id", "fold_ex_v1", "--source", "folder", "--query", json.dumps(q))
+    check(
+        "--source folder with an exclude: the matched files are not items (repeated globs, as --exclude)",
+        r.returncode == 0 and [i for i, _ in ident(ds("fold_ex_v1"))] == ["a", "c"],
+        (r.stdout + r.stderr)[-300:],
+    )
+    q = {"path": "raw", "glob": "*.txt", "recursive": True, "exclude": ["sub/*.txt"]}
+    r = evh("dataset-create", "--dataset-id", "fold_ex_v2", "--source", "folder", "--query", json.dumps(q))
+    check(
+        "folder exclude: matched against the path under the folder, as --glob is",
+        r.returncode == 0 and [i for i, _ in ident(ds("fold_ex_v2"))] == ["a", "b", "c"],
+        (r.stdout + r.stderr)[-300:],
+    )
+    q = {"path": "raw", "exclude": ["a.txt", "*.json"]}
+    r = evh("source-preview", "--source", "folder", "--query", json.dumps(q))
+    check(
+        "source-preview --source folder honours the exclude",
+        r.returncode == 0 and "  a:" not in r.stdout and "  export:" not in r.stdout and "  b:" in r.stdout,
+        (r.stdout + r.stderr)[-300:],
+    )
+    q = {"path": "raw", "exclude": "b.txt"}
+    r = evh("dataset-create", "--dataset-id", "fold_ex_v3", "--source", "folder", "--query", json.dumps(q))
+    check(
+        "folder exclude must be a list of globs: a string is refused",
+        r.returncode != 0 and "exclude" in r.stderr,
+        r.stderr[-200:],
+    )
     mine = own_source("mine", MINE)
     r = evh("dataset-create", "--dataset-id", "mine_v1", "--source", mine, "--query", '{"n": 3}')
     d = ds("mine_v1") if r.returncode == 0 else {}
