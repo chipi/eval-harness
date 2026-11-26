@@ -521,10 +521,8 @@ Found by the 0.8.1 run; 0.8.2 changed them (check each still holds):
 - Step 13: `chart agreement`'s columns are its caption's words (reordered τ, re-asked τ).
 - Step 15: `evh validate` names the records with no actor; the inspector and `evh comparison-show` both say "no model".
 - `evh env-check` says which files it read.
-
-Still open from the 0.8.1 run:
-
-- The Workbench never reached `networkidle`: not a poll, an unread response body on its first read of /api/v1/goals; fixed in 0.8.2 (tests/test_workbench_idle_browser.py).
+- The Workbench reaches `networkidle`: it was not polling, its first read of `/api/v1/goals` left the response
+  body unread (tests/test_workbench_idle_browser.py); a hidden tab asks the server nothing.
 
 From earlier runs:
 
