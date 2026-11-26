@@ -172,9 +172,9 @@ against:
 evh run --system tickets_author_v1 --dataset tickets_v1 --goal tickets_summary
 ```
 ```text
-  no reference set for tickets_v1 — quality cannot be scored.
-  a reference set is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,
-    evh label-from-run --run <run_id> --set <name>
+  note: no reference set for tickets_v1; the run is not refused for it. It is scored without one: the bundled adapter records output_words only, and no quality score (overlap_f1 compares an output with a reference).
+  To get a quality score, make a reference set (labels you promote, RFC-023) from:
+    a person's labels: evh label-sheet --dataset-id tickets_v1 --out sheet.csv, then evh label-import
   ...
 wrote 1 run(s) to .../my-evals/data/runs
 ```

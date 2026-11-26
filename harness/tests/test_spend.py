@@ -296,8 +296,13 @@ try:
         r.returncode == 0,
         (r.stdout + r.stderr)[-400:],
     )
-    slow = system("ra", "ra_v1", goal="tickets_summary", round="r1", sleep=1.0)
-    slow_b = system("rb", "rb_v1", goal="tickets_summary", round="r1", sleep=1.0)
+    # A round with a budget asks each arm for a price; the adapter reports its own cost here, so 0 is declared.
+    slow = system(
+        "ra", "ra_v1", goal="tickets_summary", round="r1", usd_per_mtok_in=0, usd_per_mtok_out=0, sleep=1.0
+    )
+    slow_b = system(
+        "rb", "rb_v1", goal="tickets_summary", round="r1", usd_per_mtok_in=0, usd_per_mtok_out=0, sleep=1.0
+    )
     pa = evh("run", *slow, cap=0.04, background=True)
     ledger = proj / ".build" / "rounds" / "tickets_summary" / "r1.json"
     for _ in range(100):
@@ -327,7 +332,9 @@ try:
     r = r if r.returncode else evh("round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1", "--from", "r1",
             "--hypothesis", "after the kill", "--budget-usd", "0.1")  # fmt: skip
     check("setup: round r2, a $0.10 budget", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    k = system("rk", "rk_v1", goal="tickets_summary", round="r2", sleep=1.0)
+    k = system(
+        "rk", "rk_v1", goal="tickets_summary", round="r2", usd_per_mtok_in=0, usd_per_mtok_out=0, sleep=1.0
+    )
     log = proj / "killed.log"
     with open(log, "w", encoding="utf-8") as fh:
         e = dict(env)
@@ -346,7 +353,7 @@ try:
         "left, counting what running or stopped commands hold" in rv.stdout,
         rv.stdout[-600:],
     )
-    nk = system("rn", "rn_v1", goal="tickets_summary", round="r2")
+    nk = system("rn", "rn_v1", goal="tickets_summary", round="r2", usd_per_mtok_in=0, usd_per_mtok_out=0)
     r = evh("run", *nk)
     reserved = next((ln for ln in r.stdout.splitlines() if "of its budget reserved" in ln), "")
     left = float(reserved.split("$")[1].split()[0]) if "$" in reserved else None
@@ -364,7 +371,9 @@ try:
                                    "--hypothesis", "as a job", "--budget-usd", "0.1")  # fmt: skip
     r = r if r.returncode else evh("catalog")
     check("setup: round r3 ($0.10) and the catalog", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    system("rj", "rj_v1", goal="tickets_summary", round="r3", sleep=1.0)
+    system(
+        "rj", "rj_v1", goal="tickets_summary", round="r3", usd_per_mtok_in=0, usd_per_mtok_out=0, sleep=1.0
+    )
     with socket.socket() as so:
         so.bind(("127.0.0.1", 0))
         port = so.getsockname()[1]

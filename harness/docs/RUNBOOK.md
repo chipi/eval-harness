@@ -820,14 +820,21 @@ the arms page and in `evh arm-list` that the goals read its re-score. A round re
 `evh round-show` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
 `evh round-open --goal G --dataset D --adopt`.
 
-**The dry run and the run's output.** `evh run --system S --dataset D --dry-run` calls nothing. Its `ESTIMATE` counts one
-call per item (or the adapter's declared `CALLS_PER_ITEM`), each the prompt in and `max_tokens` out: it assumes every reply fills `max_tokens`, so for a model that answers in a
-sentence it is a ceiling many times the bill (a frontier arm at `max_tokens: 1500` was estimated at $0.76 and billed
-$0.05). It is still **not** an upper bound for the whole run, because an adapter that makes several calls per item, or a
-conversation that grows (each probe turn re-sends it), costs more. Beside it, `MEASURED` shows what the last `evh arm-smoke` of this
+**The dry run and the run's output.** `evh run --system S --dataset D --dry-run` calls nothing. Its `ESTIMATE` says what it is:
+"at most ~$X, if every reply used `max_tokens` N". It counts one call per item (or the adapter's declared
+`CALLS_PER_ITEM`), each the prompt in and `max_tokens` out, so it is a ceiling on the replies' length: for a model that
+answers in a sentence it is many times the bill (a frontier arm at `max_tokens: 1500` was estimated at $0.76 and billed
+$0.05; the 0.8.0 newcomer's was 15 times its spend). It does not bound the calls: an adapter that makes several calls per
+item, or a conversation that grows (each probe turn re-sends it), costs more. Where the system's earlier runs (the latest
+five) recorded output tokens, `TYPICAL` shows the same estimate at their mean tokens out per item; no recorded number
+changes. Beside them, `MEASURED` shows what the last `evh arm-smoke` of this
 system recorded in its model record (the cost per item, projected over the items and repeats, and when it was
 measured); with none it says so and names the command (a system that names no model record has nowhere to keep a smoke: it
-says so, and the cap comes from the smoke's own `full run:` line). Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
+says so and names `model_record:`, the cap comes from the smoke's own `full run:` line, and `evh sweep --dry-run` says it
+once for a model, not for each of its systems). A dataset with no reference set is a note under the dry run's header, not
+an error: `evh run` is not refused for it; the bundled adapter records `output_words` only, and a project's own adapter
+has its `score(output, None)` called (the checks it makes without a reference), and `label-from-run` (only when the
+dataset has a run) and `label-sheet` are offered as the way to a reference set. Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
 estimate. While a run goes it prints one line per finished item,
 `[3/65] <item_id> <ok | error | empty | resumed | the primary metric's value> 4.2s`, with the running cost
 once there is one, flushed as it is written even when stdout is a log file or a pipe (a detached job is watched
@@ -853,6 +860,14 @@ runs spent, less what running commands reserved, less what a stopped or killed r
 listed, its items were paid for). So arms started at once share the budget: give each its own
 `EVAL_MAX_COST_USD`, or the first takes all that is left. With nothing left a run is refused before any call
 (`ERROR (over-budget)`); `evh round-evidence` shows what is left beside what was spent.
+
+**An arm with no price is refused in a round with a budget.** What a budget counts is what runs recorded, so an arm
+whose system declares no `usd_per_mtok_in` and `usd_per_mtok_out` (an explicit 0 is a price, for a model that costs
+nothing per token) would be counted as $0. `evh run` and `evh arm-smoke` refuse it before any call (`ERROR
+(not-configured)`), naming the arm, its model and where the prices go. `--allow-unpriced` (on `run`, `arm-smoke` and
+`sweep`) starts it anyway: the round records it (`unpriced_allowed` in the round file: the system, its model, who and
+when), and `evh round-show` and `evh round-evidence` say the budget leaves that arm's cost out. A round without a
+budget never asks.
 
 `evh run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness

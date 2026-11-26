@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from collections.abc import Iterable
@@ -945,6 +946,79 @@ def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _no_reference_note(dataset_id: str, adapter_id: str) -> list[str]:
+    """What `evh run` does on a dataset with no reference set, as lines to print: it is not refused. Every item's
+    `score(output, None)` is called, so the bundled adapter records output_words only, and a project's own adapter
+    records the checks it makes without a reference. The way to a reference set is offered after that, label-from-run
+    only when the dataset has a run to label from."""
+    own = adapter_id != BUNDLED_ADAPTER_ID
+    head = f"  note: no reference set for {dataset_id}; the run is not refused for it."
+    if own:
+        says = (
+            f"{head} Your adapter's score(output, None) is called for each item, so the run records the adapter's "
+            "own checks that need no reference, and no score that compares an output with an answer."
+        )
+        lead = "  If those checks are what you score with, a reference set is optional. To also score against answers"
+    else:
+        says = (
+            f"{head} It is scored without one: the bundled adapter records output_words only, and no quality score "
+            "(overlap_f1 compares an output with a reference)."
+        )
+        lead = "  To get a quality score"
+    ways = []
+    if _model_runs.scored(dataset_id, label_is=None):
+        ways.append(
+            "a run of the arm you trust most as a model's labels: evh label-from-run --run <run_id> --set <name>"
+        )
+    ways.append(
+        f"a person's labels: evh label-sheet --dataset-id {dataset_id} --out sheet.csv, then evh label-import"
+    )
+    return [
+        says,
+        f"{lead}, make a reference set (labels you promote, RFC-023) from:",
+        *(f"    {w}" for w in ways),
+        (
+            f"  then: evh reference-promote --dataset-id {dataset_id} --labels <name> --tier gold|silver "
+            '--reason "…" --by <you>'
+        ),
+    ]
+
+
+def _typical_out(system_id: str) -> dict[str, Any] | None:
+    """What the system's earlier runs say a reply is: {mean tokens out per item, items, runs} over the latest five
+    plain runs of it that recorded output tokens (a failed item left out); None when none did."""
+    latest = sorted(
+        _model_runs.scored(system_id=system_id, label_is=""), key=lambda x: _model_runs.latest_key(x[1])
+    )[-5:]
+    total = n = used = 0
+    for sd, _rec in latest:
+        got = [
+            float(r["tokens_out"])
+            for r in _outputs.rows(sd, errors="replace", meta=False) or ()
+            if isinstance(r.get("tokens_out"), (int, float)) and not r.get("failed")
+        ]
+        if got:
+            total, n, used = total + sum(got), n + len(got), used + 1
+    return {"mean": total / n, "items": n, "runs": used} if n else None
+
+
+def _said_before(key: str, who: str) -> str | None:
+    """Who a dry run of the same sweep printed this note for already, else None and `who` is recorded as the one it is
+    printed for (`evh sweep --dry-run` runs each arm in a process of its own and names a file in EVH_DRY_SEEN for them
+    to share). Always None outside a sweep."""
+    path = os.environ.get("EVH_DRY_SEEN")
+    if not path:
+        return None
+    seen = Path(path)
+    for line in seen.read_text(encoding="utf-8").splitlines():
+        k, _, first = line.partition("\t")
+        if k == key:
+            return first
+    with seen.open("a", encoding="utf-8") as fh:
+        fh.write(f"{key}\t{who}\n")
+    return None
+
+
 def _cap_shown(cap: float | None) -> str:
     return _spend.shown(cap) + (" — set EVAL_MAX_COST_USD" if cap is None else " (EVAL_MAX_COST_USD)")
 
@@ -960,14 +1034,18 @@ def _dry_run(
     note: str | None = None,
     adapter_id: str = BUNDLED_ADAPTER_ID,
     repeat_line: str | None = None,
+    no_reference: list[str] | None = None,
 ) -> int:
     """Shape and cost the sweep without calling anything. `repeat_line`: where a `--purpose repeat` run would be read
-    (`_says_repeat`).
+    (`_says_repeat`). `no_reference`: the lines saying what a dataset with no reference set means for the scoring,
+    printed here, under the header (`_no_reference_note`).
 
     The estimate counts what the system alone shows: one call per item (or the adapter's declared
-    `CALLS_PER_ITEM`), the prompt in and max_tokens out, each call as large as the first. It is NOT an upper
-    bound: an adapter that calls the system several times per item, or whose conversation grows, costs more.
-    What an arm-smoke of this system measured is shown beside it, and is the number to set a cap from.
+    `CALLS_PER_ITEM`), the prompt in and max_tokens out, each call as large as the first. It is an upper bound on
+    the replies' length (every reply max_tokens long), not on the calls: an adapter that calls the system several
+    times per item, or whose conversation grows, costs more. Where the system's earlier runs recorded their output
+    tokens, a typical estimate at their mean is shown beside it. What an arm-smoke of this system measured is shown
+    after, and is the number to set a cap from.
     """
     params = dict(cfg.get("params") or {})
     items = ds["items"]
@@ -1014,6 +1092,8 @@ def _dry_run(
         print(f"  {note}")
     if repeat_line:
         print(repeat_line)
+    for line in no_reference or ():
+        print(line)
     print(f"  API calls   {calls}")
     print(
         f"              {per_item} per item, declared by the adapter (CALLS_PER_ITEM)"
@@ -1029,7 +1109,8 @@ def _dry_run(
     print(f"  output      <= {est_out / 1000:.1f}k tokens/pass (max_tokens x items)")
 
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
-    est = None
+    est = typical = None
+    earlier = _typical_out(cfg["system_id"])
     if pin is None or pout is None:
         print("\n  No price in the system, so no estimate. Add usd_per_mtok_in / usd_per_mtok_out to the")
         print("  params of the system file (0 is a valid price for a local model) and the run will record")
@@ -1037,14 +1118,26 @@ def _dry_run(
     else:
         est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat * per_item * share
         print(
-            f"\n  ESTIMATE    ~${est:.4f}  ({per_item} call(s) per item, each the prompt in and max_tokens out;"
-            " NOT an upper bound:"
+            f"\n  ESTIMATE    at most ~${est:.4f}, if every reply used max_tokens {int(params.get('max_tokens', 600))}"
+            f"  ({per_item} call(s) per item, each the prompt in and max_tokens out)"
         )
-        print("              a conversation that grows, or an adapter that calls more than that, costs more)")
         print(
-            "              It assumes every reply is max_tokens long: a model that answers in a sentence usually costs"
-            " less (an arm-smoke measures it)."
+            "              It bounds the length of a reply, not the number of calls: a conversation that grows, or an"
+            " adapter that calls more than that, costs more;"
         )
+        print(
+            "              a model that answers in a sentence usually costs less (an arm-smoke measures it)."
+        )
+        if earlier:
+            typical = (
+                (est_in / 1e6 * float(pin) * per_item + earlier["mean"] * len(items) / 1e6 * float(pout))
+                * repeat
+                * share
+            )
+            print(
+                f"  TYPICAL     ~${typical:.4f}, at a mean of {earlier['mean']:.0f} tokens out per item, over the "
+                f"{earlier['items']} item(s) of {earlier['runs']} earlier run(s) of {cfg['system_id']} (same input)"
+            )
     measured = _smoke_cost(cfg)
     projected = None
     if measured:
@@ -1064,14 +1157,29 @@ def _dry_run(
             print(f"  MEASURED    none for {cfg['system_id']}: no arm-smoke of it is recorded")
             print(f"              run `evh arm-smoke{where}` and set a cap from what it measures")
         else:
-            # A smoke is kept on a model's deployment (RFC-032): with no model record there is nowhere to keep it.
-            print(
-                f"  MEASURED    none for {cfg['system_id']}: it names no model record, so an arm-smoke of it is not kept"
-            )
-            print(
-                f"              run `evh arm-smoke{where}` for what 3 items cost (its `full run:` line) and set a cap"
-                " from that"
-            )
+            # A smoke is kept on a model's deployment (RFC-032): with no model record there is nowhere to keep it. A
+            # sweep's dry run says this once for a model (the systems of one model say the same).
+            first = params.get("model")
+            if first and (
+                told := _said_before(f"no-model-record:{params.get('provider')}:{first}", cfg["system_id"])
+            ):
+                print(
+                    f"  MEASURED    none for {cfg['system_id']}: it names no model record either, as for {told} above"
+                    f" (also {first}); run `evh arm-smoke{where}` and set a cap from that"
+                )
+            else:
+                print(
+                    f"  MEASURED    none for {cfg['system_id']}: it names no model record, so an arm-smoke of it is "
+                    "not kept"
+                )
+                print(
+                    "              (a smoke is kept on a model's record: name one in the system with model_record: <id>;"
+                    " `evh model-new` makes it)"
+                )
+                print(
+                    f"              Without one, run `evh arm-smoke{where}` for what 3 items cost (its `full run:` line)"
+                    " and set a cap from that"
+                )
     cap = env_float("EVAL_MAX_COST_USD")
     print("  cap         " + _cap_shown(cap))
     _jsonout.value(
@@ -1090,6 +1198,10 @@ def _dry_run(
             "output_tokens_per_pass_max": est_out,
             "estimate_usd": est,
             "estimate_is_upper_bound": False,
+            "typical_estimate_usd": typical,
+            "typical_output_tokens_per_item": earlier["mean"] if typical is not None and earlier else None,
+            "typical_from_runs": earlier["runs"] if typical is not None and earlier else None,
+            "scored_without_reference": bool(no_reference),
             "estimate_basis": f"{per_item} call(s) per item, prompt in and max_tokens out",
             "calls_per_item": per_item,
             "calls_per_item_declared": declared is not None,
@@ -1604,23 +1716,16 @@ def _run(args: argparse.Namespace) -> int:
                 f"  WARNING: only {have} of {len(ids)} items have a {ref_tier} reference: quality is a "
                 f"mean over those {have}, and the run records that (reference_coverage)."
             )
+    no_reference: list[str] | None = None
     if args.labels:
         print(f"  scoring against the label set {ref_id} (labels, not a reference)")
     elif ref_tier:
         print(f"  scoring against {ref_tier.upper()} references for {cfg['dataset_id']}")
     else:
-        print(f"  no reference set for {cfg['dataset_id']} — quality cannot be scored.")
-        print(
-            "  a reference set is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,"
-        )
-        print("    evh label-from-run --run <run_id> --set <name>")
-        print(
-            f"  (or a person's: evh label-sheet --dataset-id {cfg['dataset_id']} --out sheet.csv, then evh label-import),"
-        )
-        print(
-            f"  then: evh reference-promote --dataset-id {cfg['dataset_id']} --labels <name> --tier gold|silver "
-            '--reason "…" --by <you>'
-        )
+        # A note of what will happen, not a failure: a dry run prints it under its own header.
+        no_reference = _no_reference_note(cfg["dataset_id"], adapter_id)
+        if not args.dry_run:
+            print("\n".join(no_reference))
     if build["ref"] == "unknown":
         print("  WARNING: could not identify the build — this run is not attributable")
     faith = (
@@ -1665,7 +1770,12 @@ def _run(args: argparse.Namespace) -> int:
             note,
             adapter_id,
             says[0] if says else None,
+            no_reference,
         )
+
+    if rnd is not None and recorded is None:
+        # Before the warm-up's call, which is paid too: an arm with no price in a budgeted round is refused here.
+        _spend.refuse_unpriced(rnd, cfg["system_id"], dict(cfg.get("params") or {}), args.allow_unpriced)
 
     if declared_once:
         print(CALL_ONCE_LINE)

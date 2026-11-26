@@ -14,8 +14,10 @@ Always dry-run first. It costs nothing and tells you what the sweep will.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
+import tempfile
 from typing import Any
 
 from evaluation_harness import _jsonout, _progress, _spend
@@ -40,6 +42,12 @@ def body(**inputs: Any) -> int:
     print(f"sweep: {len(configs)} arm(s) on {dataset_id}, repeat={args.repeat}\n")
 
     failed: list[str] = []
+    # The notes a dry run of one arm says once for a model (no model record) are said once for the whole sweep: the
+    # arms are processes of their own, and share this file to tell each other.
+    seen = ""
+    if args.dry_run:
+        fd, seen = tempfile.mkstemp(prefix="evh-dry-seen-")
+        os.close(fd)
     for i, c in enumerate(configs, 1):
         _progress.step(i - 1, len(configs))
         print(f"── [{i}/{len(configs)}] {c} " + "─" * max(0, 50 - len(c)))
@@ -60,6 +68,8 @@ def body(**inputs: Any) -> int:
         ]
         if args.dry_run:
             cmd.append("--dry-run")
+        if args.allow_unpriced:
+            cmd.append("--allow-unpriced")
         if args.scratch:
             cmd.append("--scratch")
         sys_params = SYSTEM.get(c).get("params")
@@ -72,7 +82,7 @@ def body(**inputs: Any) -> int:
             failed.append(c)
             continue
         if args.dry_run:
-            r = subprocess.run(cmd, cwd=ROOT)
+            r = subprocess.run(cmd, cwd=ROOT, env={**os.environ, "EVH_DRY_SEEN": seen})
         else:
             # Each arm gets what the arms before it left of the cap, from what each wrote it spent.
             r, paid = _spend.run_child(cmd, cwd=ROOT)
@@ -93,6 +103,8 @@ def body(**inputs: Any) -> int:
         print()
 
     _progress.step(len(configs), len(configs))
+    if seen:
+        os.unlink(seen)
     if failed:
         print(f"  {len(failed)} arm(s) failed: {', '.join(failed)}")
         print("  The rest still ran; their results are on the leaderboard below.\n")
