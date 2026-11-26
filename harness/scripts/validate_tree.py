@@ -96,7 +96,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout, _store
+from evaluation_harness import _fetch, _jsonout, _store
 from evaluation_harness._common import (
     BASELINES,
     CAPTURES,
@@ -353,10 +353,23 @@ def v4_materialized() -> None:
     output says so by name: the check used to print `ok` for it, and for a copy that had lost
     files, which is green for something never looked at."""
     drifted, missing, unchecked, checked = [], [], [], 0
+    gone: list[str] = []
     for ds_file in sorted(_store.glob(DATASETS, "*.json")):
         ds = parsed(ds_file)
         if not isinstance(ds, dict) or "dataset_id" not in ds:
             continue  # V1 names it
+        # A local source_url (a path in the project, pinned by its hash) is read where it is, with or without a copy.
+        for item in ds.get("items") or []:
+            url = str(item.get("source_url") or "")
+            if not url or _fetch.is_web(url) or _fetch.local_problem(url):
+                continue
+            f = _fetch.local_file(url)
+            if not _store.is_file(f):
+                gone.append(f"{ds['dataset_id']}/{item.get('item_id')}: {url}")
+            elif sha256(f) != item.get("source_sha256"):
+                drifted.append(
+                    f"{ds['dataset_id']}/{item.get('item_id')}: local source {url} no longer hashes to its pin"
+                )
         mat = MATERIALIZED / ds["dataset_id"]
         if not _store.is_dir(mat):
             unchecked.append(ds["dataset_id"])
@@ -373,6 +386,11 @@ def v4_materialized() -> None:
         print(f"       drifted: {d}")
     for d in missing:
         print(f"       missing: {d}")
+    if gone:
+        notes.append(
+            f"V4 {len(gone)} local source(s) have no file here, so their hash was not checked "
+            f"({'; '.join(gone[:3])}{f'; and {len(gone) - 3} more' if len(gone) > 3 else ''})"
+        )
     total = checked + len(unchecked)
     check(
         f"V4 materialized copies match their frozen hashes ({checked} of {total} datasets materialized here)",
@@ -655,9 +673,14 @@ def v6_baselines() -> None:
     # A note, not a failure: picks are append-only, and a record a test or a person wrote by hand is not wrong.
     from evaluation_harness.baselines_migrate import plan  # noqa: PLC0415
 
-    missing = sum(1 for what, _f, _n in plan() if what.startswith("actor"))
-    if missing:
-        print(f"  note: {missing} record(s) name no actor (who made them): evh migrate writes one")
+    unnamed = [
+        what.split(" on ", 1)[-1] for what, _f, _n in plan() if what.startswith("actor")
+    ]  # "actor on <file>", "actor/split on <file>"
+    if unnamed:
+        shown = ", ".join(unnamed[:3]) + (f", and {len(unnamed) - 3} more" if len(unnamed) > 3 else "")
+        print(
+            f"  note: {len(unnamed)} record(s) name no actor (who made them): {shown}; evh migrate writes one"
+        )
     check(
         "V6 every baseline's source run still exists and matches what the baseline carries",
         not broken,

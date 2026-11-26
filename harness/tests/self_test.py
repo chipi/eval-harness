@@ -1519,6 +1519,10 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
+            "test_local_sources.py",
+            "a local source_url pinned by a hash: create, V1, V4, materialize; the no-actor note names its records",
+        ),
+        (
             "test_references.py",
             "reference manifests and V16: checksums committed, texts checked against them",
         ),
