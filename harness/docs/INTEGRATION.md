@@ -308,7 +308,10 @@ the command writes those systems, so a project names it by hand only to run one 
 dispatches to its `PROVIDERS` (`from evaluation_harness.adapter import PROVIDERS, Result`), also
 call OpenAI or any OpenAI-compatible endpoint (`provider: openai` with a `base_url`), OpenRouter
 (`provider: openrouter`), and a LiteLLM proxy (`provider: litellm`). Each reads its key from the
-environment or the project's `.env` (gitignored by `evh init`); the harness holds none.
+environment or the project's `.env` (gitignored by `evh init`), or from the file a system names
+with `key_file` in its params (first of the three; [RUNBOOK](RUNBOOK.md#environment-variables)); the harness holds none.
+An adapter of yours that calls `_providers.complete` with the system's params gets the key file too; one that
+reads `os.environ` itself does not.
 **Which variable each provider reads, and what goes in the system's `params`:
 [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).** `evh env-check`
 reports which are set. Judges use the same providers: each judge's `provider:` in the scorer

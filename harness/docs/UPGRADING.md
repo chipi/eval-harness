@@ -30,6 +30,11 @@ publication's switcher passes the same `--link` and `--brand` its `evh catalog` 
   declared field's value from its item (a field's optional `from` JSON pointer and `reduce: count`, in the field set);
   the second drops files `--glob` matched, as an export `manifest.json`. Without them nothing changes, and a record made
   with them is the one a `--fields` file and a narrower `--glob` give.
+- **A system may name `key_file: PATH` in its `params` (optional): the dotenv-format file its provider keys come from.** For
+  that system's calls the file is read first, then the exported environment, then the project's `.env`; a file that cannot
+  be read is refused (`not-configured`) before any call, and one inside the project that git does not ignore is warned
+  about. `evh env-check` and `evh run --dry-run` say where each key comes from, never its value. The path is in no
+  fingerprint: two systems differing only in `key_file` hash alike. Without the key nothing changes.
 
 ## From 0.8.0 to 0.8.1
 

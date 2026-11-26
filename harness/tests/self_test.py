@@ -1595,6 +1595,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_code_hashes.py", "scoring-code hashes"),
         ("test_codeid.py", "code identity: documentation never moves a hash"),
         ("test_providers.py", "hosted providers: one layer for arms and judges, keys by role"),
+        (
+            "test_key_file.py",
+            "a system's key_file: its own key in each request, key_file then shell then .env, refused unreadable, warned uncovered, in env-check and the dry run, outside the fingerprint, no value leaked",
+        ),
         ("test_leaderboard_refs.py", "the leaderboard: one table per reference, never averaged across them"),
         (
             "test_reference_coverage.py",

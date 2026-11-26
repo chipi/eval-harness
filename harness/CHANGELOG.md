@@ -12,41 +12,26 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.8.2 — 2026-11-26
 
-The Workbench's public reads, one bar across the publication, and what the beta projects and the 0.8.1 newcomer run
-found. **No result moves:** no format, fingerprint or scorer changed, nothing is re-scored; a round with a budget
-now refuses an arm it cannot price.
+The Workbench's public reads, one bar across the publication, and the beta projects' and 0.8.1 newcomer run's findings. **No result moves:** no format, fingerprint or scorer changed, nothing is re-scored.
 
-- **Fixed, a public server's Workbench:** its public API answered 500 (`/api/v1/goals`, `/api/v1/models`): the inspector's container lacked `jsonschema` (EVALS-INSPECTOR-3). The deploy now asks the release's servers what a visitor asks before uploading (`infra/deploy/smoke_release.py`).
-- **Changed, the header:** the site, the catalog, the Workbench and the docs carry one bar: the logo, five pills
-  (Harness · Catalog · Workbench · Docs · MCP) on every width, the menu at the right, a second row of the page's
-  sections (the Workbench's screens). On a phone, search and the theme are in the menu.
-- **Changed, a round with a budget refuses an arm with no price** (0 is a price), naming it; `--allow-unpriced` on
-  `run`, `arm-smoke` and `sweep` lets it through, and the round records the exclusion.
-- **Fixed, a manifest row with a local `source_url`:** `dataset-create --manifest` wrote a record `validate` failed (V1)
-  when `source_sha256` pinned a path in the project. The schema accepts it, materialize reads it, V4 checks its hash; no hash is refused at create.
-- **New, `references: {roots: [...]}` in `config.yaml`:** where a project keeps references besides `data/references`.
-  With it, `import-run --reference-id` refuses an id found in none; without it, as 0.8.1.
-- **New, `evh mcp --no-agent-tools`:** every read a local server serves, text included, neither `study-ask` nor `study-tell`. `evh mcp --help` now says a local server has those two; it said every tool reads.
+- **Fixed, a public server's Workbench:** its public API gave 500 (`/api/v1/goals`, `/api/v1/models`): the inspector's container lacked `jsonschema` (EVALS-INSPECTOR-3); the deploy now asks the release's servers what a visitor asks, before uploading (`infra/deploy/smoke_release.py`).
+- **Changed, the header:** the site, catalog, Workbench and docs carry one bar: the logo, five pills
+  (Harness · Catalog · Workbench · Docs · MCP) on every width, the menu at the right, a second row of the page's sections (the Workbench's screens); on a phone, search and theme join the menu.
+- **Changed, a round with a budget refuses an arm with no price** (0 is a price), naming it; `--allow-unpriced` (`run`, `arm-smoke`, `sweep`) lets it through, the round recording the exclusion.
+- **Fixed, a manifest row with a local `source_url`:** `dataset-create --manifest` wrote a record `validate` failed (V1) when `source_sha256` pinned a project path. The schema accepts it, materialize reads it, V4 checks its hash; none is refused at create.
+- **New, `references: {roots: [...]}` in `config.yaml`:** where a project keeps references besides `data/references`; with it, `import-run --reference-id` refuses an id found in none, without it as 0.8.1.
+- **New, `evh mcp --no-agent-tools`:** every read a local server serves, text included, not `study-ask` or `study-tell`. `evh mcp --help` now says a local server has those two (it said every tool reads).
 - **New, `dataset-create --fields-from-item` and `--exclude GLOB`:** JSON items give their own field values (a field's `from` JSON pointer, `reduce: count`), no `--fields` file to drift; `--exclude` drops what `--glob` matched (an export `manifest.json`).
-- **New, `evh docs`:** UPGRADING, RUNBOOK and INTEGRATION ship in the package; `evh docs NAME [--print]` prints the
-  installed copy and its page. `evh --help` opens with "Start here".
-- **Changed, the dry run:** the "no reference" lines come after its header and say what `evh run` will score; the
-  estimate says it is the most (every reply at `max_tokens`) and adds a typical one from earlier runs; "MEASURED
-  none" says what to do, once per model in a sweep.
-- **Changed, messages:** `study-confirm` names the fewest test items that suffice; `jobs-start run` and a Workbench job warn of a job with no goal or reference; `judge-score --dry-run` says when the real run will refuse
-  (a changed judge); `arm-list` says a baseline a round retired is still the goal's; a judged leaderboard names the command that validates its judge, once;
-  `silver-calibrate` shows the arms each rho is over; `validate` names the records with no actor; `env-check`
-  says which files it read.
-- **Fixed, the Workbench:** the eval screen's charts read at once (0.75 s, from 2.5 s); "Open the next round"
-  says why an arm is not offered; a dismissed "Close" says the round stays open; "Make a system from a model" says why
-  a model is missing; a page reaches `networkidle` (a response body was left unread) and a hidden tab asks nothing.
-  The mockup's notes left `workbench.js`.
-- **Fixed, reads of an id that exists:** `dataset-items` and the readers behind it no longer refuse an id for its
-  spelling (accents, other scripts); writers refuse what they did.
+- **New, a system's `key_file: PATH`:** its keys come from that dotenv file before the shell and `.env`; unreadable, refused; unignored in the project, warned; named by `env-check` and the dry run; in no fingerprint.
+- **New, `evh docs`:** UPGRADING, RUNBOOK and INTEGRATION ship in the package; `evh docs NAME [--print]` prints the installed copy and its page; `evh --help` opens with "Start here".
+- **Changed, the dry run:** the "no reference" lines follow the header, saying what `evh run` will score; the estimate is the most (every reply at `max_tokens`), beside a typical one from earlier runs; "MEASURED none" says what to do, once per model in a sweep.
+- **Changed, messages:** `study-confirm` names the fewest test items that suffice; `jobs-start run` and a Workbench job warn of a job with no goal or reference; `judge-score --dry-run` says when the real run will refuse (changed judge); `arm-list` says a baseline a round retired is still the goal's; a judged leaderboard names the command that validates its judge, once;
+  `silver-calibrate` shows the arms each rho is over; `validate` names the records with no actor; `env-check` names the files it read.
+- **Fixed, the Workbench:** the eval screen's charts read at once (0.75 s, was 2.5 s); "Open the next round" says why an arm is not offered, a dismissed "Close" that the round stays open, "Make a system from a model" why a model is missing; a page reaches `networkidle` (a response body was unread), a hidden tab asks nothing; the mockup's notes left `workbench.js`.
+- **Fixed, reads of an id that exists:** `dataset-items` and its readers no longer refuse an id for its spelling (accents, other scripts); writers refuse what they did.
 - **New, `evh catalog-serve --link` and `--brand`** head the Workbench with its publication's parts.
 - **Tests:** projects shaped like the beta ones' data (imported, unpriced, unicode, format 0), read by every reader
-  in three time zones; on a machine of more than 8 CPUs the test runners take 4 suites, niceness 10 and 2 stats workers
-  (`EVH_TEST_JOBS`, `EVH_TEST_NICE`, `EVH_WORKERS`).
+  in three time zones; above 8 CPUs test runners take 4 suites, niceness 10, 2 stats workers (`EVH_TEST_JOBS`, `EVH_TEST_NICE`, `EVH_WORKERS`).
 
 ## 0.8.1 — 2026-11-24
 
