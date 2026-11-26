@@ -90,6 +90,20 @@ goes into 0.9.0.
 - **The X3 CI runner** (`agentic-ai-homelab` `infra/x3/x3-ci-runner-setup.sh`, RFC-0011 there): homelab's, not the
   harness's. The owner asked on 2026-11-26 where it came from, having dropped the idea weeks before.
 
+## Where things stood when 0.8.2's session ended (2026-11-26)
+
+- **Waiting on others:** the robotics lab, fleet and eval sessions were sent the 0.8.2 upgrade notice (the release, the
+  pin, S1's two changes, the LiteLLM address note). No reply had come back. A reply about a break is 0.8.3 work.
+- **Waiting on the owner:**
+  - EVALS-INSPECTOR-3 (`No module named 'jsonschema'`) is still unresolved in GlitchTip. It was last seen
+    2026-11-26T15:57Z, before the deploy; the read tokens cannot resolve it.
+  - The remote branch `0811-fix` (PR #39's head) was kept.
+  - The decisions marked **open** above (K3, K4, S6, S9).
+- **Cleaned up:** the 081, 0811-fix and 082-* worktrees and local branches. Still there, from other work: 044, 080,
+  080-rfc038, mbpp-code and the backup branches.
+- **This worktree's venv** is a link to `/work/eval-harness/main/harness/.venv`; a dry-run install of the three
+  requirements files found nothing missing.
+
 ## Where the evidence is
 
 - **The release:** PR #39 (the 0.8.2 squash, its description and the checklist comment); release run on the tag
