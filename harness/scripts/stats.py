@@ -605,6 +605,16 @@ def min_attainable_p_one_sided(
     return None if total < NONINF_MIN_UNITS else 1 / (NONINF_DRAWS + 1)
 
 
+def least_items(level: float, rule: str = "superiority", margin: float = 0.0) -> int | None:
+    """The fewest items whose best p (`min_attainable_p_one_sided`) reaches `level`: what a look at that level needs,
+    for the refusal that says how many are enough. None when no item count does (a level under the rule's floor)."""
+    for n in range(1, NONINF_MIN_UNITS + 1):
+        reach = min_attainable_p_one_sided(n=n, rule=rule, margin=margin)
+        if reach is not None and reach <= level:
+            return n
+    return None
+
+
 def exact_ci(deltas: list, alpha: float = ALPHA):
     """A 95% interval for the mean paired difference: `cluster_ci` with every item its own cluster.
 

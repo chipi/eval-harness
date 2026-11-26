@@ -65,6 +65,30 @@ check(
     and stats.min_attainable_p_one_sided(n=5) == 1 / 32
     and stats.min_attainable_p_one_sided(n=50, rule="noninferiority") is None,
 )
+# 0.8.1 scenario: 20 items split 0.4 left 5 test items, and the refusal never said how many are enough.
+check(
+    "least_items: the fewest items whose best p reaches a look's level (1.52% needs 7, 0.38% needs 9; none for a rule "
+    "the items cannot answer)",
+    stats.least_items(0.015198) == 7
+    and stats.least_items(0.0038) == 9
+    and stats.min_attainable_p_one_sided(n=7) <= 0.015198 < stats.min_attainable_p_one_sided(n=6)
+    and stats.least_items(0.015, rule="noninferiority") == stats.NONINF_MIN_UNITS,
+    (stats.least_items(0.015198), stats.least_items(0.0038)),
+)
+
+from evaluation_harness import _study_cmd  # noqa: E402
+
+_why = _study_cmd.cannot_show(5, 1 / 32, 0.015198, "superiority", 0.0)
+check(
+    "study-confirm's reason for 5 test items: how many it has, the p they reach, the level, the fewest that are enough, "
+    "and that a later look needs more",
+    "5 test items" in _why
+    and "p 0.03125" in _why
+    and "1.5198%" in _why
+    and "at least 7 items" in _why
+    and "later look" in _why,
+    _why,
+)
 
 proj = Path(tempfile.mkdtemp(prefix="evh-looks-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-looks")

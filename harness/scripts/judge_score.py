@@ -1681,7 +1681,9 @@ def price_drift(sc: dict[str, Any], vdir: Path) -> list[str]:
             out.append(
                 f"  NOTE: judge {j['id']} was billed ${billed:.4f}, {billed / priced:.2f}x what its declared prices give "
                 f"(${priced:.4f}: usd_per_mtok_in {pr['usd_per_mtok_in']}, usd_per_mtok_out {pr['usd_per_mtok_out']}); "
-                "the dry run estimates at those prices, so correct them in the scorer's judge params"
+                "the dry run estimates at those prices. Prices are part of a judge's identity: editing them in this scorer "
+                "makes the next pass refuse (its stored verdicts are of the old definition), so correct them in a new "
+                "scorer version (a new scorer_id), judged again"
             )
     return out
 

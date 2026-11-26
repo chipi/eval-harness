@@ -31,6 +31,7 @@ kind.
 
 from __future__ import annotations
 
+import math
 import os
 import re
 import statistics
@@ -108,6 +109,25 @@ def _sets_message(dataset_id: str) -> str:
     if versions:
         return f"{out}\n  Found on {dataset_id}: only {found}: run the arms again as a new version (for example _v2) first."
     return f"{out}\n  No system id on {dataset_id} ends in a version (_v1, _v2): name the substrings that tell your two sets apart."
+
+
+#: Below this many arms rho is a few ranks swapping places, not a measurement (a perfect order arises by chance 1 time in
+#: n!: 1 in 5,040 at 7, 1 in 40,320 at 8; below 5 even a perfect one is not significant at 0.05).
+RELIABLE_ARMS = 8
+
+
+def sample_note(ns: list[int]) -> str:
+    """What the rho column rests on: the arms each was computed over (the field less the author), and why it is thin when
+    that is under `RELIABLE_ARMS`; "" when it is not."""
+    n = min(ns)
+    if n >= RELIABLE_ARMS:
+        return ""
+    steps = " -1, -0.5, +0.5 or +1:" if n == 3 else ":"
+    return (
+        f"  Each rho is over {n} arms (the field less the author), so it can only take few values{steps} a perfect order\n"
+        f"  arises by chance 1 time in {math.factorial(n):,}. rho over fewer than {RELIABLE_ARMS} arms is unreliable: read its sign,\n"
+        f"  not its size, and measure {RELIABLE_ARMS} or more arms to read it as a number."
+    )
 
 
 def body(**inputs: Any) -> int:
@@ -254,7 +274,7 @@ def body(**inputs: Any) -> int:
         s = {a: i for i, a in enumerate(sorted(subject, key=lambda x: -silver[x]), 1)}
         sibs = [a for a in subject if key and group[a] and group[a] == group[author]]
         lift = statistics.fmean(g[a] - s[a] for a in sibs) if sibs else None
-        rows.append((rho, lift, author, len(sibs)))
+        rows.append((rho, lift, author, len(sibs), len(subject)))
 
     rows.sort(key=lambda r: -r[0])
     if not rows:
@@ -268,14 +288,14 @@ def body(**inputs: Any) -> int:
             "not-enough",
         )
     w = max(len(r[2]) for r in rows) + 2
-    print(f"\n  {'silver author':{w}}{'rho vs trusted':>16}{'sibling lift':>14}")
-    print("  " + "-" * (w + 30))
-    for rho, lift, author, n in rows:
+    print(f"\n  {'silver author':{w}}{'rho vs trusted':>16}{'arms':>6}{'sibling lift':>14}")
+    print("  " + "-" * (w + 36))
+    for rho, lift, author, n, n_arms in rows:
         lift_s = f"{lift:+.1f}" if lift is not None else "—"
-        print(f"  {author:{w}}{rho:>16.3f}{lift_s:>14}   ({n} sibling(s))")
+        print(f"  {author:{w}}{rho:>16.3f}{n_arms:>6}{lift_s:>14}   ({n} sibling(s))")
     print(
         "\n  rho: how far the arms' order on this author's silver agrees with their order on the\n"
-        "       trusted reference (1 = the same order).\n"
+        "       trusted reference (1 = the same order); arms: how many it was computed over.\n"
         f"  sibling lift: rank positions the silver moves the author's own {args.group_by!r} up against the\n"
         "       trusted order; — when no arm here shares it.\n"
         "  Arms are named without their _vN suffix: an arm's versions are pooled."
@@ -283,6 +303,8 @@ def body(**inputs: Any) -> int:
 
     rr = [r[0] for r in rows]
     ll = [r[1] for r in rows if r[1] is not None]
+    if note := sample_note([r[4] for r in rows]):
+        print(f"\n{note}")
     print(
         f"\n  rho: min {min(rr):+.3f}  mean {statistics.fmean(rr):+.3f}  max {max(rr):+.3f}"
         + (f"   (ceiling {ceiling:+.3f})" if ceiling is not None else "   (ceiling not measured)")

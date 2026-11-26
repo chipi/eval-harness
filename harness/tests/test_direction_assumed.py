@@ -51,6 +51,19 @@ check(
     and _runs.assumed_note("weird_score", "the runs' directions") is None,
 )
 
+import contextlib  # noqa: E402
+import io  # noqa: E402
+
+_buf = io.StringIO()
+with contextlib.redirect_stdout(_buf):
+    for _ in range(3):  # a reader ranking several groups asks once per group
+        _runs.note_assumed("weird_score", goals={})
+check(
+    "note_assumed: a measure's NOTE is said once per invocation, however many groups ask",
+    _buf.getvalue().count(LINE) == 1,
+    _buf.getvalue(),
+)
+
 # -- one project, every reader --------------------------------------------------------------------------------------
 proj = Path(tempfile.mkdtemp(prefix="evh-assumed-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-assumed", EVAL_MAX_RETRIES="0")

@@ -353,11 +353,25 @@ vendor families, so one vendor's taste is not the verdict. For example:
 judges:
   - id: gemma_l
     params: {provider: litellm, model: eval-gemma-31b, family: gemma, temperature: 0.0,
-             reasoning: {enabled: false}, max_tokens: 400, usd_per_mtok_in: 0.1, usd_per_mtok_out: 0.2}
+             reasoning: {enabled: false}, max_tokens: 400, usd_per_mtok_in: 0.09, usd_per_mtok_out: 0.42}
   - id: qwen_s
     params: {provider: litellm, model: eval-qwen-flash, family: qwen, temperature: 0.0,
-             reasoning: {enabled: false}, max_tokens: 400, usd_per_mtok_in: 0.05, usd_per_mtok_out: 0.2}
+             reasoning: {enabled: false}, max_tokens: 400, usd_per_mtok_in: 0.15, usd_per_mtok_out: 0.47}
 ```
+
+**Where the prices come from.** `usd_per_mtok_in` and `usd_per_mtok_out` are dollars per million tokens, the model's
+list price at the provider that serves it; for an alias on a LiteLLM proxy, the price of the model behind it (the proxy's
+config, `examples/litellm.config.yaml`, names it: `eval-qwen-flash` is OpenRouter's `qwen/qwen3.8-flash`), read from that
+provider's model page. They are a fallback and the dry run's estimate: when the provider sends a bill, the bill is what the
+pass spends. The prices above are the ones the 0.8.1 newcomer run's bill implied for these two aliases on its proxy (a
+fit over each judge's 104 billed calls: qwen exactly, gemma to about 1% of the total); an earlier draft of this tutorial showed
+0.1/0.2 and 0.05/0.2, and a pass billed qwen at 2.65x them. Your proxy may price a model differently: run one pass, and if
+the pass ends with `NOTE: judge … was billed … Nx what its declared prices give`, take the prices from that bill.
+
+**Prices are part of a judge's identity.** Correct them *before* the first pass. Edit a judge's prices (or any other param)
+in a scorer that has already judged, and the next `judge-score` stops with `stored by a different judge definition … refusing
+to mix them` (its dry run does not stop, and prints an estimate at the new prices over the old verdicts). The correction is
+a new scorer version: copy the file to `briefs-judge-v2.yaml` with a new `scorer_id`, and judge again (a second paid pass).
 
 Each judge's `provider:` names where its calls are routed ([tutorial 2](2-hosted-llm.md) lists
 the providers). A judge reads credentials by role: it reads `EVAL_JUDGE_<VAR>` first (so judges
