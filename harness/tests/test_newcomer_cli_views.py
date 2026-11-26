@@ -353,6 +353,12 @@ try:
         and cv._condition_value("a" * 64) == "a" * 16
         and cv._condition_value(None) == "None",
     )
+    check(
+        "inspect conditions: an arm that calls no model says 'no model' as the inspector does, not 'None'",
+        cv._condition_value(None, "deployment.model") == "no model"
+        and cv._condition_value("m", "deployment.model") == "m"
+        and cv._condition_value(None, "seed") == "None",
+    )
 
     from evaluation_harness.catalog_adapter import smoke_spend
     from evaluation_harness.catalog_build import SPEND_KINDS

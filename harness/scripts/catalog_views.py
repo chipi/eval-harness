@@ -49,8 +49,11 @@ def _table(heads: list, rows: list) -> None:
         print("  " + "  ".join(c.ljust(w[i]) for i, c in enumerate(r)).rstrip())
 
 
-def _condition_value(v) -> str:
-    """A field's value in the conditions table: whole, except a digest, whose first 16 characters tell it apart."""
+def _condition_value(v, name: str = "") -> str:
+    """A field's value in the conditions table: whole, except a digest, whose first 16 characters tell it apart. An
+    arm that calls no model says "no model", as the inspector does."""
+    if v is None and name.endswith("model"):
+        return "no model"
     text = str(v)
     return text[:16] if re.fullmatch(r"[0-9a-f]{24,}", text) else text
 
@@ -933,7 +936,7 @@ def print_comparison(
             _table(
                 ["field", *[label.get(a, a) for a in order]],
                 [
-                    [f["name"], *[_condition_value(f["values"].get(a, "—")) for a in order]]
+                    [f["name"], *[_condition_value(f["values"].get(a, "—"), f["name"]) for a in order]]
                     for f in c["differ"]
                 ],
             )
