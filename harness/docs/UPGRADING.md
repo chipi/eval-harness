@@ -26,6 +26,10 @@ publication's switcher passes the same `--link` and `--brand` its `evh catalog` 
   `rescore --reference-id` read the roots too. Without the key nothing changes: an id the harness cannot find is recorded
   with V16's note, as in 0.8.1.
 - **`evh validate` names the records that name no actor** (the first three, then "and N more"), where it said how many.
+- **`evh dataset-create --fields-from-item` and `--exclude GLOB` (both optional) read JSON items.** The first takes each
+  declared field's value from its item (a field's optional `from` JSON pointer and `reduce: count`, in the field set);
+  the second drops files `--glob` matched, as an export `manifest.json`. Without them nothing changes, and a record made
+  with them is the one a `--fields` file and a narrower `--glob` give.
 
 ## From 0.8.0 to 0.8.1
 
