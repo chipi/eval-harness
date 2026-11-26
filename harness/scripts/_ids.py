@@ -32,6 +32,7 @@ class IdRule:
         return f"IdRule(lower={self.lower}, punct={self.punct!r}, max_len={self.max_len})"
 
     def says(self) -> str:
+        """The rule in words, for a refusal that says what an id may be."""
         shown = " ".join(f"'{c}'" for c in self.punct)
         return (
             f"{'lowercase letters' if self.lower else 'letters'} and digits of any script"
@@ -68,6 +69,7 @@ class IdRule:
         return None
 
     def ok(self, value: object) -> bool:
+        """Whether `value` is an id of this kind."""
         return self.problem(value) is None
 
     def fullmatch(self, value: object) -> bool:
