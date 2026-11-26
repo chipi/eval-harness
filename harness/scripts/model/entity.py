@@ -73,16 +73,12 @@ class Entity:
             return self.data / self.folder
         return _common.GOALS if self.folder == "goals" else _common.DATA / self.folder
 
-    def path(self, rid: str, write: bool = False) -> Path:
-        """The record's file; an id that is not one is refused before any path is made of it. A read takes the id of a
-        record that exists under any script (0.8.2 made some); `write` holds to ASCII."""
+    def path(self, rid: str) -> Path:
+        """The record's file; an id that is not one is refused before any path is made of it."""
         parts = rid.split("/") if isinstance(rid, str) else []
-        read = not write
-        if len(parts) != (2 if self.parent_field else 1) or not all(
-            self.id_pattern.ok(p, read) for p in parts
-        ):
+        if len(parts) != (2 if self.parent_field else 1) or not all(self.id_pattern.ok(p) for p in parts):
             shape = "<model>/<id>, each " if self.parent_field else ""
-            why = next((w for p in parts if (w := self.id_pattern.problem(p, read))), "")
+            why = next((w for p in parts if (w := self.id_pattern.problem(p))), "")
             raise Problem(
                 f"{rid!r} is not a {self.name} id ({shape}{self.id_pattern.says()}){': ' + why if why else ''}",
                 "bad-argument",
@@ -107,7 +103,7 @@ class Entity:
             # The id is the file's place under the folder, less the suffix: `<id>.yaml`, `<model>/<id>.yaml`, a record
             # that is a folder's file (`<id>/capture.json`, `<dataset>/<set>/labels.json`).
             rid = f.relative_to(base).as_posix()[: -len(self.suffix)]
-            if f.name not in self.skip and all(self.id_pattern.ok(p, True) for p in rid.split("/")):
+            if f.name not in self.skip and all(self.id_pattern.fullmatch(p) for p in rid.split("/")):
                 out.append(rid)
         if self.finder:
             out += [i for i in self.finder() if i not in out]
@@ -200,7 +196,7 @@ class Entity:
         _format.require()
         if not self.editable:
             raise Problem(f"a {self.name} is written by its own commands, not edited", "not-allowed")
-        f = self.path(rid, write=True)
+        f = self.path(rid)
         try:
             with _jobs.holding([(f"{self.name}:{rid}", True)], f"{self.name}-save"):
                 exists = _store.is_file(f)

@@ -244,7 +244,7 @@ def find(data_dir: Path, model_id: str) -> dict[str, Any] | None:
 
     from evaluation_harness import _format  # noqa: PLC0415
 
-    if not _ids.LOWER.ok(model_id, True):
+    if not _ids.LOWER.ok(model_id):
         return None
     f = records_dir(data_dir) / f"{model_id}.yaml"
     if yaml is None or not _store.is_file(f):

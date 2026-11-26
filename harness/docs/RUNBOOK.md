@@ -927,7 +927,7 @@ scored 0, on read as on write, so the verdict on old data with one can move.
 
 A writer records a fact a reader will follow, or refuses it by name (RFC-041 F7), before it spends or writes: a `--run-id` (and
 import-run's `--system-id`, and reference-promote's `--name`) is a plain name: ASCII letters and digits, `.`, `_`, `-` (any other letter is refused, naming the rule), never a path, a space or a
-control character (`bad-argument`); an id a 0.8.2 project made in another script is still read, and `evh validate` notes it; `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
+control character (`bad-argument`); a hand-edited id with a letter outside ASCII is refused the same way by every command that reads it, and `evh validate` fails it (V1); `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
 names a run of the same system and dataset (`mismatch`); import-run's `--reference-id` is free-form and may be kept outside `data/references/` (it
 imports, with a note on stderr that the harness cannot find it; a project that keeps references in other folders names
 them in its `config.yaml`, `references: {roots: [records/references]}`, each holding `<tier>/<name>` as `data/references/` does:
@@ -2325,8 +2325,8 @@ be read is refused (`not-configured`) before any call, naming the file and the s
 not gitignored is warned about, since a key file must not be committed (keep it outside the project, or ignore
 it). `evh env-check` lists the key files read and, per system and key, where it comes from (`key_file keys/a.env`,
 `shell`, `.env`); `evh run --dry-run` says the same for its system. The address is named the same way (the file,
-`shell`, `.env`, `system's base_url param`, or `default`), and when the key is in the file and the address is not, the
-line says the file does not hold it. A key's value is never printed or recorded; the
+`shell`, `.env`, `system's base_url param`, or `default`), and a variable the file does not hold is followed by
+`(FILE: VAR is not in the file)`, in both. A key's value is never printed or recorded; the
 path is recorded in the system's params and is not part of any fingerprint (where a key is kept is not what was
 measured). A project adapter that calls the bundled providers (`_providers.complete(prompt, params, role="arm",
 ...)`) with the system's params gets the same; one that reads `os.environ` itself does not see `key_file`.

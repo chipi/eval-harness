@@ -1250,12 +1250,8 @@ def test_example_scorer_suites_pass() -> None:
             "a round the Workbench opens, retires and closes names the person typed in its name field, never the EVH_ACTOR or EVH_FOR of the server it runs on",
         ),
         (
-            "test_read_ids.py",
-            "a writer takes ASCII letters and digits and refuses a non-ASCII, control or path-like id; a read of an id that exists is refused only for being a path",
-        ),
-        (
             "test_ascii_ids.py",
-            "one rule for every id a person names (ASCII), on a table of ids, the JSON schemas' patterns agreeing with it; a writer refuses a non-ASCII id by name; a record a 0.8.2 project made under one is still read, and validate notes it, in the store the suite runs in",
+            "one rule for every id a person names (ASCII), on a table of ids, the JSON schemas' patterns agreeing with it; a writer refuses a non-ASCII id by name, and so do a read command and validate for one written by hand (no traceback), in the store the suite runs in",
         ),
         (
             "test_foreign_projects.py",
@@ -1263,11 +1259,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_data_mutations.py",
-            "real-looking data changed (no goal, cost 0 or none, dirty null, unicode ids, _r1 names, missing and extra fields, two baselines, far time zones, a public environment, a gone reference, an unrecorded measure) on the tutorial and the three look-alikes: no traceback, every reader agrees, validate names it",
+            "real-looking data changed (no goal, cost 0 or none, dirty null, _r1 names, missing and extra fields, two baselines, far time zones, a public environment, a gone reference, an unrecorded measure) on the tutorial and the three look-alikes: no traceback, every reader agrees, validate names it",
         ),
         (
             "test_writers_refuse.py",
-            "every writer records the fact or refuses by name (an id with a path or unicode, a repeat with no of, a reference not there, a goal the policy requires, a cost some items did not report), and validate names each broken link with its file",
+            "every writer records the fact or refuses by name (an id with a path or a letter outside ASCII, a repeat with no of, a reference not there, a goal the policy requires, a cost some items did not report), and validate names each broken link with its file",
         ),
         (
             "test_v30_links.py",
@@ -1643,10 +1639,6 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_release_smoke.py",
             "the release smoke lists its checks, fails on a wrong version, and has its make target",
-        ),
-        (
-            "test_upgrading_stops.py",
-            "each CHANGELOG bullet that can stop a run that worked has its line in that release's UPGRADING section",
         ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading"),

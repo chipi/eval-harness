@@ -685,22 +685,6 @@ def dataset_id_ok(dataset_id: str) -> str:
     return dataset_id
 
 
-def dataset_id_read_ok(dataset_id: str) -> str:
-    """The id of a dataset to READ, or SystemExit when it would leave data/. A dataset that exists is read under whatever
-    spelling it was written with (a project's data may hold accents or CJK that no command here writes); the format of an
-    id is checked where ids are made (`dataset_id_ok`), and a read only keeps a name from being a path."""
-    bad = (
-        not isinstance(dataset_id, str)
-        or not dataset_id
-        or dataset_id.startswith(".")
-        or ".." in dataset_id
-        or any(c in dataset_id for c in "/\\\0")
-    )
-    if bad:
-        die(f"not a dataset id: {str(dataset_id)[:60]!r} (a name, never a path)", "bad-argument")
-    return dataset_id
-
-
 def plain_id_ok(value: str, option: str) -> str:
     """The id a writer is given for `option` (a run, a system, a reference's name), or SystemExit when it is not a plain
     name: an id with a path or a space in it would be a folder of its own, and the arm ids that join

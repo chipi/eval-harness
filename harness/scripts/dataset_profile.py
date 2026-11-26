@@ -284,7 +284,7 @@ def render(p: dict, item: str | None) -> str:
 
 def load_profile(dataset_id: str) -> dict:
     """data/profiles/<dataset_id>.json, or a refusal saying how to write it."""
-    f = _common.DATA / "profiles" / f"{_common.dataset_id_read_ok(dataset_id)}.json"
+    f = _common.DATA / "profiles" / f"{_common.dataset_id_ok(dataset_id)}.json"
     if not _store.is_file(f):
         die(
             f"no profile for {dataset_id} ({f}): write one with `evh dataset-profile --dataset-id {dataset_id}` "

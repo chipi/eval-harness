@@ -535,10 +535,8 @@ From earlier runs:
   name typed in its field (`by: person:NAME`, `from: api`), never the `EVH_ACTOR` or `EVH_FOR` of the server's own
   environment (`tests/test_round_actor_api.py`; RFC-026 "Who acted"); "Review the outputs" shows its command before a
   sheet exists (`tests/test_workbench_live_browser.py`).
-- Full-page screenshots repeat the sticky header mid-page when a tool scrolls and stitches; Playwright's own `full_page`
-  does not. `tests/_shots.py` (`full_page`, `static_sticky`) holds every sticky element static for a capture, and
-  `tests/test_screenshot_sticky_browser.py` counts the header per scroll slice with and without it. A run that
-  screenshots by another tool captures one viewport at a time, or sets `.bar { position: static }` first.
+- Playwright's `full_page` shows the sticky header once; a tool that stitches viewports repeats it mid-page. Capture one
+  viewport at a time, or set `.bar { position: static }` first.
 - Not exercised by a real call, by choice: the direct OpenAI, Anthropic and OpenRouter paths. A project may use any of
   them or any OpenAI-compatible endpoint; the harness's own development reaches models only through the homelab LiteLLM
   gateway (OpenAI-compatible, so the real OpenAI client runs against a real server there). The direct paths are covered

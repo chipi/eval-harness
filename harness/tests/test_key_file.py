@@ -264,16 +264,17 @@ try:
             f"system_id: {sid}\nparams:\n  provider: {provider}\n  model: fake\n  key_file: {kf}\n"
             "  usd_per_mtok_in: 0\n  usd_per_mtok_out: 0\n",
         )
+    NOT_HELD = "(keys/keyonly.env: LITELLM_BASE_URL is not in the file)"  # the same words in env-check and the dry run
     shell_base = {**env, "LITELLM_BASE_URL": BASE.removesuffix("/v1")}
     for sid, where, with_env in (
         ("sys_a", "base_url: system's base_url param", None),
         ("sys_proxy", "LITELLM_BASE_URL: key_file keys/proxy.env", None),
-        ("sys_keyonly", "LITELLM_BASE_URL: shell; key_file keys/keyonly.env does not hold it", shell_base),
-        ("sys_keyonly", "LITELLM_BASE_URL: not set; key_file keys/keyonly.env does not hold it", None),
+        ("sys_keyonly", f"LITELLM_BASE_URL: shell {NOT_HELD}", shell_base),
+        ("sys_keyonly", f"LITELLM_BASE_URL: not set {NOT_HELD}", None),
         ("sys_or", "default", None),
     ):
         r = evh("run", "--system", sid, "--dataset", "tk_v1", "--dry-run", with_env=with_env)
-        line = next((ln for ln in r.stdout.splitlines() if ln.startswith("  key ")), "")
+        line = next((ln for ln in r.stdout.splitlines() if ln.startswith("  key")), "")
         check(
             f"the dry run of {sid} says where its address comes from: {where}",
             where in line,
@@ -284,7 +285,7 @@ try:
         (ln for ln in out.splitlines() if ln.startswith("  sys_keyonly") and "LITELLM_BASE_URL" in ln), ""
     )
     check("env-check: the address of a system whose key is in a key_file says it is not",
-          "shell" in row and "keys/keyonly.env does not hold it" in row, row)  # fmt: skip
+          "(shell)" in row and NOT_HELD in row, row)  # fmt: skip
     row = next((ln for ln in out.splitlines() if ln.startswith("  sys_a ") and "base_url" in ln), "")
     check(
         "env-check: a system's own base_url param is the address's source",

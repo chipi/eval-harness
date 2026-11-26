@@ -72,12 +72,10 @@ def _report_key_files(systems: list[tuple[str, dict[str, Any]]]) -> None:
         if kf is None:
             print(f"  {sid:20} {_providers.key_file_problem(params)}")
             continue
-        for i, (var, value, origin) in enumerate(_providers.key_sources(params, "arm")):
-            note = ""
-            if i == 0 and not origin.startswith("key_file") and var not in kf[1] and not var.startswith("("):
-                note = f"   ({kf[0]}: {var} is not in the file)"
+        for var, value, origin in _providers.key_sources(params, "arm"):
+            note = _providers.not_in_key_file(params, var, origin)
             shown = _state(value, var.endswith("KEY")) if value else "not set"
-            print(f"  {sid:20} {var:20} {shown} ({origin}){note}")
+            print(f"  {sid:20} {var:20} {shown} ({origin}){'   ' + note if note else ''}")
 
 
 def _probe(base: str) -> str:

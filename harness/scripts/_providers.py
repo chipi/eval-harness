@@ -221,9 +221,7 @@ def env(name: str, role: str, key_file: KeyFile | None = None) -> tuple[str, str
 def key_sources(params: dict[str, Any], role: str) -> list[tuple[str, str | None, str]]:
     """The variables a call with `params` reads for its credential, as (variable, value, where it came from): the key
     always, then the address, from the system's `base_url`, a variable or the provider's default. For env-check and the
-    dry run, which say where and never show a value (env-check shows its length and tail, as it has). An address that
-    does not come from the key's own `key_file` says so: a key file that brings the key and not the address is the
-    usual way a call goes to the wrong gateway."""
+    dry run, which say where and never show a value (env-check shows its length and tail, as it has)."""
     provider = params.get("provider")
     if provider not in SPECS:
         return []
@@ -237,13 +235,26 @@ def key_sources(params: dict[str, Any], role: str) -> list[tuple[str, str | None
     if spec.base_env:
         address = _lookup(spec.base_env, role, kf)
         if not address[1]:
-            unset = "not set" if spec.base_required else "not set, the provider's default address"
-            address = (address[0], None, unset)
+            address = (address[0], None, "not set" if spec.base_required else "default")
     else:
         address = ("base_url", spec.base_default, "default")
-    if kf and spec.base_env and key[2].startswith("key_file") and not address[2].startswith("key_file"):
-        address = (address[0], address[1], f"{address[2]}; key_file {kf[0]} does not hold it")
     return [key, address]
+
+
+def not_in_key_file(params: dict[str, Any], var: str, origin: str) -> str:
+    """The note "(FILE: VAR is not in the file)" for a variable the system's `key_file` does not hold and a call reads from
+    elsewhere, else "". A key file that brings the key and not the address is the usual way a call goes to the wrong
+    gateway."""
+    kf = key_file_of(params)
+    if (
+        kf is None
+        or origin.startswith("key_file")
+        or var in kf[1]
+        or var.startswith("(")
+        or var == "base_url"
+    ):
+        return ""
+    return f"({kf[0]}: {var} is not in the file)"
 
 
 def _either(name: str, role: str) -> str:

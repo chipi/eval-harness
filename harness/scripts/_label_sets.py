@@ -38,10 +38,9 @@ SOURCES = ("person", "model", "rule", "dataset")
 SET_ID = _ids.SET
 
 
-def set_dir(dataset_id: str, name: str, read: bool = False) -> Path:
-    """Where one set lives; its name is checked first, so it can never leave data/labels/. `read`: a set 0.8.2 named in
-    another script is read as it is."""
-    if not SET_ID.ok(name, read):
+def set_dir(dataset_id: str, name: str) -> Path:
+    """Where one set lives; its name is checked first, so it can never leave data/labels/."""
+    if not SET_ID.ok(name):
         die(f"label set {name!r}: {SET_ID.problem(name)} ({SET_ID.says()})", "bad-argument")
     return model_datasets.label_set_dir(f"{dataset_id}/{name}")
 
@@ -550,7 +549,7 @@ def action_bound(ref_dir: Path | None) -> dict[str, str]:
         pf = (read_json(man).get("promoted_from") or {}) if _store.is_file(man) else {}
         if not pf.get("labels") or not pf.get("dataset_id"):
             return {}
-        doc_path = set_dir(str(pf["dataset_id"]), str(pf["labels"]), read=True) / "labels.json"
+        doc_path = set_dir(str(pf["dataset_id"]), str(pf["labels"])) / "labels.json"
         if not _store.is_file(doc_path):
             return {}
     rows = read_json(doc_path).get("items") or {}

@@ -109,6 +109,8 @@ Pin a release tag:
    link carries the reader to the full notes from each. Use absolute links: the GitHub Release
    cannot resolve relative ones. A section written this way never reaches `harness-release.yml`'s
    cut at 120,000 characters (GitHub's limit is 125,000), which stays as a backstop.
+   Write the matching "From X to Y" section of `docs/UPGRADING.md` in the same step: each bullet of the CHANGELOG that
+   can stop a run that worked has a bullet there.
 3. **Move every install pin to the new tag** (`@vX.Y.Z#subdirectory=harness`): the READMEs,
    the getting-started guide, the tutorials and these docs. `make -C harness site-check` fails on a
    pin that names an older release than the changelog's newest dated section, so dating the

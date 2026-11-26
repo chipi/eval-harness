@@ -5,14 +5,6 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
-<!-- 0.8.3 is not dated, so it has no section here: a "From 0.8.2 to 0.8.3" heading before the version bump fails
-release-smoke's version check (RELEASING.md). Write it when 0.8.3 is dated. It says the 0.8.2 section below was corrected
-(two changes that can stop a run were missing), and names each 0.8.3 change that can stop a run (a 403 stops the run; the
-SDKs' own retries are off) in a bullet whose bold lead carries "can stop a run that worked" and whose CHANGELOG bullet
-carries it too: tests/test_upgrading_stops.py fails a section with fewer such leads than the CHANGELOG has bullets.
-0.8.3 makes ids ASCII again (the owner's decision, 2026-11-26): a writer refuses a non-ASCII id, an id 0.8.2 made is still read,
-and validate notes it. -->
-
 ## From 0.8.1 to 0.8.2
 
 Change the pin to `@v0.8.2` and reinstall; `evh --version` prints `0.8.2` when the upgrade took. Nothing to migrate and
@@ -21,12 +13,12 @@ public server's Workbench and aligns the header of the site, the catalog, the Wo
 runs `evh catalog-serve --public` and wants the Workbench headed by its publication's switcher passes the same `--link`
 and `--brand` its `evh catalog` build takes.
 
-- **A round with a budget refuses an arm with no price, so it can stop a run that worked.** An arm whose system declares no
+- **A round with a budget refuses an arm with no price.** An arm whose system declares no
   `usd_per_mtok_in` and `usd_per_mtok_out` in its `params` (0 is a price; the bundled `echo` provider is free and never asked)
   is refused by `evh run`, `evh arm-smoke` and `evh sweep` when its round has a budget: `ERROR (not-configured)`, naming the
   arm and its model, before any call. Put the two prices in the system's `params`, or pass `--allow-unpriced`: the arm runs, the
   round records it, and the budget leaves its cost out. A round without a budget is unchanged.
-- **A provider's 401 stops the run, so it can stop a run that worked.** In 0.8.1 the item failed, the run went on and exited 0,
+- **A provider's 401 stops the run.** In 0.8.1 the item failed, the run went on and exited 0,
   and the server's words, a key it echoed back included, were printed and recorded. Now the run stops with `ERROR
   (not-configured)` and exit 1, naming the variable that held the key and never its value. Fix or replace the key (`evh
   env-check` says where each comes from) and run again; a script that took exit 0 after a bad key now sees the failure.

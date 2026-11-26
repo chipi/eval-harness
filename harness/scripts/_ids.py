@@ -5,8 +5,7 @@ An id is a file name, an arm id's part (`<label>/<dataset>/<system>`) and a URL 
 starts with a letter or digit (never `.` or `-`), holds no `..`, no space, no control character, no path separator, and,
 for a kind that is lowercase, no capital. The JSON schemas that pattern an id use `IdRule.pattern`, so they say the same.
 
-0.8.2 let an id be spelled in any script and 0.8.3 took that back: a writer refuses a letter outside ASCII, but a project
-may hold ids 0.8.2 made, so a read (`read=True`) takes any letter or digit under the same safety rules.
+One rule serves a writer and a reader alike: an id with a letter outside ASCII is refused by name, wherever it is met.
 """
 
 from __future__ import annotations
@@ -38,9 +37,8 @@ class IdRule:
             + ", starting with a letter or digit"
         )
 
-    def problem(self, value: object, read: bool = False) -> str | None:
-        """Why `value` is not an id of this kind, or None when it is one. `read`: an id already on disk, where a letter or
-        digit of any script passes (0.8.2 made some); a writer's check leaves it False."""
+    def problem(self, value: object) -> str | None:
+        """Why `value` is not an id of this kind, or None when it is one."""
         if not isinstance(value, str) or not value:
             return "an id is a non-empty text"
         if self.max_len is not None and len(value) > self.max_len:
@@ -48,7 +46,7 @@ class IdRule:
         for i, c in enumerate(value):
             if c in "/\\":
                 return f"a path separator at {i}"
-            if not ((c.isalnum() if read else c in self._letters) or (i > 0 and c in self.punct)):
+            if not (c in self._letters or (i > 0 and c in self.punct)):
                 if not c.isascii():
                     return f"{c!r} at {i} is not an ASCII letter or digit"
                 return f"{c!r} at {i} is not allowed" + (
@@ -60,9 +58,9 @@ class IdRule:
             return "not lowercase"
         return None
 
-    def ok(self, value: object, read: bool = False) -> bool:
+    def ok(self, value: object) -> bool:
         """Whether `value` is an id of this kind."""
-        return self.problem(value, read) is None
+        return self.problem(value) is None
 
     def fullmatch(self, value: object) -> bool:
         """`re.Pattern.fullmatch`'s shape, so an Entity takes a rule where it took a pattern."""
@@ -98,6 +96,3 @@ STUDY = IdRule(lower=True, punct="_-", max_len=61)
 #: A dataset in the exposure register, a scorer a sheet names.
 EXPOSURE = IdRule(lower=False, max_len=200)
 SHEET_SCORER = IdRule(lower=False, max_len=100)
-
-#: The kinds a JSON schema patterns (the rule each schema says, `pattern`).
-NAMED = (NAME, LOWER, SET, SNAKE)

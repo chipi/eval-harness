@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""An id a person names is ASCII (0.8.3, owner 2026-11-26): one rule, `_ids.IdRule`, for every kind; an id that is already on disk is still read.
+"""An id a person names is ASCII (0.8.3, owner 2026-11-26): one rule, `_ids.IdRule`, for every kind, for a writer and a reader alike.
 
     python tests/test_ascii_ids.py            (EVAL_STORE=files or sqlite)
 
 The rule on a table of ids per kind; every JSON schema that patterns an id says what the rule says, in ASCII; a writer refuses
-a non-ASCII id naming the rule; and a project that made such ids under 0.8.2 (written here by hand) is still read by the CLI
-and validated, with a note naming the id and no failure.
+a non-ASCII id naming the rule; and a record written here by hand under one is refused by name by the commands that
+read it, and fails validate (V1), with no traceback.
 """
 
 import json
@@ -179,7 +179,7 @@ try:
         r.stdout + r.stderr,
     )
 
-    # What 0.8.2 made: the same records under non-ASCII ids, written by hand.
+    # A record written by hand under a non-ASCII id is refused by name: no command takes it, none crashes.
     ds = json.loads(_runstore.read_text(proj, "datasets/tickets_v1.json"))
     _runstore.write_text(
         proj,
@@ -191,70 +191,24 @@ try:
         f"systems/{SYS}.yaml",
         f"system_id: {SYS}\nparams:\n  provider: echo\n  sentences: 1\n",
     )
-    _runstore.write_text(
-        proj,
-        f"goals/{GOAL}.yaml",
-        f"goal_id: {GOAL}\nschema_version: '0.1'\ntitle: a goal\nstatement: A goal made under 0.8.2.\n"
-        f"decision: None.\nstatus: active\nsuccess_criteria:\n  primary:\n    measure: output_words\n"
-        f"    direction: higher\ndatasets:\n  - {{dataset_id: {DS}, role: validation}}\n",
-    )
-    for what, args, shown in (
-        ("dataset-show", ("dataset-show", DS, "--json"), DS),
-        ("dataset-list", ("dataset-list", "--json"), DS),
-        ("system-show", ("system-show", SYS), SYS),
-        ("system-list", ("system-list", "--json"), SYS),
+    for what, args in (
+        ("dataset-show", ("dataset-show", DS)),
+        ("system-show", ("system-show", SYS)),
+        ("system-set", ("system-set", SYS, "--set", "params.sentences=2")),
     ):
         r = evh(*args)
         check(
-            f"{what} reads a record that has a non-ASCII id",
-            r.returncode == 0 and shown in r.stdout and "Traceback" not in r.stderr,
+            f"{what} refuses a hand-written non-ASCII id, naming ASCII, with no traceback",
+            r.returncode != 0 and "ASCII" in r.stderr and "Traceback" not in r.stderr,
             r.stdout[-300:] + r.stderr[-300:],
         )
-    r = evh("system-set", SYS, "--set", "params.sentences=2")
-    check(
-        "an edit of a record with a non-ASCII id is refused by name, not a traceback",
-        r.returncode != 0 and "ASCII" in r.stderr and "Traceback" not in r.stderr,
-        r.stdout + r.stderr,
-    )
     r = evh("validate")
     out = r.stdout + r.stderr
     check(
-        "validate does not fail on them and does not crash",
-        r.returncode in (0, 6) and "FAIL" not in out and "Traceback" not in out,
+        "validate fails V1 (the schema pattern) and does not crash",
+        r.returncode == 6 and "V1 schemas" in out and "FAILED" in out and "Traceback" not in out,
         out[-600:],
     )
-    check(
-        "validate names each as a note",
-        all(i in out for i in (DS, SYS, GOAL)) and "ASCII" in out,
-        out[-600:],
-    )
-    study = (
-        f"dataset: {DS}\nbaseline: {{system: {SYS}}}\nmeasure: output_words\nsampler: grid\n"
-        "accept: {point: {min_gain: 0}}\nstop: {trials: 2}\n"
-        "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2]}}\n"
-    )
-    _runstore.write_text(proj, f"studies/{GOAL}/étude_1.yaml", study)
-    r = evh("study-run", "--study", f"{GOAL}/étude_1", "--dry-run")
-    check(
-        "a study a 0.8.2 project holds under a non-ASCII id opens as it is (its dry run)",
-        "study id" not in r.stderr and "Traceback" not in r.stderr,
-        (r.stdout + r.stderr)[-400:],
-    )
-    (proj / "new_study.yaml").write_text(study, encoding="utf-8")
-    r = evh("study-run", "--study", f"{GOAL}/étude_2", "--spec", str(proj / "new_study.yaml"), "--dry-run")
-    check(
-        "a new study under a non-ASCII id is refused by name",
-        r.returncode != 0 and "study id" in r.stderr and "ASCII" in r.stderr and "Traceback" not in r.stderr,
-        (r.stdout + r.stderr)[-400:],
-    )
-    r = evh(
-        "import-run", "--dataset-id", "tickets_v1", "--system-id", "echo_v1", "--run-id", "run_1",
-        "--scores", "scores.jsonl", "--primary-metric", "wer", "--asc", "--build-ref", "t", "--source", "test",
-        "--scorer-id", "wer",
-    )  # fmt: skip
-    check("an ASCII run is imported", r.returncode == 0, r.stdout + r.stderr)
-    r = evh("catalog", "--out", str(proj / "site"))
-    check("the catalog builds over them", r.returncode == 0, (r.stdout + r.stderr)[-400:])
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

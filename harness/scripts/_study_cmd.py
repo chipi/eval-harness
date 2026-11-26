@@ -54,7 +54,7 @@ def run_study_body(**inputs: Any) -> int:
             "opened from the project itself (its spec in data/studies/, or --spec on the command line)",
             "not-allowed",
         )
-    found = _study.problems(goal, sid, s, read=text is None)
+    found = _study.problems(goal, sid, s)
     if found:
         die(f"study {goal}/{sid}: " + "; ".join(found), "invalid-file")
     from evaluation_harness._runs import runs_on  # noqa: PLC0415

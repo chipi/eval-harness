@@ -1097,9 +1097,14 @@ def _dry_run(
     )
     print(f"  system      {cfg['system_id']}  ({what})")
     if params.get("provider") in _providers.SPECS:
-        # Where the key comes from, never what it is: no command prints a key's value.
-        where = ", ".join(f"{var}: {origin}" for var, _value, origin in _providers.key_sources(params, "arm"))
-        print(f"  key         {where}")
+        # Where the key and the address come from, never what the key is: no command prints a key's value.
+        rows = _providers.key_sources(params, "arm")
+        where = ", ".join(
+            f"{var}: {origin}"
+            + (f" {note}" if (note := _providers.not_in_key_file(params, var, origin)) else "")
+            for var, _value, origin in rows
+        )
+        print(f"  {'key/address' if len(rows) > 1 else 'key':11} {where}")
     print(f"  dataset     {ds['dataset_id']}  ({len(items)} items)")
     print(f"  repeats     {repeat}")
     if once:

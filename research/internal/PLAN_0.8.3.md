@@ -55,21 +55,28 @@ What exists in 0.8.2:
 
 ## S. What 0.8.2 left open
 
-**Done on 083 (2026-11-26, `5a49a8c13`):** S1 (the 0.8.2 section corrected, `tests/test_upgrading_stops.py`; the
-"From 0.8.2 to 0.8.3" section and its CHANGELOG bullets are written when 0.8.3 is dated, an HTML comment in
-UPGRADING says what they must hold), S2 (`max_retries=0`), S3 (a 403 stops the run), S4, S7 (`tests/_shots.py`), S8
+**Done on 083 (2026-11-26, `5a49a8c13`):** S1 (the 0.8.2 section corrected; the "From 0.8.2 to 0.8.3" section and its CHANGELOG bullets are written when
+0.8.3 is dated, from the list below), S2 (`max_retries=0`), S3 (a 403 stops the run), S4, S7 (SCENARIO says how to capture), S8
 (not reproduced; SCENARIO says what was checked). Gates on that commit: `make test` "all self-tests passed",
 `make browser-check` EXIT=0, `mkdocs build --strict` EXIT=0. Left: S5 (at release), S9 (open; S6 dropped by the owner, ids ASCII only), S10 (the owner's
 choice of where).
 
+**For the 0.8.3 notes** (CHANGELOG and the "From 0.8.2 to 0.8.3" section of UPGRADING):
+
+- UPGRADING says the 0.8.2 section was corrected: two changes that can stop a run were missing from it.
+- Ids are ASCII again: a writer and a reader refuse a non-ASCII id, naming the rule. Rename any such id a 0.8.2 project made.
+- A 403 stops the run, as a 401 does.
+- The SDKs' own retries are off; `EVAL_MAX_RETRIES` is the only layer that retries.
+- `evh env-check` and the dry run say where the provider's address came from, as for its key.
+
 | Item | What | Done when | Moves a result |
 | --- | --- | --- | --- |
-| S1 | UPGRADING's "From 0.8.1 to 0.8.2" leaves out two changes that can stop a run that worked: a budgeted round refuses an unpriced arm, and a provider's 401 stops the run. The eval agents were told in the upgrade message; the shipped docs still lack them | both named in UPGRADING (the 0.8.2 section, corrected, and the 0.8.3 one says so); a check that each CHANGELOG "Changed" or "Fixed" bullet that stops a run has an UPGRADING line | no |
+| S1 | UPGRADING's "From 0.8.1 to 0.8.2" leaves out two changes that can stop a run that worked: a budgeted round refuses an unpriced arm, and a provider's 401 stops the run. The eval agents were told in the upgrade message; the shipped docs still lack them | both named in UPGRADING (the 0.8.2 section, corrected, and the 0.8.3 one says so); RELEASING's checklist says each CHANGELOG bullet that can stop a run has an UPGRADING bullet | no |
 | S2 | Retries stack: the SDK's own tries (3) times the harness's (`EVAL_MAX_RETRIES`, default 8) is up to 24 calls per item on a persistent 429 or 500 | one layer retries (the SDK's set to 0, or the harness's counts the SDK's); a test counts the calls against the fake API | no (cost only) |
 | S3 | A 403 is not treated as a key refusal; only a 401 stops the run | a 403 stops it too, naming the key variable, or the reason it should not is written down | no |
 | S4 | `env-check` and the dry run show a `key_file`'s key but not the address it brings (`LITELLM_BASE_URL`) | both lines say where the address came from, as for the key | no |
 | S5 | The newcomer scenario was not run for 0.8.2, although the newcomer's path changed (`evh --help`, `evh docs`, the dry run's lines, the unpriced refusal). release-smoke's newcomer section and the real-call run covered part | the scenario run on 0.8.3's candidate (under $1, through the gateway); its "Still open" list rechecked | no |
-| S6 | **Dropped** by the owner's decision (2026-11-26): ids are ASCII only again in 0.8.3; a writer refuses a non-ASCII id, an id 0.8.2 made is still read, validate notes it. There is no combining-mark question left | none | no |
+| S6 | **Dropped** by the owner's decision (2026-11-26): ids are ASCII only again in 0.8.3; a writer and a reader refuse a non-ASCII id, naming the rule; a project that made one under 0.8.2 renames it. There is no combining-mark question left | none | no |
 | S7 | Full-page screenshots repeat the sticky header mid-page (the scenario's "Still open") | the header is not repeated in a full-page capture, or the screenshot helper captures without it | no |
 | S8 | The inspector's Conditions header reported to leave out `t5_small_v1` (not reproduced) | reproduced and fixed, or closed with the screenshot that shows it is there | no |
 | S9 | The direct OpenAI, Anthropic and OpenRouter paths are covered offline only (`test_providers_wire.py`, real SDKs against fakes). The owner's machines reach models through the LiteLLM gateway only | **open:** whether a real direct call is ever wanted; if not, the scenario's "Not exercised" line says why | no |
