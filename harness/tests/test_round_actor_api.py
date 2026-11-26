@@ -161,7 +161,7 @@ try:
         {"arm": "tickets_lead1_v1", "reason": "one sentence is too few"},
     )
     check("round-retire through the API succeeded", done.get("state") == "succeeded", done)
-    gone = next((a for a in round_doc().get("arms", []) if a["system"] == "tickets_lead1_v1"), {})
+    gone: dict = next((a for a in round_doc().get("arms", []) if a["system"] == "tickets_lead1_v1"), {})
     check(
         "round-retire: the retirement names the typed person",
         names((gone.get("retired") or {}).get("actor")) == (TYPED, "api", None),
