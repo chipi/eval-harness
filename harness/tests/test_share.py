@@ -29,12 +29,13 @@ if not (HERE / "_share.py").is_file():
 
 
 def probe(env: dict, cpus: int) -> list[str]:
-    """jobs(), EVH_WORKERS and the niceness gained in a fresh process that thinks it has `cpus` CPUs, after share()
-    called twice."""
+    """jobs(), EVH_WORKERS, the niceness gained in a fresh process that thinks it has `cpus` CPUs after share() called
+    twice, and the most +10 can gain from where it started (19 is the ceiling: a run started under `nice` or by a niced
+    runner, as the store matrix starts this file, has less room)."""
     code = (
         f"import os, sys; sys.path.insert(0, {str(HERE)!r}); import _share; _share.cpus = lambda: {cpus}; "
         "before = os.nice(0); _share.share(); _share.share(); "
-        "print(_share.jobs(), _share.jobs(6), os.environ.get('EVH_WORKERS', '-'), os.nice(0) - before)"
+        "print(_share.jobs(), _share.jobs(6), os.environ.get('EVH_WORKERS', '-'), os.nice(0) - before, min(10, 19 - before))"
     )
     clean = {k: v for k, v in os.environ.items() if not k.startswith(("EVH_TEST_", "EVH_WORKERS"))}
     r = subprocess.run(
@@ -50,22 +51,23 @@ def probe(env: dict, cpus: int) -> list[str]:
 
 check(
     "the X3 (32 CPUs): 4 suites side by side, the stats workers 2, niceness +10",
-    probe({}, 32) == ["4", "4", "2", "10"],
+    (got := probe({}, 32))[:3] == ["4", "4", "2"] and got[3:4] == got[4:5],
     probe({}, 32),
 )
 check(
     "EVH_TEST_JOBS overrides the count; EVH_WORKERS set stays; EVH_TEST_NICE=0 leaves the priority",
-    probe({"EVH_TEST_JOBS": "12", "EVH_WORKERS": "6", "EVH_TEST_NICE": "0"}, 32) == ["12", "12", "6", "0"],
+    probe({"EVH_TEST_JOBS": "12", "EVH_WORKERS": "6", "EVH_TEST_NICE": "0"}, 32)[:4]
+    == ["12", "12", "6", "0"],
     probe({"EVH_TEST_JOBS": "12", "EVH_WORKERS": "6", "EVH_TEST_NICE": "0"}, 32),
 )
 check(
     "CI's runner (4 CPUs): its own count, a runner's default kept, the stats workers its own",
-    probe({}, 4) == ["4", "6", "-", "10"],
+    (got := probe({}, 4))[:3] == ["4", "6", "-"] and got[3:4] == got[4:5],
     probe({}, 4),
 )
 check(
     "a runner started by a runner is not lowered again (the niceness is taken once)",
-    probe({"EVH_TEST_NICED": "1"}, 32)[3:] == ["0"],
+    probe({"EVH_TEST_NICED": "1"}, 32)[3:4] == ["0"],
     probe({"EVH_TEST_NICED": "1"}, 32),
 )
 for f, needles in (
