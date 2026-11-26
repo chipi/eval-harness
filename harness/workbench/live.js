@@ -767,7 +767,9 @@
         <div class="field">${nm("sn-model", "The model", "models.pick")}<div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
           ${runnable.map((m) => { const b = (m.best || []).find((x) => x.goal === goal);
             return `<option value="${esc(m.model)}" ${d.model === m.model ? "selected" : ""}>${esc(m.name || m.model)} · ${esc(m.state)}${b ? ` · #${b.rank} of ${b.of} on this goal` : ""}</option>`; }).join("")}</select>
-          <div class="hint">a model not here is brought in first: <a href="#model-new">Bring in a model</a></div></div></div>
+          <div class="hint" id="sn-why">${runnable.length ? "A model is listed when it has a model record that says where it runs." : "No model here: a model is listed when it has a model record that says where it runs, and this project has none."}
+            ${ms.models.length > runnable.length ? `${ms.models.length - runnable.length} model record(s) have no deployment yet. ` : ""}A model with no record (a system that only names one) is not listed:
+            <a href="#model-new">Bring in a model</a> to write its record, or take a system above and use <b>Clone it, change one thing</b>.</div></div></div>
         ${d.model ? `<div class="field"><label class="name" for="sn-dep">Where it runs</label><div><select id="sn-dep">${deps.map((x) => `<option ${d.deployment === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
         <div class="field">${nm("sn-prompt", "The prompt", "systems.prompt")}<div><textarea id="sn-prompt" rows="2" placeholder="Summarise the following in one sentence:">${esc(d.prompt)}</textarea><div class="hint">${esc((HELPS()["systems.prompt"] || {}).hint || "")} It is kept as a version of <a class="mono" href="#prompts/${enc(promptName(goal))}">${esc(promptName(goal))}</a>${latest ? ` (now ${esc(latest.id)})` : ""}: a changed text is a new version, and every run records the version it sent</div></div></div>
         <div class="field">${nm("sn-temp", "Temperature", "models.settings")}<div><input type="text" id="sn-temp" inputmode="decimal" value="${esc(d.temperature)}" style="width:6rem"></div></div>
@@ -938,8 +940,12 @@
       if (got.error) return failed(got);
       const has = new Set((got.arms || []).filter((a) => String(a.arm || "").startsWith(`runs/${ds}/`)).map((a) => a.system));
       const offer = inPlayLast.filter((s) => has.has(s)), omit = inPlayLast.filter((s) => !has.has(s));
+      // A study's round runs on the validation side of its dataset: its arms have no run on the dataset itself, and a run
+      // is never carried to another dataset (`round-open --keep` refuses it), so say where they did run and the ways on.
+      const ranOn = lastRec.round.dataset_id;
+      const why = ranOn && ranOn !== ds ? ` (${esc(last.round_id)} ran it on ${esc(ranOn)}, and a run is not carried to another dataset: ${datasets.includes(ranOn) ? `choose ${esc(ranOn)} in On, or ` : ""}run it on ${esc(ds)} first)` : "";
       return (offer.length ? `<div class="choices" role="group" aria-labelledby="ro-keep-l">${offer.map((s) => `<label class="choice"><input type="checkbox" name="ro-keep" value="${esc(s)}" checked> <span class="mono">${esc(s)}</span></label>`).join("")}</div>` : '<p class="muted" style="margin:0">None is offered.</p>')
-        + omit.map((s) => `<p class="muted" style="margin:0"><span class="mono">${esc(s)}</span>: not offered: no run on ${esc(ds)}</p>`).join("");
+        + omit.map((s) => `<p class="muted" style="margin:0"><span class="mono">${esc(s)}</span>: not offered: no run on ${esc(ds)}${why}</p>`).join("");
     };
     LIVE.carryFor = carryFor;
     // The chosen "On" survives a redraw (the arms of another dataset landing redraws the screen): else the select went back to the first.
@@ -957,6 +963,12 @@
     const rs = load(`round:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}`), ev = load(`evidence:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}/evidence`);
     const sys = load("systems", "/systems"), bl = load(`baselines:${goal}`, `/baselines?goal=${enc(goal)}`), allArms = load("arms:all", "/arms");
     const prev = rs && !rs.error && rs.round.from ? load(`round:${goal}/${rs.round.from}`, `/goals/${enc(goal)}/rounds/${enc(rs.round.from)}`) : null;
+    // The charts need only the goal, the round and its dataset: their reads (the slow ones, each a server-side computation)
+    // start once the round is known, not after every other read of the screen has landed (the scenario's 2.5 s of "Reading the chart…").
+    if (rs && !rs.error) {
+      chartBox("gain-cost", { goal, round: cur }, true);
+      for (const kind of ["intervals", "items", "latency"]) chartBox(kind, { goal, dataset: rs.round.dataset_id }, true);
+    }
     if ([rs, ev, sys, bl, prev, allArms].includes(undefined)) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
     const bad = [rs, ev, sys, bl, prev].find((x) => x && x.error);
     if (bad) return `<div class="screen wide">${head}${tabs}${failed(bad)}</div>`;
@@ -1163,7 +1175,10 @@
     document.getElementById("rc-close")?.addEventListener("click", async (ev) => {
       const out = document.getElementById("rc-out"), by = byOr("ev-by");
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a decision names who made it.</p>'; return; }
-      if (!window.confirm(`Close ${cur} with this conclusion?${document.getElementById("rc-promote")?.checked ? " Its leader's run becomes the goal's baseline." : ""}`)) return;
+      if (!window.confirm(`Close ${cur} with this conclusion?${document.getElementById("rc-promote")?.checked ? " Its leader's run becomes the goal's baseline." : ""}`)) {
+        out.innerHTML = `<p class="note" role="status">Not closed: ${esc(cur)} stays open, and nothing was written.</p>`;
+        return;
+      }
       const inputs = { conclusion: v("rc-text"), by };
       if (document.getElementById("rc-promote")?.checked) inputs.promote = document.getElementById("rc-promote").value;
       ev.target.disabled = true;
