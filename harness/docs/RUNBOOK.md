@@ -1653,6 +1653,8 @@ A refusal prints its message on stderr, nothing on stdout, and exits non-zero. `
 
 **For an agent without one**, `evh mcp` serves the same reads as MCP tools; how to connect
 each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
+`evh mcp --no-agent-tools` leaves out `study-ask` and `study-tell`, the two tools that write, so the server is read-only
+with the text of items and outputs still served (the integration guide's "Read-only, with the text" paragraph).
 
 - **The tools** are the read operations of the registry (`evaluation_harness/ops`), each named as the operation, the
   command and the API's resource are: 75 on your machine, among them `study-ask` and `study-tell` (`goal-list`, `goal-leaderboard`, `dataset-list`,
