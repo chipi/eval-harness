@@ -1599,6 +1599,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_code_hashes.py", "scoring-code hashes"),
         ("test_codeid.py", "code identity: documentation never moves a hash"),
         ("test_providers.py", "hosted providers: one layer for arms and judges, keys by role"),
+        (
+            "test_providers_wire.py",
+            "hosted providers on the wire: the real SDKs against a fake of each API; request, record, 429/500, 401",
+        ),
         ("test_leaderboard_refs.py", "the leaderboard: one table per reference, never averaged across them"),
         (
             "test_reference_coverage.py",

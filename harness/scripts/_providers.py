@@ -20,6 +20,8 @@ KEYS BY ROLE. A judge reads every variable as `EVAL_JUDGE_<NAME>` first and fall
 arms' with no setting at all. A credential is where a call is billed, not what was
 measured: `api_key_env` is left out of every identity hash (`identity_params`).
 
+A 401 is the key's, not the item's: `complete` stops the run there (`_refused_key`), naming the variable.
+
 COST. What the provider billed when the response carries it (`usage.cost`), else the
 system's prices (`usd_per_mtok_in` / `usd_per_mtok_out`) times the tokens, else unknown
 (None), never zero.
@@ -36,7 +38,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable, NamedTuple
+from typing import Any, Callable, NamedTuple, NoReturn
 
 ROLES = ("arm", "judge")
 JUDGE_PREFIX = "EVAL_JUDGE_"
@@ -412,6 +414,28 @@ def complete(prompt: str, params: dict[str, Any], *, role: str, max_tokens: int)
     # A second net under the command's own cap (RFC-026 step 5): counted here too, so an adapter that reports less
     # than its calls cost is stopped at the cap all the same (CostCapExceeded before the call).
     _spend.net_check()
-    done = _SHAPES[SPECS[params["provider"]].shape](prompt, params, route(params, role))
+    r = route(params, role)
+    try:
+        done = _SHAPES[SPECS[params["provider"]].shape](prompt, params, r)
+    except Exception as exc:
+        if getattr(exc, "status_code", None) == 401:
+            _refused_key(r, exc)
+        raise
     _spend.net(done.cost_usd)
     return done
+
+
+def _refused_key(r: Route, exc: Exception) -> NoReturn:
+    """A 401 is the key, not the item: every call would fail the same way, so the run stops here (a failed item was
+    recorded, the run went on and exited 0), naming the variable that held the key. The server's own words are kept,
+    without the key: a server may echo it back, and what is printed or recorded must never hold it."""
+    from evaluation_harness._common import die  # noqa: PLC0415
+
+    said = str(exc)
+    if r.key:
+        said = said.replace(r.key, "(the key)")
+    die(
+        f"provider {r.provider} refused the key with a 401: {r.key_var} is set, and not accepted "
+        f"(wrong, revoked, or for another account). The server said: {said[:300]}",
+        "not-configured",
+    )

@@ -12,20 +12,20 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.8.2 — 2026-11-26
 
-The Workbench's public reads, one bar across the publication, and what the beta projects and the 0.8.1 newcomer found. **No result moves:** no format, fingerprint or scorer changed, nothing is re-scored; a round with a budget
-now refuses an arm it cannot price.
+The Workbench's public reads, one bar across the publication, and what the beta projects and the 0.8.1 newcomer found. **No result moves:** no format, fingerprint or scorer changed, nothing is re-scored; a round with a budget now refuses an arm it cannot price.
 
-- **Fixed, a public server's Workbench:** its public API answered 500 (`/api/v1/goals`, `/api/v1/models`): the inspector's container lacked `jsonschema` (EVALS-INSPECTOR-3). The deploy now asks the release's servers what a visitor asks first (`infra/deploy/smoke_release.py`).
+- **Fixed, a public server's Workbench:** its public API answered 500 (`/api/v1/goals`, `/api/v1/models`): the inspector's container lacked `jsonschema`. The deploy now asks the release's servers what a visitor asks first.
 - **Changed, the header:** the site, the catalog, the Workbench and the docs carry one bar: the logo, five pills
   (Harness · Catalog · Workbench · Docs · MCP) on every width, the menu at the right, a second row of the page's
-  sections (the Workbench's screens). On a phone, search and the theme are in the menu.
+  sections; on a phone, search and the theme move into the menu.
 - **Changed, a round with a budget refuses an arm with no price** (0 is a price), naming it; `--allow-unpriced` on
   `run`, `arm-smoke` and `sweep` lets it through, and the round records the exclusion.
+- **Fixed, a provider's 401:** the item failed and the run went on, exit 0, the server's words (a key echoed back) printed and recorded. It now stops the run, naming the key variable, never its value.
 - **Fixed, a manifest row with a local `source_url`:** `dataset-create --manifest` wrote a record `validate` failed (V1)
-  when `source_sha256` pinned a path in the project. The schema accepts it, materialize reads it, V4 checks its hash; no hash is refused at create.
+  when `source_sha256` pinned a path in the project. The schema accepts it, V4 checks its hash; no hash is refused at create.
 - **New, `references: {roots: [...]}` in `config.yaml`:** where a project keeps references besides `data/references`.
-  With it, `import-run --reference-id` refuses an id found in none; without it, as 0.8.1.
-- **New, `evh mcp --no-agent-tools`:** every read a local server serves, text included, neither `study-ask` nor `study-tell`. `evh mcp --help` now says a local server has those two; it said every tool reads.
+  With it, `import-run --reference-id` refuses an id found in none.
+- **New, `evh mcp --no-agent-tools`:** every read a local server serves, text included, neither `study-ask` nor `study-tell`. `--help` names those two (it said every tool reads).
 - **New, `dataset-create --fields-from-item` and `--exclude GLOB`:** JSON items give their own field values (a field's `from` JSON pointer, `reduce: count`), no `--fields` file to drift (`--update-fields` reads the frozen items); `--exclude` drops what `--glob` matched (an export `manifest.json`); the folder source's query takes `exclude` too.
 - **New, `evh docs`:** UPGRADING, RUNBOOK and INTEGRATION ship in the package; `evh docs NAME [--print]` prints the
   installed copy. `evh --help` opens with "Start here".
@@ -33,14 +33,14 @@ now refuses an arm it cannot price.
   estimate says it is the most (every reply at `max_tokens`) and adds a typical one from earlier runs of the system, or of other systems on its model, and says which; "MEASURED
   none" says what to do, once per model in a sweep.
 - **Changed, messages:** `study-confirm` names the fewest test items that suffice; `jobs-start run` and a Workbench job warn of a job with no goal or reference; `judge-score --dry-run` says when the real run will refuse
-  (a changed judge); `arm-list` says a retired baseline is still the goal's; a judged leaderboard names the command that validates its judge, once;
-  `silver-calibrate` shows the arms each rho is over; `validate` names records with no actor; `env-check` says which files it read.
-- **Fixed, the Workbench:** the eval screen's charts read at once (0.75 s, from 2.5 s); "Open the next round"
+  (a changed judge); `arm-list` says a retired baseline is still the goal's; a judged leaderboard names the command that validates its judge;
+  `silver-calibrate` shows the arms each rho is over; `validate` names records with no actor; `env-check` names the files it read.
+- **Fixed, the Workbench:** the eval screen's charts read at once; "Open the next round"
   says why an arm is not offered; a dismissed "Close" says the round stays open; "Make a system from a model" says why
-  a model is missing; a page reaches `networkidle` and a hidden tab asks nothing.
+  a model is missing; a hidden tab asks nothing.
 - **Fixed, reads of an id that exists:** `dataset-items` and its readers no longer refuse an id for its spelling
-  (accents, other scripts); writers refuse what they did.
-- **New, `evh catalog-serve --link` and `--brand`** head the Workbench with its publication's parts.
+  (accents, other scripts).
+- **New, `catalog-serve --link` and `--brand`** head the Workbench with its publication's parts.
 - **Tests:** projects shaped like the beta ones' data (imported, unpriced, unicode, format 0), read by every reader
   in three time zones; on more than 8 CPUs the runners take 4 suites, niceness 10, 2 stats workers
   (`EVH_TEST_JOBS`, `EVH_TEST_NICE`, `EVH_WORKERS`).
