@@ -24,15 +24,25 @@ Served from a static server on a free port, with Chromium:
 from __future__ import annotations
 
 import http.server
+import os
+import re
+import shutil
+import socket
 import socketserver
+import subprocess
 import sys
+import tempfile
 import threading
+import time
 from functools import partial
 from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _slow
+import _cli  # noqa: E402
+import _serve  # noqa: E402
+import _signin  # noqa: E402
 import _slow  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -411,6 +421,73 @@ def check_verdicts_and_reading(browser, base: str) -> None:
     page.close()
 
 
+CNN = {"id": "cnn_dailymail_200", "items": 200}
+R4_OPEN = {"question": "Does a smaller local model match bart_l?", "ran": True}
+R4_CLOSED = {**R4_OPEN, "closed": True, "closedAt": "2026-11-20", "conclusion": "bart_l stays."}
+MODELS = {**STATE, "models": STATE["checked"]}
+R5 = {**STATE, "r4": R4_CLOSED, "r5": {"question": ""}, "tab": "r5"}
+#: every key notes.js answers: the state to seed, the route, an optional click first, and what its text says. A key
+#: is reached by driving the mockup there, so a call site no screen can reach fails here instead of passing unseen.
+NOTE_SCENES = {
+    "first-visit": ({}, "start", None, "the mockup starts empty to show the first visit"),
+    "goal-extra": (STATE, "goal-new", None, "the CNN goal's own extra measure is rouge1"),
+    "hf-answer-column": (
+        {**STATE, "hf": {"read": True}},
+        "dataset-hf",
+        None,
+        "taking the answer column too is new",
+    ),
+    "pretend-job": (
+        {**STATE, "fetched": False},
+        "prepare",
+        "#fetch",
+        "a pretend job; the real one runs on the server",
+    ),
+    "profile-only-cnn": (
+        {**STATE, "dataset": {"id": "ag_news_20", "items": 20}},
+        "prepare",
+        None,
+        "round 1 reads only cnn_dailymail_200's profile",
+    ),
+    "ml-no-prompt": (MODELS, "models", None, "ML models (BART) take no prompt"),
+    "no-cnn-run": (
+        {**STATE, "models": ["baai-bge-small-en-v1.5"], "checked": ["baai-bge-small-en-v1.5"]},
+        "models",
+        None,
+        "this model has no CNN run",
+    ),
+    "r1-replies": (MODELS, "models", None, "the r1 run's real first three items"),
+    "rounds-real": (STATE, "eval", None, "r1 to r3 are this project's real rounds; r4 is the one"),
+    "r4-rows": (
+        {**STATE, "r4": R4_OPEN, "tab": "r4"},
+        "eval",
+        None,
+        "the project's Linux re-runs of 2026-09-30",
+    ),
+    "r5-stops": (R5, "eval", None, "this walk-through stops at r5's question"),
+    "link-out": (STATE, "catalog", None, "a link out of the Workbench; not part of the mockup"),
+}
+
+
+def check_note_keys() -> None:
+    """notes.js answers exactly the keys workbench.js asks for: no note nobody asks for, no ask nobody answers."""
+    notes = (WORKBENCH / "mockup" / "notes.js").read_text(encoding="utf-8")
+    defined = set(re.findall(r'^\s{4}"([a-z0-9-]+)":', notes, re.M))
+    called = set(
+        re.findall(r'\bnote\("([a-z0-9-]+)"', (WORKBENCH / "workbench.js").read_text(encoding="utf-8"))
+    )
+    check(
+        "notes.js defines exactly the note keys workbench.js calls (no orphan either way)",
+        defined == called and bool(defined),
+        (sorted(defined - called), sorted(called - defined)),
+    )
+    check(
+        "this test drives a scene for every note key, and no other",
+        set(NOTE_SCENES) == defined,
+        (sorted(defined - set(NOTE_SCENES)), sorted(set(NOTE_SCENES) - defined)),
+    )
+
+
 def check_notes(browser, base: str) -> None:
     """The mockup's own notes (what it only pretends) are the mockup's files', not the shipped workbench.js's."""
     shipped = (WORKBENCH / "workbench.js").read_text(encoding="utf-8")
@@ -419,22 +496,29 @@ def check_notes(browser, base: str) -> None:
         "mockup:" not in shipped and "mocknote" not in shipped,
         [w for w in ("mockup:", "mocknote") if w in shipped],
     )
-    page, errors = seeded(browser, base, STATE, viewport={"width": 1280, "height": 900})
-    seen = {}
+    check_note_keys()
     texts = "(e) => e.map((x) => x.textContent)"
-    for route in ("goal-new", "eval"):
+    for key, (state, route, click, says) in NOTE_SCENES.items():
+        page, errors = seeded(browser, base, state, viewport={"width": 1280, "height": 900})
         page.goto(f"{base}#{route}")
         page.wait_for_timeout(250)
-        seen[route] = page.locator("main .mocknote").evaluate_all(texts)
-    page.locator("#openr4").click()
+        if click:
+            page.locator(f"main {click}").first.click()
+            page.wait_for_timeout(250)
+        seen = page.locator("main .mocknote").evaluate_all(texts)
+        check(
+            f"mockup note '{key}': reached on #{route}, shown with its 'mockup:' prefix",
+            any(t.startswith("mockup: ") and says in t for t in seen) and not errors,
+            (seen, errors[:2]),
+        )
+        page.close()
+    page, errors = seeded(browser, base, R5, viewport={"width": 1280, "height": 900})
+    page.goto(f"{base}#eval")
     page.wait_for_timeout(250)
-    seen["r4"] = page.locator("main .mocknote").evaluate_all(texts)
+    seen = page.locator("main .mocknote").evaluate_all(texts)
     check(
-        "the mockup still shows its notes, each marked 'mockup:' (the goal form's, the rounds')",
-        all(t and all(x.startswith("mockup: ") for x in t) for t in seen.values())
-        and "the CNN goal's own extra measure" in seen["goal-new"][0]
-        and "r1 to r3 are this project's real rounds" in seen["eval"][0]
-        and not errors,
+        "mockup note 'rounds-real' on the r5 tab names r4 and r5 as the ones this walk-through opens",
+        any("r4 and r5 are the ones this walk-through opens" in t for t in seen) and not errors,
         (seen, errors[:2]),
     )
     page.uncheck("#mocknotes")
@@ -443,6 +527,72 @@ def check_notes(browser, base: str) -> None:
         page.evaluate("[...document.querySelectorAll('.mocknote')].every((n) => n.offsetParent === null)"),
     )
     page.close()
+
+
+def check_shipped_silent(browser) -> None:
+    """The shipped Workbench (index.html behind catalog-serve) answers no note: none of the mockup's text on any screen."""
+    proj = Path(tempfile.mkdtemp(prefix="evh-wbnotes-"))
+    env = dict(
+        os.environ,
+        EVH_ACTOR="person:test",
+        EVAL_HOME=str(proj),
+        EVAL_BUILD_REF="test-wb-notes",
+        EVAL_STORE="files",
+    )
+    for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
+        env.pop(k, None)
+    srv = None
+    try:
+        r = _cli.run(proj, env, "init", "--store", "files", "--tutorial", timeout=600)
+        r = r if r.returncode else _cli.run(proj, env, "catalog", timeout=600)
+        check("setup: a tutorial project for the shipped Workbench", r.returncode == 0, r.stderr[-300:])
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        srv = subprocess.Popen(
+            [sys.executable, str(HARNESS / "scripts" / "cli.py"), "catalog-serve", "--port", str(port)], cwd=proj, env=env,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL, encoding="utf-8",
+        )  # fmt: skip
+        for _ in range(300):
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                    break
+            except OSError:
+                time.sleep(0.1)
+        link = _signin.link(_serve.startup(srv, []))
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        errors: list = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(str(link))
+        page.wait_for_selector("h1", timeout=20000)
+        leaked = []
+        for route in (
+            "start",
+            "goal-new",
+            "dataset",
+            "dataset-hf",
+            "prepare",
+            "models",
+            "eval",
+            "catalog",
+            "docs",
+        ):
+            page.goto(f"http://127.0.0.1:{port}/workbench/#{route}")
+            page.wait_for_selector("main h1", timeout=20000)
+            page.wait_for_timeout(400)
+            if page.locator(".mocknote").count() or "mockup:" in page.locator("main").inner_text():
+                leaked.append(route)
+        check(
+            "the shipped Workbench shows no mockup note on any screen, and has no WB.mockNote",
+            not leaked and page.evaluate("typeof window.WB.mockNote") == "undefined" and not errors,
+            (leaked, errors[:2]),
+        )
+        page.close()
+    finally:
+        if srv is not None:
+            srv.terminate()
+            srv.wait(timeout=20)
+        shutil.rmtree(proj, ignore_errors=True)
 
 
 def main() -> int:
@@ -455,6 +605,7 @@ def main() -> int:
             check_screens(browser, base)
             check_skip_link(browser, base)
             check_notes(browser, base)
+            check_shipped_silent(browser)
             check_round(browser, base)
             check_verdicts_and_reading(browser, base)
             browser.close()
