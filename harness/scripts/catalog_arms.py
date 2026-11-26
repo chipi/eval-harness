@@ -117,7 +117,12 @@ def arm_rows(A, by_ds: dict, only: str | None = None) -> list[dict]:
             if arm:
                 roles.setdefault(arm, []).append(word)
         for arm, rnd in (r.get("retired") or {}).items():
-            roles.setdefault(arm, []).append(f"retired in {rnd}")
+            # A round retires an arm from its own line-up; the goal keeps the baseline it promoted until another is.
+            if arm == r["baseline"] and "baseline" in roles.get(arm, []):
+                roles[arm].remove("baseline")
+                roles[arm].append(f"retired in {rnd}; still the goal's baseline")
+            else:
+                roles.setdefault(arm, []).append(f"retired in {rnd}")
         if dec:
             for arm in dec["rows"]:
                 measure_of.setdefault(arm, (g, r["measure"], r["lower"]))

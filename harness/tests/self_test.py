@@ -1234,6 +1234,18 @@ def test_example_scorer_suites_pass() -> None:
             "every reader says the same of a fact on committed projects this checkout did not make (a fleet's, a podcast's, a bake-off's with no run, unicode ids, a format-0 project migrated), in UTC and in UTC+14 and UTC-11, and a zone changes no fact",
         ),
         (
+            "test_arm_list_baseline_retired.py",
+            "arm-list on the goal's baseline that a round retired says both facts: retired in rN, still the goal's baseline",
+        ),
+        (
+            "test_round_actor_api.py",
+            "a round the Workbench opens, retires and closes names the person typed in its name field, never the EVH_ACTOR or EVH_FOR of the server it runs on",
+        ),
+        (
+            "test_read_ids.py",
+            "a dataset id is held to its format where ids are made, and a read of one that exists is refused only for being a path (a project's unicode ids)",
+        ),
+        (
             "test_foreign_projects.py",
             "three look-alike projects of the beta projects' shapes (an import with prose goals, a fleet's repeat set, a zero-price bake-off): every read command and RFC-041's facts, asserted by hand",
         ),

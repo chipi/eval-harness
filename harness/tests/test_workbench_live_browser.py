@@ -1415,6 +1415,12 @@ try:
             # W2 (UXS-005): which is better, blind, on a sheet submitted when done; then what went wrong, with a new list
             page.goto(f"http://127.0.0.1:{port}/workbench/#review/tickets_summary")
             page.wait_for_selector("#rv-make", timeout=20000)
+            cmd_before = page.locator("main details.cmd pre").all_text_contents()
+            check(
+                "Review the outputs shows its command before any sheet exists (UXS-005: every screen shows the command)",
+                page.locator("[data-pick]").count() == 0 and any("evh sheet-export" in c for c in cmd_before),
+                cmd_before,
+            )
             page.select_option("#rv-ds", "tk_v1")
             page.wait_for_selector("#rv-a option[value='fake-1b_here']", state="attached", timeout=20000)
             page.select_option("#rv-a", "one_v1")
