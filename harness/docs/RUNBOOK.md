@@ -153,7 +153,9 @@ evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-create --dataset-id my_smoke_v1 --source-dir data/sources/my_v1 --limit 5   # a fast cut
 ```
 
-This writes `data/datasets/my_v1.json`: the item list plus a **sha256 per item**.
+This writes `data/datasets/my_v1.json`: the item list plus a **sha256 per item**. `--glob` picks the files and
+`--exclude GLOB` (repeatable, matched against the path under `--source-dir` as `--glob` is) takes some out again: an
+export `manifest.json` beside the items. Without `--exclude` nothing is skipped but READMEs and dotfiles.
 
 The `dataset_id` is the comparison contract. Every run records it, and
 `run-compare` refuses to compare across two different ones. Name it for what it
@@ -277,6 +279,19 @@ one row per `item_id`, from a CSV or JSONL:
 ```bash
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1 --fieldset tickets --fields fields.csv
 evh dataset-create --dataset-id my_v1 --update-fields --fields fixes.csv     # later
+```
+
+**When the items are JSON objects, the values are in them:** `--fieldset avoidance --fields-from-item` reads each
+declared field from its item, not from a second file that can drift (not with `--fields`; values are typed and refused
+as a `--fields` file's are, and a key the item lacks is a missing value). A field reads the item's key of its own
+name, or, with `from`, where a JSON pointer (RFC 6901, `/start/x`) lands; `reduce: count` makes it the length of the
+list or object there (the field's type is `integer`). A list or an object that is not counted is refused, naming item
+and field. Both keys are read only by `--fields-from-item`:
+
+```yaml
+fields:
+  - {name: start_x, type: number, from: /start/x}
+  - {name: obstacles, type: integer, from: /obstacles, reduce: count}
 ```
 
 A column the field set does not declare, a value of the wrong type or outside a

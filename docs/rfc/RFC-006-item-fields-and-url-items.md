@@ -24,7 +24,9 @@ Separately, an item may be fetched from a URL and frozen by its sha256 like any 
 
 `data/fields/<fieldset_id>.yaml` (`fieldset.schema.json`): a list of fields, each with `name`,
 `type`, `label`, `description`, and optionally `unit`, `required`, `public`, and `values` for a
-`choice`. Parsing (`_fields.parse`), by type:
+`choice`. Two more keys are read only by `dataset-create --fields-from-item` (0.8.2), for JSON items: `from`, a JSON
+pointer (RFC 6901) to the item's value (default the field's name at the top level), and `reduce: count`, the length of
+the list or object there (the field is an `integer`). Parsing (`_fields.parse`), by type:
 
 | type | accepted | stored as |
 | --- | --- | --- |

@@ -1555,6 +1555,10 @@ def test_example_scorer_suites_pass() -> None:
             "reference manifests and V16: checksums committed, texts checked against them",
         ),
         ("test_fields.py", "item fields and URL items: create, materialize, V15"),
+        (
+            "test_dataset_items_json.py",
+            "dataset-create over JSON items: --fields-from-item, a field's from and reduce, --exclude",
+        ),
         ("test_lineage.py", "dataset versions: --from, V2, the catalog's links"),
         (
             "test_rounds.py",

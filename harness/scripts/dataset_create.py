@@ -19,6 +19,8 @@ Items can carry fields a project declares (ADR-0003), and can live at a URL:
     --manifest items.csv                       one row per item: item_id, source_url (and
                                                source_sha256 to pin it; without it the bytes are
                                                fetched and pinned now); other columns are fields
+    --fields-from-item                         JSON items: each field's value is read from the item
+                                               itself (a field's `from` pointer, `reduce: count`)
     --update-fields --fields fields.csv        new values on an existing dataset whose items are
                                                unchanged: fields are not its identity, so no run
                                                measured on it is invalidated
@@ -27,6 +29,7 @@ Items can carry fields a project declares (ADR-0003), and can live at a URL:
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 
@@ -152,6 +155,27 @@ def _attach(items: list, fieldset: dict, path: Path) -> None:
             by_id[iid].pop("fields", None)
     if bad:
         die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
+
+
+def _attach_from_items(items: list, fieldset: dict, source_dir: Path) -> None:
+    """Put the values the items' own JSON holds on the items, typed as `_attach` types a file's rows. Every item file
+    is one JSON object; a field set field reads its key, or where its `from` pointer lands."""
+    bad = []
+    for it in items:
+        try:
+            doc = json.loads(_store.read_bytes(source_dir / it["source_path"]).decode("utf-8"))
+        except ValueError as exc:  # a UnicodeDecodeError is one
+            bad.append(f"item {it['item_id']}: not JSON ({exc})")
+            continue
+        if not isinstance(doc, dict):
+            bad.append(f"item {it['item_id']}: is JSON {type(doc).__name__}, not an object")
+            continue
+        vals, errs = _fields.values_from_item(fieldset, doc)
+        bad += [f"item {it['item_id']}: {e}" for e in errs]
+        if vals:
+            it["fields"] = vals
+    if bad:
+        die(f"--fields-from-item: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
 
 
 def _local_refusal(url: str, sha: str) -> str | None:
@@ -540,6 +564,25 @@ def body(**inputs: Any) -> int:
             "field values need a field set: pass --fieldset <id> (data/fields/<id>.yaml declares them)",
             "bad-argument",
         )
+    if args.fields_from_item:
+        if args.fields:
+            die("--fields-from-item and --fields: two places the values come from; pass one", "bad-argument")
+        if not fieldset:
+            die(
+                "--fields-from-item needs --fieldset <id> (data/fields/<id>.yaml declares the fields to read)",
+                "bad-argument",
+            )
+        if args.manifest or args.source_name or args.update_fields or args.lineage_only:
+            die(
+                "--fields-from-item reads the JSON files of --source-dir: not with --manifest, --source, "
+                "--update-fields or --lineage-only",
+                "bad-argument",
+            )
+    if args.exclude and (args.manifest or args.source_name or args.update_fields or args.lineage_only):
+        die(
+            "--exclude filters the files of --source-dir: not with --manifest, --source, --update-fields or --lineage-only",
+            "bad-argument",
+        )
 
     if args.lineage_only:
         return _lineage_only(args, out, previous, fieldset)
@@ -700,7 +743,9 @@ def body(**inputs: Any) -> int:
     # through the store: a source folder under data/ is in the database in SQLite mode, where pathlib's glob found
     # nothing ("no items matched", the store matrix, 2026-11-08)
     walk = _store.rglob if args.recursive else _store.glob
-    files = sorted(p for p in walk(args.source_dir, args.glob) if is_item(p))
+    # an exclude is matched by the same walk, so it reads a path under --source-dir exactly as --glob does
+    excluded = {p for pattern in args.exclude for p in walk(args.source_dir, pattern)}
+    files = sorted(p for p in walk(args.source_dir, args.glob) if is_item(p) and p not in excluded)
     if args.limit:
         files = files[: args.limit]
     if not files:
@@ -722,6 +767,8 @@ def body(**inputs: Any) -> int:
     ]
     if args.fields:
         _attach(items, fieldset, args.fields)
+    if args.fields_from_item:
+        _attach_from_items(items, fieldset, args.source_dir)
 
     lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
     _write(
