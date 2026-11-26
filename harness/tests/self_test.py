@@ -1030,6 +1030,10 @@ def test_example_scorer_suites_pass() -> None:
             "the huggingface source on a local Hub: pinned to the parquet commit, licence, card, rows; sha256 checked",
         ),
         (
+            "test_parquet_reads.py",
+            "every parquet read runs on the calling thread: neither of pyarrow's pools, which aborted a process at exit",
+        ),
+        (
             "test_publish.py",
             "publishing to the Hub against a fake API: one commit, read back by sha256; hidden and unmaterialized refused",
         ),
