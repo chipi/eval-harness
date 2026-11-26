@@ -17,7 +17,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(_tmp.mkdtemp(prefix="evh-envcheck-"))
 (proj / "data").mkdir()
-SECRET = "sk-test-0123456789abcdefghijWXYZ"
+SECRET = "sk-test-not-printed"
 (proj / ".env").write_text(f"OPENROUTER_API_KEY={SECRET}\n", encoding="utf-8")
 env = {k: v for k, v in os.environ.items() if not k.endswith("_API_KEY") and k != "EVAL_MAX_COST_USD"}
 env.update(EVH_ACTOR="person:test", EVAL_HOME=str(proj))
