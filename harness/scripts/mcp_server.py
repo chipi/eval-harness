@@ -61,6 +61,7 @@ NOT_TOOLS = {
     "init": "writes a project",
     "skills-install": "writes the skills into a project",
     "env-check": "reads the environment and keys, not the project",
+    "docs": "points at the package's own docs, not the project",
     "capture-scrub": "runs a project's command and writes",
     "catalog-serve": "never returns",
     "self-test": "runs the test suite",

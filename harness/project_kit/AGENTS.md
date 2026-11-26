@@ -118,4 +118,5 @@ Every kind and code: the Runbook's "Refusals" and "Exit codes".
 
 Every command takes `--help`: it is the reference for every flag. The full documentation:
 https://evals.humancopilot.eu/docs/ (start at "Getting started"; "Integration" for your own
-system; "Runbook" for every command).
+system; "Runbook" for every command). Offline, `evh docs` lists the ones that ship with the installed
+package (upgrading, runbook, integration) and `evh docs runbook --print` reads one.

@@ -25,6 +25,7 @@ NOT_SERVED = {
     "init": "makes a project; the Workbench opens one",
     "skills-install": "writes the agents' skills into a project",
     "env-check": "the server's own environment",
+    "docs": "points at the package's own docs",
     "self-test": "checks the installed package",
     "capture-scrub": "runs a program it is given",
     "openapi": "the API's own description: GET /api/v1/openapi.json",
