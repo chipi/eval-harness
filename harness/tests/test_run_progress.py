@@ -392,6 +392,64 @@ try:
         (typ, r.stderr[:1200]),
     )
     check(
+        "dry run: the TYPICAL line says which runs it is from (this system's)",
+        "from 2 runs of this system" in r.stderr and typ.get("typical_from") == "this system",
+        (typ.get("typical_from"), r.stderr[:1200]),
+    )
+
+    # A system with no run of its own takes the earlier plain runs of other systems on the same provider and model
+    # (never another model, nor the same model through another provider); its own runs, once it has any, come first.
+    def fp(model, provider="echo"):
+        return {"deployment": {"model": model, "provider": provider}}
+
+    for sid, n, model, out_tok, prov in (
+        ("sib_a_v1", 1, "m-x", 10, "echo"),
+        ("sib_a_v1", 2, "m-x", 30, "echo"),
+        ("sib_b_v1", 1, "m-x", 10, "echo"),
+        ("sib_b_v1", 2, "m-x", 30, "echo"),
+        ("sib_c_v1", 1, "m-y", 900, "echo"),
+        ("sib_d_v1", 1, "m-x", 900, "other-provider"),
+    ):
+        _runfix.put_run(
+            proj / "data",
+            {"run_id": f"{sid}_{n}", "system_id": sid, "dataset_id": "tickets_v1", "scores": {"words": 1.0},
+             "primary_metric": "words", "created_at": f"2026-11-2{n}T10:00:00Z", "fingerprint": fp(model, prov)},
+            [{"item_id": f"i{k}", "words": 1.0, "tokens_in": 50.0, "tokens_out": float(out_tok)} for k in range(4)],
+        )  # fmt: skip
+    r = evh("run", *system("newsys", model="m-x", **dry_priced), "--dry-run", "--json")
+    typ = json.loads(r.stdout)["result"]["values"]["dry_run"] if r.returncode == 0 else {}
+    check(
+        "dry run: no run of its own, the TYPICAL estimate is from the runs of other systems on the same provider and "
+        "model, and says so",
+        typ.get("typical_output_tokens_per_item") == 20
+        and typ.get("typical_from_runs") == 4
+        and typ.get("typical_from") == "other systems on m-x via echo"
+        and "from 4 runs of other systems on m-x via echo" in r.stderr,
+        (typ, r.stderr[:1200]),
+    )
+    r = evh("run", *system("nomodel", **dry_priced), "--dry-run", "--json")
+    typ = json.loads(r.stdout)["result"]["values"]["dry_run"] if r.returncode == 0 else {}
+    check(
+        "dry run: a system that names no model has no other systems' runs to borrow, so no TYPICAL line",
+        typ.get("typical_estimate_usd") is None and "TYPICAL" not in r.stderr,
+        (typ, r.stderr[:800]),
+    )
+    _runfix.put_run(
+        proj / "data",
+        {"run_id": "newsys_v1_1", "system_id": "newsys_v1", "dataset_id": "tickets_v1", "scores": {"words": 1.0},
+         "primary_metric": "words", "created_at": "2026-11-25T10:00:00Z", "fingerprint": fp("m-x")},
+        [{"item_id": f"i{k}", "words": 1.0, "tokens_in": 50.0, "tokens_out": 40.0} for k in range(4)],
+    )  # fmt: skip
+    r = evh("run", "--system", "newsys_v1", "--dataset", "tickets_v1", "--dry-run", "--json")
+    typ = json.loads(r.stdout)["result"]["values"]["dry_run"] if r.returncode == 0 else {}
+    check(
+        "dry run: the system's own runs are preferred once it has any (singular for one)",
+        typ.get("typical_output_tokens_per_item") == 40
+        and typ.get("typical_from") == "this system"
+        and "from 1 run of this system" in r.stderr,
+        (typ, r.stderr[:1200]),
+    )
+    check(
         "dry run: the at-most estimate is what it was (input at the usual rate, max_tokens out)",
         abs(
             typ.get("estimate_usd", 0)

@@ -846,8 +846,9 @@ the arms page and in `evh arm-list` that the goals read its re-score. A round re
 answers in a sentence it is many times the bill (a frontier arm at `max_tokens: 1500` was estimated at $0.76 and billed
 $0.05; the 0.8.0 newcomer's was 15 times its spend). It does not bound the calls: an adapter that makes several calls per
 item, or a conversation that grows (each probe turn re-sends it), costs more. Where the system's earlier runs (the latest
-five) recorded output tokens, `TYPICAL` shows the same estimate at their mean tokens out per item; no recorded number
-changes. Beside them, `MEASURED` shows what the last `evh arm-smoke` of this
+five) recorded output tokens, `TYPICAL` shows the same estimate at their mean tokens out per item; a system with none
+takes the earlier plain runs of other systems on the same provider and model, and the line says which runs it is from
+("from 4 runs of other systems on m via p"); no recorded number changes. Beside them, `MEASURED` shows what the last `evh arm-smoke` of this
 system recorded in its model record (the cost per item, projected over the items and repeats, and when it was
 measured); with none it says so and names the command (a system that names no model record has nowhere to keep a smoke: it
 says so and names `model_record:`, the cap comes from the smoke's own `full run:` line, and `evh sweep --dry-run` says it

@@ -70,7 +70,7 @@ from evaluation_harness._common import (
     plain_id_ok,
     warn_if_ignored,
 )
-from evaluation_harness._fingerprint import build_fingerprint
+from evaluation_harness._fingerprint import build_fingerprint, deployment_of
 from evaluation_harness._number import counted, is_scored
 from evaluation_harness._providers import priced_by_table, secret_params, temperature
 from evaluation_harness._record import (
@@ -983,22 +983,52 @@ def _no_reference_note(dataset_id: str, adapter_id: str) -> list[str]:
     ]
 
 
-def _typical_out(system_id: str) -> dict[str, Any] | None:
-    """What the system's earlier runs say a reply is: {mean tokens out per item, items, runs} over the latest five
-    plain runs of it that recorded output tokens (a failed item left out); None when none did."""
-    latest = sorted(
-        _model_runs.scored(system_id=system_id, label_is=""), key=lambda x: _model_runs.latest_key(x[1])
-    )[-5:]
-    total, n, used = 0.0, 0, 0
-    for sd, _rec in latest:
-        got = [
-            float(r["tokens_out"])
-            for r in _outputs.rows(sd, errors="replace", meta=False) or ()
-            if isinstance(r.get("tokens_out"), (int, float)) and not r.get("failed")
-        ]
-        if got:
-            total, n, used = total + sum(got), n + len(got), used + 1
-    return {"mean": total / n, "items": n, "runs": used} if n else None
+def _deployment_key(deployment: dict[str, Any] | None) -> tuple[str, str] | None:
+    """(provider, model) of a deployment, as a run's fingerprint records it; None when it names no model."""
+    model = (deployment or {}).get("model")
+    return (str((deployment or {}).get("provider") or ""), str(model)) if model else None
+
+
+def _typical_out(system_id: str, deployment: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    """What earlier runs say a reply is: {mean tokens out per item, items, runs, from} over the latest five plain runs
+    that recorded output tokens (a failed item left out). The system's own runs when any did (`from`: "this system");
+    else those of other systems on the same provider and model as `deployment` ("other systems on m via p"); None when
+    none did."""
+    want = _deployment_key(deployment)
+
+    def over(runs: list) -> dict[str, Any] | None:
+        total, n, used = 0.0, 0, 0
+        for sd, _rec in sorted(runs, key=lambda x: _model_runs.latest_key(x[1]))[-5:]:
+            got = [
+                float(r["tokens_out"])
+                for r in _outputs.rows(sd, errors="replace", meta=False) or ()
+                if isinstance(r.get("tokens_out"), (int, float)) and not r.get("failed")
+            ]
+            if got:
+                total, n, used = total + sum(got), n + len(got), used + 1
+        return {"mean": total / n, "items": n, "runs": used} if n else None
+
+    if got := over(_model_runs.scored(system_id=system_id, label_is="")):
+        return {**got, "from": "this system"}
+    if want is None:
+        return None
+    sibling = [
+        (sd, rec)
+        for sd, rec in _model_runs.scored(label_is="")
+        if rec.get("system_id") != system_id
+        and _deployment_key((rec.get("fingerprint") or {}).get("deployment")) == want
+    ]
+    if got := over(sibling):
+        return {**got, "from": f"other systems on {want[1]}" + (f" via {want[0]}" if want[0] else "")}
+    return None
+
+
+def _current_deployment(cfg: dict[str, Any]) -> dict[str, Any]:
+    """The deployment a run of this system would record, from what a dry run can know (its params and model record;
+    an adapter's own identity hook is not run)."""
+    return deployment_of(
+        params=dict(cfg.get("params") or {}), cfg=cfg, data_dir=DATA, hook=None, libraries={}
+    )
 
 
 def _cap_shown(cap: float | None) -> str:
@@ -1025,8 +1055,8 @@ def _dry_run(
     The estimate counts what the system alone shows: one call per item (or the adapter's declared
     `CALLS_PER_ITEM`), the prompt in and max_tokens out, each call as large as the first. It is an upper bound on
     the replies' length (every reply max_tokens long), not on the calls: an adapter that calls the system several
-    times per item, or whose conversation grows, costs more. Where the system's earlier runs recorded their output
-    tokens, a typical estimate at their mean is shown beside it. What an arm-smoke of this system measured is shown
+    times per item, or whose conversation grows, costs more. Where the system's earlier runs (else other
+    systems' on the same provider and model) recorded their output tokens, a typical estimate at their mean is shown beside it. What an arm-smoke of this system measured is shown
     after, and is the number to set a cap from.
     """
     params = dict(cfg.get("params") or {})
@@ -1092,7 +1122,7 @@ def _dry_run(
 
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
     est = typical = None
-    earlier = _typical_out(cfg["system_id"])
+    earlier = _typical_out(cfg["system_id"], _current_deployment(cfg))
     if pin is None or pout is None:
         print("\n  No price in the system, so no estimate. Add usd_per_mtok_in / usd_per_mtok_out to the")
         print("  params of the system file (0 is a valid price for a local model) and the run will record")
@@ -1118,7 +1148,8 @@ def _dry_run(
             )
             print(
                 f"  TYPICAL     ~${typical:.4f}, at a mean of {earlier['mean']:.0f} tokens out per item, over the "
-                f"{earlier['items']} item(s) of {earlier['runs']} earlier run(s) of {cfg['system_id']} (same input)"
+                f"{earlier['items']} item(s) from {earlier['runs']} run{'s' if earlier['runs'] != 1 else ''} "
+                f"of {earlier['from']}"
             )
     measured = _smoke_cost(cfg)
     projected = None
@@ -1185,6 +1216,7 @@ def _dry_run(
             "typical_estimate_usd": typical,
             "typical_output_tokens_per_item": earlier["mean"] if typical is not None and earlier else None,
             "typical_from_runs": earlier["runs"] if typical is not None and earlier else None,
+            "typical_from": earlier["from"] if typical is not None and earlier else None,
             "scored_without_reference": bool(no_reference),
             "estimate_basis": f"{per_item} call(s) per item, prompt in and max_tokens out",
             "calls_per_item": per_item,
