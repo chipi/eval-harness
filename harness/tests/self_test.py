@@ -1568,6 +1568,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_installed_commands.py", "every evh command in a project that pins the package"),
         ("test_judge_score.py", "judging pass"),
         ("test_judge_replies.py", "an empty or cut-off judge reply: withheld for V12, said why, hinted"),
+        (
+            "test_judge_dry_run_refusal.py",
+            "judge-score --dry-run says the real run refuses a verdict of another judge definition",
+        ),
         ("test_code_hashes.py", "scoring-code hashes"),
         ("test_codeid.py", "code identity: documentation never moves a hash"),
         ("test_providers.py", "hosted providers: one layer for arms and judges, keys by role"),

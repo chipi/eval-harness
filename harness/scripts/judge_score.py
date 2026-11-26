@@ -782,6 +782,25 @@ def judge_fingerprint(j: dict[str, Any]) -> str:
     return _sha(_canon({"id": j["id"], "params": identity_params(j["params"])}))[:16]
 
 
+def stale_judge_message(path: Path, j: dict[str, Any]) -> str:
+    """What a pass says when a stored verdict is of another definition of judge `j`."""
+    return (
+        f"{path}: stored by a different judge definition than {j['id']!r} in the scorer now; "
+        "refusing to mix them"
+    )
+
+
+def stale_judge_records(manifest: dict[str, Any], sc: dict[str, Any], vdir: Path) -> list[tuple[Path, dict]]:
+    """The stored verdicts a real pass would refuse: (path, judge) for each of another judge definition."""
+    out = []
+    for item, pass_name, block in tasks(manifest):
+        for j in sc["judges"]:
+            path = verdict_path(vdir, j["id"], item["item_id"], pass_name, block)
+            if _store.is_file(path) and read_json(path).get("judge_fp") != judge_fingerprint(j):
+                out.append((path, j))
+    return out
+
+
 def call_cost(res: Any, params: dict[str, Any]) -> tuple[float | None, bool]:
     """(cost, known). A reply with no `cost_usd` is unknown, not free: it is counted at the
     scorer's price table from the token counts (known=False), and if there are none either
@@ -892,11 +911,7 @@ def run_judging(
                 if _store.is_file(path):
                     old = read_json(path)
                     if old.get("judge_fp") != judge_fingerprint(j):
-                        die(
-                            f"{path}: stored by a different judge definition than "
-                            f"{j['id']!r} in the scorer now; refusing to mix them",
-                            "not-allowed",
-                        )
+                        die(stale_judge_message(path, j), "not-allowed")
                     if old.get("set_id") != manifest["judging_set_id"]:
                         die(f"{path}: belongs to judging set {old.get('set_id')}", "mismatch")
                     if old.get(VERDICT_KEY[mode_of(manifest)]) is not None or not retry_unparsed:
@@ -1854,6 +1869,16 @@ def body(**inputs: Any) -> int:
         blocked = blocked or bool(found)
 
     if args.dry_run:
+        # A note of what the real run will do, as run's dry run gives: the estimate is still wanted, so exit 0.
+        stale = stale_judge_records(manifest, sc, vdir)
+        if stale:
+            ids = ", ".join(sorted({j["id"] for _, j in stale}))
+            print(
+                f"WARNING: the real run will refuse: {len(stale)} stored verdict(s) are of a different judge "
+                f"definition than {ids} in the scorer now ({stale_judge_message(*stale[0])}). Editing a judge's "
+                "params, prices included, changes its identity: save the correction as a new scorer version "
+                "(a new scorer_id), judged again. The estimate below counts those verdicts as stored."
+            )
         est = estimate(manifest, sc, base, articles, outputs, vdir)
         print(
             f"DRY RUN (nothing called; tokens are chars/{CHARS_PER_TOKEN} estimates, cost from "
