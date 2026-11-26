@@ -7,6 +7,67 @@ Its package name is **`evaluation-harness`**, its import `evaluation_harness`, i
 unrelated project, which a bare `pip install eval-harness` installs. A bare
 `pip install evaluation-harness` finds nothing and fails, which is the point.
 
+## Quick release smoke
+
+From the repository root:
+
+```bash
+make release-smoke                  # under a minute, offline, $0
+make release-smoke ARGS=--release   # also the rendered release's container and header checks (docker, network)
+```
+
+It prints one `ok` or `FAIL` line per check with the command it ran, and ends with `RELEASE SMOKE: PASS` or
+`RELEASE SMOKE: FAIL (n of m)` (exit 0 or 1). Run it **before the release pull request is merged** (once the version
+is bumped, with step 4b's upgrade check and step 5's scenario where they apply), and **again after the deploy**, beside
+what already watches a deploy: the `deploy-prod.yml` workflow's public probe (it fetches the site, the catalog, the
+docs and the Workbench at the deployed address and fails on a page that is not this release's), and, for what the
+live server reports, the `deploy-verify` and `o11y-prod` skills (`AGENTS.md`). After a deploy the smoke still
+answers only whether the build in the checkout works; it does not look at the live site.
+
+What it covers:
+
+- **One version everywhere.** `_version.py`, every bundled skill's `harness-version`, the top `CHANGELOG.md`
+  section, `UPGRADING.md`'s newest "From X to Y" heading and every install pin in the docs (`site/build.py`'s pin
+  check) name the same release.
+- **The built package.** The wheel `pyproject.toml` builds, installed in a fresh venv outside the checkout: `evh
+  --version` prints the version, the package comes from the venv and not the checkout, `evh --help` shows "Start
+  here", `evh docs` lists the three shipped docs and `evh docs runbook --print` prints the runbook.
+- **A newcomer's first loop, on both stores.** In a fresh project made with `evh init --tutorial`, on `files` and
+  then on `sqlite`: a dataset from the tutorial kit, `run --dry-run` and `run` of two echo-provider systems,
+  `leaderboard` and `validate`.
+- **The servers from the install.** `evh catalog-serve` answers the catalog home, `/api/v1/goals` and `/workbench/`;
+  `evh mcp --http` answers `/mcp/health` and `tools/list`; with `--no-agent-tools` every tool is read-only. Each
+  server is stopped by its PID, also when a check fails or the run is interrupted.
+- **With `--release`: the deployment.** `infra/deploy/render.sh` into a temp folder, then `smoke_release.py` (the
+  inspector's and the MCP server's containers answer as compose starts them) and `headers_check.py` (one header
+  across the site, catalog, Workbench and docs). Without docker it says "skipped: no docker".
+
+What it does not cover:
+
+- **Paid calls.** No hosted model, no judge, no key: the echo provider only. Whether a hosted arm or a judge works
+  with a real key is for the scenario (step 5) or a run of your own.
+- **The newcomer scenario.** [SCENARIO.md](SCENARIO.md) follows the published docs from an empty folder, with two
+  evals on real models and one CPU model; the smoke follows the GUIDE's offline commands only, and reads none of the
+  prose a newcomer reads.
+- **The upgrade over an install.** An existing project on the previous release, migrated: `make -C harness
+  upgrade-check` (step 4b).
+- **The store matrix.** Every test file on the sqlite store (`make stores-check`); the smoke runs one short loop on
+  each store.
+- **The browser suites.** `make browser-check` and `make browser-real-check`: no page is rendered in a browser (only
+  with `--release`, `headers_check.py` drives one, for the header).
+- **`make verify` and `make ci`.** No report, claim, committed run or the self-test is recomputed or re-checked; the
+  smoke does not replace them.
+- **The tutorials.** Tutorials 1 to 9 need models, keys or a browser; none is followed.
+- **The data in `harness/data`.** The smoke makes its own projects in a temp folder, and reads nothing of this
+  repository's runs.
+- **The live site.** Nothing is fetched over the network, so a deploy that did not take, a certificate or a proxy
+  rule is for the deploy's probe and `deploy-verify`.
+- **Dependencies from the index.** The wheel is installed without the network, its dependencies the checkout's venv's;
+  `--online-deps` installs them from the package index as a user's `pip install` does, and a pin that no longer
+  resolves is found only there.
+- **A hosted-image difference.** Without `--release` no container runs, so a module the box's Python lacks (the
+  0.8.1 incident, EVALS-INSPECTOR-3) is found only by the deploy's own `smoke_release.py` or `--release`.
+
 ## For a project that depends on it
 
 Pin a release tag:

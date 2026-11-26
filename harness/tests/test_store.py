@@ -671,6 +671,7 @@ ALLOWED = {
     "harness/scripts/sources/*.py": "a dataset source reads the file or folder a person names to it, outside data/",
     "harness/scripts/importers/*.py": "an importer reads the file a person names to it",
     "harness/tools/_wheel.py": "packaging: copies the harness's own files",
+    "harness/tools/release_smoke.py": "builds a throwaway install and projects in a temp folder, reads the version files and the server's token; never a project's data/",
     "harness/tools/store_matrix.py": "writes the test runs' logs under .build/, never data/",
     "harness/tools/facts_dump.py": "reads and writes the dump files a person names (--out, --diff); a project's data only through evh",
     "harness/tools/view_bench.py": "copies a project's data/ into a scratch directory outside any project, and reads its goals' folder",

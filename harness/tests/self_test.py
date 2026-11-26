@@ -1624,6 +1624,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_check_hf_source.py",
             "the /rows comparison: a 5xx or a dropped connection is retried, a 4xx is not, never a difference",
         ),
+        (
+            "test_release_smoke.py",
+            "the release smoke lists its checks, fails on a wrong version, and has its make target",
+        ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading"),
         ("check_report_claims.py", "report claims vs committed runs"),
