@@ -3,8 +3,8 @@
 is a span; static files, Docker's health check and the collector's scrape are not, and /metrics
 still counts every route.
 
+    make hooks-check         (vendors the SDKs, then runs this and test_hooks_env.py)
     PYTHONPATH=harness/.build/vendor python infra/inspector/test_hooks.py
-    make budget-check        (vendors the SDKs, then runs this)
 """
 
 from __future__ import annotations
@@ -12,6 +12,14 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+
+# The SDKs are this deployment's, not the harness's dependencies (infra/inspector/requirements.txt): they are not in
+# the venv. Run without them, this said ModuleNotFoundError and nothing of where they come from.
+if importlib.util.find_spec("opentelemetry.sdk") is None:
+    print(
+        "  FAIL the OpenTelemetry SDK is not importable: run `make hooks-check`, which vendors it into harness/.build/vendor"
+    )
+    sys.exit(1)
 
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor

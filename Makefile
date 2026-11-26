@@ -27,7 +27,7 @@ ARMS ?=
 SYSTEM ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check guard-check commands-check catalog-render-check stores-check \
+.PHONY: help setup verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check hooks-check guard-check commands-check catalog-render-check stores-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
@@ -116,9 +116,13 @@ budget-check: obs-vendor
 	$(MAKE) -C harness budget-check
 	printf 'SENTRY_DSN=http://k@127.0.0.1:9/1\nOTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:9/v1/traces\n' > harness/.build/obs-unreachable.env
 	cd harness && PYTHONPATH=.build/vendor EVALS_OBS_ENV=.build/obs-unreachable.env $(abspath $(PY)) tests/test_inspector_budget.py --catalog .build/budget-catalog --hooks ../infra/inspector/hooks.py
-	# This deployment's hooks with the same SDKs: which requests become traces.
+	$(MAKE) hooks-check
+
+# This deployment's hooks with their SDKs, vendored as render.sh vendors them (they are not in the venv): which
+# requests become traces; dev and prod observability for both servers (hooks_env.py), the labels, the refusals, Umami
+# prod only.
+hooks-check: obs-vendor
 	PYTHONPATH=harness/.build/vendor $(abspath $(PY)) infra/inspector/test_hooks.py
-	# Dev and prod observability for both servers (hooks_env.py): the labels, the refusals, Umami prod only.
 	PYTHONPATH=harness/.build/vendor $(abspath $(PY)) infra/inspector/test_hooks_env.py
 
 docs:
