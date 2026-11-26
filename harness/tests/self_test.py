@@ -1234,6 +1234,10 @@ def test_example_scorer_suites_pass() -> None:
             "every reader says the same of a fact on committed projects this checkout did not make (a fleet's, a podcast's, a bake-off's with no run, unicode ids, a format-0 project migrated), in UTC and in UTC+14 and UTC-11, and a zone changes no fact",
         ),
         (
+            "test_arm_list_baseline_retired.py",
+            "arm-list on the goal's baseline that a round retired says both facts: retired in rN, still the goal's baseline",
+        ),
+        (
             "test_read_ids.py",
             "a dataset id is held to its format where ids are made, and a read of one that exists is refused only for being a path (a project's unicode ids)",
         ),
