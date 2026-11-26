@@ -310,10 +310,10 @@ def v1_schemas() -> None:
                     if f.suffix == ".yaml"
                     else read_json(f)
                 )
-                exc = schema_error(validator, doc)
-                if exc:
+                err = schema_error(validator, doc)
+                if err:
                     bad += 1
-                    print(f"       {data_rel(f)}: {exc.message[:90]}")
+                    print(f"       {data_rel(f)}: {err.message[:90]}")
             except (ValueError, yaml.YAMLError) as exc:
                 bad += 1
                 print(f"       {data_rel(f)}: does not parse ({type(exc).__name__})")

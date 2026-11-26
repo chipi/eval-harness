@@ -198,7 +198,7 @@ try:
         f"decision: None.\nstatus: active\nsuccess_criteria:\n  primary:\n    measure: output_words\n"
         f"    direction: higher\ndatasets:\n  - {{dataset_id: {DS}, role: validation}}\n",
     )
-    for what, args, want in (
+    for what, args, shown in (
         ("dataset-show", ("dataset-show", DS, "--json"), DS),
         ("dataset-list", ("dataset-list", "--json"), DS),
         ("system-show", ("system-show", SYS), SYS),
@@ -207,7 +207,7 @@ try:
         r = evh(*args)
         check(
             f"{what} reads a record that has a non-ASCII id",
-            r.returncode == 0 and want in r.stdout and "Traceback" not in r.stderr,
+            r.returncode == 0 and shown in r.stdout and "Traceback" not in r.stderr,
             r.stdout[-300:] + r.stderr[-300:],
         )
     r = evh("system-set", SYS, "--set", "params.sentences=2")
