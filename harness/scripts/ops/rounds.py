@@ -166,6 +166,10 @@ def say_round(r: dict[str, Any]) -> str:
         )
     if x.get("scorer"):
         lines.append(f"  judged by: {x['scorer']}")
+    for u in x.get("unpriced_allowed") or []:
+        lines.append(
+            f"  budget excludes {u['system']} (model {u['model']}): started with --allow-unpriced, no price declared"
+        )
     for sc in x.get("scoring") or []:
         lines.append(
             f"  scoring {str(sc.get('at', ''))[:10]}: {sc.get('why', '')} "

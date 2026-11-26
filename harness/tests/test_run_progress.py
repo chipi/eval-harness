@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
 import _model_records  # noqa: E402
+import _runfix  # noqa: E402
 import _runstore  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
@@ -88,15 +89,14 @@ try:
     text = r.stderr
     check(
         "dry run: says what it counts, and that more calls per item or a growing conversation cost more",
-        "one per item" in text
-        and "NOT an upper bound" in text
-        and "a conversation that grows" in text
-        and "(upper bound: assumes" not in text,
+        "one per item" in text and "a conversation that grows" in text and "NOT an upper bound" not in text,
         text[-700:],
     )
     check(
-        "dry run: the estimate says it assumes every reply is max_tokens long, so real replies cost less (080d N3)",
-        "assumes every reply is max_tokens long" in text and "usually costs less" in text,
+        "dry run: the estimate is an upper bound and says so: at most, if every reply used max_tokens (080d N3)",
+        "ESTIMATE    at most ~$" in text
+        and "if every reply used max_tokens 100" in text
+        and "a model that answers in a sentence usually costs less" in text,
         text[-700:],
     )
     check(
@@ -117,6 +117,39 @@ try:
         and "evh arm-smoke --system one_v1 --dataset tickets_v1" in text
         and dry.get("measured_usd_per_item") is None,
         text[-700:],
+    )
+    # The dry run's notes: no reference set is what will happen to the scoring, after the dry-run header, and
+    # the advice fits the adapter and the runs there are (a dataset with no run has none to label from).
+    check(
+        "dry run: no reference set is a note after the dry-run header, in words of what will happen, not an error",
+        r.returncode == 0
+        and 0 <= text.find("DRY RUN") < text.find("no reference set for tickets_v1")
+        and "quality cannot be scored" not in text
+        and "output_words only" in text
+        and "is not refused" in text,
+        text[:900],
+    )
+    check(
+        "dry run: with no run to label from, the advice offers a person's labels (label-sheet), not label-from-run",
+        "evh label-sheet --dataset-id tickets_v1" in text and "label-from-run" not in text,
+        text[:900],
+    )
+    r_custom = evh("run", *system("custom", adapter="calls_adapter.py", **priced), "--dry-run")
+    check(
+        "dry run: an adapter of the project's own is told its score(output, None) is what runs without a reference, "
+        "and that the labels only add scoring against answers",
+        r_custom.returncode == 0
+        and "score(output, None)" in r_custom.stdout
+        and "own checks" in r_custom.stdout
+        and "output_words only" not in r_custom.stdout
+        and "quality cannot be scored" not in r_custom.stdout
+        and r_custom.stdout.find("DRY RUN") < r_custom.stdout.find("no reference set"),
+        r_custom.stdout[:900],
+    )
+    check(
+        "dry run --json: says whether the run scores without a reference",
+        dry.get("scored_without_reference") is True and dry.get("typical_estimate_usd") is None,
+        dry,
     )
     # A cap of 0 is a cap ("spend nothing", _spend.reached); the dry run printed it as NONE and asked for one.
     r = _cli.run(
@@ -304,6 +337,92 @@ try:
         and "never written into another" in (r.stdout + r.stderr)
         and _runstore.listdir(proj, f"runs/{marked[0]}") == ["MARKER"],
         (r.stdout + r.stderr)[-300:],
+    )
+
+    dry_priced = {"provider": "echo", "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0, "max_tokens": 100}
+    # A dataset with a run has one to label from; the note then offers label-from-run too, and a real run prints the
+    # same note where it always did (not as a failure).
+    r = evh("run", *system("one", **dry_priced), "--dry-run")
+    check(
+        "dry run: once the dataset has a run, the advice offers label-from-run as well",
+        "evh label-from-run --run" in r.stdout and "evh label-sheet" in r.stdout,
+        r.stdout[:900],
+    )
+    r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1")
+    check(
+        "run: no reference set is a note of what happens (scored without one), not 'cannot be scored'",
+        r.returncode == 0
+        and "no reference set for tickets_v1" in r.stdout
+        and "quality cannot be scored" not in r.stdout,
+        r.stdout[:700],
+    )
+
+    # The estimate says what it is: at most, if every reply used max_tokens; a typical one is shown where earlier runs
+    # of the system recorded their output tokens, from their mean, and the recorded numbers are not touched.
+    r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1", "--dry-run")
+    check(
+        "dry run: the estimate line says 'at most' and 'if every reply used max_tokens 100', and that calls it does "
+        "not count cost more",
+        "ESTIMATE    at most ~$" in r.stdout
+        and "if every reply used max_tokens 100" in r.stdout
+        and "a conversation that grows" in r.stdout,
+        r.stdout[:1200],
+    )
+    system("typ", **dry_priced)
+    for n, out_tok in ((1, 10), (2, 30)):
+        _runfix.put_run(
+            proj / "data",
+            {"run_id": f"typ_v1_{n}", "system_id": "typ_v1", "dataset_id": "tickets_v1", "scores": {"words": 1.0},
+             "primary_metric": "words", "created_at": f"2026-11-2{n}T10:00:00Z"},
+            [{"item_id": f"i{k}", "words": 1.0, "tokens_in": 50.0, "tokens_out": float(out_tok)} for k in range(4)],
+        )  # fmt: skip
+    r = evh("run", "--system", "typ_v1", "--dataset", "tickets_v1", "--dry-run", "--json")
+    typ = json.loads(r.stdout)["result"]["values"]["dry_run"] if r.returncode == 0 else {}
+    # 20 output tokens a call on average over the 8 rows of the 2 runs; 6 items
+    want = typ.get("input_tokens_per_pass", 0) / 1e6 * 1.0 + 20 * 6 / 1e6 * 2.0
+    check(
+        "dry run: where earlier runs of the system recorded output tokens, a typical estimate from their mean, beside "
+        "the at-most one (which is unchanged)",
+        abs(typ.get("typical_estimate_usd", 0) - want) < 1e-12
+        and typ.get("typical_output_tokens_per_item") == 20
+        and typ.get("typical_from_runs") == 2
+        and typ.get("estimate_usd", 0) > typ.get("typical_estimate_usd", 1)
+        and "TYPICAL" in r.stderr
+        and "mean of 20 tokens out" in r.stderr,
+        (typ, r.stderr[:1200]),
+    )
+    check(
+        "dry run: the at-most estimate is what it was (input at the usual rate, max_tokens out)",
+        abs(
+            typ.get("estimate_usd", 0)
+            - (typ.get("input_tokens_per_pass", 0) / 1e6 * 1.0 + 100 * 6 / 1e6 * 2.0)
+        )
+        < 1e-12,
+        typ,
+    )
+
+    # No model record: said once for a model, where a sweep dry-runs several systems of it.
+    system("sw1", model="m1", **dry_priced)
+    system("sw2", model="m1", **dry_priced)
+    r = evh("sweep", "--systems", "sw1_v1", "sw2_v1", "--dataset", "tickets_v1", "--dry-run")
+    out = r.stdout
+    check(
+        "sweep --dry-run: the 'no model record' explanation is given once for a model, each system still named",
+        r.returncode == 0
+        and out.count("a smoke is kept on a model's record") == 1
+        and "MEASURED    none for sw1_v1" in out
+        and "MEASURED    none for sw2_v1" in out
+        and "as for sw1_v1 above" in out,
+        out[-1800:],
+    )
+    r = evh("run", "--system", "sw1_v1", "--dataset", "tickets_v1", "--dry-run")
+    check(
+        "dry run: a single system's 'no model record' says what it means and what to do",
+        "it names no model record" in r.stdout
+        and "not kept" in r.stdout
+        and "model_record:" in r.stdout
+        and "evh arm-smoke --system sw1_v1 --dataset tickets_v1" in r.stdout,
+        r.stdout[-900:],
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

@@ -437,6 +437,12 @@ def _evidence(goal: str, rnd: dict, A: Any, data: Path | None, g: dict, metric: 
             if left is not None and abs(rnd["budget_usd"] - spent - left) > 1e-9:
                 line += f"; ${max(left, 0):.4f} left, counting what running or stopped commands hold"
         out["notes"].append(line + (" — over budget" if spent > rnd["budget_usd"] else ""))
+        if rnd.get("unpriced_allowed"):
+            out["notes"].append(
+                "the budget leaves out "
+                + ", ".join(f"{e['system']} (model {e['model']})" for e in rnd["unpriced_allowed"])
+                + ": started with --allow-unpriced, no price declared, so what it costs is not counted against it"
+            )
     leader = _best(A, arms, metric, lower, {**g, "goal_id": goal})
     out["leader"] = leader
     if not leader:

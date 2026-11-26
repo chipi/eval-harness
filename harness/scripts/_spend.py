@@ -273,6 +273,34 @@ def _goal_lock(goal: str):
         yield
 
 
+def refuse_unpriced(rnd: dict[str, Any], system_id: str, params: dict[str, Any], allow: bool = False) -> None:
+    """Before an arm of a round with budget_usd starts: refused (`not-configured`) when its system declares no price
+    (usd_per_mtok_in and usd_per_mtok_out; an explicit 0 is a price), because what it spends could not be counted
+    against the budget. With `allow` (--allow-unpriced) it goes through and the round records that, so the budget
+    reads as leaving the arm out."""
+    if rnd.get("budget_usd") is None:
+        return
+    if params.get("usd_per_mtok_in") is not None and params.get("usd_per_mtok_out") is not None:
+        return
+    model = params.get("model") or "no model named"
+    if not allow:
+        _common.die(
+            f"round {rnd['round_id']} of {rnd['goal']} has a budget (${float(rnd['budget_usd']):.2f}), and arm "
+            f"{system_id} (model {model}) declares no price, so what it costs cannot be counted against it: nothing "
+            "is called. Put usd_per_mtok_in and usd_per_mtok_out in the system's params (0 is a price, for a model "
+            "that costs nothing per token), or start it with --allow-unpriced: the budget then leaves it out, and "
+            "the round records that",
+            "not-configured",
+        )
+    from evaluation_harness import _actor, _rounds  # noqa: PLC0415
+
+    _rounds.allow_unpriced(rnd["goal"], rnd["round_id"], system_id, str(model), _actor.actor())
+    print(
+        f"  round {rnd['round_id']}: {system_id} has no price, started with --allow-unpriced: "
+        "its cost is not counted against the budget"
+    )
+
+
 def reserve(rnd: dict[str, Any], command: str, run_ids: list[str] | None = None) -> float | None:
     """Before a spending command's first call on a round with budget_usd: what it may spend (the least of its own cap
     and what the round has left), reserved in the ledger. Refused (`over-budget`) when nothing is left. None when the

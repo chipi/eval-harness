@@ -256,6 +256,7 @@ def _smoke(args: argparse.Namespace) -> int:
     # A smoke of a round's arm spends on the round (RFC-026 step 5): its budget's share reserved before the first call.
     rnd = _rounds.find(cfg["goal"], cfg["round"]) if cfg.get("round") and cfg.get("goal") else None
     if rnd is not None and rnd.get("status") != "closed":
+        _spend.refuse_unpriced(rnd, cfg["system_id"], dict(cfg.get("params") or {}), args.allow_unpriced)
         _spend.reserve(rnd, "arm-smoke")
     mat = MATERIALIZED / ds["dataset_id"]
     # The prompts the system declares (RFC-028), given to the adapter as a run gives them: a smoke of a system that
