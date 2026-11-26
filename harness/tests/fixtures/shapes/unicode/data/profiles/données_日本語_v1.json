@@ -1,0 +1,63 @@
+{
+  "dataset_id": "donn\u00e9es_\u65e5\u672c\u8a9e_v1",
+  "harness": "0.8.2",
+  "items": {
+    "kind": "text",
+    "n": 3,
+    "words": {
+      "histogram": [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          4,
+          4,
+          0
+        ],
+        [
+          5,
+          5,
+          1
+        ]
+      ],
+      "max": 5,
+      "median": 3,
+      "min": 1,
+      "p25": 3,
+      "p75": 5
+    }
+  },
+  "items_sha256": "e9aec6e4938071ae77685e144dc8afeae19877a9aa4737333e1f0174ff797425",
+  "made_at": "2026-11-20T10:00:00Z",
+  "references": [],
+  "rows": [
+    {
+      "item_id": "\u00e9l\u00e9ment_1",
+      "reference": {},
+      "words": 3
+    },
+    {
+      "item_id": "\u9805\u76ee_2",
+      "reference": {},
+      "words": 5
+    },
+    {
+      "item_id": "\u043f\u0443\u043d\u043a\u0442_3",
+      "reference": {},
+      "words": 1
+    }
+  ],
+  "source": null
+}

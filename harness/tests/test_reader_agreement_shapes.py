@@ -72,7 +72,7 @@ class Fixture(RA.Project):
         if shape not in (
             "unicode",
             "old",
-        ):  # no id a command takes, no items to profile: every reader refuses their items alike
+        ):  # unicode: its profile is committed (a command refuses to write one for these ids)
             for ds in sorted(self.datasets()):
                 self.evh_must("dataset-profile", "--dataset-id", ds)
         RA.SPENT[self.name] = {"build": time.time() - t}
@@ -213,6 +213,18 @@ def hand_checks(shape: str, name: str, facts: dict) -> None:
             f"hand: {name}: both unicode systems have an arm",
             sum("données_日本語_v1" in a for a in runs) == 2,
             sorted(runs),
+        )
+        public = {
+            fk[1][0]: v
+            for r, d in facts.items()
+            if r == "cli:dataset-items"
+            for fk, v in d.items()
+            if fk[0] == "public"
+        }
+        check(
+            f"hand: {name}: the unicode dataset's `public` is read, its id spelt as it is",
+            public == {"données_日本語_v1": True},
+            public,
         )
     if shape != "podcast":
         check(f"hand: {name}: every arm states its runs", bool(runs) and all(runs.values()), sorted(runs)[:3])
