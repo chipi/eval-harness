@@ -22,7 +22,8 @@
   const q = (key) => `<button type="button" class="q" data-help="${esc(key)}" aria-label="What is ${esc(H[key]?.title || key)}?" aria-expanded="false">?</button>`;
   const field = (key, control, name) => `<div class="field"><div class="name">${esc(name || H[key].title)} ${q(key)}</div><div>${control}</div>${H[key].hint ? `<div class="hint">${esc(H[key].hint)}</div>` : ""}</div>`;
   const cmd = (text, label = "the command this runs") => `<details class="cmd"><summary>${esc(label)}</summary><pre>${esc(text)}</pre></details>`;
-  const note = (text) => `<p class="mocknote">mockup: ${esc(text)}</p>`;
+  // what the frozen mockup only pretends is said by mockup/notes.js (WB.mockNote); the live Workbench says none
+  const note = (key, ...a) => (window.WB.mockNote ? window.WB.mockNote(key, ...a) : "");
 
   // ── the help panel ───────────────────────────────────────────────────────
   // It opens with focus on its close button (it sits after the screen) and gives focus back to what opened it.
@@ -150,7 +151,7 @@
       <div class="actions"><a class="btn primary" href="#goal-new">Set your first goal</a>
         <a class="btn" href="#catalog">See what other projects measured ↗</a></div>
       <p class="note" style="margin-top:36px">Agents do all of this through <code>evh</code> and the MCP server; this is the same work for people, a step at a time.</p>
-      ${note(`this project really has ${M.goals.length} goals; the mockup starts empty to show the first visit.`)}
+      ${note("first-visit", M.goals.length)}
     </div>`;
   }
 
@@ -184,7 +185,7 @@ success_criteria:
                 <div class="field"><div class="name">Margin</div><div class="inline"><input type="text" name="margin" value="${esc(d.margin ?? "")}" placeholder="default: 5% of the best (balanced), 10% (frugal)" style="width:300px"><span class="muted" style="font-size:13px">how much worse than the best an arm may be and still win, in the measure's units</span></div></div>
                 <div class="field"><div class="name">Then pick by</div><div class="inline"><select name="tie1" aria-label="first tie-break"><option>cost</option><option>speed</option><option>quality</option></select><select name="tie2" aria-label="second tie-break"><option>speed</option><option>cost</option><option>quality</option></select><span class="muted" style="font-size:13px">among the arms that may win</span></div></div>
                 <div class="field"><div class="name">Also show</div><div class="inline">${Object.entries(M.axes).map(([k, v]) => `<span class="tag">${esc(k)} · ${esc(v.direction)}</span>`).join(" ")}<button class="btn" type="button" disabled>+ a measure</button><span class="muted" style="font-size:13px">shown beside the deciding measure, never deciding</span></div></div>
-              </div>${note("the CNN goal's own extra measure is rouge1; margin and tie-break defaults are the goal schema's.")}</details>`)}
+              </div>${note("goal-extra")}</details>`)}
       </form>
       <div class="actions">
         <button class="btn primary" id="goalsave" type="button">${editing ? "Save the goal" : "Save the goal and continue"}</button>
@@ -289,7 +290,7 @@ success_criteria:
     main.querySelectorAll(".card").forEach((c) => c.addEventListener("click", () => {
       location.hash = c.dataset.source === "huggingface" ? "#dataset-hf" : `#dataset-src-${c.dataset.source}`; return;
       main.querySelectorAll(".card").forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
-      $("#srcnote").innerHTML = note("round 1 mocks the Hugging Face path only; the others take the same four parts (where from, what's in it, its fields, name it).");
+      $("#srcnote").innerHTML = note("source-paths");
     }));
   }
 
@@ -322,7 +323,7 @@ success_criteria:
         <div class="field"><div class="name">The item's id</div><div><select aria-label="the id column"><option selected>id</option><option value="">the row number</option></select></div></div>
         <div class="field"><div class="name">How many</div><div class="inline"><input type="text" id="hflimit" value="${esc(h.limit ?? 200)}" style="width:90px" inputmode="numeric"> <span class="muted" style="font-size:13px">the first rows, in order (the committed runs measured the first 200, all CNN)</span></div></div>
         ${cols ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="hfcols" type="button">Next</button></div>`}
-        ${note("the huggingface source takes the item's column and its id today; taking the answer column too is new (UXS-005).")}`,
+        ${note("hf-answer-column")}`,
         cols ? `article · answer highlights · ${h.limit ?? 200}` : "")}
       ${part("c", "dataset.fields", "Its fields", cols, `
         <p style="margin:0">No fields proposed: this dataset's other columns are the answer and the id, neither a fact to slice the results by.</p>
@@ -362,7 +363,7 @@ success_criteria:
     S.jobs = S.jobs || [];
     const rec = { name, total, unit, n: 0, status: "running", started: new Date().toTimeString().slice(0, 8) };
     S.jobs.push(rec); save();
-    el.innerHTML = `<div class="job"><span>${esc(name)}</span><span class="status num" data-n aria-hidden="true">0 / ${total} ${esc(unit)}</span><div class="bar-track"><div class="bar-fill"></div></div></div><span class="vh" data-say>${esc(name)} started: ${total} ${esc(unit)}</span>${note("a pretend job; the real one runs on the server and survives closing the page.")}`;
+    el.innerHTML = `<div class="job"><span>${esc(name)}</span><span class="status num" data-n aria-hidden="true">0 / ${total} ${esc(unit)}</span><div class="bar-track"><div class="bar-fill"></div></div></div><span class="vh" data-say>${esc(name)} started: ${total} ${esc(unit)}</span>${note("pretend-job")}`;
     let k = 0;
     const t = setInterval(() => {
       k = Math.min(total, k + Math.ceil(total / 24));
@@ -401,7 +402,7 @@ success_criteria:
         <div class="pane"><div class="kicker">its highlights</div>${esc(it.highlights)}</div></div>
       ${S.looked ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="looked" type="button">I've looked</button></div>`}
       ${cmd(`evh dataset-profile --dataset-id ${id}\nevh dataset-items ${id}`)}`
-      : note("round 1 reads only cnn_dailymail_200's profile and items; choose it in step 2 to see this part.");
+      : note("profile-only-cnn");
     const ways = [
       ["promote", "It came with answers", "promote the highlights as they are", "gold"],
       ["label", "Label them here", "you or a colleague write each answer, an item at a time", ""],
@@ -477,10 +478,10 @@ success_criteria:
     const settings = `<div class="field"><div class="name">The prompt</div><div><textarea rows="2" id="prompt">${esc(S.prompt ?? M.prompt)}</textarea><div class="hint" style="grid-column:auto">the same for every arm; the r1 arms used this one (${esc(a0.prompt_file)}). Saved, it is a prompt version named by its content${(M.round5.prompts || [])[0] ? ` (this one: <span class="mono">${esc(M.round5.prompts[0].latest)}</span>)` : ""}, and each arm records the version it ran: a changed prompt is a new version, never an edit.</div></div></div>
       <div class="field"><div class="name">Temperature</div><div class="inline"><input type="text" value="${a0.temperature}" style="width:80px"><span class="muted" style="font-size:13px">0: the same reply each time, so a rerun measures the same thing</span></div></div>
       <div class="field"><div class="name">Most it may write</div><div class="inline"><input type="text" value="${a0.max_tokens}" style="width:80px"><span class="muted" style="font-size:13px">tokens; a reply cut off here is flagged</span></div></div>
-      ${note("ML models (BART) take no prompt; their arms carry their own settings.")}`;
+      ${note("ml-no-prompt")}`;
     const smoke = checked.length ? checked.map((id) => {
       const m = M.models.find((x) => x.id === id), a = armOf(m);
-      if (!a) return `<div class="part"><div class="parthead"><h3 class="mono">${esc(id)}</h3><span class="grow"></span><span class="status">no replies to show</span></div>${note("this model has no CNN run, so the mockup has no real replies for it.")}</div>`;
+      if (!a) return `<div class="part"><div class="parthead"><h3 class="mono">${esc(id)}</h3><span class="grow"></span><span class="status">no replies to show</span></div>${note("no-cnn-run")}</div>`;
       // Only the replies that recorded a cost are summed; an unknown one is not $0 (RFC-041 F3).
       const known = a.replies.filter((r) => r.cost_usd != null), unknown = a.replies.length - known.length;
       const spent = known.length ? known.reduce((s, r) => s + r.cost_usd, 0) : null;
@@ -488,7 +489,7 @@ success_criteria:
           <span class="status ok">3 replies · spent ${usd(spent)}${unknown ? ` (${unknown} repl${unknown === 1 ? "y" : "ies"} recorded no cost)` : ""} · all 200 ≈ ${usd(a.usd_per_item * 200)}</span></summary>
         <div class="body">${a.replies.map((r, i) => `<div class="reader"><div class="pane"><div class="kicker">item ${i + 1} · its reply · ${secs(r.latency_ms)}</div>${esc(r.text)}</div>
           <div class="pane"><div class="kicker">the reference · ${w("coverage")} ${r.coverage == null ? "—" : r.coverage.toFixed(2)}</div>${esc(M.items[i].highlights)}</div></div>`).join("")}</div></details>`;
-    }).join("") + note("the replies, their cost and timing are the r1 run's real first three items.")
+    }).join("") + note("r1-replies")
       : `<div class="actions" style="margin-top:0"><button class="btn primary" id="smoke" type="button" ${chosen.size ? "" : "disabled"}>Check ${chosen.size || ""} arm${chosen.size === 1 ? "" : "s"} on 3 items</button><span class="muted" style="font-size:13px">a few cents; nothing is compared yet</span></div><div id="smokejob"></div>`;
     const cfg = [...chosen].map((id) => armOf(M.models.find((x) => x.id === id))).filter(Boolean)[0];
     return `<div class="screen wide">
@@ -611,7 +612,7 @@ success_criteria:
       ${baselineLine()}
       <div class="tabs"><div role="tablist" aria-label="rounds" class="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="roundpanel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${esc(label)}</button>`).join("")}</div>
         ${r4 ? "" : `<button type="button" class="btn primary" id="openr4">Open round r4</button>`}</div>
-      ${note(tab === "r5" ? "r1 to r3 are this project's real rounds; r4 and r5 are the ones this walk-through opens." : "r1 to r3 are this project's real rounds; r4 is the one this walk-through opens.")}
+      ${note("rounds-real", tab)}
       <div role="tabpanel" id="roundpanel" aria-labelledby="tab-${tab}">${body}</div>
     </div>`;
   }
@@ -681,7 +682,7 @@ success_criteria:
               <td>${a === leader ? '<span class="muted">the leader</span>' : rt ? '<span class="muted">retired: not tested</span>' : rr ? (() => { const [vv, kk] = verdictOf(a); return `<span class="verdict v-${kk}">${vv}</span><br><small class="muted p">Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)} · raw p ${esc(rr.p)} · threshold ${thrTxt(H4[a.config_id])}</small>`; })() : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td>${paid ? `<td class="num">${perM(a.usd_per_item)}</td>` : ""}
               <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td></tr>`; }).join("")}
           ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td>${paid ? '<td class="num">—</td>' : ""}<td class="num">—</td></tr>`).join("")}</tbody></table></div>
-          ${note("the rows are the project's Linux re-runs of 2026-09-30, standing in for r4's runs (a run counts in a round only when its config names it); bart_l's is the re-run the pair tests compared against, where evh round-list would read its r1 run. A clone has no run, so no scores.")}
+          ${note("r4-rows")}
           ${r4.closed ? `<div class="note"><b>Closed.</b> Its conclusion is part of the answer at the top.</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${words(r4.draft) >= 3 ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">the baseline stays bart_l<span id="closehint">${words(r4.draft) >= 3 ? "" : " · write a sentence: what did the round show?"}</span></span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a>${S.r5 ? "" : `<button class="btn" type="button" id="openr5">Open the next round</button>`}<a class="btn" href="#judge">Score with a judge too</a>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
@@ -693,7 +694,7 @@ success_criteria:
     return `<div class="roundhead"><h2 class="kicker">round r5 · open · from r4</h2></div>
       <p class="muted" style="margin:8px 0 0;max-width:72ch">It starts from r4's conclusion: ${esc(S.r4.conclusion || "")}</p>
       <div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r5q" value="${esc(r5.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}">`)}</div>
-      ${note("this project has no runs past r4's re-runs, so this walk-through stops at r5's question; its arms, run and results would follow as in r4.")}
+      ${note("r5-stops")}
       ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r4 \\\n  --keep ${M.arms[0].config_id} --hypothesis "${r5.question || "<the question>"}"`)}`;
   }
   function wireEval() {
@@ -777,7 +778,7 @@ success_criteria:
       <p class="lead">The words the screens use. On a screen the first one of each is underlined: point at it for its meaning, click it for the longer explanation where there is one.</p>
       <dl class="gloss">${Object.entries(G).map(([k, v]) => `<dt id="w-${slug(k)}">${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`;
   }
-  const outside = (what) => `<div class="screen"><h1>${what}</h1>${note("a link out of the Workbench; not part of the mockup.")}<div class="actions"><a class="btn" href="#hub">Back</a></div></div>`;
+  const outside = (what) => `<div class="screen"><h1>${what}</h1>${note("link-out")}<div class="actions"><a class="btn" href="#hub">Back</a></div></div>`;
 
   // ── routing ──────────────────────────────────────────────────────────────
   const ROUTES = {
@@ -890,7 +891,7 @@ success_criteria:
     const k = d.querySelector("summary").textContent, o = new Set(S.openCmds || []); if (d.open) o.add(k); else o.delete(k); S.openCmds = [...o]; save(); }, true);
   // the rail's one line on a phone opens the steps
   rail.addEventListener("click", (e) => { const b = e.target.closest(".railtoggle"); if (!b) return; const on = rail.classList.toggle("open"); b.setAttribute("aria-expanded", String(on)); });
-  window.WB = { get S() { return S; }, M, H, G, esc, $, w, q, field, cmd, note, save, render, progress, usd, perM, secs, armOf, routes: ROUTES, nextStep };
+  window.WB = { get S() { return S; }, M, H, G, esc, $, w, q, field, cmd, save, render, progress, usd, perM, secs, armOf, routes: ROUTES, nextStep };
   // on a phone a table of four or more columns stacks (workbench.css): each row a card, each cell named by its column;
   // a comparison, or a table to pick rows from (its first column a checkbox), stacks compact: its row's name as the
   // card's title, the other cells on a line or two
@@ -924,7 +925,6 @@ success_criteria:
   // the screens are routes in the hash: the skip link focuses the screen without changing it
   document.querySelector("a.skip")?.addEventListener("click", (e) => { e.preventDefault(); main.focus(); });
   $("#hints").addEventListener("change", (e) => { S.hints = e.target.checked; save(); render(); });
-  $("#mocknotes")?.addEventListener("change", (e) => document.body.classList.toggle("mocknotes-off", !e.target.checked));
   $("#reset")?.addEventListener("click", () => { S = fresh(); save(); help.hidden = true; location.hash = "#start"; render(); });
   $("#theme").addEventListener("click", () => {
     const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;

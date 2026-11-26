@@ -411,6 +411,40 @@ def check_verdicts_and_reading(browser, base: str) -> None:
     page.close()
 
 
+def check_notes(browser, base: str) -> None:
+    """The mockup's own notes (what it only pretends) are the mockup's files', not the shipped workbench.js's."""
+    shipped = (WORKBENCH / "workbench.js").read_text(encoding="utf-8")
+    check(
+        "workbench.js, the shipped file, carries no mockup note: no 'mockup:' text, no note class",
+        "mockup:" not in shipped and "mocknote" not in shipped,
+        [w for w in ("mockup:", "mocknote") if w in shipped],
+    )
+    page, errors = seeded(browser, base, STATE, viewport={"width": 1280, "height": 900})
+    seen = {}
+    texts = "(e) => e.map((x) => x.textContent)"
+    for route in ("goal-new", "eval"):
+        page.goto(f"{base}#{route}")
+        page.wait_for_timeout(250)
+        seen[route] = page.locator("main .mocknote").evaluate_all(texts)
+    page.locator("#openr4").click()
+    page.wait_for_timeout(250)
+    seen["r4"] = page.locator("main .mocknote").evaluate_all(texts)
+    check(
+        "the mockup still shows its notes, each marked 'mockup:' (the goal form's, the rounds')",
+        all(t and all(x.startswith("mockup: ") for x in t) for t in seen.values())
+        and "the CNN goal's own extra measure" in seen["goal-new"][0]
+        and "r1 to r3 are this project's real rounds" in seen["eval"][0]
+        and not errors,
+        (seen, errors[:2]),
+    )
+    page.uncheck("#mocknotes")
+    check(
+        "the mockup notes toggle hides every note",
+        page.evaluate("[...document.querySelectorAll('.mocknote')].every((n) => n.offsetParent === null)"),
+    )
+    page.close()
+
+
 def main() -> int:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
@@ -420,6 +454,7 @@ def main() -> int:
             browser = _slow.launch(p)
             check_screens(browser, base)
             check_skip_link(browser, base)
+            check_notes(browser, base)
             check_round(browser, base)
             check_verdicts_and_reading(browser, base)
             browser.close()

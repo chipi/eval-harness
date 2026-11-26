@@ -421,11 +421,14 @@ check the numbers are the screen's.
 Then do one round from the Workbench. Commit what each screen writes before the paid run: the clone, the round file and
 the carried arm are files (`git add -A && git commit`), and a run made over uncommitted files is recorded dirty. In
 "Choose the systems", clone `briefs_mistral_small_v1` with one thing
-changed (its temperature). In the eval, "Open the next round" on `briefs_v1` offers the arms still in play in the last
-round that have runs on the dataset the round is opened on, each ticked; the others are listed as not offered (no run
-there). The last round is the study's (step 11), so the offer follows its arms. Open it with the arms offered
-(carried arms are not run again), then bring in `briefs_lead1_v1` with the open round's "Carry it in" (a system
-already measured on `briefs_v1`). Run the clone in the round as a sweep under a $0.05 cap ("Run arms in it": "See the
+changed (its temperature): "Make a system from a model" lists only models that have a model record, and this project has
+none, so "Clone it, change one thing" is the way (the screen says so). In the eval, "Open the next round" offers the arms
+still in play in the last round that have runs on the dataset it is opened on, each ticked; the others are listed as not
+offered, with where they did run. The last round is the study's (step 11), and a study runs on the validation side, so
+on `briefs_v1` none is offered ("not offered: no run on briefs_v1", naming `briefs_v1_validation`: a run is never carried
+to another dataset); choose `briefs_v1_validation` in "On" to carry the study's arms, or open the round on `briefs_v1`
+with none and bring in `briefs_lead1_v1` with the open round's "Carry it in" (a system already measured on `briefs_v1`;
+carried arms are not run again). Run the clone in the round as a sweep under a $0.05 cap ("Run arms in it": "See the
 cost first", then "Run them"), retire one arm with why, and close the round ("Close the round"). Check that
 `evh round-evidence brief_summary <the round>` and `evh jobs-status` show what the screens did, with your name as the
 actor.

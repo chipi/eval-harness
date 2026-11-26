@@ -126,6 +126,14 @@ check(
     and not any("j1 and j2: τ per item" in t for t in titles),
     titles,
 )
+check(
+    "agreement: the table's columns are the caption's words (reordered τ, re-asked τ, each other τ), not the code's",
+    ag["columns"][1:3] == ["reordered τ", "re-asked τ"]
+    and "each other τ" in ag["columns"]
+    and all(w in ag["caption"] for w in ("reordered τ", "re-asked τ", "each other τ"))
+    and not any("_tau" in c for c in ag["columns"]),
+    ag["columns"],
+)
 import shutil  # noqa: E402
 
 shutil.rmtree(tmp, ignore_errors=True)

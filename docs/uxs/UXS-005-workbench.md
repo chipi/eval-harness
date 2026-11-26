@@ -327,13 +327,14 @@ decision kept with its reason. This is where people spend most of their time (W1
   into the project and to commit them before a paid run (a run on uncommitted files is recorded dirty). It shows
   whenever there is an arm to run, whatever the state of the tree.
 - **Close the round:** the conclusion, and a checkbox to promote the leader's run to the goal's baseline with the conclusion
-  as its reason; the browser asks to confirm. This checkbox is the only way to make a baseline on this screen. A conclusion
+  as its reason; the browser asks to confirm, and if the person dismisses it the page says beside the button that the round was not closed. This checkbox is the only way to make a baseline on this screen. A conclusion
   shorter than three words is refused by `round-close`, a reason by `round-retire`.
 - **Open the next round** (on the last round's tab, and only when no round is open; the first round on a goal with none):
   the round's question (stored as `hypothesis`), the dataset, **Carry in from rN** with each arm in play of the last
   round that has plain runs on the chosen dataset ticked (all ticked) and the hint "carried arms are not run again; on another dataset each is read through its
   runs there", what it may spend (USD) and who you are. The list follows the "On" dataset: an arm of the last round with no plain run on it is not
-  offered, and the screen says "not offered: no run on <dataset>" beside its name. A round a study opened (`study:` on the round, RFC-029)
+  offered, and the screen says "not offered: no run on <dataset>" beside its name, and where the last round ran it when that is another
+  dataset (a study runs on the validation side of its dataset, and a run is never carried to another dataset: `round-open --keep` refuses it). A round a study opened (`study:` on the round, RFC-029)
   says "opened by study <id>" on its tab.
 - The screen ends with the commands `evh round-list <goal>` and `evh round-evidence <goal> rN`, and a link to **A judge for this goal**.
 
