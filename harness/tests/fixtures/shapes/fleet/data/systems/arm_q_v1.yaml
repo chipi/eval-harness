@@ -1,0 +1,4 @@
+system_id: arm_q_v1
+params:
+  provider: echo
+  sentences: 1

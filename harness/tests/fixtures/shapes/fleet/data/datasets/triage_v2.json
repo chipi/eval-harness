@@ -1,0 +1,29 @@
+{
+  "actor": {
+    "from": "environment",
+    "name": "fixture",
+    "type": "person"
+  },
+  "created_at": "2026-11-19T10:00:00Z",
+  "dataset_id": "triage_v2",
+  "description": "3 item(s) from triage_v2/",
+  "items": [
+    {
+      "item_id": "q1",
+      "source_path": "q1.txt",
+      "source_sha256": "1584675172fb09fa9ba95e6a1588bfa4f7166435c48847a7a77d0c4fbbfbc9fa"
+    },
+    {
+      "item_id": "q2",
+      "source_path": "q2.txt",
+      "source_sha256": "634c1078acbb90e03616b14061953ec19b3601a16769b8871a8c68b60cea3272"
+    },
+    {
+      "item_id": "q3",
+      "source_path": "q3.txt",
+      "source_sha256": "395223ac6bc1fca22233aa59180d633ff22dc4baa4bddd40886a9e8f29c61182"
+    }
+  ],
+  "source_dir": "sources/triage_v2",
+  "version": "1.0"
+}

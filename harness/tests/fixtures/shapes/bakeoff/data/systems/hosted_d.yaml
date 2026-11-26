@@ -1,0 +1,4 @@
+system_id: hosted_d
+params:
+  provider: stub
+  model: hosted-d

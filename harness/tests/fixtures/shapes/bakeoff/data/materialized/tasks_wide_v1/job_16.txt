@@ -1,0 +1,1 @@
+Invented task 16: count the lines of batch 112.

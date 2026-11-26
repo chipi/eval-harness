@@ -1226,6 +1226,10 @@ def test_example_scorer_suites_pass() -> None:
             "every reader says the same of a fact (CLI, API, MCP, catalog export, inspector) on the tutorial and three look-alikes of the beta projects; a reader that works one out itself is caught",
         ),
         (
+            "test_reader_agreement_shapes.py",
+            "every reader says the same of a fact on committed projects this checkout did not make (a fleet's, a podcast's, a bake-off's with no run, unicode ids, a format-0 project migrated), in UTC and in UTC+14 and UTC-11, and a zone changes no fact",
+        ),
+        (
             "test_foreign_projects.py",
             "three look-alike projects of the beta projects' shapes (an import with prose goals, a fleet's repeat set, a zero-price bake-off): every read command and RFC-041's facts, asserted by hand",
         ),

@@ -1,0 +1,124 @@
+{
+  "actor": {
+    "from": "environment",
+    "name": "fixture",
+    "type": "person"
+  },
+  "created_at": "2026-11-19T10:00:00Z",
+  "dataset_id": "tasks_wide_v1",
+  "description": "22 item(s) from tasks_wide_v1/",
+  "items": [
+    {
+      "item_id": "job_01",
+      "source_path": "job_01.txt",
+      "source_sha256": "cd238d490396830628d6d796025f3fab04089da900f72e27e5611b1f4fa31c12"
+    },
+    {
+      "item_id": "job_02",
+      "source_path": "job_02.txt",
+      "source_sha256": "83dcd798adba571aecd92b800027cd8820a896920a54d32a88b7465649c1b605"
+    },
+    {
+      "item_id": "job_03",
+      "source_path": "job_03.txt",
+      "source_sha256": "ffd4e2b287ed593733872336b01de414b9746d35ebf5c33ba31ebffdb065feab"
+    },
+    {
+      "item_id": "job_04",
+      "source_path": "job_04.txt",
+      "source_sha256": "128fe7426bd6fbd86796142c3c50ca4ba0df9e4b9bf0181124d16cf4e7062987"
+    },
+    {
+      "item_id": "job_05",
+      "source_path": "job_05.txt",
+      "source_sha256": "43d6765db8d08525abb5bed049e946796df8ec32c80faa6422e3af523d266a18"
+    },
+    {
+      "item_id": "job_06",
+      "source_path": "job_06.txt",
+      "source_sha256": "966ff56673b00053bcee7ac6df2bd92ef86985ea7a6b127a6a1d28f2b5998adb"
+    },
+    {
+      "item_id": "job_07",
+      "source_path": "job_07.txt",
+      "source_sha256": "657659fcc9534a90befca1ffbc20c2606d0c80a878b80ad4a27e67009ddea03a"
+    },
+    {
+      "item_id": "job_08",
+      "source_path": "job_08.txt",
+      "source_sha256": "5c7decc2f9a6e57be50797b98a9faaf5ce06a5d92a50adfb173aef6f9985a1fa"
+    },
+    {
+      "item_id": "job_09",
+      "source_path": "job_09.txt",
+      "source_sha256": "551ea54e1d85eee76223b22cb1339912d2722bbc77baf5a64ba8b7a706b52912"
+    },
+    {
+      "item_id": "job_10",
+      "source_path": "job_10.txt",
+      "source_sha256": "856736c47ebade13ce7ee41123a8273a5ea813c4967eef7ec7a0a43c9afdf0ca"
+    },
+    {
+      "item_id": "job_11",
+      "source_path": "job_11.txt",
+      "source_sha256": "805ecc3ca30fbb921425c5ef49186ff31a547167b3ea4a1debac848dc77f633e"
+    },
+    {
+      "item_id": "job_12",
+      "source_path": "job_12.txt",
+      "source_sha256": "00428057086fb623510f722d8dd3937d65ef710cd68aa60854c574be876a5518"
+    },
+    {
+      "item_id": "job_13",
+      "source_path": "job_13.txt",
+      "source_sha256": "b8e9ea11cbc80e4ca9add1925da34a6c173179b5d5b7ce8a69e5c0745cb91f03"
+    },
+    {
+      "item_id": "job_14",
+      "source_path": "job_14.txt",
+      "source_sha256": "6d97f860bc5f363471edf63fa74e269f838b85ba9f89577be7576f87d049a692"
+    },
+    {
+      "item_id": "job_15",
+      "source_path": "job_15.txt",
+      "source_sha256": "4ab5a5b4233c34aa0c0960c4495cdaeaf201383e27d8e80db2b26dc4591bad0e"
+    },
+    {
+      "item_id": "job_16",
+      "source_path": "job_16.txt",
+      "source_sha256": "a779c97a6a2b91321df4c281a6f5b63d11d83f515c786f57c9851a565e63b5ae"
+    },
+    {
+      "item_id": "job_17",
+      "source_path": "job_17.txt",
+      "source_sha256": "43964df22f91a14ed0c1b78224bf66aeb45c8ac8f79b8a37cd2e89dd4ea42407"
+    },
+    {
+      "item_id": "job_18",
+      "source_path": "job_18.txt",
+      "source_sha256": "f9e3fa1489094cb7268cccd1a159026ea9c5fe98828e275072f91d3264369660"
+    },
+    {
+      "item_id": "job_19",
+      "source_path": "job_19.txt",
+      "source_sha256": "ff224c648a3a90951d11545e53f0708c12a0c4a8edbb45ef9845af69e9dea115"
+    },
+    {
+      "item_id": "job_20",
+      "source_path": "job_20.txt",
+      "source_sha256": "591caf98a546a9cc4fee6e96e575d6d277c660ece2593d9fb695ebb758f12815"
+    },
+    {
+      "item_id": "job_21",
+      "source_path": "job_21.txt",
+      "source_sha256": "b08781b28965bdcfa046871308e03016324fa2e958beb3cb8b3175098b97154e"
+    },
+    {
+      "item_id": "job_22",
+      "source_path": "job_22.txt",
+      "source_sha256": "6ab95491ef85172cff577f9adb24d9b0f25d73155a569db1a6c00b427edb4f60"
+    }
+  ],
+  "source_dir": "sources/tasks_wide_v1",
+  "version": "1.0"
+}

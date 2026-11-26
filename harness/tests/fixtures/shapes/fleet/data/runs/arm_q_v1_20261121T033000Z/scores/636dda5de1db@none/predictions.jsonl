@@ -1,0 +1,3 @@
+{"_extra": {}, "cost_usd": 0.0, "failed": 0.0, "item_id": "q1", "latency_ms": 0.016, "output_words": 9.0, "resumed": 0.0}
+{"_extra": {}, "cost_usd": 0.0, "failed": 0.0, "item_id": "q2", "latency_ms": 0.005, "output_words": 9.0, "resumed": 0.0}
+{"_extra": {}, "cost_usd": 0.0, "failed": 0.0, "item_id": "q3", "latency_ms": 0.007, "output_words": 9.0, "resumed": 0.0}

@@ -1,0 +1,8 @@
+{
+  "scores": {
+    "rougeL_f1": 0.39,
+    "wer": 0.235
+  },
+  "metric_kinds": {},
+  "primary_metric": "rougeL_f1"
+}
