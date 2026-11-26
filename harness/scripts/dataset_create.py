@@ -154,6 +154,26 @@ def _attach(items: list, fieldset: dict, path: Path) -> None:
         die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
 
 
+def _local_refusal(url: str, sha: str) -> str | None:
+    """Why a local `source_url` (a path in the project, not an http(s) address) cannot be an item, or None. The harness
+    fetches an address to hash it; a local file is not fetched, so the row must bring the hash that pins it, and a
+    file that is there must already have it. A file that is not there yet is allowed: validate notes it."""
+    why = _fetch.local_problem(url)
+    if why:
+        return f"{url}: {why}"
+    if not sha:
+        return (
+            f"{url} is a local path, so source_sha256 must pin it (the harness hashes an http(s) address by "
+            "fetching it, and does not read a local path to hash it)"
+        )
+    if len(sha) != 64 or any(c not in "0123456789abcdef" for c in sha):
+        return f"source_sha256 {sha!r} is not a sha256"
+    f = _fetch.local_file(url)
+    if _store.is_file(f) and sha256(f) != sha:
+        return f"{url} hashes to {sha256(f)[:12]}, not the pinned {sha[:12]}"
+    return None
+
+
 def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
     """Items from a manifest: each row an item_id and its source_url (pinned by source_sha256,
     or fetched and pinned now), or a source_path under --source-dir. Other columns are fields."""
@@ -173,7 +193,12 @@ def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
             # A pinned hash is taken as given: materialize fetches and checks it. Without one,
             # the bytes are fetched now and their hash becomes the item's identity.
             got = sha
-            if not got:
+            if not _fetch.is_web(url):
+                why = _local_refusal(url, sha)
+                if why:
+                    bad.append(f"row {n} ({iid}): {why}")
+                    continue
+            elif not got:
                 try:
                     _, got = _fetch.fetch(url, None)
                 except _fetch.FetchError as exc:
@@ -260,7 +285,12 @@ def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: b
             item.update(source_path=dest.relative_to(out).as_posix(), source_sha256=sha256(dest))
         elif it.get("source_url"):
             url, pin = str(it["source_url"]), str(it.get("source_sha256") or "")
-            if not pin:
+            if not _fetch.is_web(url):
+                why = _local_refusal(url, pin)
+                if why:
+                    bad.append(f"item {iid}: {why}")
+                    continue
+            elif not pin:
                 try:
                     _, pin = _fetch.fetch(url, None)
                 except _fetch.FetchError as exc:

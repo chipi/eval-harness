@@ -26,6 +26,12 @@ fingerprint, scorer or reader changed, and nothing is re-scored.
   the logo, the pills and the menu; search and the light/dark theme are in the menu, and the MCP pill no longer leaves
   the bar. The Workbench keeps the theme as the other three do. `infra/deploy/headers_check.py` reads the four bars in
   a browser at five widths.
+- **Fixed, a manifest row with a local `source_url`:** `dataset-create --manifest` wrote a record `validate` then failed
+  (V1) when a row had `source_sha256` and a path inside the project as `source_url`. The schema now accepts it,
+  materialize reads the file, V4 checks its hash, and a local path with no hash is refused at create.
+- **New, `references: {roots: [...]}` in `config.yaml`:** the folders a project keeps references in besides
+  `data/references`. With it, `import-run --reference-id` refuses an id found in none; without it, as 0.8.1.
+  `validate`'s "no actor" note now names the records.
 - **New, `evh catalog-serve --link` and `--brand` head the Workbench:** a server given its publication's parts shows
   them as the Workbench's switcher, the Workbench marked, as `evh catalog --link` does for the catalog's pages. Without
   `--link`, a project's own Workbench is as it was, its bar in the same geometry.

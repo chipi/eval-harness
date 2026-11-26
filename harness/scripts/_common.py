@@ -722,14 +722,69 @@ LABELS_PREFIX = "labels/"
 LABELS_TIER = "labels"
 
 
+def reference_roots() -> list[Path]:
+    """The extra folders a project keeps references in, from `references: {roots: [records/references]}` in its
+    config.yaml, each relative to the project root and holding `<tier>/<name>` as data/references does. Empty when the
+    project declares none: it has not said where its references are, so one the harness cannot find is only noted."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    cfg = _paths()["ROOT"] / "config.yaml"
+    if not _store.is_file(cfg):
+        return []
+    import yaml  # noqa: PLC0415
+
+    try:
+        doc = yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}
+    except yaml.YAMLError:
+        return []  # store() refuses a config that does not parse, where it matters
+    block = doc.get("references") if isinstance(doc, dict) else None
+    if block is None:
+        return []
+    roots = block.get("roots") if isinstance(block, dict) else None
+    if not isinstance(roots, list) or not roots or not all(isinstance(r, str) and r.strip() for r in roots):
+        die(
+            f"{cfg}: references.roots must be a list of folders (relative to the project), e.g. "
+            "references: {roots: [records/references]}",
+            "invalid-file",
+        )
+    return [_paths()["ROOT"] / r.strip() for r in roots]
+
+
+def reference_dir(reference_id: str) -> Path:
+    """A reference's folder ("<tier>/<name>"): under data/references, else under the first declared root that holds
+    it; data/references's when none does."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    here = _paths()["REFERENCES"] / reference_id
+    if _store.is_dir(here):
+        return here
+    return next((r / reference_id for r in reference_roots() if _store.is_dir(r / reference_id)), here)
+
+
 def scored_against_dir(reference_id: str | None) -> Path | None:
     """Where what a run is scored against lives: a label set ("labels/<dataset>/<set>", under data/labels) or a
-    reference ("<tier>/<name>", under data/references); None when it is scored against nothing."""
+    reference ("<tier>/<name>", under data/references or a root the project declares); None when it is scored against
+    nothing."""
     if not reference_id:
         return None
     if reference_id.startswith(LABELS_PREFIX):
         return _paths()["LABELS"] / reference_id[len(LABELS_PREFIX) :]
-    return _paths()["REFERENCES"] / reference_id
+    return reference_dir(reference_id)
+
+
+def refuse_unknown_reference(reference_id: str) -> None:
+    """A project that declares where its references are (`references.roots`) has said where to look: a reference id found
+    in none of them is refused, naming what was searched, where a project that declares nothing only gets V16's note. A
+    label set has no roots, and keeps the note."""
+    roots = reference_roots()
+    if not roots or reference_id.startswith(LABELS_PREFIX) or reference_found(reference_id):
+        return
+    searched = ["data/references", *(data_rel(r) for r in roots)]
+    die(
+        f"--reference-id {reference_id}: not found in {', '.join(searched)} (the project's references.roots in "
+        "config.yaml). Name a reference that is there, or add the folder that holds it to references.roots",
+        "not-found",
+    )
 
 
 def reference_found(reference_id: str) -> bool:

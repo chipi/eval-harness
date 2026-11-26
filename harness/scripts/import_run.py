@@ -56,6 +56,7 @@ from evaluation_harness._common import (
     plain_id_ok,
     read_json,
     reference_found,
+    refuse_unknown_reference,
     sha256,
 )
 from evaluation_harness._fingerprint import build_fingerprint
@@ -124,6 +125,8 @@ def body(**inputs: Any) -> int:
         plain_id_ok(args.run_id, "--run-id")
     _goal_named(args.goal)
     reference_tier = _reference_tier(args.reference_id, args.reference_tier)
+    if args.reference_id:
+        refuse_unknown_reference(args.reference_id)
     ds_file = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     if not _store.is_file(ds_file):
         die(

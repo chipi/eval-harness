@@ -292,7 +292,10 @@ inspector shows them all, filters a comparison by them, and breaks it down by a
 
 **Items that live at a URL** come in through a manifest, one row per item:
 `item_id`, `source_url` and `source_sha256` (leave the hash empty and the bytes are
-fetched and pinned now), plus any field columns:
+fetched and pinned now), plus any field columns. A `source_url` may also be a path inside the project (relative to its
+root, e.g. `records/sources/x/p01.txt`) when `source_sha256` pins it: the harness does not read a local path to hash it,
+so a local row with no hash is refused at create naming the row. `dataset-materialize` reads the file and checks the
+hash; `validate` (V4) fails a file whose bytes changed and notes one that is not there:
 
 ```bash
 evh dataset-create --dataset-id episodes_v1 --manifest items.csv --fieldset episodes
@@ -892,7 +895,11 @@ A writer records a fact a reader will follow, or refuses it by name (RFC-041 F7)
 import-run's `--system-id`, and reference-promote's `--name`) is a plain name, ASCII letters, digits, `.`, `_`, `-`, never a path,
 a space or unicode (`bad-argument`); `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
 names a run of the same system and dataset (`mismatch`); import-run's `--reference-id` is free-form and may be kept outside `data/references/` (it
-imports, with a note on stderr that the harness cannot find it), its tier is the one given, else the id's (`gold/x` is gold; a
+imports, with a note on stderr that the harness cannot find it; a project that keeps references in other folders names
+them in its `config.yaml`, `references: {roots: [records/references]}`, each holding `<tier>/<name>` as `data/references/` does:
+an id found in `data/references/` or a root is accepted without the note, `validate` (V16) checks the root's folders
+against their manifests, `rescore --reference-id` reads them, and an id found in none is refused (`not-found`) naming the folders
+searched; with no `references:` key nothing changes), its tier is the one given, else the id's (`gold/x` is gold; a
 `--reference-tier` that contradicts a `gold/` or `silver/` id is `mismatch`, one with no reference is `bad-argument`), and `--goal` names the goal the run answers, which `evh run` and import-run both require from the
 date `data/goals/policy.yaml` gives as `required_from` (`bad-argument` without one); `arm-smoke` refuses a `--goal` or `--round`
 that is not there, or a `--round` with no `--goal`. A cost no item reported is no `total_cost_usd` (unknown, never `0`); every item

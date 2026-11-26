@@ -58,6 +58,20 @@ def _build(ds: dict, src_root: Path, stage: Path) -> None:
     drifted, missing, unfetched = [], [], []
     for item in ds["items"]:
         rel = item.get("source_path") or item["item_id"]
+        if item.get("source_url") and not _fetch.is_web(item["source_url"]):
+            # A local file the project keeps outside the dataset's source folder, pinned by its hash.
+            src = _fetch.local_file(item["source_url"])
+            if not _store.is_file(src):
+                missing.append(item["source_url"])
+                continue
+            actual = sha256(src)
+            if actual != item["source_sha256"]:
+                drifted.append((item["source_url"], item["source_sha256"][:12], actual[:12]))
+                continue
+            dst = stage / rel
+            _store.mkdir(dst.parent, parents=True, exist_ok=True)
+            _store.copy_file(src, dst)
+            continue
         if item.get("source_url"):
             # A URL item (ADR-0003): fetched once into the cache, and refused unless its bytes
             # are the pinned ones. A changed file at the URL is the same failure as a changed
