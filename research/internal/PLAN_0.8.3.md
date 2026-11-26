@@ -55,6 +55,13 @@ What exists in 0.8.2:
 
 ## S. What 0.8.2 left open
 
+**Done on 083 (2026-11-26, `5a49a8c13`):** S1 (the 0.8.2 section corrected, `tests/test_upgrading_stops.py`; the
+"From 0.8.2 to 0.8.3" section and its CHANGELOG bullets are written when 0.8.3 is dated, an HTML comment in
+UPGRADING says what they must hold), S2 (`max_retries=0`), S3 (a 403 stops the run), S4, S7 (`tests/_shots.py`), S8
+(not reproduced; SCENARIO says what was checked). Gates on that commit: `make test` "all self-tests passed",
+`make browser-check` EXIT=0, `mkdocs build --strict` EXIT=0. Left: S5 (at release), S6 and S9 (open), S10 (the owner's
+choice of where).
+
 | Item | What | Done when | Moves a result |
 | --- | --- | --- | --- |
 | S1 | UPGRADING's "From 0.8.1 to 0.8.2" leaves out two changes that can stop a run that worked: a budgeted round refuses an unpriced arm, and a provider's 401 stops the run. The eval agents were told in the upgrade message; the shipped docs still lack them | both named in UPGRADING (the 0.8.2 section, corrected, and the 0.8.3 one says so); a check that each CHANGELOG "Changed" or "Fixed" bullet that stops a run has an UPGRADING line | no |
