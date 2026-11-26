@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 from collections.abc import Iterable
@@ -1002,23 +1001,6 @@ def _typical_out(system_id: str) -> dict[str, Any] | None:
     return {"mean": total / n, "items": n, "runs": used} if n else None
 
 
-def _said_before(key: str, who: str) -> str | None:
-    """Who a dry run of the same sweep printed this note for already, else None and `who` is recorded as the one it is
-    printed for (`evh sweep --dry-run` runs each arm in a process of its own and names a file in EVH_DRY_SEEN for them
-    to share). Always None outside a sweep."""
-    path = os.environ.get("EVH_DRY_SEEN")
-    if not path:
-        return None
-    seen = Path(path)
-    for line in seen.read_text(encoding="utf-8").splitlines():
-        k, _, first = line.partition("\t")
-        if k == key:
-            return first
-    with seen.open("a", encoding="utf-8") as fh:
-        fh.write(f"{key}\t{who}\n")
-    return None
-
-
 def _cap_shown(cap: float | None) -> str:
     return _spend.shown(cap) + (" — set EVAL_MAX_COST_USD" if cap is None else " (EVAL_MAX_COST_USD)")
 
@@ -1161,7 +1143,9 @@ def _dry_run(
             # sweep's dry run says this once for a model (the systems of one model say the same).
             first = params.get("model")
             if first and (
-                told := _said_before(f"no-model-record:{params.get('provider')}:{first}", cfg["system_id"])
+                told := _spend.said_before(
+                    f"no-model-record:{params.get('provider')}:{first}", cfg["system_id"]
+                )
             ):
                 print(
                     f"  MEASURED    none for {cfg['system_id']}: it names no model record either, as for {told} above"

@@ -127,6 +127,7 @@ try:
         env=dict(env, PYTHONPATH=str(Path(__file__).resolve().parents[1])),
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     check(
         "a reference in a declared root has a content hash, not 'scored against nothing'",
@@ -160,4 +161,4 @@ try:
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
-summary()
+sys.exit(summary())

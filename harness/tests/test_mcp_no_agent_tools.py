@@ -132,6 +132,7 @@ srv = subprocess.Popen(
     env=env,
     stderr=subprocess.PIPE,
     text=True,
+    encoding="utf-8",
     start_new_session=True,
 )
 base = f"http://127.0.0.1:{port}"

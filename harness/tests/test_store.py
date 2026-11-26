@@ -666,7 +666,7 @@ ALLOWED = {
     "harness/scripts/_coderec.py": "unpacks each commit of a code record's checkout under .build/code, outside data/; records go through _store (RFC-030)",
     "harness/scripts/_coverage.py": "reads the source files of the version copies a replay ran, under .build/code (RFC-030)",
     "harness/scripts/faithfulness.py": "a replay's outputs while it runs, under .build/faithfulness, removed after (RFC-030)",
-    "harness/scripts/_spend.py": "a round's ledger under .build/rounds and a child's spend in a temp file, outside data/ (RFC-026)",
+    "harness/scripts/_spend.py": "a round's ledger under .build/rounds, a child's spend and a sweep dry run's shared notes in temp files, outside data/ (RFC-026)",
     "harness/scripts/_progress.py": "a job's progress.json in its folder under .build/jobs, outside data/ (RFC-032)",
     "harness/scripts/sources/*.py": "a dataset source reads the file or folder a person names to it, outside data/",
     "harness/scripts/importers/*.py": "an importer reads the file a person names to it",

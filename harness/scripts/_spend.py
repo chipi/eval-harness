@@ -19,6 +19,7 @@ import contextlib
 import json
 import os
 import secrets
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -401,3 +402,33 @@ def close_for_job(job_id: str) -> int:
             _update((p, e["id"]), shut)
             n += 1
     return n
+
+
+def said_before(key: str, who: str) -> str | None:
+    """Who a dry run of the same sweep printed this note for already, else None and `who` is recorded as the one it is
+    printed for (`evh sweep --dry-run` runs each arm in a process of its own and names a file in EVH_DRY_SEEN for them
+    to share). Always None outside a sweep."""
+    path = os.environ.get("EVH_DRY_SEEN")
+    if not path:
+        return None
+    seen = Path(path)
+    for line in seen.read_text(encoding="utf-8").splitlines():
+        k, _, first = line.partition("\t")
+        if k == key:
+            return first
+    with seen.open("a", encoding="utf-8") as fh:
+        fh.write(f"{key}\t{who}\n")
+    return None
+
+
+def notes_file() -> str:
+    """A temp file the arms of one `evh sweep --dry-run` share, so a note for a model is said once (`said_before`)."""
+    fd, path = tempfile.mkstemp(prefix="evh-dry-seen-")
+    os.close(fd)
+    return path
+
+
+def drop_notes_file(path: str) -> None:
+    """The sweep's shared notes file, removed when its arms are done."""
+    if path:
+        Path(path).unlink(missing_ok=True)

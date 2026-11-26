@@ -17,7 +17,6 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-import tempfile
 from typing import Any
 
 from evaluation_harness import _jsonout, _progress, _spend
@@ -46,8 +45,7 @@ def body(**inputs: Any) -> int:
     # arms are processes of their own, and share this file to tell each other.
     seen = ""
     if args.dry_run:
-        fd, seen = tempfile.mkstemp(prefix="evh-dry-seen-")
-        os.close(fd)
+        seen = _spend.notes_file()
     for i, c in enumerate(configs, 1):
         _progress.step(i - 1, len(configs))
         print(f"── [{i}/{len(configs)}] {c} " + "─" * max(0, 50 - len(c)))
@@ -103,8 +101,7 @@ def body(**inputs: Any) -> int:
         print()
 
     _progress.step(len(configs), len(configs))
-    if seen:
-        os.unlink(seen)
+    _spend.drop_notes_file(seen)
     if failed:
         print(f"  {len(failed)} arm(s) failed: {', '.join(failed)}")
         print("  The rest still ran; their results are on the leaderboard below.\n")
