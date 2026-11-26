@@ -287,7 +287,7 @@ try:
             beside = sorted(
                 x.name
                 for x in (HARNESS / "workbench").iterdir()
-                if x.is_file() and x.suffix in (".js", ".html", ".css", ".py")
+                if x.is_file() and x.suffix in (".js", ".html", ".css", ".py", ".svg")
             )
             check(
                 "the package ships the live Workbench's files, the ones the server serves and nothing else of the folder: "
@@ -930,6 +930,15 @@ try:
             page.click("#rc-go")
             page.wait_for_url("**#jobs/*", timeout=20000)
             page.wait_for_function(f"location.hash !== '#jobs/{first}'", timeout=20000)
+            page.wait_for_selector("[data-start-warning]", timeout=20000)
+            check(
+                "a run started from the Workbench says, on the job's page, what jobs-start says as it starts: "
+                "no reference set, no goal",
+                "no reference set for tk_once_v1"
+                in " ".join(page.locator("[data-start-warning]").all_inner_texts())
+                and "no goal" in " ".join(page.locator("[data-start-warning]").all_inner_texts()),
+                page.locator("main").inner_text()[:600],
+            )
             for _try in range(120):
                 if len(calls_log.read_text(encoding="utf-8").splitlines()) > n_calls:
                     break
@@ -1415,6 +1424,12 @@ try:
             # W2 (UXS-005): which is better, blind, on a sheet submitted when done; then what went wrong, with a new list
             page.goto(f"http://127.0.0.1:{port}/workbench/#review/tickets_summary")
             page.wait_for_selector("#rv-make", timeout=20000)
+            cmd_before = page.locator("main details.cmd pre").all_text_contents()
+            check(
+                "Review the outputs shows its command before any sheet exists (UXS-005: every screen shows the command)",
+                page.locator("[data-pick]").count() == 0 and any("evh sheet-export" in c for c in cmd_before),
+                cmd_before,
+            )
             page.select_option("#rv-ds", "tk_v1")
             page.wait_for_selector("#rv-a option[value='fake-1b_here']", state="attached", timeout=20000)
             page.select_option("#rv-a", "one_v1")

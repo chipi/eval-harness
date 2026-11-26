@@ -48,6 +48,7 @@ sys.path.insert(0, str(HERE))
 import _cli  # noqa: E402
 import _mutations as MUT  # noqa: E402
 import _serve  # noqa: E402
+import _share  # noqa: E402
 import test_reader_agreement as RA  # noqa: E402
 from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
@@ -58,7 +59,7 @@ PROJECTS = ("tutorial", "imported", "fleet", "bakeoff")
 TRACEBACK = "Traceback"
 REFUSAL = re.compile(r"^ERROR \(([a-z-]+)\)", re.M)
 COPIES: list[Path] = []
-JOBS = max(2, min(8, (os.cpu_count() or 4) // 3))
+JOBS = min(max(2, min(8, (os.cpu_count() or 4) // 3)), _share.jobs())  # tests/_share.py
 KIRITIMATI, PAGO_PAGO = "Pacific/Kiritimati", "Pacific/Pago_Pago"
 
 
@@ -93,8 +94,6 @@ MUTATIONS: tuple[Mutation, ...] = (
         "unicode_ids",
         "a system, a dataset and run ids in other scripts",
         "unicode_ids",
-        names=rf"(?s){re.escape(MUT.UNICODE_DATASET)}[^\n]*\n.*FAIL V1 ",
-        verdict=(6, "V1"),
     ),
     Mutation(
         "underscore_r_not_a_set",

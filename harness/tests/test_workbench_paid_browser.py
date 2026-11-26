@@ -148,7 +148,7 @@ def metrics_of(system: str) -> dict:
 
 
 def dollars(text: str) -> str | None:
-    m = re.search(r"ESTIMATE\s+~\$([0-9.]+)", text)
+    m = re.search(r"ESTIMATE\s+at most ~\$([0-9.]+)", text)
     return m.group(1) if m else None
 
 
@@ -253,7 +253,7 @@ try:
                     reach[w_] = {
                         k: seen(page, rx)
                         for k, rx in (
-                            ("estimate", r"ESTIMATE\s+~\$[0-9.]+"),
+                            ("estimate", r"ESTIMATE\s+at most ~\$[0-9.]+"),
                             ("cap", rf"spend at most \${cap:g}\b"),
                         )
                     }

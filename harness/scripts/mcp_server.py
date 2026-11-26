@@ -7,9 +7,11 @@
 An MCP client (Claude Code, Claude Desktop, any agent) starts this as a stdio server. Its tools are the read operations of
 the harness (the `evh` commands that read; the same names as the command line and the API's resources): the catalog's views, the rounds,
 the runs, the statistics. Each call is answered in the server's own process, from the data the project holds, and the answer
-is the operation's result, structured: `{"command", "version", "result"}`. No tool writes the project, spends or runs a model:
-those stay commands a person runs (0.8.0 adds them, with consent). The server keeps what it computed in memory, for as long as
-the data is what it was computed from, and the paired tests of the goals in the project's ignored .cache/.
+is the operation's result, structured: `{"command", "version", "result"}`. Every tool but two only reads. A local server
+(never --public) also offers the agent sampler's `study-ask` and `study-tell`, which write the study, and `study-tell` runs
+its next trial (and spends); `--no-agent-tools` leaves them out, and --public never has them. The server keeps what it
+computed in memory, for as long as the data is what it was computed from, and the paired tests of the goals in the
+project's ignored .cache/.
 
 For Claude Code, in the project:  claude mcp add evh -- evh mcp
 """
@@ -61,6 +63,7 @@ NOT_TOOLS = {
     "init": "writes a project",
     "skills-install": "writes the skills into a project",
     "env-check": "reads the environment and keys, not the project",
+    "docs": "points at the package's own docs, not the project",
     "capture-scrub": "runs a project's command and writes",
     "catalog-serve": "never returns",
     "self-test": "runs the test suite",
@@ -165,10 +168,10 @@ def read_ops(public: bool) -> list[Any]:
     return [op for op in _ops.of_kind("read") if not (public and op.public_dropped)]
 
 
-def tools_for(public: bool) -> tuple:
+def tools_for(public: bool, agent_tools: bool = True) -> tuple:
     """The tools this server offers: a read operation each, named as the operation (the name the command line and the API
-    use), and for a local server the agent sampler's two."""
-    return tuple(op.name for op in read_ops(public)) + (() if public else AGENT_TOOLS)
+    use), and for a local server the agent sampler's two (unless `agent_tools` is off)."""
+    return tuple(op.name for op in read_ops(public)) + (() if public or not agent_tools else AGENT_TOOLS)
 
 
 def tool_schema(op: Any, public: bool) -> dict:
@@ -281,10 +284,12 @@ def build_server(
     rate_total: int = 0,
     client_header: str | None = None,
     hooks: Hooks | None = None,
+    agent_tools: bool = True,
 ):
     """The MCP server: its tools, and how a call is answered. Every read operation of the registry is a tool, answered in this
     process (`public`: the call is a public server's, so what a public server must not show stays hidden, and the operations
-    that show it are not offered); `concurrent`: how many calls are answered at once (a call that waits 30 s for a slot is
+    that show it are not offered; `agent_tools`: a local server also offers AGENT_TOOLS, which write, and a call to one a
+    server without them gets is refused as an unknown tool); `concurrent`: how many calls are answered at once (a call that waits 30 s for a slot is
     refused); `rate`: calls a minute per caller, `rate_total`: from all callers together (0: no limit; nothing in front of a
     public server throttles for it, and a caller who can rotate its address is still held by the total)."""
     hooks = hooks or Hooks()
@@ -300,7 +305,7 @@ def build_server(
     from mcp.server import Server  # noqa: PLC0415
 
     ops = {op.name: op for op in read_ops(public)}
-    agent = {} if public else {c: _ops.OPS[c] for c in AGENT_TOOLS}
+    agent = {c: _ops.OPS[c] for c in AGENT_TOOLS} if agent_tools and not public else {}
     known_tools = {*ops, *agent}
 
     def key_of(name: str, arguments: dict) -> tuple:
@@ -540,7 +545,12 @@ def build_server(
         "evaluation-harness",
         version=__version__,
         instructions="The evaluation harness's reads for this project: its datasets, goals, arms, runs and comparisons. "
-        "Each tool is an operation of the harness, named as `evh <operation>` and its API resource; none writes or spends.",
+        "Each tool is an operation of the harness, named as `evh <operation>` and its API resource; "
+        + (
+            f"{' and '.join(agent)} write the study, and the second runs its next trial; the others only read."
+            if agent
+            else "none writes or spends."
+        ),
         on_list_tools=list_tools,
         on_call_tool=call_tool,
     )
@@ -551,7 +561,12 @@ LOOPBACK = ("127.0.0.1", "localhost", "::1")
 
 def main(argv: list[str] | None = None) -> int:
     """evh mcp."""
-    ap = argparse.ArgumentParser(prog="evh mcp", description=__doc__.split("\n\n")[0])
+    ap = argparse.ArgumentParser(
+        prog="evh mcp",
+        description=__doc__.split("\n\n")[0],
+        epilog=f"Every tool only reads, but {' and '.join(AGENT_TOOLS)}: a local server (never --public) offers those two, "
+        "which write a study, and the second runs its next trial. --no-agent-tools leaves them out.",
+    )
     ap.add_argument(
         "--project", type=Path, default=Path.cwd(), help="the project (default: the working directory)"
     )
@@ -580,6 +595,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="no tool that answers with an item's text, an arm's output or a label, none that reads the project's files, "
         "and no input that would (for a server anyone can reach)",
+    )
+    ap.add_argument(
+        "--no-agent-tools",
+        action="store_true",
+        help=f"serve every read a local server does (item text and outputs too, unlike --public) and no tool that writes or "
+        f"runs a trial: leaves out {', '.join(AGENT_TOOLS)}; works with --http as with stdio",
     )
     ap.add_argument(
         "--timeout", type=float, default=TIMEOUT_S, help=f"seconds per call (default: {TIMEOUT_S})"
@@ -659,6 +680,7 @@ def main(argv: list[str] | None = None) -> int:
         rate_total=args.rate_total,
         client_header=args.client_header,
         hooks=hooks,
+        agent_tools=not args.no_agent_tools,
     )
     from evaluation_harness._version import __version__  # noqa: PLC0415
 
@@ -666,7 +688,7 @@ def main(argv: list[str] | None = None) -> int:
         "start",
         {
             "version": __version__,
-            "tools": list(tools_for(args.public)),
+            "tools": list(tools_for(args.public, not args.no_agent_tools)),
             "public": args.public,
             "transport": "http" if args.http else "stdio",
         },
@@ -706,7 +728,12 @@ def serve_http(server, args) -> int:
     async def health(_request: Request) -> JSONResponse:
         """GET <path>/health."""
         return JSONResponse(
-            {"ok": True, "version": __version__, "tools": len(tools_for(args.public)), "public": args.public}
+            {
+                "ok": True,
+                "version": __version__,
+                "tools": len(tools_for(args.public, not args.no_agent_tools)),
+                "public": args.public,
+            }
         )
 
     def hook_route(fn):

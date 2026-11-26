@@ -11,7 +11,7 @@
   "properties": {
     "model_id": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "pattern": "^(?!.*\\.\\.)(?!.*[A-Z])[^\\W_][\\w.-]*$",
       "description": "The record's id: its file's name."
     },
     "actor": {

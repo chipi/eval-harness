@@ -39,6 +39,10 @@ COMMANDS = {
         "copy the agent skills (evaluate, compare, promote) into .claude/skills/ or --target",
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
+    "docs": (
+        "docs.py",
+        "the docs that ship with the package (upgrading, runbook, integration): their paths and the docs site; --print shows one",
+    ),
     "capture-scrub": (
         "capture_scrub.py",
         "run the project's own scrubber over a capture's records, and record it",
@@ -55,7 +59,7 @@ COMMANDS = {
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
     "mcp": (
         "mcp_server.py",
-        "the project's read commands as MCP tools for an agent (stdio, or --http for a team; none writes the project or spends)",
+        "the project's read commands as MCP tools for an agent (stdio, or --http for a team); a local server also has study-ask and study-tell, which write a study and run its trial: --no-agent-tools leaves them out",
     ),
     "self-test": (
         "self_check.py",
@@ -69,13 +73,28 @@ from evaluation_harness import ops as _ops  # noqa: E402
 COMMANDS.update({name: ("op_command.py", op.about) for name, op in _ops.OPS.items()})
 
 
+#: What a newcomer runs first, in order (tutorial 1 and the GUIDE): (command as typed, what it does).
+START_HERE = (
+    ("evh init --store files", "make a project here: folders, config, an AGENTS.md"),
+    ("evh dataset-create --dataset-id D --source-dir DIR", "freeze a folder of items as a dataset"),
+    ("evh dataset-materialize --dataset-id D", "fetch the dataset's items onto this machine"),
+    ("evh run --system S --dataset D --dry-run", "what a run would do and cost; without --dry-run it runs"),
+    ("evh leaderboard D", "which arm leads on the dataset"),
+    ("evh catalog-serve", "browse the results in a browser on 127.0.0.1"),
+    ("evh docs", "where the runbook, the upgrade notes and the integration guide are"),
+)
+
+
 def _usage() -> str:
     from evaluation_harness._version import __version__  # noqa: PLC0415
 
     width = max(map(len, COMMANDS))
     rows = "\n".join(f"  {name:<{width}}  {help_}" for name, (_, help_) in COMMANDS.items())
+    start = "\n".join(f"  {cmd}\n      {what}" for cmd, what in START_HERE)
     return (
-        f"evaluation-harness {__version__}\n\nusage: evh <command> [args]\n\n{rows}\n\n"
+        f"evaluation-harness {__version__}\n\nusage: evh <command> [args]\n\n"
+        f"Start here (the first hour, in order; tutorial 1 and the GUIDE walk it):\n{start}\n\n"
+        f"All commands:\n{rows}\n\n"
         f"`evh <command> --help` for a command's own options.\n"
         f"Data: EVAL_HOME (project root, default: the nearest directory up with data/), EVAL_DATA_DIR (default: data), EVAL_GOALS_DIR (default: <data>/goals)."
     )

@@ -19,7 +19,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _ids, _store
 from evaluation_harness._common import die
 from evaluation_harness._runs import runs_on
 from evaluation_harness.model.entity import Problem
@@ -52,7 +52,7 @@ def load_rounds(goal: str | None = None, data: Path | None = None) -> list[dict[
         return []
     # A goal is a plain name: `..`, a path separator or a glob character would reach (or probe for)
     # files outside data/rounds, and an agent can pass any string as --goal.
-    if goal is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", goal):
+    if goal is not None and not _ids.NAME.ok(goal):
         return []
     ent = _entity(data)
     ids = [
@@ -116,6 +116,7 @@ def save(doc: dict[str, Any]) -> Path:
         "baseline",
         "arms",
         "budget_usd",
+        "unpriced_allowed",
         "harness",
         "scorer",
         "scoring",
@@ -226,6 +227,23 @@ def join(
         return arm
 
 
+def allow_unpriced(
+    goal: str, round_id: str, system: str, model: str, who: dict[str, Any] | None = None
+) -> None:
+    """Record on the round that an arm with no price was started in it with --allow-unpriced: its budget leaves that
+    arm's cost out. Read afresh and saved under the goal's lock, as `join` does; one entry per system."""
+    from evaluation_harness import _spend  # noqa: PLC0415
+
+    with _spend._goal_lock(goal):
+        rnd = find(goal, round_id)
+        if rnd is None or any(e.get("system") == system for e in rnd.get("unpriced_allowed") or []):
+            return
+        rnd.setdefault("unpriced_allowed", []).append(
+            {"system": system, "model": model, "at": _common.now(), **({"actor": who} if who else {})}
+        )
+        save(rnd)
+
+
 def read_under_rescore(
     rnd: dict[str, Any], done: list[tuple[Path, dict]], apart: frozenset[str] = frozenset()
 ) -> None:
@@ -283,12 +301,17 @@ def view(rnd: dict[str, Any]) -> dict[str, Any]:
         "closed_at",
         "study",
     )
-    return {k: rnd.get(k) for k in keys} | {
-        "changes": rnd.get("changes") or [],
-        "arms": [{"arm": model_rounds.arm_id(rnd, a), **a} for a in model_rounds.arms(rnd)],
-        "scoring": rnd.get("scoring") or [],
-        "conclusion": (rnd.get("conclusion") or {}).get("text"),
-    }
+    allowed = {"unpriced_allowed": rnd["unpriced_allowed"]} if rnd.get("unpriced_allowed") else {}
+    return (
+        {k: rnd.get(k) for k in keys}
+        | allowed
+        | {
+            "changes": rnd.get("changes") or [],
+            "arms": [{"arm": model_rounds.arm_id(rnd, a), **a} for a in model_rounds.arms(rnd)],
+            "scoring": rnd.get("scoring") or [],
+            "conclusion": (rnd.get("conclusion") or {}).get("text"),
+        }
+    )
 
 
 def evidence_values(rnd: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any]:

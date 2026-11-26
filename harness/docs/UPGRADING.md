@@ -5,6 +5,45 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.8.1 to 0.8.2
+
+Change the pin to `@v0.8.2` and reinstall; `evh --version` prints `0.8.2` when the upgrade took. Nothing to migrate and
+no number moves: the release fixes a public server's Workbench and aligns the header of the site, the catalog, the
+Workbench and the docs. A deployment that runs `evh catalog-serve --public` and wants the Workbench headed by its
+publication's switcher passes the same `--link` and `--brand` its `evh catalog` build takes.
+
+- **`evh mcp --no-agent-tools`** serves everything a local server reads, the text of items and outputs included, and none of
+  the two tools that write (`study-ask`, `study-tell`, which runs a study's next trial): the flag for an always-on
+  `evh mcp --http` over a project that must not be written or spent by a call. `evh mcp --help` and the command list now say
+  that those two exist on a local server; they never did on `--public`.
+- **A manifest row may bring a local `source_url` pinned by its `source_sha256`** (`records/sources/x/p01.txt`, a path
+  inside the project). 0.8.0 and 0.8.1 wrote such a record and then failed it in `evh validate` (V1); the schema now accepts
+  it, `dataset-materialize` reads the file, and V4 fails a changed one and notes a missing one. A local `source_url` with
+  no hash is refused at create, naming its row. A record the old versions wrote this way becomes valid without a change.
+- **`references: {roots: [...]}` in `config.yaml` (optional) names the folders where the project keeps references besides
+  `data/references/`** (each holding `<tier>/<name>`). With it, `evh import-run --reference-id` accepts an id found in
+  `data/references/` or a root and refuses one found in none, naming the folders searched; `validate` (V16) and
+  `rescore --reference-id` read the roots too. Without the key nothing changes: an id the harness cannot find is recorded
+  with V16's note, as in 0.8.1. With the key, a label-set id (`labels/<dataset>/<set>`) is held to the same: accepted when it is
+  among the project's label sets, refused naming `data/labels` when it is not (0.8.1 recorded it with the note).
+- **An id you name may be spelled in any script.** A dataset, system, goal, scorer, field set, label set, reference, run, model
+  or deployment id (and `--run-id`, `--system-id`, `--name`) takes the letters and digits of any script, with the
+  punctuation it took before; one rule serves every command and every JSON schema. It must be in Unicode NFC (an
+  `e` + U+0301 is refused, naming `é`), hold no space, control or format character, no `..`, never start with `.`, `-` or `_`,
+  and be lowercase where it had to be. Combining marks (Devanagari vowel signs) are not letters, so a word that needs one
+  cannot be an id. An id a writer took is still taken (a field set can no longer start with `_`); a read of an id that exists (`dataset-items`) is never refused for
+  its spelling. The catalog's pages are named by the id's letters, not `x`.
+- **`evh validate` names the records that name no actor** (the first three, then "and N more"), where it said how many.
+- **`evh dataset-create --fields-from-item` and `--exclude GLOB` (both optional) read JSON items.** The first takes each
+  declared field's value from its item (a field's optional `from` JSON pointer and `reduce: count`, in the field set);
+  the second drops files `--glob` matched, as an export `manifest.json`. Without them nothing changes, and a record made
+  with them is the one a `--fields` file and a narrower `--glob` give.
+- **A system may name `key_file: PATH` in its `params` (optional): the dotenv-format file its provider keys come from.** For
+  that system's calls the file is read first, then the exported environment, then the project's `.env`; a file that cannot
+  be read is refused (`not-configured`) before any call, and one inside the project that git does not ignore is warned
+  about. `evh env-check` and `evh run --dry-run` say where each key comes from, never its value. The path is in no
+  fingerprint: two systems differing only in `key_file` hash alike. Without the key nothing changes.
+
 ## From 0.8.0 to 0.8.1
 
 Change the pin to `@v0.8.1` and reinstall; `evh --version` prints `0.8.1` when the upgrade took. No format changes: you need

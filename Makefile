@@ -10,6 +10,7 @@
 #   make serve [STORE=sqlite]   the catalog and inspector on 127.0.0.1 (in SQLite, a copy of the data)
 #   make serve-dev / mcp-dev    the same, or the MCP server, reporting to the dev observability (environment=dev,
 #                               worktree=<branch>); read what the branch sent with the o11y-dev skill before a PR
+#   make release-smoke                   the built release for a newcomer and the deployment, offline, a few minutes (ARGS=--release adds the container checks)
 #   make browser-check                   the inspector and the public site in headless Chromium
 #   make guard-check                     the checks can fail: each checker catches its planted defects
 #   make quality                         lint, types, security, dead code, docstrings, spelling, shell, llms.txt
@@ -27,16 +28,22 @@ ARMS ?=
 SYSTEM ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check guard-check commands-check catalog-render-check stores-check \
+.PHONY: help setup release-smoke verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check hooks-check guard-check commands-check catalog-render-check stores-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
-	@sed -n '1,20p' Makefile | sed 's/^# \{0,1\}//'
+	@sed -n '1,21p' Makefile | sed 's/^# \{0,1\}//'
 
 $(PY):
 	$(MAKE) -C harness install
 
 setup: $(PY)
+
+# The release as built: the wheel in a fresh venv, a newcomer's project per store, the servers, the version in every
+# place (harness/tools/release_smoke.py; RELEASING.md, "Quick release smoke"). Offline and $0; ARGS=--release adds the
+# rendered release's container and header checks (docker, network).
+release-smoke: $(PY)
+	$(PY) harness/tools/release_smoke.py $(ARGS)
 
 verify: $(PY)
 	$(MAKE) -C harness ci
@@ -116,9 +123,13 @@ budget-check: obs-vendor
 	$(MAKE) -C harness budget-check
 	printf 'SENTRY_DSN=http://k@127.0.0.1:9/1\nOTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:9/v1/traces\n' > harness/.build/obs-unreachable.env
 	cd harness && PYTHONPATH=.build/vendor EVALS_OBS_ENV=.build/obs-unreachable.env $(abspath $(PY)) tests/test_inspector_budget.py --catalog .build/budget-catalog --hooks ../infra/inspector/hooks.py
-	# This deployment's hooks with the same SDKs: which requests become traces.
+	$(MAKE) hooks-check
+
+# This deployment's hooks with their SDKs, vendored as render.sh vendors them (they are not in the venv): which
+# requests become traces; dev and prod observability for both servers (hooks_env.py), the labels, the refusals, Umami
+# prod only.
+hooks-check: obs-vendor
 	PYTHONPATH=harness/.build/vendor $(abspath $(PY)) infra/inspector/test_hooks.py
-	# Dev and prod observability for both servers (hooks_env.py): the labels, the refusals, Umami prod only.
 	PYTHONPATH=harness/.build/vendor $(abspath $(PY)) infra/inspector/test_hooks_env.py
 
 docs:

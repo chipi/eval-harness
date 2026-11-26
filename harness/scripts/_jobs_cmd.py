@@ -95,6 +95,30 @@ def _line(j: dict[str, Any]) -> str:
     return f"{j['id']}  {j.get('state_label') or j['state']:<22} {j['operation']:<18} by {j.get('by') or '-'}{extra}"
 
 
+def start_warnings(operation: str, inputs: dict[str, Any]) -> list[str]:
+    """What a `run` job started with these inputs cannot do, said as it starts (0.8.1 scenario, step 12): the run's own log
+    says so only once the job is under way. A warning, not a refusal: a free arm run for its outputs, or by a script
+    that names no goal, is a use the job allows."""
+    if operation != "run" or inputs.get("dry_run") or inputs.get("labels") or inputs.get("scratch"):
+        return []
+    out = []
+    dataset = str(inputs.get("dataset") or "")
+    from evaluation_harness.run import _reference_for  # noqa: PLC0415
+
+    if dataset and _reference_for(dataset)[1] is None:
+        out.append(
+            f"WARNING: no reference set for {dataset}: nothing will be scored, only the outputs kept. A reference set is "
+            f"labels you promote: evh label-from-run --run <run_id> --set <name>, then evh reference-promote "
+            f'--dataset-id {dataset} --labels <name> --tier gold|silver --reason "..." --by <you>'
+        )
+    if not inputs.get("goal"):
+        out.append(
+            "WARNING: no goal: the run is measured for none, so no goal's page or round reads it. "
+            "Add --arg goal=<goal> (evh goal-list)"
+        )
+    return out
+
+
 def start(argv: list[str]) -> int:
     """evh jobs-start: an operation started as a job, checked as the API checks it."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description="start an operation as a job (RFC-026)")
@@ -126,6 +150,8 @@ def start(argv: list[str]) -> int:
                     "(RFC-027)",
                     "bad-argument",
                 )
+            for line in start_warnings(op.name, inputs):
+                print(line, file=sys.stderr if a.json else sys.stdout)
             j = _api.start_operation(
                 op, inputs, _who() or None, a.max_cost_usd, _for() or None, origin=_actor.actor()["from"]
             )

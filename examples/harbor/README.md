@@ -57,7 +57,7 @@ Harbor starting the container):
   harbor_nop_v1_…  answered=1.0  cost_usd=0.0  latency_ms=16525.676667  pass=0.0  reward=0.0  tests_passed_frac=0.0  total_cost_usd=0.0
 ```
 
-The run prints "no reference set … quality cannot be scored" first. It is true and does not matter here: the verifier
+The run prints a note first: "no reference set … the run is not refused for it", and that your adapter's `score(output, None)` is what is recorded. It does not matter here: the verifier
 scores a trial, so there is no reference to promote. `pass` is the primary metric, 1 when the verifier's reward is 1.0;
 `reward` and `tests_passed_frac` (from the verifier's `ctrf.json`, when it writes one) are beside it.
 

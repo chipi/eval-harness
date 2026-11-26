@@ -109,3 +109,27 @@ def suffix_of(url: str) -> str:
     """The URL path's file extension ('.mp3'), or '' when it has none."""
     name = urlparse(url).path.rsplit("/", 1)[-1]
     return "." + name.rsplit(".", 1)[1] if "." in name and len(name.rsplit(".", 1)[1]) <= 8 else ""
+
+
+def is_web(url: str) -> bool:
+    """Whether `url` is an http(s) address, which materialize fetches; any other `source_url` is a local path."""
+    return urlparse(url).scheme in ("http", "https")
+
+
+def local_problem(url: str) -> str | None:
+    """Why `url` cannot be a local source (a path relative to the project root, pinned by source_sha256), or None.
+    A scheme, an absolute path or a `..` would name a file outside the project, which no clone has."""
+    if is_web(url):
+        return None
+    if urlparse(url).scheme or ":" in url or "\\" in url:
+        return "only an http(s) URL or a path inside the project can be a source_url"
+    if url.startswith("/") or ".." in url.split("/"):
+        return "a local source_url is a path inside the project, relative to its root"
+    return None
+
+
+def local_file(url: str) -> Path:
+    """Where a local `source_url` is: under the project root."""
+    from evaluation_harness._common import ROOT  # noqa: PLC0415
+
+    return ROOT / url

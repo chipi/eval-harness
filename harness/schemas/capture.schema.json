@@ -6,7 +6,7 @@
   "required": ["capture_id", "importer", "importer_sha256", "query", "captured_at", "n_records", "records"],
   "additionalProperties": false,
   "properties": {
-    "capture_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "capture_id": {"type": "string", "pattern": "^(?!.*\\.\\.)[^\\W_][\\w.-]*$"},
     "importer": {"type": "string", "description": "A built-in importer's name, a project importer's name, or path.py:Class."},
     "importer_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "The importer's source file, as it read the records."},
     "query": {"type": "object", "description": "The importer's query, verbatim."},

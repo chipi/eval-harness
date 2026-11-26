@@ -26,26 +26,22 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import hashlib
 import json
-import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _store
+from evaluation_harness import _ids, _store
 from evaluation_harness._common import die, load_dataset, now, read_json, write_json
 from evaluation_harness.model import datasets as model_datasets
 
 SOURCES = ("person", "model", "rule", "dataset")
-SET_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,99}$")
+SET_ID = _ids.SET
 
 
 def set_dir(dataset_id: str, name: str) -> Path:
     """Where one set lives; its name is checked first, so it can never leave data/labels/."""
-    if not SET_ID.match(name or ""):
-        die(
-            f"label set {name!r}: lowercase letters, digits, _ . - (at most 100), starting with a letter or digit",
-            "bad-argument",
-        )
+    if not SET_ID.ok(name):
+        die(f"label set {name!r}: {SET_ID.problem(name)} ({SET_ID.says()})", "bad-argument")
     return model_datasets.label_set_dir(f"{dataset_id}/{name}")
 
 

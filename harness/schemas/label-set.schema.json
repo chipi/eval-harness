@@ -6,7 +6,7 @@
   "required": ["dataset_id", "set", "source", "created_at", "n_items", "items"],
   "properties": {
     "dataset_id": {"type": "string", "description": "The dataset it labels; equals the folder above the set's."},
-    "set": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,99}$", "description": "Equals its folder's name."},
+    "set": {"type": "string", "pattern": "^(?!.*\\.\\.)(?!.*[A-Z])[^\\W_][\\w.-]{0,99}$", "description": "Equals its folder's name."},
     "source": {
       "type": "object",
       "description": "Who or what gave the labels: a person (`by`), a model (the system and run), a rule over a capture, or the dataset's own answers (`provider`, `column`, `revision`: read from the source at create).",

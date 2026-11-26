@@ -1,0 +1,21 @@
+goal_id: search_and_discovery
+schema_version: '0.1'
+title: Search and discovery over the corpus
+kind: product
+status: active
+confidence: low
+statement: Let a user find episodes by search.
+decision: Which ranking to ship.
+success_criteria:
+  primary:
+    measure: nDCG@10
+    direction: higher
+    threshold: 'floor 0.5, uplift >= 0.05'
+datasets:
+- dataset_id: viewer corpus v3 (fixtures)
+  role: dev
+  notes: 25 labelled queries
+- dataset_id: 5 personas
+  role: dev
+gaps:
+- No reference yet.

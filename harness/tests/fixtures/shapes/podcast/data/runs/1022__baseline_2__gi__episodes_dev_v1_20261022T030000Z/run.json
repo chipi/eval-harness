@@ -1,0 +1,118 @@
+{
+  "run_id": "1022__baseline_2__gi__episodes_dev_v1_20261022T030000Z",
+  "dataset_id": "episodes_dev_v1",
+  "system_id": "1022__baseline_2__gi",
+  "created_at": "2026-10-22T03:00:00Z",
+  "build": {
+    "ref": "model autoresearch; instrument commit 0000000000000000000000000000000000000003",
+    "dirty": null,
+    "source": "import-run --build-ref"
+  },
+  "n_items": 4,
+  "params": {
+    "imported": true,
+    "source": "data/eval/runs/1022__baseline_2__gi"
+  },
+  "adapter": "imported:invented_scorer compute_*_vs_reference per episode",
+  "fingerprint": {
+    "version": 5,
+    "instrument": {
+      "harness": {
+        "commit": null,
+        "dirty": null,
+        "version": "0.8.2",
+        "code_sha256": "13aa349e45249fbb0d816222ad7939c47847a677eac1b6c9c7d73d77af322489",
+        "installed": false
+      },
+      "adapter": {
+        "id": "imported:invented_scorer compute_*_vs_reference per episode",
+        "sha256": null
+      }
+    },
+    "data": {
+      "dataset_id": "episodes_dev_v1",
+      "items_sha256": "2c9b4e4e2c9f2242cfb3492307c48de05f31ce7123fdc47d01713861d058062f",
+      "n_items": 4,
+      "reference_id": null,
+      "reference_tier": null,
+      "references_sha256": null
+    },
+    "deployment": {
+      "id": null,
+      "model": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "revision": null,
+        "revision_source": null,
+        "file_hash": null,
+        "quantization": null,
+        "precision": null
+      },
+      "server": null,
+      "where": {
+        "machine": null,
+        "backend": null,
+        "device": null
+      },
+      "hosted": null,
+      "provider": null,
+      "in_process": true,
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.57.0",
+        "anthropic": "2.12.0",
+        "rouge-score": "0.1.2"
+      },
+      "declared": null
+    },
+    "settings": {
+      "imported": true,
+      "source": "data/eval/runs/1022__baseline_2__gi"
+    },
+    "runner": {
+      "label": null,
+      "platform": "Linux/x86_64",
+      "release": "7.2.5-3-omarchy",
+      "processor": null,
+      "cpu_count": 32,
+      "python": "3.11.17",
+      "libraries": null
+    },
+    "arm": {
+      "config_id": "1022__baseline_2__gi",
+      "labels": null
+    },
+    "instrument_sha256": "e01a8b468217ddcb9bd3841cacdae8a9f6b745e27fff6c2a6fa2044f41c0ffd4",
+    "data_sha256": "33c71744509f49f310ffdeadb30a0f5575df3e1e34c09c58859eda49f34e080a",
+    "deployment_sha256": "19a29f286383e3ad0d9beeab763d83ab19275306176ca45a96cef5b6e99c7889",
+    "settings_sha256": "7cfbdce36bd11c5bddf219a577743d954de123e5b1f5576faf1d507f3fe88c76",
+    "hash": "34eea91975e9d641e732bfcdc338d7de8cb2806721ebdd1d76f11ed9795dd63b",
+    "imported": {
+      "source": "data/eval/runs/1022__baseline_2__gi",
+      "scorer_id": "invented_scorer compute_*_vs_reference per episode",
+      "scorer_sha256": null,
+      "scores_file": "1022__baseline_2__gi_episodes_dev_v1.jsonl",
+      "scores_sha256": "861a845d234a3213a99b57baacf1a2ed5c3e7ff530f787d7f0ae3b412427a6f5",
+      "items_scored": 4,
+      "items_in_dataset": 4
+    }
+  },
+  "imported": {
+    "source": "data/eval/runs/1022__baseline_2__gi",
+    "scorer_id": "invented_scorer compute_*_vs_reference per episode",
+    "scorer_sha256": null,
+    "scores_file": "1022__baseline_2__gi_episodes_dev_v1.jsonl",
+    "scores_sha256": "861a845d234a3213a99b57baacf1a2ed5c3e7ff530f787d7f0ae3b412427a6f5",
+    "items_scored": 4,
+    "items_in_dataset": 4
+  },
+  "actor": {
+    "type": "person",
+    "name": "fixture",
+    "from": "environment"
+  },
+  "started_at": "2026-10-22T03:00:00Z",
+  "purpose": "run",
+  "machine": "linux"
+}

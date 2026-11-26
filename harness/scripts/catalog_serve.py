@@ -570,13 +570,40 @@ WORKBENCH = next(
 )
 #: The live Workbench's files: what /workbench/ serves, from the package or a checkout (whose mockup.html and its data,
 #: mock.js, a frozen design reference, are never served; D7).
-WORKBENCH_FILES = frozenset({"index.html", "workbench.css", "workbench.js", "help.js", "live.js"})
+WORKBENCH_FILES = frozenset({"index.html", "workbench.css", "workbench.js", "help.js", "live.js", "icon.svg"})
 WORKBENCH_TYPES = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
     ".css": "text/css; charset=utf-8",
     ".svg": "image/svg+xml",
 }
+
+
+def workbench_bar(page: str) -> str:
+    """The Workbench's page with its publication's bar, as the catalog's pages have it (catalog_build.page): the
+    deployment's parts (--link) as the switcher, the Workbench marked, the logo opening the first part and the brand its
+    name (--brand); the catalog's own link then leaves the screens' nav, the switcher holds it. Without --link (a
+    project's own server) the page is as it is."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+
+    if not cb.SECTIONS:
+        return page.replace("<!--evh:sections-->", "")
+    catalog = LIMITS.get("catalog_at") or "/"
+    parts = [(label, catalog if url == "." else url) for label, url in cb.SECTIONS]
+    here = [urlparse(u).path.rstrip("/").endswith("/workbench") for _, u in parts]
+    pills = "".join(
+        f'<a href="{cb.e(u)}"{" aria-current=page" if cur else ""}>{cb.e(lb)}</a>'
+        for (lb, u), cur in zip(parts, here, strict=True)
+    )
+    page = page.replace("<!--evh:sections-->", f'<nav class="sections" aria-label="Sections">{pills}</nav>')
+    page = page.replace(
+        '<a class="brand" href="#home">',
+        f'<a class="brand" href="{cb.e(parts[0][1])}" aria-label="{cb.e(parts[0][0])}">',
+    )
+    page = page.replace("<span>evh workbench</span>", f"<span>{cb.e(cb.BRAND)}</span>")
+    return page.replace('  <a href="/" data-catalog>Catalog ↗</a>\n', "")
+
+
 #: The catalog's rendered pages and its assets are the same four kinds (RFC-040).
 SITE_TYPES = WORKBENCH_TYPES
 #: What a public server (a viewer's, RFC-039) says to a call that writes, spends or runs.
@@ -1413,7 +1440,14 @@ class Handler(SimpleHTTPRequestHandler):
         except _api.Refused as exc:
             return self._json(exc.status, {"error": str(exc)}, cache=False)
         watch_write_job(j)
-        return self._json(202, j, cache=False)
+        from evaluation_harness._jobs_cmd import start_warnings  # noqa: PLC0415
+
+        # What `evh jobs-start` prints as the job starts: the answer only, not the job's record.
+        return self._json(
+            202,
+            {**j, "warnings": start_warnings(name, inputs if isinstance(inputs, dict) else {})},
+            cache=False,
+        )
 
     def _start_operation_reply(self, body: dict) -> None:
         """POST /api/v1/jobs: `{operation, inputs, by, for, max_cost_usd}` and nothing else."""
@@ -1625,6 +1659,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_error(404)
             return
         data = _store.read_bytes(f)
+        if name == "index.html":
+            data = workbench_bar(data.decode("utf-8")).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", kind)
         self.send_header("Content-Length", str(len(data)))

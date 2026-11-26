@@ -9,13 +9,12 @@ is scored against."""
 
 from __future__ import annotations
 
-import re
 import statistics
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _rounds
+from evaluation_harness import _common, _ids, _rounds
 from evaluation_harness._common import load_goals, read_json
 from evaluation_harness.model import compare as model_compare
 from evaluation_harness.model import datasets as model_datasets
@@ -33,7 +32,7 @@ ROUND = Entity(
     id_field="round_id",
     parent_field="goal",
     schema="round.schema.json",
-    id_pattern=re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*"),
+    id_pattern=_ids.NAME,
     editable=False,
 )
 
@@ -437,6 +436,12 @@ def _evidence(goal: str, rnd: dict, A: Any, data: Path | None, g: dict, metric: 
             if left is not None and abs(rnd["budget_usd"] - spent - left) > 1e-9:
                 line += f"; ${max(left, 0):.4f} left, counting what running or stopped commands hold"
         out["notes"].append(line + (" — over budget" if spent > rnd["budget_usd"] else ""))
+        if rnd.get("unpriced_allowed"):
+            out["notes"].append(
+                "the budget leaves out "
+                + ", ".join(f"{e['system']} (model {e['model']})" for e in rnd["unpriced_allowed"])
+                + ": started with --allow-unpriced, no price declared, so what it costs is not counted against it"
+            )
     leader = _best(A, arms, metric, lower, {**g, "goal_id": goal})
     out["leader"] = leader
     if not leader:

@@ -11,14 +11,22 @@
   openrouter  OpenRouter, asked for what it billed                   OPENROUTER_API_KEY
   litellm     your own LiteLLM proxy (`model` is the proxy's name)   LITELLM_API_KEY, LITELLM_BASE_URL
 
-Every provider takes `model`, `base_url` and `api_key_env` (another variable to read the key
-from), `temperature` (default 0) and `max_tokens`; the OpenAI-shaped ones also pass
+Every provider takes `model`, `base_url`, `api_key_env` (another variable to read the key
+from), `key_file` (a file to read it from, below), `temperature` (default 0) and `max_tokens`; the OpenAI-shaped ones also pass
 `reasoning`, `reasoning_effort` and `provider_routing` in the request body.
 
 KEYS BY ROLE. A judge reads every variable as `EVAL_JUDGE_<NAME>` first and falls back to
 `<NAME>`, so judging can run on its own keys (its own budget and spend log) or share the
 arms' with no setting at all. A credential is where a call is billed, not what was
-measured: `api_key_env` is left out of every identity hash (`identity_params`).
+measured: `api_key_env` and `key_file` are left out of every identity hash (`identity_params`).
+
+KEY FILE. A system may name `key_file`, a dotenv-format file (a path from the project root, or absolute; `~`
+expanded) its keys come from. For a call by that system every variable the provider reads (the key, the address) is
+taken from the file first, then the shell, then the project's .env: the system's own choice beats the defaults. A
+file that cannot be read is refused (`check_key_file`, and `problems` for any caller) before a call is made. A
+project adapter that calls `complete` with the system's params gets the same.
+
+A 401 is the key's, not the item's: `complete` stops the run there (`_refused_key`), naming the variable.
 
 COST. What the provider billed when the response carries it (`usage.cost`), else the
 system's prices (`usd_per_mtok_in` / `usd_per_mtok_out`) times the tokens, else unknown
@@ -36,14 +44,15 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable, NamedTuple
+from typing import Any, Callable, NamedTuple, NoReturn
 
 ROLES = ("arm", "judge")
 JUDGE_PREFIX = "EVAL_JUDGE_"
 OPENROUTER_URL = "https://openrouter.ai/api/v1"
 #: Params that say which credential pays for a call. They never enter an identity hash: the
 #: same model asked the same way is the same measurement whichever key was used.
-CREDENTIAL_PARAMS = ("api_key_env",)
+#: `key_file` is one: where a key is kept is not what was measured.
+CREDENTIAL_PARAMS = ("api_key_env", "key_file")
 #: Request-body fields an OpenAI-shaped provider passes through, and their name on the wire.
 _BODY_PARAMS = {
     "reasoning": "reasoning",
@@ -144,11 +153,86 @@ def identity_params(params: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in params.items() if k not in CREDENTIAL_PARAMS}
 
 
-def env(name: str, role: str) -> tuple[str, str | None]:
-    """(the variable read, its value). A judge reads EVAL_JUDGE_<name> first."""
-    if role == "judge" and os.environ.get(JUDGE_PREFIX + name):
-        return JUDGE_PREFIX + name, os.environ[JUDGE_PREFIX + name]
-    return name, os.environ.get(name) or None
+#: A system's key file as read: (the path as the system wrote it, the file's variables).
+KeyFile = tuple[str, dict[str, str]]
+
+
+def key_file_of(params: dict[str, Any]) -> KeyFile | None:
+    """The key file `params` name, read; None when they name none or it cannot be read (`key_file_problem` says why)."""
+    if params.get("key_file") is None:
+        return None
+    from evaluation_harness._common import read_key_file  # noqa: PLC0415
+
+    found, _why = read_key_file(params["key_file"])
+    return (str(params["key_file"]), found) if found is not None else None
+
+
+def key_file_problem(params: dict[str, Any]) -> str | None:
+    """Why the `key_file` `params` name cannot be used, None when they name none or it can."""
+    if params.get("key_file") is None:
+        return None
+    from evaluation_harness._common import read_key_file  # noqa: PLC0415
+
+    return read_key_file(params["key_file"])[1]
+
+
+def check_key_file(params: dict[str, Any], system_id: str) -> None:
+    """Before a system's first call: a `key_file` that cannot be read is refused (`not-configured`), naming the file
+    and the system; one inside the project and not ignored by git is warned about, since a key file that is
+    committed is a key that is leaked."""
+    if params.get("key_file") is None:
+        return
+    from evaluation_harness._common import die, key_file_uncovered  # noqa: PLC0415
+
+    if why := key_file_problem(params):
+        die(f"system {system_id}: {why}; nothing was called", "not-configured")
+    if key_file_uncovered(params["key_file"]):
+        print(
+            f"  WARNING: system {system_id}: key_file {params['key_file']} is inside the project and git does not "
+            "ignore it. A key file must not be committed: add it to .gitignore, or keep it outside the project."
+        )
+
+
+def _lookup(name: str, role: str, key_file: KeyFile | None = None) -> tuple[str, str | None, str]:
+    """(the variable read, its value, where it came from). A system's key file first (its explicit choice), then the
+    shell, then the project's .env (which `_common.load_dotenv` loads under the shell's); a judge reads
+    EVAL_JUDGE_<name> before <name> within each."""
+    from evaluation_harness._common import env_origin  # noqa: PLC0415
+
+    names = [JUDGE_PREFIX + name, name] if role == "judge" else [name]
+    if key_file:
+        for n in names:
+            if key_file[1].get(n):
+                return n, key_file[1][n], f"key_file {key_file[0]}"
+    for n in names:
+        if os.environ.get(n):
+            return n, os.environ[n], env_origin(n)
+    return name, None, "not set"
+
+
+def env(name: str, role: str, key_file: KeyFile | None = None) -> tuple[str, str | None]:
+    """(the variable read, its value). A judge reads EVAL_JUDGE_<name> first; a `key_file` outranks the environment."""
+    var, value, _origin = _lookup(name, role, key_file)
+    return var, value
+
+
+def key_sources(params: dict[str, Any], role: str) -> list[tuple[str, str | None, str]]:
+    """The variables a call with `params` reads for its credential, as (variable, value, where it came from): the key
+    always, the address when a variable gives it. For env-check and the dry run, which say where and never show a value
+    (env-check shows its length and tail, as it has)."""
+    provider = params.get("provider")
+    if provider not in SPECS:
+        return []
+    spec, kf = SPECS[provider], key_file_of(params)
+    r = route(params, role)
+    if r.key == NO_KEY:
+        return [("(none)", None, "a local server takes no key")]
+    out = [_lookup(str(params.get("api_key_env") or spec.key_env), role, kf)]
+    if spec.base_env and not params.get("base_url"):
+        address = _lookup(spec.base_env, role, kf)
+        if address[1]:
+            out.append(address)
+    return out
 
 
 def _either(name: str, role: str) -> str:
@@ -180,13 +264,14 @@ def route(params: dict[str, Any], role: str) -> Route:
     if provider not in SPECS:
         raise ValueError(f"unknown provider {provider!r}; one of {', '.join(PROVIDERS)}")
     spec = SPECS[provider]
-    key_var, key = env(str(params.get("api_key_env") or spec.key_env), role)
+    kf = key_file_of(params)
+    key_var, key = env(str(params.get("api_key_env") or spec.key_env), role, kf)
     base_var: str | None
     base: str | None
     if params.get("base_url"):
         base_var, base = "base_url", str(params["base_url"])
     elif spec.base_env:
-        base_var, base = env(spec.base_env, role)
+        base_var, base = env(spec.base_env, role, kf)
     else:
         base_var, base = None, None
     base = base or spec.base_default
@@ -208,6 +293,8 @@ def problems(params: dict[str, Any], role: str) -> list[str]:
         return [f"unknown provider {provider!r}; one of {', '.join(PROVIDERS)}"]
     out = [] if params.get("model") else [f"provider {provider}: params name no model"]
     spec, r = SPECS[provider], route(params, role)
+    if why := key_file_problem(params):
+        return [*out, f"provider {provider}: {why}"]  # a key the file would have held is not "not set"
     if not r.key:
         named = str(params.get("api_key_env") or spec.key_env)
         out.append(f"provider {provider}: {_either(named, role)} is not set")
@@ -412,6 +499,28 @@ def complete(prompt: str, params: dict[str, Any], *, role: str, max_tokens: int)
     # A second net under the command's own cap (RFC-026 step 5): counted here too, so an adapter that reports less
     # than its calls cost is stopped at the cap all the same (CostCapExceeded before the call).
     _spend.net_check()
-    done = _SHAPES[SPECS[params["provider"]].shape](prompt, params, route(params, role))
+    r = route(params, role)
+    try:
+        done = _SHAPES[SPECS[params["provider"]].shape](prompt, params, r)
+    except Exception as exc:
+        if getattr(exc, "status_code", None) == 401:
+            _refused_key(r, exc)
+        raise
     _spend.net(done.cost_usd)
     return done
+
+
+def _refused_key(r: Route, exc: Exception) -> NoReturn:
+    """A 401 is the key, not the item: every call would fail the same way, so the run stops here (a failed item was
+    recorded, the run went on and exited 0), naming the variable that held the key. The server's own words are kept,
+    without the key: a server may echo it back, and what is printed or recorded must never hold it."""
+    from evaluation_harness._common import die  # noqa: PLC0415
+
+    said = str(exc)
+    if r.key:
+        said = said.replace(r.key, "(the key)")
+    die(
+        f"provider {r.provider} refused the key with a 401: {r.key_var} is set, and not accepted "
+        f"(wrong, revoked, or for another account). The server said: {said[:300]}",
+        "not-configured",
+    )

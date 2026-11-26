@@ -518,6 +518,7 @@ const follow=()=>{delete r.dataset.theme;try{localStorage.removeItem('theme');}c
 if(r.dataset.theme===sys())follow();
 const show=()=>{const on=!!r.dataset.theme;b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',`Use the ${on?r.dataset.theme:other()} theme`);
 b.title=on?`The ${r.dataset.theme} theme; press to follow the system's (${sys()})`:`Following the system's theme (${sys()}); press for ${other()}`;};show();
+document.querySelectorAll('[data-theme-toggle]').forEach(x=>x.addEventListener('click',()=>b.click()));
 b.addEventListener('click',()=>{if(r.dataset.theme)follow();else{r.dataset.theme=other();try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}}show();});
 mq.addEventListener('change',()=>{if(r.dataset.theme===sys())follow();show();});})();
 /* the on-this-page line: the section in view marked, its link kept in sight on a narrow screen */
@@ -690,15 +691,18 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
         + nav("judging", f"{up}evals/judging.html", "Re-measured")
     )
     # GitHub: a line in the phone menu, an icon button beside search and the theme on the bar.
-    github_menu = f'<a href="{REPO}">GitHub ↗</a>'
-    # The switcher's MCP entry leaves the bar below 560 px: the menu carries it there.
-    mcp_menu = f'<a class="menu-mcp" href="{up or "./"}#mcp">Ask it from your agent (MCP)</a>'
+    github_menu = f'<a class="menu-phone" href="{REPO}">GitHub ↗</a>'
     github_btn = f'<a class="hbtn" href="{REPO}" aria-label="eval-harness on GitHub" title="GitHub">{ICON["github"]}</a>'
-    # Harness · Catalog · Docs · MCP, the same switcher in all three, this one marked (MCP is the
+    # Harness · Catalog · Workbench · Docs · MCP, the same switcher on all four parts, this one marked (MCP is the
     # home page's section on it: there is no page of its own to open).
     sections = (
-        f'<a href="{up or "./"}" aria-current="page">Harness</a>'
-        f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{up or "./"}#mcp">MCP</a>'
+        f'<a href="{up or "./"}" aria-current="page">Harness</a><a href="{CATALOG}">Catalog</a>'
+        f'<a href="{WORKBENCH}">Workbench</a><a href="{up}docs/">Docs</a><a href="{up or "./"}#mcp">MCP</a>'
+    )
+    # On a phone the bar holds the ☰, the logo and the five pills only: search and the theme are in the menu.
+    phone_menu = (
+        f'<a class="menu-phone" href="{up}docs/?q=">Search the docs</a>'
+        '<button type="button" class="menu-theme menu-phone" data-theme-toggle>Light or dark</button>'
     )
     onpage = onpage_nav(body)
 
@@ -728,8 +732,8 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 <a class="skip" href="#main">Skip to the page</a>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up or "./"}" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
-  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{mcp_menu}{github_menu}</nav></details>
+  <nav class="sections" aria-label="Sections">{sections}</nav>
+  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{github_menu}{phone_menu}</nav></details>
   <nav class="nav">{links}{github_btn}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Dark theme" aria-pressed="false">{ICON["theme"]}</button></nav>
 </div>{onpage}</header>
 <main id="main" tabindex="-1">
@@ -1246,7 +1250,7 @@ def home(f: dict) -> str:
   <div class="eyebrow"><span class="num">06</span>For agents</div>
   <h2>Ask it from your agent.</h2>
   <div class="cols">
-    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, reference sets, metrics, activity, the inspector's paired comparisons and its sheet of every item and arm, the label sets and how two agree, and what production decided (its captures, the deploy sheet, the picks waiting for a dataset's next version), each answering what the command's <code>--json</code> gives. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
+    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, reference sets, metrics, activity, the inspector's paired comparisons and its sheet of every item and arm, the label sets and how two agree, and what production decided (its captures, the deploy sheet, the picks waiting for a dataset's next version), each answering what the command's <code>--json</code> gives. Its tools only read, but two that your own server also offers, <code>study-ask</code> and <code>study-tell</code>, which write a study and run its next trial (<code>--no-agent-tools</code> leaves them out; a public server never has them); the one file a read keeps is a cache of the goals' tests.</p>
     <p>On your machine it serves your own project; for a team, <code>evh mcp --http</code> serves one checkout to everyone. The worked examples above are served at <code>https://evals.humancopilot.eu/mcp</code>, read-only and without sign-in, answering what the site and the catalog publish and never an item's text (so without the sheet), for Claude, ChatGPT and the OpenAI API, Gemini, or any MCP client.</p>
       <div class="btns"><a class="btn primary" href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">Connect an agent</a><a class="btn" href="{BLOB}/docs/rfc/RFC-018-read-only-mcp-server.md">How it works, on GitHub ↗</a></div></div>
 <pre class="term"><span class="c"># the worked examples, from Claude Code</span>

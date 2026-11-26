@@ -1,0 +1,29 @@
+{
+  "actor": {
+    "from": "environment",
+    "name": "fixture",
+    "type": "person"
+  },
+  "created_at": "2026-11-19T10:00:00Z",
+  "dataset_id": "episodes_smoke_v1",
+  "description": "3 item(s) from episodes_smoke_v1/",
+  "items": [
+    {
+      "item_id": "s1",
+      "source_path": "s1.txt",
+      "source_sha256": "d5600cca26b6db94f38825ab85f14dc0af58e8bf09139c769ef71f635bbd91a4"
+    },
+    {
+      "item_id": "s2",
+      "source_path": "s2.txt",
+      "source_sha256": "963280bc7f036dcaa0f5031960f7f9aa05acc2cf2740bf8001d4fbd168efa33d"
+    },
+    {
+      "item_id": "s3",
+      "source_path": "s3.txt",
+      "source_sha256": "7d71e3f6863ca4212421255225e1720b2e2e23d5a9000a3c46dde2d2583911ca"
+    }
+  ],
+  "source_dir": "sources/episodes_smoke_v1",
+  "version": "1.0"
+}

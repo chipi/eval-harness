@@ -278,6 +278,15 @@ with tempfile.TemporaryDirectory() as td:
         len(drift) == 1 and "judge dear was billed $0.0025, 1.25x" in drift[0] and "right" not in drift[0],
         drift,
     )
+    # 0.8.1 scenario: the old advice (edit the prices in the scorer) made the next pass refuse, "stored by a different
+    # judge definition", because a judge's prices are part of its identity.
+    check(
+        "the price NOTE says editing the scorer in place makes the next pass refuse, and what to do instead",
+        "new scorer version" in drift[0]
+        and "refuse" in drift[0]
+        and "correct them in the scorer's judge params" not in drift[0],
+        drift,
+    )
 
 # The same run: a grade prompt that did not name the dimensions paid for 80 unparsed replies. judge-score refuses it
 # before any call (its dry run too); a pick or pairwise message carries its shape; the tutorial's prompt names both.

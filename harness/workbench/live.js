@@ -22,6 +22,11 @@
   // ("no valid token"). The page says what happened and what to do, wherever the answer is shown.
   const RESTARTED = "The server was restarted, so this page's sign-in no longer works: open the Workbench link evh catalog-serve printed (it carries the new token).";
   const realFetch = window.fetch.bind(window);
+  // The pause between two asks of a job being followed: a hidden tab asks nothing, and asks again when it shows.
+  const nap = async (ms) => {
+    await new Promise((ok) => setTimeout(ok, ms));
+    while (document.hidden) await new Promise((ok) => document.addEventListener("visibilitychange", ok, { once: true }));
+  };
   // A read a screen treats as optional (a chart, the rail) swallows its refusal, so the notice cannot depend on the read
   // that happened to be the screen's main one: the first 401 of any /api/v1 call puts it on the page, outside what a
   // screen redraws, once.
@@ -321,7 +326,7 @@
       const box = document.getElementById(`job-${dep}`);
       if (box) box.innerHTML = `<p class="muted">${jobLine(j)}</p>`;
       if (!["queued", "running", "running (unsupervised)"].includes(j.state)) break;
-      await new Promise((ok) => setTimeout(ok, 2000));
+      await nap(2000);
     }
     forget(`model:${model}`);
     forget("models");
@@ -513,18 +518,20 @@
     for (const [k, v] of Object.entries(d.q || {})) if (String(v).trim()) q[k] = NUMBERS.has(k) && /^\d+$/.test(String(v).trim()) ? Number(v) : String(v).trim();
     return q;
   };
-  async function watchJob(id, box, what) {
+  // What the API said as the job started (the same lines `evh jobs-start` prints): the job runs all the same.
+  const startWarnings = (j) => ((j && j.warnings) || []).map((w) => `<p class="note" role="status" data-start-warning>${esc(w)}</p>`).join("");
+  async function watchJob(id, box, what, extra = "") {
     for (;;) {
       const r = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" }).catch(() => null);
       if (!r || r.status === 503) {
         if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: the project is being moved, waiting…</p>`;
-        await new Promise((ok) => setTimeout(ok, 1000 * Number((r && r.headers.get("Retry-After")) || 2)));
+        await nap(1000 * Number((r && r.headers.get("Retry-After")) || 2));
         continue;
       }
       const j = await r.json().catch(() => ({}));
-      if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: ${esc(j.state || "…")}</p>`;
+      if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: ${esc(j.state || "…")}</p>${extra}`;
       if (!["queued", "running", "running (unsupervised)"].includes(j.state)) return j;
-      await new Promise((ok) => setTimeout(ok, 1000));
+      await nap(1000);
     }
   }
   const jobRefusal = async (j) => {
@@ -767,7 +774,9 @@
         <div class="field">${nm("sn-model", "The model", "models.pick")}<div><select id="sn-model"><option value="">choose a model that has somewhere to run</option>
           ${runnable.map((m) => { const b = (m.best || []).find((x) => x.goal === goal);
             return `<option value="${esc(m.model)}" ${d.model === m.model ? "selected" : ""}>${esc(m.name || m.model)} · ${esc(m.state)}${b ? ` · #${b.rank} of ${b.of} on this goal` : ""}</option>`; }).join("")}</select>
-          <div class="hint">a model not here is brought in first: <a href="#model-new">Bring in a model</a></div></div></div>
+          <div class="hint" id="sn-why">${runnable.length ? "A model is listed when it has a model record that says where it runs." : "No model here: a model is listed when it has a model record that says where it runs, and this project has none."}
+            ${ms.models.length > runnable.length ? `${ms.models.length - runnable.length} model record(s) have no deployment yet. ` : ""}A model with no record (a system that only names one) is not listed:
+            <a href="#model-new">Bring in a model</a> to write its record, or take a system above and use <b>Clone it, change one thing</b>.</div></div></div>
         ${d.model ? `<div class="field"><label class="name" for="sn-dep">Where it runs</label><div><select id="sn-dep">${deps.map((x) => `<option ${d.deployment === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div></div>
         <div class="field">${nm("sn-prompt", "The prompt", "systems.prompt")}<div><textarea id="sn-prompt" rows="2" placeholder="Summarise the following in one sentence:">${esc(d.prompt)}</textarea><div class="hint">${esc((HELPS()["systems.prompt"] || {}).hint || "")} It is kept as a version of <a class="mono" href="#prompts/${enc(promptName(goal))}">${esc(promptName(goal))}</a>${latest ? ` (now ${esc(latest.id)})` : ""}: a changed text is a new version, and every run records the version it sent</div></div></div>
         <div class="field">${nm("sn-temp", "Temperature", "models.settings")}<div><input type="text" id="sn-temp" inputmode="decimal" value="${esc(d.temperature)}" style="width:6rem"></div></div>
@@ -938,8 +947,12 @@
       if (got.error) return failed(got);
       const has = new Set((got.arms || []).filter((a) => String(a.arm || "").startsWith(`runs/${ds}/`)).map((a) => a.system));
       const offer = inPlayLast.filter((s) => has.has(s)), omit = inPlayLast.filter((s) => !has.has(s));
+      // A study's round runs on the validation side of its dataset: its arms have no run on the dataset itself, and a run
+      // is never carried to another dataset (`round-open --keep` refuses it), so say where they did run and the ways on.
+      const ranOn = lastRec.round.dataset_id;
+      const why = ranOn && ranOn !== ds ? ` (${esc(last.round_id)} ran it on ${esc(ranOn)}, and a run is not carried to another dataset: ${datasets.includes(ranOn) ? `choose ${esc(ranOn)} in On, or ` : ""}run it on ${esc(ds)} first)` : "";
       return (offer.length ? `<div class="choices" role="group" aria-labelledby="ro-keep-l">${offer.map((s) => `<label class="choice"><input type="checkbox" name="ro-keep" value="${esc(s)}" checked> <span class="mono">${esc(s)}</span></label>`).join("")}</div>` : '<p class="muted" style="margin:0">None is offered.</p>')
-        + omit.map((s) => `<p class="muted" style="margin:0"><span class="mono">${esc(s)}</span>: not offered: no run on ${esc(ds)}</p>`).join("");
+        + omit.map((s) => `<p class="muted" style="margin:0"><span class="mono">${esc(s)}</span>: not offered: no run on ${esc(ds)}${why}</p>`).join("");
     };
     LIVE.carryFor = carryFor;
     // The chosen "On" survives a redraw (the arms of another dataset landing redraws the screen): else the select went back to the first.
@@ -957,6 +970,12 @@
     const rs = load(`round:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}`), ev = load(`evidence:${goal}/${cur}`, `/goals/${enc(goal)}/rounds/${enc(cur)}/evidence`);
     const sys = load("systems", "/systems"), bl = load(`baselines:${goal}`, `/baselines?goal=${enc(goal)}`), allArms = load("arms:all", "/arms");
     const prev = rs && !rs.error && rs.round.from ? load(`round:${goal}/${rs.round.from}`, `/goals/${enc(goal)}/rounds/${enc(rs.round.from)}`) : null;
+    // The charts need only the goal, the round and its dataset: their reads (the slow ones, each a server-side computation)
+    // start once the round is known, not after every other read of the screen has landed (the scenario's 2.5 s of "Reading the chart…").
+    if (rs && !rs.error) {
+      chartBox("gain-cost", { goal, round: cur }, true);
+      for (const kind of ["intervals", "items", "latency"]) chartBox(kind, { goal, dataset: rs.round.dataset_id }, true);
+    }
     if ([rs, ev, sys, bl, prev, allArms].includes(undefined)) return `<div class="screen wide">${head}${tabs}${loading("the round")}</div>`;
     const bad = [rs, ev, sys, bl, prev].find((x) => x && x.error);
     if (bad) return `<div class="screen wide">${head}${tabs}${failed(bad)}</div>`;
@@ -1113,7 +1132,7 @@
             else again(null, out);
             break;
           }
-          await new Promise((ok) => setTimeout(ok, 1000));
+          await nap(1000);
         }
       } catch (e) { out.innerHTML = refusal(e); }
       ev.target.disabled = false;
@@ -1163,7 +1182,10 @@
     document.getElementById("rc-close")?.addEventListener("click", async (ev) => {
       const out = document.getElementById("rc-out"), by = byOr("ev-by");
       if (!by) { out.innerHTML = '<p class="note" role="alert">Say who you are: a decision names who made it.</p>'; return; }
-      if (!window.confirm(`Close ${cur} with this conclusion?${document.getElementById("rc-promote")?.checked ? " Its leader's run becomes the goal's baseline." : ""}`)) return;
+      if (!window.confirm(`Close ${cur} with this conclusion?${document.getElementById("rc-promote")?.checked ? " Its leader's run becomes the goal's baseline." : ""}`)) {
+        out.innerHTML = `<p class="note" role="status">Not closed: ${esc(cur)} stays open, and nothing was written.</p>`;
+        return;
+      }
       const inputs = { conclusion: v("rc-text"), by };
       if (document.getElementById("rc-promote")?.checked) inputs.promote = document.getElementById("rc-promote").value;
       ev.target.disabled = true;
@@ -2120,6 +2142,7 @@
     const res = (j.result || {}).result;
     return `<div class="screen wide">${head}<h1 class="mono">${esc(j.operation)}</h1>
       <p class="lead">${stateTagOf(j.state, j.state_label)}${j.waiting_for ? ` · waits for ${esc(j.waiting_for)}` : ""} · ${askedBy(j)} · made ${esc((j.created_at || "").replace("T", " ").slice(0, 19))}${j.ended_at ? ` · ended ${esc(String(j.ended_at).replace("T", " ").slice(0, 19))}` : ""}${j.exit != null ? ` · exit ${esc(j.exit)}` : ""}</p>
+      ${startWarnings({ warnings: (WB._startWarned || {})[id] })}
       <div class="tablewrap"><table><tbody>
         <tr><th>progress</th><td>${progressOf(j.progress)}</td></tr>
         <tr><th>spent</th><td>${usd(j.spent_usd)}${cap ? ` of at most ${usd(Number(cap))}` : ""}</td></tr>
@@ -2166,7 +2189,7 @@
           if (res && !RUNNING.includes(j.state) && sameLines(res.innerText, pre.textContent)) res.innerHTML = '<p class="muted">The same text as its log, below.</p>';
         }
         if (!RUNNING.includes(j.state)) return;
-        await new Promise((ok) => setTimeout(ok, 1000));
+        await nap(1000);
         const now = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
         if (!alive) return;  // the stop button read the job again already
         if (now.state && !RUNNING.includes(now.state)) { alive = false; forget(`job:${id}`); forget("jobs:"); WB.render(true); return; }
@@ -2189,6 +2212,7 @@
       try {
         const { system, ...rest } = recall();
         const n = await send("POST", `/systems/${enc(system)}/runs`, { ...rest, by, max_cost_usd: cap });
+        (WB._startWarned = WB._startWarned || {})[n.id] = n.warnings || [];
         forget("jobs:"); location.hash = `#jobs/${enc(n.id)}`;
       } catch (e) { out.innerHTML = refusal(e); ev.target.disabled = false; }
     });
@@ -2384,7 +2408,7 @@
         if (!((((LIVE.cache[`dataset:${theSide()}`] || {}).parts || {}).materialized || {}).present) && !(await runJob(`/datasets/${enc(theSide())}/materialize`, { by: who_ }, box, "fetching its items"))) { ev.target.disabled = false; return; }
         for (const s of [u.system_id, (u.hypothesis || {}).against].filter(Boolean)) {
           const j = await send("POST", "/jobs", { operation: "run", inputs: { system: s, dataset: theSide() }, by: who_, max_cost_usd: cap });
-          const done = await watchJob(j.id, box, `running ${s}`);
+          const done = await watchJob(j.id, box, `running ${s}`, startWarnings(j));
           if (done.state !== "succeeded") { box.innerHTML = await jobRefusal(done); ev.target.disabled = false; return; }
         }
         again(box, { result: {} }, [`pairtest:${theSide()}`, `arms:${theSide()}`]);
@@ -3034,6 +3058,8 @@
   if (!location.pathname.startsWith("/workbench")) noProject();
   else {
     fetch("/api/v1/goals", { credentials: "same-origin" }).then((r) => {
+      // only its status and headers are read: an unread body leaves the request open for Chromium, and the page never idles
+      if (r.body) r.body.cancel().catch(() => {});
       if (r.status === 404) noProject();
       else if (r.status !== 401) {
         if (r.headers.get("X-EVH-Viewer") === "1") LIVE.viewer = true; // before the first screen is drawn: the fetch above asks nothing a viewer may not

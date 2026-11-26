@@ -768,6 +768,11 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
         if reference_id.startswith("labels/")
         else base / "references" / reference_id
     )
+    if not _store.is_dir(ref_dir) and not reference_id.startswith("labels/"):
+        from evaluation_harness import _common  # noqa: PLC0415
+
+        if base == _common.DATA:  # the current project's: only it declares roots
+            ref_dir = _common.reference_dir(reference_id)  # a reference kept in a folder the project declares
     if not _store.is_dir(ref_dir):
         return None
     # EVERY FILE, not just *.txt. A silver reference directory also carries

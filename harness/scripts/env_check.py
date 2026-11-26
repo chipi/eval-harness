@@ -18,16 +18,16 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import os
+from typing import Any
 
 from evaluation_harness import _providers, _retry, _spend, _store
 from evaluation_harness._common import (
     DOTENV_LOADED,
-    DOTENV_SET,
     EXIT_PROBLEMS,
     ROOT,
-    dotenv_pairs,
     env_float,
     env_int,
+    env_origin,
     evh_prog,
     in_checkout,
 )
@@ -42,12 +42,42 @@ def _state(raw: str, secret: bool) -> str:
     return f"set ({len(raw)} chars, ends …{raw[-4:]})"
 
 
-def _source(var: str) -> str:
-    """Where a set variable came from: the project's .env, the shell, or the shell over a .env value (an exported
-    variable wins, so the file's is not used: the 0.8.0 newcomer run could not tell which keys were its .env's)."""
-    if var in DOTENV_SET:
-        return ".env"
-    return "shell, over .env" if var in {k for k, _v in dotenv_pairs(ROOT / ".env")} else "shell"
+def _key_file_systems() -> list[tuple[str, dict[str, Any]]]:
+    """(system id, params) of every system of the project that names a `key_file`."""
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+    from evaluation_harness.model.systems import SYSTEM  # noqa: PLC0415
+
+    out = []
+    try:
+        ids = SYSTEM.ids(check_format=False)
+    except (
+        SystemExit
+    ):  # a project that names no store has no systems: env-check is the first thing a newcomer runs
+        return []
+    for sid in ids:
+        try:
+            params = dict(SYSTEM.get(sid).get("params") or {})
+        except Problem:
+            continue  # `evh validate` says what is wrong with a system; this command reports keys
+        if params.get("key_file") is not None:
+            out.append((sid, params))
+    return out
+
+
+def _report_key_files(systems: list[tuple[str, dict[str, Any]]]) -> None:
+    """Per system and key, where it comes from: its key_file, the shell or .env. Never a value."""
+    print("\nsystems that name a `key_file` (read first, then the shell, then .env)")
+    for sid, params in systems:
+        kf = _providers.key_file_of(params)
+        if kf is None:
+            print(f"  {sid:20} {_providers.key_file_problem(params)}")
+            continue
+        for var, value, origin in _providers.key_sources(params, "arm"):
+            note = ""
+            if not origin.startswith("key_file") and var not in kf[1] and not var.startswith("("):
+                note = f"   ({kf[0]}: {var} is not in the file)"
+            shown = _state(value, var.endswith("KEY")) if value else "not set"
+            print(f"  {sid:20} {var:20} {shown} ({origin}){note}")
 
 
 def _probe(base: str) -> str:
@@ -77,6 +107,14 @@ def main() -> int:
     )
     if not _store.is_file(env_file):
         print("      create it with the keys your providers read, one NAME=value per line\n")
+    named = _key_file_systems()
+    files = [str(env_file)] if _store.is_file(env_file) else []
+    files += [kf[0] for _s, p in named if (kf := _providers.key_file_of(p))]
+    files = list(dict.fromkeys(files))
+    print(
+        f"files read: {', '.join(map(str, files)) or '(none)'}"
+        + ("" if named else "; no system names a key_file, so each key below is the shell's or this .env's")
+    )
 
     print(
         "\nhosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
@@ -93,12 +131,12 @@ def main() -> int:
             arm = os.environ.get(var, "")
             own = os.environ.get(_providers.JUDGE_PREFIX + var, "")
             arm_s = (
-                f"{_state(arm, secret)} ({_source(var)})"
+                f"{_state(arm, secret)} ({env_origin(var)})"
                 if arm
                 else ("not set" if secret or spec.base_required else "not set (the default address)")
             )
             judge_s = (
-                f"own: {_state(own, secret)} ({_source(_providers.JUDGE_PREFIX + var)})"
+                f"own: {_state(own, secret)} ({env_origin(_providers.JUDGE_PREFIX + var)})"
                 if own
                 else ("the arms'" if arm else ("not set" if secret else arm_s))
             )
@@ -114,6 +152,8 @@ def main() -> int:
                     print(f"  {'':11} {'reachable?':20} {url}  {_probe(url)}")
     for role, label in (("arm", "arms"), ("judge", "judges")):
         print(f"  {label} can call: {', '.join(ready[role]) or 'none'}")
+    if named:
+        _report_key_files(named)
     # A local server (or Ollama's port) is called with no key: it bills nothing, so it is no reason for a cap.
     local = {
         (role, name)
@@ -156,7 +196,7 @@ def main() -> int:
         + (
             " — a sweep can bill without limit"
             if cap is None
-            else f" — mid-run abort ({_source('EVAL_MAX_COST_USD')})"
+            else f" — mid-run abort ({env_origin('EVAL_MAX_COST_USD')})"
         )
     )
     print(f"  EVAL_MAX_RETRIES       {env_int('EVAL_MAX_RETRIES', _retry.DEFAULT_MAX_RETRIES)}")

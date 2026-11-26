@@ -18,7 +18,7 @@ Pin it into your project, and start the project's folders:
 
 ```bash
 cd /path/to/your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.1#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.2#subdirectory=harness"
 evh init --store files   # config.yaml, data/sources, data/systems, data/goals, data/fields, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt; --store sqlite is its equal
 ```
 
@@ -308,7 +308,10 @@ the command writes those systems, so a project names it by hand only to run one 
 dispatches to its `PROVIDERS` (`from evaluation_harness.adapter import PROVIDERS, Result`), also
 call OpenAI or any OpenAI-compatible endpoint (`provider: openai` with a `base_url`), OpenRouter
 (`provider: openrouter`), and a LiteLLM proxy (`provider: litellm`). Each reads its key from the
-environment or the project's `.env` (gitignored by `evh init`); the harness holds none.
+environment or the project's `.env` (gitignored by `evh init`), or from the file a system names
+with `key_file` in its params (first of the three; [RUNBOOK](RUNBOOK.md#environment-variables)); the harness holds none.
+An adapter of yours that calls `_providers.complete` with the system's params gets the key file too; one that
+reads `os.environ` itself does not.
 **Which variable each provider reads, and what goes in the system's `params`:
 [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).** `evh env-check`
 reports which are set. Judges use the same providers: each judge's `provider:` in the scorer
@@ -493,7 +496,8 @@ a team sharing one project.
 operation, named as the operation, the command and the API's resource are (`goal-list`, `dataset-show`,
 `comparison-show`, `leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `validate`, `data-ls`,
 `search`, ...; `evh mcp --help` and the tool list name them all): 75 on your machine, 62 on a public server. On
-your machine the agent sampler also has `study-ask` and `study-tell`, the only tools that write the study and run a trial. A call is answered in the server's own process, from
+your machine the agent sampler also has `study-ask` and `study-tell`, the only tools that write the study (`study-tell` runs a
+study's next trial and spends); a public server never has them. A call is answered in the server's own process, from
 the same operation the command and the API are made from, so the agent sees the same numbers you do; its answer is
 the operation's result, structured (the `result` of the command's `--json`), and the tool's inputs are the
 operation's own, typed. No other tool writes project data, spends or runs a model: running arms, promoting a baseline and
@@ -538,9 +542,14 @@ the catalog shows.
 evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--public]
 ```
 
+**Read-only, with the text**: `evh mcp --no-agent-tools` (stdio or `--http`, an always-on server over a shared project)
+serves everything a local server reads, the text of items and outputs included (`--public` leaves those out), and leaves
+out `study-ask` and `study-tell`, the only tools that write or run a trial: `tools/list` then holds no tool that is not
+annotated read-only, and a call to either is refused as an unknown tool. On a `--public` server the flag changes nothing.
+
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
 rebinding); `--public` leaves out the tools that answer with an item's text, an output or a label, or read the project's files
-(`comparison-item`, `comparison-items`, `sheet-show`, `validate`, `data-ls`, `data-show` and the like: 61 tools of the 71), and the inputs that
+(`comparison-item`, `comparison-items`, `sheet-show`, `validate`, `data-ls`, `data-show` and the like: the 11 of the 73 reads), and the inputs that
 would (`group` of `comparison-crosstab`, `item` of `dataset-items`) and the ones that set how long a test runs (`permutations`, `draws`); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
@@ -555,7 +564,7 @@ them answers in seconds after the first.
 
 ```bash
 cd your-project && python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.1#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.2#subdirectory=harness"
 evh init --store files                        # folders, config.yaml, .gitignore, AGENTS.md for an agent, an example judge prompt
 export EVAL_MAX_COST_USD=2                    # a run stops when it has spent this; with none, no cap
 

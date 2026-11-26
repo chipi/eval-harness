@@ -47,7 +47,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | the card; as Croissant 1.1 | `evh dataset-card …` · `… --format croissant --creator … > card.json` (it prints; redirect it) |
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
-| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` · the split rule is `--split-by hash\|time` (hash is the default, and the seed applies to hash; the hash split's share is approximate, each item picking its side on its own: `--test 0.4` on 20 items can give 10 and 10) |
+| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` · the split rule is `--split-by hash\|time` (hash is the default, and the seed applies to hash; the hash split's share is approximate, each item picking its side on its own: `--test 0.4` on 20 items gave 15 and 5 in the 0.8.1 newcomer run, and can give 10 and 10; read the counts it prints, since a held-out look needs at least 7 test items at its first look, and `evh study-confirm` names the fewest) |
 | a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal [--count-by F,…]` · Each side gets the parent's references on its own items, promoted from the same label set at the same tier, recorded with who split it; an existing reference is kept; the sealed test side gets none and the command to run after unsealing is printed. A parent with references needs `--by` or `EVH_ACTOR` (bad-argument otherwise). `evh dataset-unseal …_test --system S --reason "…"` |
 | who read a held-out item; counts only | `evh exposure-add --dataset-id …_test --item ID --what "…"` · `evh exposure` · `evh exposure-check --dataset-id …_test` · `evh sealed-counts …_test` · `evh dataset-seal-counts --dataset-id …_test --add F --reason "…"` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
@@ -153,7 +153,9 @@ evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-create --dataset-id my_smoke_v1 --source-dir data/sources/my_v1 --limit 5   # a fast cut
 ```
 
-This writes `data/datasets/my_v1.json`: the item list plus a **sha256 per item**.
+This writes `data/datasets/my_v1.json`: the item list plus a **sha256 per item**. `--glob` picks the files and
+`--exclude GLOB` (repeatable, matched against the path under `--source-dir` as `--glob` is) takes some out again: an
+export `manifest.json` beside the items. Without `--exclude` nothing is skipped but READMEs and dotfiles.
 
 The `dataset_id` is the comparison contract. Every run records it, and
 `run-compare` refuses to compare across two different ones. Name it for what it
@@ -279,6 +281,21 @@ evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1 --fieldset
 evh dataset-create --dataset-id my_v1 --update-fields --fields fixes.csv     # later
 ```
 
+**When the items are JSON objects, the values are in them:** `--fieldset avoidance --fields-from-item` reads each
+declared field from its item, not from a second file that can drift (not with `--fields`; values are typed and refused
+as a `--fields` file's are, and a key the item lacks is a missing value). A field reads the item's key of its own
+name, or, with `from`, where a JSON pointer (RFC 6901, `/start/x`) lands; `reduce: count` makes it the length of the
+list or object there (the field's type is `integer`). A list or an object that is not counted is refused, naming item
+and field. `--update-fields --fieldset avoidance --fields-from-item` does the same for a dataset already frozen: it
+reads each item's frozen bytes (the materialized copy, else the folder; an item changed since is refused) and writes what
+the equivalent `--fields` file writes, a field the item lacks keeping its value. Both keys are read only by `--fields-from-item`:
+
+```yaml
+fields:
+  - {name: start_x, type: number, from: /start/x}
+  - {name: obstacles, type: integer, from: /obstacles, reduce: count}
+```
+
 A column the field set does not declare, a value of the wrong type or outside a
 choice, and a required field left empty are refused. With `--update-fields`, a value in
 the file replaces that value, an empty cell clears it, and every column and item the file
@@ -292,7 +309,10 @@ inspector shows them all, filters a comparison by them, and breaks it down by a
 
 **Items that live at a URL** come in through a manifest, one row per item:
 `item_id`, `source_url` and `source_sha256` (leave the hash empty and the bytes are
-fetched and pinned now), plus any field columns:
+fetched and pinned now), plus any field columns. A `source_url` may also be a path inside the project (relative to its
+root, e.g. `records/sources/x/p01.txt`) when `source_sha256` pins it: the harness does not read a local path to hash it,
+so a local row with no hash is refused at create naming the row. `dataset-materialize` reads the file and checks the
+hash; `validate` (V4) fails a file whose bytes changed and notes one that is not there:
 
 ```bash
 evh dataset-create --dataset-id episodes_v1 --manifest items.csv --fieldset episodes
@@ -820,14 +840,22 @@ the arms page and in `evh arm-list` that the goals read its re-score. A round re
 `evh round-show` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
 `evh round-open --goal G --dataset D --adopt`.
 
-**The dry run and the run's output.** `evh run --system S --dataset D --dry-run` calls nothing. Its `ESTIMATE` counts one
-call per item (or the adapter's declared `CALLS_PER_ITEM`), each the prompt in and `max_tokens` out: it assumes every reply fills `max_tokens`, so for a model that answers in a
-sentence it is a ceiling many times the bill (a frontier arm at `max_tokens: 1500` was estimated at $0.76 and billed
-$0.05). It is still **not** an upper bound for the whole run, because an adapter that makes several calls per item, or a
-conversation that grows (each probe turn re-sends it), costs more. Beside it, `MEASURED` shows what the last `evh arm-smoke` of this
+**The dry run and the run's output.** `evh run --system S --dataset D --dry-run` calls nothing. Its `ESTIMATE` says what it is:
+"at most ~$X, if every reply used `max_tokens` N". It counts one call per item (or the adapter's declared
+`CALLS_PER_ITEM`), each the prompt in and `max_tokens` out, so it is a ceiling on the replies' length: for a model that
+answers in a sentence it is many times the bill (a frontier arm at `max_tokens: 1500` was estimated at $0.76 and billed
+$0.05; the 0.8.0 newcomer's was 15 times its spend). It does not bound the calls: an adapter that makes several calls per
+item, or a conversation that grows (each probe turn re-sends it), costs more. Where the system's earlier runs (the latest
+five) recorded output tokens, `TYPICAL` shows the same estimate at their mean tokens out per item; a system with none
+takes the earlier plain runs of other systems on the same provider and model, and the line says which runs it is from
+("from 4 runs of other systems on m via p"); no recorded number changes. Beside them, `MEASURED` shows what the last `evh arm-smoke` of this
 system recorded in its model record (the cost per item, projected over the items and repeats, and when it was
 measured); with none it says so and names the command (a system that names no model record has nowhere to keep a smoke: it
-says so, and the cap comes from the smoke's own `full run:` line). Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
+says so and names `model_record:`, the cap comes from the smoke's own `full run:` line, and `evh sweep --dry-run` says it
+once for a model, not for each of its systems). A dataset with no reference set is a note under the dry run's header, not
+an error: `evh run` is not refused for it; the bundled adapter records `output_words` only, and a project's own adapter
+has its `score(output, None)` called (the checks it makes without a reference), and `label-from-run` (only when the
+dataset has a run) and `label-sheet` are offered as the way to a reference set. Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
 estimate. While a run goes it prints one line per finished item,
 `[3/65] <item_id> <ok | error | empty | resumed | the primary metric's value> 4.2s`, with the running cost
 once there is one, flushed as it is written even when stdout is a log file or a pipe (a detached job is watched
@@ -853,6 +881,15 @@ runs spent, less what running commands reserved, less what a stopped or killed r
 listed, its items were paid for). So arms started at once share the budget: give each its own
 `EVAL_MAX_COST_USD`, or the first takes all that is left. With nothing left a run is refused before any call
 (`ERROR (over-budget)`); `evh round-evidence` shows what is left beside what was spent.
+
+**An arm with no price is refused in a round with a budget.** What a budget counts is what runs recorded, so an arm
+whose system declares no `usd_per_mtok_in` and `usd_per_mtok_out` (an explicit 0 is a price, for a model that costs
+nothing per token) would be counted as $0. `evh run` and `evh arm-smoke` refuse it before any call (`ERROR
+(not-configured)`), naming the arm, its model and where the prices go. `--allow-unpriced` (on `run`, `arm-smoke` and
+`sweep`) starts it anyway: the round records it (`unpriced_allowed` in the round file: the system, its model, who and
+when), and `evh round-show` and `evh round-evidence` say the budget leaves that arm's cost out. A round without a
+budget never asks, and neither does an arm on the bundled adapter whose provider makes no paid call (`echo`): it
+costs nothing. A project adapter is asked whatever its `provider` says: the name proves nothing of what it spends.
 
 `evh run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
@@ -889,10 +926,14 @@ item was not scored. A run recorded before this can hold such a score; every rea
 scored 0, on read as on write, so the verdict on old data with one can move.
 
 A writer records a fact a reader will follow, or refuses it by name (RFC-041 F7), before it spends or writes: a `--run-id` (and
-import-run's `--system-id`, and reference-promote's `--name`) is a plain name, ASCII letters, digits, `.`, `_`, `-`, never a path,
-a space or unicode (`bad-argument`); `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
+import-run's `--system-id`, and reference-promote's `--name`) is a plain name: letters and digits of any script, `.`, `_`, `-`, in Unicode NFC (one that is not is
+refused naming its NFC form), never a path, a space or a control character (`bad-argument`); `--purpose repeat` names its run with `--of` (`bad-argument`), and an `--of` of any purpose
 names a run of the same system and dataset (`mismatch`); import-run's `--reference-id` is free-form and may be kept outside `data/references/` (it
-imports, with a note on stderr that the harness cannot find it), its tier is the one given, else the id's (`gold/x` is gold; a
+imports, with a note on stderr that the harness cannot find it; a project that keeps references in other folders names
+them in its `config.yaml`, `references: {roots: [records/references]}`, each holding `<tier>/<name>` as `data/references/` does:
+an id found in `data/references/` or a root is accepted without the note, `validate` (V16) checks the root's folders
+against their manifests, `rescore --reference-id` reads them, and an id found in none is refused (`not-found`) naming the folders
+searched, and a label-set id (`labels/<dataset>/<set>`) is held to the same against the project's label sets, refused naming `data/labels`; with no `references:` key nothing changes), its tier is the one given, else the id's (`gold/x` is gold; a
 `--reference-tier` that contradicts a `gold/` or `silver/` id is `mismatch`, one with no reference is `bad-argument`), and `--goal` names the goal the run answers, which `evh run` and import-run both require from the
 date `data/goals/policy.yaml` gives as `required_from` (`bad-argument` without one); `arm-smoke` refuses a `--goal` or `--round`
 that is not there, or a `--round` with no `--goal`. A cost no item reported is no `total_cost_usd` (unknown, never `0`); every item
@@ -1313,7 +1354,7 @@ lists them).
    before you retry. `--retry-unparsed` calls
    again for those blocks only. The pass prints what it spent: "spent this run $…, stored total
    $… (the provider's bill where it reports one, else the price table)", the same rule as an
-   arm's cost (§4). After the arm spend line: a NOTE when the provider billed more than 1.2× (either way) what the declared prices give, naming where to correct them (the scorer's judge params; the system).
+   arm's cost (§4). After the arm spend line: a NOTE when the provider billed more than 1.2× (either way) what the declared prices give, naming where to correct them (a new scorer version, since editing the judged scorer's prices makes its next pass refuse; the system).
 6. **Read the judging pass's checks before the ranking.** The judged leaderboard
    (`evh leaderboard … --label judged/<id>`) prints them under its table, from
    `data/judge-summaries/<scorer>@<judging set>.json`: how far the judges agree (item tau, and the Spearman of
@@ -1630,6 +1671,8 @@ A refusal prints its message on stderr, nothing on stdout, and exits non-zero. `
 
 **For an agent without one**, `evh mcp` serves the same reads as MCP tools; how to connect
 each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
+`evh mcp --no-agent-tools` leaves out `study-ask` and `study-tell`, the two tools that write, so the server is read-only
+with the text of items and outputs still served (the integration guide's "Read-only, with the text" paragraph).
 
 - **The tools** are the read operations of the registry (`evaluation_harness/ops`), each named as the operation, the
   command and the API's resource are: 75 on your machine, among them `study-ask` and `study-tell` (`goal-list`, `goal-leaderboard`, `dataset-list`,
@@ -2273,6 +2316,19 @@ project usually sets, with the reasoning. The harness's commands read
 notebook) reads no `.env`, and the project's paths are resolved on first use, so it can set
 `EVAL_HOME` after the import.
 
+**A system's own key file.** A system may name the file its keys come from, `key_file: PATH` in its `params` (a
+path from the project root, or absolute; `~` is expanded; dotenv format, `NAME=value` per line). For a call by that
+system, each variable its provider reads (`OPENAI_API_KEY`, `LITELLM_BASE_URL`, ...) is taken from that file
+first, then the exported environment, then the project's `.env`: the system's own choice beats the defaults. A
+variable the file does not hold falls through to the next. A `key_file` that is missing, is not a file or cannot
+be read is refused (`not-configured`) before any call, naming the file and the system; one inside the project and
+not gitignored is warned about, since a key file must not be committed (keep it outside the project, or ignore
+it). `evh env-check` lists the key files read and, per system and key, where it comes from (`key_file keys/a.env`,
+`shell`, `.env`); `evh run --dry-run` says the same for its system. A key's value is never printed or recorded; the
+path is recorded in the system's params and is not part of any fingerprint (where a key is kept is not what was
+measured). A project adapter that calls the bundled providers (`_providers.complete(prompt, params, role="arm",
+...)`) with the system's params gets the same; one that reads `os.environ` itself does not see `key_file`.
+
 | Variable | What it does |
 |---|---|
 | `EVAL_HOME` | the project root (default: the nearest directory up from where you run that has `data/`) |
@@ -2296,7 +2352,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVH_FREEZE_ROWS` | `1`: every row the kept-rows cache holds is frozen (RFC-033): a view or command that changes a row it shares with other readers raises `TypeError` where it does, and a copy (`copy.deepcopy`, `dict(row)`) is a plain dict. The harness's test suite runs under it; set it when writing code that reads rows |
 | `EVH_VIEW_CACHE` | `0`: the view cache keeps nothing (every view is read from the data again); for a test that compares a view with and without it |
 | `EVH_WORKERS` | how many child processes may draw a command's resampled tests at once (the same p's); default: the CPUs the process may use, capped by its container's CPU quota, so under one whole CPU none; `1` turns it off |
-| `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
+| `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable, its `key_file` a file to read it from |
 | `OPENROUTER_API_KEY` | `provider: openrouter` (OpenRouter's address by default; an arm's `base_url` or `api_key_env` overrides it), and judges routed straight to OpenRouter |
 | `ANTHROPIC_API_KEY` | `provider: anthropic` |
 | `LITELLM_BASE_URL` + `LITELLM_API_KEY` | `provider: litellm`, a LiteLLM proxy, and judges routed through it (a judge takes the proxy when both it and `OPENROUTER_API_KEY` are set) |

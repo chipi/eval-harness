@@ -24,7 +24,7 @@ import statistics
 import time
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _models, _store
+from evaluation_harness import _common, _jsonout, _models, _providers, _store
 from evaluation_harness._adapter import call_once, load_adapter, score_wants_source
 from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, load_dataset, now
 from evaluation_harness._record import non_number
@@ -246,6 +246,7 @@ def _smoke(args: argparse.Namespace) -> int:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
         die(f"{args.config}: {exc}", "invalid-file")
+    _providers.check_key_file(dict(cfg.get("params") or {}), str(cfg["system_id"]))
     call_system, score, _aid, adapter_path, *_ = load_adapter(cfg.get("adapter"), args.config)
     ds = load_dataset(cfg["dataset_id"])
     from evaluation_harness import _seal  # noqa: PLC0415
@@ -256,6 +257,13 @@ def _smoke(args: argparse.Namespace) -> int:
     # A smoke of a round's arm spends on the round (RFC-026 step 5): its budget's share reserved before the first call.
     rnd = _rounds.find(cfg["goal"], cfg["round"]) if cfg.get("round") and cfg.get("goal") else None
     if rnd is not None and rnd.get("status") != "closed":
+        _spend.refuse_unpriced(
+            rnd,
+            cfg["system_id"],
+            dict(cfg.get("params") or {}),
+            args.allow_unpriced,
+            bundled=_aid == _common.BUNDLED_ADAPTER_ID,
+        )
         _spend.reserve(rnd, "arm-smoke")
     mat = MATERIALIZED / ds["dataset_id"]
     # The prompts the system declares (RFC-028), given to the adapter as a run gives them: a smoke of a system that

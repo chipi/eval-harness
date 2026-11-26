@@ -21,6 +21,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
+import _share
+
 HARNESS = Path(__file__).resolve().parents[1]
 
 #: Files that are not tests of the store's behaviour: a browser (needs Chromium, the browser gate runs them), the whole
@@ -130,7 +133,8 @@ def run(test: Path, store: str, log: Path) -> tuple[str, str, int, float]:
 def main() -> int:
     """Every test file in each store asked for, a few at a time; 1 when any fails."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--jobs", type=int, default=6)
+    # 6 side by side, 4 on a shared machine; EVH_TEST_JOBS sets it (tests/_share.py)
+    ap.add_argument("--jobs", type=int, default=_share.jobs(6))
     ap.add_argument("--only", default="test_*.py", help="which test files (a glob on the name)")
     ap.add_argument("--store", action="append", choices=("files", "sqlite"), help="default: both")
     ap.add_argument(
@@ -140,6 +144,7 @@ def main() -> int:
     )
     ap.add_argument("--log", default=str(HARNESS / ".build" / "store-matrix"))
     args = ap.parse_args()
+    _share.share()
     log = Path(args.log)
     log.mkdir(parents=True, exist_ok=True)
     tests = sorted(

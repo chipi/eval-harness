@@ -46,19 +46,66 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .viewer-note { padding: 8px 16px; background: var(--surface-2); color: var(--ink-2); border-bottom: 1px solid var(--hair); font: 13px/1.45 var(--text); text-align: center; }
 .viewer-note code { font: 12px/1 var(--mono); color: var(--ink); }
 .viewer-note a { color: var(--ink); }
-.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; align-items: center; gap: 16px;
-  height: 52px; padding: 0 16px; border-bottom: 1px solid var(--hair);
-  background: color-mix(in srgb, var(--page) 86%, transparent); backdrop-filter: blur(12px); }
-.brand { font: 600 13px/1 var(--mono); letter-spacing: .04em; display: flex; gap: 8px; align-items: center; text-decoration: none; }
-.brand i { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); display: block; }
-.brand span { color: var(--muted); font-weight: 500; }
-.bar .project { font: 500 12px/1 var(--mono); color: var(--ink-2); border-left: 1px solid var(--hair); padding-left: 16px; }
-.bar .grow { flex: 1; }
-.bar nav { display: flex; gap: 18px; align-items: center; font: 500 12px/1 var(--mono); }
-.bar nav a { text-decoration: none; color: var(--ink-2); }
-.toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; color: var(--ink-2); }
+/* ── the bar: one geometry on the site, in the catalog, in the docs and here (site/assets/style.css carries the same
+   numbers; infra/deploy/headers_check.py reads the four): 56 px high, in the site's 1180 px column; ☰ on a phone,
+   the logo, the switcher (a deployment's parts, catalog_serve.workbench_bar), the screens, hints and the theme as a
+   36 px round button. The second row is the screen's own sections (workbench.js). */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; border-bottom: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--page) 78%, transparent); backdrop-filter: blur(12px); }
+.bar .wrap { position: relative; max-width: 1180px; margin: 0 auto; padding: 0 24px; height: 56px; display: flex;
+  align-items: center; gap: 8px; }
+@media (max-width: 640px) { .bar .wrap { padding: 0 16px; } }
+.brand { flex: none; display: flex; gap: 10px; align-items: center; font: 600 14px/1 var(--mono); letter-spacing: .04em;
+  color: var(--ink); text-decoration: none; white-space: nowrap; }
+.brand .mark { width: 28px; height: 28px; flex: none; display: block; }
+.bar:has(.sections) .brand span { display: none; }
+@media (min-width: 1081px) { .bar:has(.sections) .brand span { display: inline; } }
+.hbtn { box-sizing: border-box; flex: none; width: 36px; height: 36px; display: grid; place-items: center; margin: 0;
+  padding: 0; border: 1px solid var(--hair); border-radius: 50%; background: none; color: var(--ink); cursor: pointer; }
+.hbtn:hover { color: var(--accent); border-color: var(--accent); }
+.hbtn svg { display: block; width: 16px; height: 16px; }
+.bar .sections { display: inline-flex; flex: none; gap: 2px; padding: 3px; margin-right: auto; border: 1px solid var(--hair);
+  border-radius: 999px; font: 500 12px/1 var(--mono); letter-spacing: .03em; }
+.bar .sections a { padding: 8px 10px; border-radius: 999px; text-decoration: none; color: var(--ink-2); white-space: nowrap; }
+.bar .sections a:hover { color: var(--ink); background: var(--surface-2); }
+.bar .sections a[aria-current="page"] { color: var(--page); background: var(--ink); }
+.bar .tools { display: flex; gap: 22px; align-items: center; margin-left: auto; padding-right: 14px;
+  font: 500 13px/1 var(--mono); letter-spacing: .03em; }
+.bar .sections ~ .tools { margin-left: 0; }
+.bar .tools .menu-theme { display: none; }
+.bar .menubtn { display: none; }
+.toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; color: var(--ink-2); white-space: nowrap; }
 .round { background: none; border: 1px solid var(--hair); color: var(--ink-2); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; }
-@media (max-width: 720px) { .bar .project, .bar nav .hide-sm { display: none; } }
+/* The switcher's five pills on every width (the operator, 2026-11-25): on a phone the bar is the logo, the pills and
+   the ☰ (hints and the theme behind it), nothing else. The same numbers in site/assets/style.css,
+   harness/catalog_assets/catalog.css and docs/assets/docs.css. */
+@media (max-width: 760px) {
+  .bar .sections { font-size: 11px; letter-spacing: 0; }
+  .bar .sections a { padding: 8px 5px; }
+  .bar .theme { display: none; }
+  .bar .menubtn { display: grid; margin-left: auto; }
+  .bar .sections ~ .menubtn { margin-left: 0; }
+  .bar .menubtn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
+  .bar .tools { display: none; position: absolute; top: calc(100% + 8px); right: 16px; z-index: 30; min-width: 200px;
+    flex-direction: column; align-items: stretch; gap: 0; padding: 6px; margin: 0; background: var(--surface);
+    border: 1px solid var(--hair); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); font: 500 14px/1.2 var(--mono); }
+  .bar .tools.open { display: flex; }
+  .bar .tools .toggle, .bar .tools .menu-theme { display: flex; padding: 12px 14px; border: 0; border-radius: 8px;
+    background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .bar .tools .menu-theme:hover { background: var(--surface-2); }
+}
+@media (max-width: 374px) { .bar .wrap { gap: 6px; } .hbtn { width: 34px; height: 34px; } .bar .sections a { padding: 8px 3px; } }
+@media (max-width: 339px) { .bar .brand { display: none; } }
+/* the bar's second row: the Workbench's screens, the one shown marked (workbench.js), as the site marks the section
+   in view */
+.onpage { border-top: 1px solid var(--hair); }
+.bar .onpage nav.wrap { position: static; justify-content: flex-start; gap: 22px; height: 34px; overflow-x: auto; scrollbar-width: none;
+  font: 500 12px/1 var(--mono); letter-spacing: .03em; }
+.onpage nav::-webkit-scrollbar { display: none; }
+.onpage a { color: var(--muted); text-decoration: none; white-space: nowrap; padding: 9px 0; border-bottom: 2px solid transparent; }
+.onpage a:hover { color: var(--ink); }
+.onpage a[aria-current="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+@media (max-width: 480px) { .bar .onpage nav.wrap { gap: 16px; } }
 
 /* layout: journey rail, the screen, the help panel */
 .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr) auto; min-height: calc(100vh - 82px); }
@@ -290,16 +337,6 @@ tr.retired td .mono, tr.retired td.num { text-decoration: line-through; }
 @media (max-width: 760px) { .reader.even { grid-template-columns: minmax(0, 1fr); } }
 .status.warn { color: var(--warn); }
 
-/* the phone menu: the nav folds behind a button */
-.menubtn { display: none; background: none; border: 1px solid var(--hair); border-radius: 6px; padding: 5px 10px; color: var(--ink-2); font: 500 12px/1 var(--mono); cursor: pointer; }
-@media (max-width: 720px) {
-  .menubtn { display: inline-block; }
-  .bar nav { display: none; position: absolute; top: 52px; right: 0; left: 0; flex-direction: column; align-items: flex-start; gap: 0;
-    background: var(--page); border-bottom: 1px solid var(--hair); padding: 8px 16px; }
-  .bar nav.open { display: flex; }
-  .bar nav a, .bar nav .toggle { padding: 10px 0; }
-  .bar nav .hide-sm { display: inline; }
-}
 .dropzone { display: block; cursor: pointer; }
 .dropzone.over { border-color: var(--accent); color: var(--accent); }
 textarea.mono { width: 100%; }

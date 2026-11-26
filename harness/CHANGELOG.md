@@ -10,6 +10,27 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.8.2 — 2026-11-26
+
+The Workbench's public reads, one bar across the publication, and the beta projects' and 0.8.1 newcomer run's findings. **No result moves:** no format, fingerprint or scorer changed, nothing is re-scored.
+
+- **Fixed, a public server's Workbench:** its public API gave 500 (`/api/v1/goals`, `/api/v1/models`): the inspector's container lacked `jsonschema`; the deploy now asks the release's servers what a visitor asks, before uploading.
+- **Changed, the header:** the site, catalog, Workbench and docs carry one bar: the logo, five pills (Harness · Catalog · Workbench · Docs · MCP) on every width, the menu at the right, a row of the page's sections; on a phone, search and theme join the menu.
+- **Changed, a round with a budget refuses an arm with no price** (0 is a price; echo is free); `--allow-unpriced` (`run`, `arm-smoke`, `sweep`) lets it through, the round recording the exclusion.
+- **Fixed, a provider's 401:** the item failed, the run went on (exit 0), the server's words, an echoed key included, printed and recorded. It now stops the run, naming the key variable, never its value.
+- **Fixed, a manifest row with a local `source_url`:** `dataset-create --manifest` wrote a record `validate` failed (V1); the schema accepts it, V4 checks its hash.
+- **Changed, ids:** an id you name (dataset, system, goal, run, label set, model…) takes letters and digits of any script (`données_日本語_v1`) in NFC; reads never refuse an existing one.
+- **New, `references: {roots: [...]}` in `config.yaml`:** where a project keeps references; with it, `import-run --reference-id` refuses a reference or label-set id found in none.
+- **New, a system's `key_file: PATH`:** its keys come from that dotenv file before the shell and `.env`; unreadable, refused; unignored in the project, warned; shown by `env-check` and the dry run; in no fingerprint.
+- **New, `dataset-create --fields-from-item` and `--exclude GLOB`:** JSON items give their own field values (`from` JSON pointer, `reduce: count`; `--update-fields` reads the frozen items); `--exclude` drops what `--glob` matched, in the folder source's query too.
+- **New, `evh mcp --no-agent-tools`:** every read, not `study-ask` or `study-tell`; `--help` now names those two.
+- **New, `evh docs`:** UPGRADING, RUNBOOK and INTEGRATION ship in the package; `evh docs NAME [--print]`; `evh --help` opens with "Start here".
+- **Changed, the dry run:** "no reference" lines follow the header; the estimate is the most (every reply at `max_tokens`) beside a typical one from this system's runs or other systems' on its model, saying which; "MEASURED none" says what to do.
+- **Changed, messages:** `study-confirm` names the fewest test items that suffice; a run job warns with no goal or reference; `judge-score --dry-run` says when the real run will refuse; `arm-list` says a retired baseline is still the goal's; a judged leaderboard names its judge's validation; `silver-calibrate` shows each rho's arms; `validate` names records with no actor; `env-check` names the files it read.
+- **Fixed, the Workbench:** the eval charts read at once (0.75 s, was 2.5 s); "Open the next round", "Close" and "Make a system from a model" say why; pages reach `networkidle`; a hidden tab asks nothing; the mockup's notes left `workbench.js`.
+- **New, `catalog-serve --link` and `--brand`** head the Workbench with its publication's parts.
+- **Tests:** beta-shaped projects (imported, unpriced, unicode, format 0) read by every reader in three time zones; the real OpenAI and Anthropic SDKs against fakes; above 8 CPUs, 4 suites at niceness 10 (`EVH_TEST_JOBS`, `EVH_TEST_NICE`, `EVH_WORKERS`); `make release-smoke`.
+
 ## 0.8.1 — 2026-11-24
 
 What 0.8.0 left open, and what three projects found in their first day on it. **Some results move** (below, by rule; by

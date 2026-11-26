@@ -12,7 +12,7 @@ comparisons that **refuse** to mislead you.
 
 ```bash
 cd your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.1#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.2#subdirectory=harness"
 evh init --store files --tutorial   # the data folders, config.yaml, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt and the tutorial kit; --store sqlite is its equal; leave --tutorial off for a project of your own (tutorial 1 does)
 evh --help             # the verbs, in the order you need them
 ```

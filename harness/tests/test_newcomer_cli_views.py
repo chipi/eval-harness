@@ -318,6 +318,31 @@ try:
         (one, none),
     )
 
+    # rho on 3 arms (4 arms, one the author) is a coin's worth of evidence: it can only be -1, -0.5, +0.5 or +1 (0.8.1
+    # scenario: -0.5 for three authors of four was a true value, not a sign or a pairing bug).
+    from evaluation_harness.stats import spearman as _rho
+
+    check(
+        "silver-calibrate: rho on 3 arms is arithmetic, not a bug: reversed is -1, one swap is +/-0.5, never 0",
+        {_rho([3, 2, 1], list(v), constant=0.0) for v in ([3, 2, 1], [3, 1, 2], [1, 3, 2], [1, 2, 3])}
+        == {1.0, 0.5, -0.5, -1.0},
+    )
+    few = sc.sample_note([3, 3, 3, 3])
+    check(
+        "silver-calibrate: a rho over 3 arms says its sample size, what it can take, and that it is unreliable",
+        "over 3 arms" in few
+        and "-1, -0.5, +0.5 or +1" in few
+        and "1 time in 6" in few
+        and "unreliable" in few
+        and "8 or more" in few,
+        few,
+    )
+    check(
+        "silver-calibrate: a sample of 4 arms says the chance of a perfect order; 8 or more arms need no warning",
+        "1 time in 24" in sc.sample_note([4, 4]) and sc.sample_note([8, 9]) == "",
+        (sc.sample_note([4, 4]), sc.sample_note([8, 9])),
+    )
+
     line = " ".join((rs.closing_line([("gold/x", "gold/x")]) + "evh goal-list").split())
     check(
         "rescore: the closing line is a whole sentence ending with the command, for a re-score on the run's reference",
@@ -352,6 +377,12 @@ try:
         cv._condition_value("eval-mistral-small") == "eval-mistral-small"
         and cv._condition_value("a" * 64) == "a" * 16
         and cv._condition_value(None) == "None",
+    )
+    check(
+        "inspect conditions: an arm that calls no model says 'no model' as the inspector does, not 'None'",
+        cv._condition_value(None, "deployment.model") == "no model"
+        and cv._condition_value("m", "deployment.model") == "m"
+        and cv._condition_value(None, "seed") == "None",
     )
 
     from evaluation_harness.catalog_adapter import smoke_spend

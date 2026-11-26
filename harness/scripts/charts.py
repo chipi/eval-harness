@@ -822,7 +822,7 @@ def _judge_agreement(scorer: str) -> dict:
         for col, v in zip(cols, vals, strict=True):
             if v is not None:
                 cells[(j, col)] = {"value": float(v), "tip": f"{j}, {col}: {v}"}
-        rows.append({"judge": j, **dict(zip(("position_tau", "noise_tau", "length_rho"), vals, strict=True))})
+        rows.append({"judge": j, **dict(zip(cols, vals, strict=True))})
     for pair, v in (s.get("judge_agreement") or {}).items():
         a, b = pair.split("~", 1)
         rows.append(
@@ -830,7 +830,7 @@ def _judge_agreement(scorer: str) -> dict:
                 "judge": pair,
                 "items": v.get("n_items"),
                 "arm_spearman": v.get("arm_mean_spearman"),
-                "item_tau": v.get("mean_item_tau"),
+                "each other τ": v.get("mean_item_tau"),
             }
         )
         # A pair with no τ (too few shared items) is an empty cell, as the controls are: drawn as 0 it read as two
@@ -853,7 +853,7 @@ def _judge_agreement(scorer: str) -> dict:
         "agreement",
         f"{scorer}: do its judges agree?",
         caption,
-        ["judge", "position_tau", "noise_tau", "length_rho", "items", "arm_spearman", "item_tau"],
+        ["judge", "reordered τ", "re-asked τ", "length ρ", "items", "arm_spearman", "each other τ"],
         rows,
         svg,
     )

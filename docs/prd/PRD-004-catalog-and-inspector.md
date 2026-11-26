@@ -192,8 +192,10 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR6.1**: `evh mcp` serves the read operations of FR4 (and `round-list`, `runs-list`, `validate`,
   `dataset-items`) as MCP tools, each call the operation itself, so FR4's parity holds for an agent
   too ([RFC-018](../rfc/RFC-018-read-only-mcp-server.md)).
-- **FR6.2**: No tool writes project data, spends or runs a model: the non-goal "the pages never
-  write" holds for the tools. A command that writes is never a tool, and a test lists every
+- **FR6.2**: No read tool writes project data, spends or runs a model: the non-goal "the pages never
+  write" holds for them. The exception is the agent sampler's `study-ask` and `study-tell` (RFC-029), offered by a local
+  server only, never `--public`, annotated not read-only (`study-tell` runs a study's next trial); `evh mcp
+  --no-agent-tools` leaves them out. A command that writes is otherwise never a tool, and a test lists every
   command as one or the other.
 - **FR6.3**: `--http --public` serves them to anyone, as FR3 serves the API: no item text, Host
   checked, the load bounded per caller and in total. This repository's catalog answers at

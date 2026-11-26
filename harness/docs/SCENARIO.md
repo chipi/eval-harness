@@ -181,6 +181,11 @@ evh leaderboard briefs_v1 --label silver    # the author's row is marked
 evh silver-calibrate --dataset-id briefs_v1                              # silver authors vs your gold
 ```
 
+`silver-calibrate` on four arms ranks three for each author (the field less the author), so each author's rho can only be
+-1, -0.5, +0.5 or +1: a rho of -0.5 for three authors of four is one pair swapped, arithmetic and not a sign or pairing
+bug (checked on the 0.8.1 run's numbers). The table prints how many arms each rho is over, and says rho over fewer than 8 is
+unreliable: read its sign, not its size. It also says "CEILING not measured" until the arms are run again as a new version.
+
 Commit before any other run: an uncommitted label set or reference makes every run after it dirty, and
 `label-from-run` refuses a dirty run. If a frontier reply was cut off, `label-from-run` refuses it and names the fix
 (more `max_tokens`, a new system id).
@@ -192,7 +197,8 @@ Commit before any other run: an uncommitted label set or reference makes every r
 - Step 4: `evh run` writes `data/runs/<run_id>/`; `arm-smoke` records a check on the deployment its system names, `data/deployments/`, only when the system names a `model_record`.
 - This step: `label-from-run` and `reference-promote` write `data/labels/` and `data/references/`; `rescore`
   writes each run's score against silver beside its other scores, `data/runs/<run_id>/scores/<scorer>@silver.…/`.
-- Step 6: `judge-score` writes `data/judging-sets/`, `data/judge-verdicts/`, `data/judge-summaries/` and each run's
+- Step 6: you write `data/scorers/` and each scorer's prompt file (the path its `prompt: file:` names, `prompts/` here);
+  `judge-score` writes `data/judging-sets/`, `data/judge-verdicts/`, `data/judge-summaries/` and each run's
   judged score, `data/runs/<run_id>/scores/<scorer>@…/`.
 - Step 7: `run-promote` writes `data/baselines/`.
 - Steps 8 and 9: `round-open`, `round-retire` and `round-close` write `data/rounds/`.
@@ -224,14 +230,18 @@ evh judge-verdicts briefs-judge-v1 --limit 10     # the lowest scores first, eac
 The same for `intents_v1` with its scorer, then commit what the judging wrote:
 
 ```bash
-git add data/judging-sets data/judge-verdicts data/judge-summaries data/runs && git commit -qm "the judged runs"
+git add data/scorers prompts data/judging-sets data/judge-verdicts data/judge-summaries data/runs && git commit -qm "the judge scorers, their prompts, the judged runs"
+git status --short                # nothing left: an untracked scorer or prompt makes every later run record a dirty build
 ```
 
 A reply that did not parse and is not bare JSON is
 committed only as its hash; its text is in the `.withheld/` file the log names, so read why it
 failed before `--retry-unparsed`. The judged leaderboard prints the judging pass's agreement and
 its position and noise checks under its table: read them before the ranking. A judge billed far from the prices
-its scorer declares is named at the end of the pass; correct the prices, or every later dry run estimates wrong.
+its scorer declares is named at the end of the pass (the 0.8.1 run: `qwen_s` billed 2.65x tutorial 3's prices). A judge's
+prices are part of its identity, so editing them in the scorer after it has judged makes the next pass refuse ("stored by a
+different judge definition"): the correction is a new scorer version (`briefs-judge-v2`), judged again. Set the prices
+from the proxy's bill before the first pass (tutorial 3 says where they come from), or accept one dry run that estimates low.
 
 ## 7 · Baselines
 
@@ -243,11 +253,12 @@ the baseline is the model-based system you would ship, the one the rounds try to
 no-model arm scored higher, and why it is not the baseline. For an arm run with
 `--repeat 3`, promote any of its repeats: the baseline records all three and their mean under
 `repeats`, the number the catalog, the inspector and the tests read. A promotion is a decision and records who made
-it: at a terminal your login, from a script `--by person:NAME`. So are `round-retire`, `round-close` and
+it: at a terminal your login, from a script `--by person:NAME` (or `EVH_ACTOR=person:NAME`), which the blocks below
+and in steps 8, 9 and 11 pass. So are `round-retire`, `round-close` and
 `study-confirm` (not its `--dry-run`, which decides nothing): each refuses without a named actor.
 
 ```bash
-evh run-promote --run <run_id> --reason "<what the tests showed, and what it costs against the frontier arm>"
+evh run-promote --run <run_id> --reason "<what the tests showed, and what it costs against the frontier arm>" --by person:NAME
 git add data/baselines && git commit -qm "baselines"
 evh baselines                                     # each goal's baseline: current, why, its evidence
 ```
@@ -263,8 +274,8 @@ evh round-open --goal brief_summary --dataset briefs_v1 \
     --keep briefs_lead1_v1,briefs_t5_small_v1,briefs_mistral_small_v1,briefs_opus_v1
 git add data/rounds && git commit -qm "brief_summary r1: open"
 evh round-evidence brief_summary r1             # the evidence, and the suggested decisions
-evh round-retire --goal brief_summary --round r1 --arm briefs_t5_small_v1 --reason "<what the test showed>"
-evh round-close --goal brief_summary --round r1 --conclusion "<what r1 showed, and what it decided>"
+evh round-retire --goal brief_summary --round r1 --arm briefs_t5_small_v1 --reason "<what the test showed>" --by person:NAME
+evh round-close --goal brief_summary --round r1 --conclusion "<what r1 showed, and what it decided>" --by person:NAME
 git add data/rounds && git commit -qm "brief_summary r1: closed"
 evh round-list brief_summary                    # the goal's rounds, a line each
 ```
@@ -297,7 +308,7 @@ evh chart gain-cost --goal brief_summary --round r2         # each arm's gain ag
 evh comparison-show --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
 evh leaderboard briefs_v1 --round r2
 evh catalog && evh catalog-serve                   # screenshot the goal page's rounds now: r2's suggestions show only while it is open
-evh round-close --goal brief_summary --round r2 --conclusion "<what r2 showed>" [--promote <run_id>]
+evh round-close --goal brief_summary --round r2 --conclusion "<what r2 showed>" [--promote <run_id>] --by person:NAME
 git add data/rounds data/baselines && git commit -qm "brief_summary r2: closed"
 evh run --system briefs_mistral_small_v2 --dataset briefs_v1 --goal brief_summary --round r2 --dry-run   # refused: r2 is closed
 ```
@@ -328,13 +339,20 @@ Research belongs on a validation set; a test set is read once, for the decision.
 both sides to `brief_summary`'s `datasets:` (`role: validation` and `role: test`):
 
 ```bash
-evh dataset-split --dataset-id briefs_v1 --test 0.4 --seed 7 --by me     # briefs_v1_validation, briefs_v1_test, their references
+evh dataset-split --dataset-id briefs_v1 --test 0.5 --seed 7 --by me     # briefs_v1_validation, briefs_v1_test, their references
 evh dataset-materialize --dataset-id briefs_v1_validation && evh dataset-materialize --dataset-id briefs_v1_test
 git add -A && git commit -qm "briefs_v1 split, each side with its references"
 ```
 
 The command prints the counts it made. A hash split is approximate: each item picks its side on its own and nothing
-counts them, so `--test 0.4` on 20 items can give 10 and 10, not 12 and 8. Use the counts it prints.
+counts them, so `--test 0.5` on 20 items can give 10 and 10, or 12 and 8. **The test side needs at least 7 items**: the
+confirmation is one look at 1.52%, and the best p that n items can reach is 1/2^n (1/128 at 7 is under 1.52%; 1/64 at 6 is
+not). The 0.8.1 run split 20 items with `--test 0.4` and got 15 and 5: `study-confirm --dry-run` printed "these items reach p
+0.03125 at best: they cannot show it", and the real run refused (`not-enough`, the test side not read). If your counts
+leave fewer than 7 test items, split again before anything runs on the sides (`--force` is for a split nothing cites;
+use another `--seed`), or follow the 0.8.1 run in the confirmation below: `--override-no-evidence`, a person's call that
+reads the test side anyway and ends "inconclusive". The refusal costs nothing: no look is spent
+and the test side stays unread.
 
 Without `--seal` the test side stays open, and the scenario needs it open: a sealed side gets no references until
 `evh dataset-unseal`. The Workbench's "Hold some items out" seals by default. A dataset a goal declares with
@@ -365,13 +383,16 @@ evh study-run --study brief_summary/lead_length --spec lead_study.yaml    # open
 evh study-show brief_summary lead_length
 evh chart study-progress --goal brief_summary --study lead_length
 evh study-confirm --study brief_summary/lead_length --test briefs_v1_test --rule superiority --dry-run
-evh study-confirm --study brief_summary/lead_length --test briefs_v1_test --rule superiority
+evh study-confirm --study brief_summary/lead_length --test briefs_v1_test --rule superiority --by person:NAME
 evh looks                                          # the test set's looks, and the next one's level
 git add -A && git commit -qm "brief_summary: the lead_length study, confirmed"
 ```
 
 `study-run` opens a round of the goal on the validation dataset, recorded with `study: <id>`, and closes it when the
 study ends; it does not count against the one-open-round rule, and that round becomes the goal's last round.
+
+`evh looks` shows one look only when the confirmation ran: with 7 or more fresh test items, or with `--override-no-evidence`
+(then the outcome reads "inconclusive"). A refused confirmation leaves "0 look(s)".
 
 A study never promotes: the confirmation is one look at the test set's next level and suggests a promotion only
 when the outcome meets the rule. Whatever it finds is the answer; check it says so plainly. With no trial kept,
@@ -385,6 +406,9 @@ flag; without it, `evh jobs-start` refuses and says so):
 
 ```bash
 evh jobs-start --by person:NAME run --arg system=briefs_lead1_v1 --arg dataset=briefs_v2 --max-cost-usd 0.01   # a free arm spends nothing under any cap
+# briefs_v2 has no reference set (a new version's references are made for it) and the job names no goal: it starts, and
+# prints "WARNING: no reference set for briefs_v2: nothing will be scored" and "WARNING: no goal" first. That is expected here:
+# the job keeps the arm's outputs. To have it scored, promote a reference set for briefs_v2 and pass `--arg goal=<goal>`.
 evh jobs-status
 evh jobs-logs <job id> --follow
 git add data/runs && git commit -qm "lead1 on briefs_v2, as a job"
@@ -421,11 +445,14 @@ check the numbers are the screen's.
 Then do one round from the Workbench. Commit what each screen writes before the paid run: the clone, the round file and
 the carried arm are files (`git add -A && git commit`), and a run made over uncommitted files is recorded dirty. In
 "Choose the systems", clone `briefs_mistral_small_v1` with one thing
-changed (its temperature). In the eval, "Open the next round" on `briefs_v1` offers the arms still in play in the last
-round that have runs on the dataset the round is opened on, each ticked; the others are listed as not offered (no run
-there). The last round is the study's (step 11), so the offer follows its arms. Open it with the arms offered
-(carried arms are not run again), then bring in `briefs_lead1_v1` with the open round's "Carry it in" (a system
-already measured on `briefs_v1`). Run the clone in the round as a sweep under a $0.05 cap ("Run arms in it": "See the
+changed (its temperature): "Make a system from a model" lists only models that have a model record, and this project has
+none, so "Clone it, change one thing" is the way (the screen says so). In the eval, "Open the next round" offers the arms
+still in play in the last round that have runs on the dataset it is opened on, each ticked; the others are listed as not
+offered, with where they did run. The last round is the study's (step 11), and a study runs on the validation side, so
+on `briefs_v1` none is offered ("not offered: no run on briefs_v1", naming `briefs_v1_validation`: a run is never carried
+to another dataset); choose `briefs_v1_validation` in "On" to carry the study's arms, or open the round on `briefs_v1`
+with none and bring in `briefs_lead1_v1` with the open round's "Carry it in" (a system already measured on `briefs_v1`;
+carried arms are not run again). Run the clone in the round as a sweep under a $0.05 cap ("Run arms in it": "See the
 cost first", then "Run them"), retire one arm with why, and close the round ("Close the round"). Check that
 `evh round-evidence brief_summary <the round>` and `evh jobs-status` show what the screens did, with your name as the
 actor.
@@ -473,7 +500,7 @@ system id is refused as ambiguous (the message lists the arm ids).
 - Every Workbench screen shows its command, and that command in the terminal gives the screen's numbers;
   nothing on a screen is cut off or scrolls the page sideways at 390 px.
 - The study's trials ran on the validation side only, its confirmation read the test side once (`evh looks`:
-  one look), and every judge verdict in step 6 carries a reason or says it is missing or withheld.
+  one look; with 7 or more test items, or `--override-no-evidence` and then "inconclusive"), and every judge verdict in step 6 carries a reason or says it is missing or withheld.
 - A closed round keeps the numbers it closed on: a run of its systems made after it closed (the Workbench round's)
   is named beside them, never mixed in.
 - Each goal group's recommendation follows its strategy and says why, whatever your numbers are: `evh
@@ -482,13 +509,29 @@ system id is refused as ambiguous (the message lists the arm ids).
 
 ## Still open
 
+Found by the 0.8.1 run; 0.8.2 changed them (check each still holds):
+
+- Step 14: "Open the next round" after a study offers no arm on `briefs_v1`; the screen now says where each arm ran and
+  that a run is not carried to another dataset (step 14 says what to do).
+- Step 14: dismissing "Close r4"'s confirm now says the round stays open.
+- Step 14: "Make a system from a model" says why a model is missing and names the Clone route; so does tutorial 8.
+- Step 14: the eval screen's charts read in about 0.75 s, where they took 2.5 s or more.
+- Step 4: the dry-run estimate says it is the most it can cost (every reply at `max_tokens`) and, after a run, adds a
+  typical one; the "MEASURED none" text says what to do and a sweep prints it once per model.
+- Step 13: `chart agreement`'s columns are its caption's words (reordered τ, re-asked τ).
+- Step 15: `evh validate` names the records with no actor; the inspector and `evh comparison-show` both say "no model".
+- `evh env-check` says which files it read.
+- The Workbench reaches `networkidle`: it was not polling, its first read of `/api/v1/goals` left the response
+  body unread (tests/test_workbench_idle_browser.py); a hidden tab asks the server nothing.
+
+From earlier runs:
+
 - `rank-stability` counts `briefs_mistral_small_v1` and `_v2` as two arms: they are two systems, by design.
-- `evh arm-list` shows the baseline arm as retired in a round when that round retired it.
 - The inspector's Conditions header was reported to leave out `t5_small_v1`; a screenshot shows the header, with
   "baseline" on the next line in the plain text. Not reproduced.
-- The Workbench's evidence charts were reported to read "Reading the chart…" for over 2.5 s; measured at 0.15 to
-  0.47 s each.
-- Not re-checked by a run: whether "Review the outputs" shows its command before a sheet exists, and which actor a
-  round record names when a name is typed in the Workbench and `EVH_ACTOR` is set.
+- Checked in 0.8.2 and as designed: a round opened, retired and closed through the API as the Workbench does names the
+  name typed in its field (`by: person:NAME`, `from: api`), never the `EVH_ACTOR` or `EVH_FOR` of the server's own
+  environment (`tests/test_round_actor_api.py`; RFC-026 "Who acted"); "Review the outputs" shows its command before a
+  sheet exists (`tests/test_workbench_live_browser.py`).
 - Full-page screenshots repeat the sticky header mid-page.
 - Not exercised by a run yet: the direct OpenAI, Anthropic and OpenRouter paths (every run went through a LiteLLM proxy).

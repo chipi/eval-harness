@@ -61,6 +61,7 @@ def fieldset_problems(fieldset_id: str, fs: dict[str, Any]) -> list[str]:
     out = []
     if fs.get("fieldset_id") != fieldset_id:
         out.append(f"fieldset_id {fs.get('fieldset_id')!r} is not its file name")
+    out += _item_key_problems(fs)
     try:
         import jsonschema  # noqa: PLC0415
     except ImportError:
@@ -71,6 +72,28 @@ def fieldset_problems(fieldset_id: str, fs: dict[str, Any]) -> list[str]:
         jsonschema.validate(fs, json.loads(_store.read_text(_common.SCHEMAS / "fieldset.schema.json")))
     except jsonschema.ValidationError as exc:
         out.append(exc.message)
+    return out
+
+
+def _item_key_problems(fs: dict[str, Any]) -> list[str]:
+    """What is wrong with the keys only --fields-from-item reads, `from` and `reduce`: checked here as well as by the
+    schema, which a project without jsonschema never runs, and so that the field is named."""
+    out = []
+    for f in fs.get("fields") or []:
+        if not isinstance(f, dict):
+            continue
+        name = f.get("name")
+        if "from" in f:
+            why = pointer_problem(f["from"])
+            if why:
+                out.append(f"field {name!r}: from {f['from']!r} {why}")
+        if "reduce" in f:
+            if f["reduce"] != "count":
+                out.append(f"field {name!r}: reduce {f['reduce']!r} is not one the harness knows (count)")
+            elif f.get("type") != "integer":
+                out.append(
+                    f"field {name!r}: reduce: count is a number, so the field's type is integer, not {f.get('type')}"
+                )
     return out
 
 
@@ -179,6 +202,66 @@ def digest(items: list[dict[str, Any]]) -> str:
         h.update(json.dumps(it.get("fields") or {}, sort_keys=True, separators=(",", ":")).encode())
         h.update(b"\x1e")
     return h.hexdigest()
+
+
+def pointer_problem(pointer: Any) -> str | None:
+    """Why `pointer` is not a JSON pointer (RFC 6901) a field may name, or None. The empty pointer is the whole item,
+    which is no scalar, so a field may not name it."""
+    if not isinstance(pointer, str) or not pointer.startswith("/"):
+        return "is not a JSON pointer: it starts with / (/start/x)"
+    if re.search(r"~(?![01])", pointer):
+        return "has a ~ that is not ~0 or ~1"
+    return None
+
+
+def resolve(doc: Any, pointer: str) -> tuple[bool, Any]:
+    """(found, value) of the JSON pointer `pointer` in `doc`: a key of an object, an index of a list. Nothing found is
+    not an error: the item has no such value."""
+    cur = doc
+    for raw in pointer[1:].split("/"):
+        key = raw.replace("~1", "/").replace("~0", "~")
+        if isinstance(cur, dict) and key in cur:
+            cur = cur[key]
+        elif (
+            isinstance(cur, list)
+            and key.isascii()
+            and key.isdigit()
+            and (key == "0" or key[0] != "0")
+            and int(key) < len(cur)
+        ):
+            cur = cur[int(key)]
+        else:
+            return False, None
+    return True, cur
+
+
+def values_from_item(fieldset: dict[str, Any], doc: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """The declared fields' values in one JSON item, typed as `values_from` types a row's. Each field reads the item's
+    key of its own name, or the value its `from` pointer lands on; `reduce: count` makes a list's (or an object's) length
+    of it. A value not found, or null, is missing, as an empty cell is. Other keys are not read. An object or a list is
+    refused unless counted: fields are scalar (RFC-006)."""
+    row: dict[str, Any] = {}
+    bad = []
+    for name, f in declared(fieldset).items():
+        pointer = f.get("from") or "/" + name.replace("~", "~0").replace("/", "~1")
+        found, v = resolve(doc, pointer)
+        if not found or v is None:
+            continue
+        nested = isinstance(v, (dict, list))
+        if f.get("reduce") == "count":
+            if not nested:
+                bad.append(f"{name}: reduce: count needs a list or an object, and {pointer} holds {v!r}")
+                continue
+            v = len(v)
+        elif nested:
+            bad.append(
+                f"{name}: {pointer} is {'an object' if isinstance(v, dict) else 'a list'}, and a field is a scalar "
+                "(reduce: count takes its length)"
+            )
+            continue
+        row[name] = v
+    vals, errs = values_from(fieldset, row)
+    return vals, bad + errs
 
 
 def read_rows(path: Path) -> list[dict[str, Any]]:

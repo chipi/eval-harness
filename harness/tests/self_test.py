@@ -57,6 +57,7 @@ from evaluation_harness._check import check, results  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore, _tmp
 import _runstore  # noqa: E402
+import _share  # noqa: E402
 import _tmp  # noqa: E402
 
 _tmp.use_root()  # before the first temporary folder: outside /tmp and outside any git repository
@@ -841,7 +842,6 @@ def test_example_scorer_suites_pass() -> None:
     files (the one shared write is the family-test cache, replaced atomically), and one after
     another they took 83 s, half of it check_report_claims alone.
     """
-    import os  # noqa: PLC0415
     from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415
 
     suites = (
@@ -872,6 +872,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
+        (
+            "test_mcp_health.py",
+            "evh mcp --http: every field of /mcp/health, with and without --no-agent-tools and --public",
+        ),
         ("test_mcp_cancel.py", "evh mcp: a cancelled call stops being waited for and gives its slot back"),
         (
             "test_mcp_in_process.py",
@@ -1030,6 +1034,10 @@ def test_example_scorer_suites_pass() -> None:
             "the huggingface source on a local Hub: pinned to the parquet commit, licence, card, rows; sha256 checked",
         ),
         (
+            "test_parquet_reads.py",
+            "every parquet read runs on the calling thread: neither of pyarrow's pools, which aborted a process at exit",
+        ),
+        (
             "test_publish.py",
             "publishing to the Hub against a fake API: one commit, read back by sha256; hidden and unmaterialized refused",
         ),
@@ -1120,6 +1128,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_job_operations.py",
             "a job names an operation and its typed inputs (P3): the record, locks, files, resume; cost-report and round-close through their routes, POST /jobs and jobs-start, refusals before a job exists, the OpenAPI document",
+        ),
+        (
+            "test_jobs_start_warns.py",
+            "evh jobs-start run warns as the job starts when its dataset has no reference set or it names no goal, and stays quiet when it has both",
         ),
         (
             "test_job_routes.py",
@@ -1224,6 +1236,26 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_reader_agreement.py",
             "every reader says the same of a fact (CLI, API, MCP, catalog export, inspector) on the tutorial and three look-alikes of the beta projects; a reader that works one out itself is caught",
+        ),
+        (
+            "test_reader_agreement_shapes.py",
+            "every reader says the same of a fact on committed projects this checkout did not make (a fleet's, a podcast's, a bake-off's with no run, unicode ids, a format-0 project migrated), in UTC and in UTC+14 and UTC-11, and a zone changes no fact",
+        ),
+        (
+            "test_arm_list_baseline_retired.py",
+            "arm-list on the goal's baseline that a round retired says both facts: retired in rN, still the goal's baseline",
+        ),
+        (
+            "test_round_actor_api.py",
+            "a round the Workbench opens, retires and closes names the person typed in its name field, never the EVH_ACTOR or EVH_FOR of the server it runs on",
+        ),
+        (
+            "test_read_ids.py",
+            "a writer takes the letters and digits of any script and refuses a non-NFC, control or path-like id; a read of an id that exists is refused only for being a path",
+        ),
+        (
+            "test_unicode_ids.py",
+            "one rule for every id a person names, on a table of ids, the JSON schemas' patterns agreeing with it; a dataset, a system and a run with a unicode id made and read back (CLI, API by a percent-encoded id, catalog export) in the store the suite runs in",
         ),
         (
             "test_foreign_projects.py",
@@ -1519,10 +1551,22 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
+            "test_local_sources.py",
+            "a local source_url pinned by a hash: create, V1, V4, materialize; the no-actor note names its records",
+        ),
+        (
+            "test_reference_roots.py",
+            "references.roots in config.yaml: import-run accepts or refuses an id, V16 and rescore read the roots",
+        ),
+        (
             "test_references.py",
             "reference manifests and V16: checksums committed, texts checked against them",
         ),
         ("test_fields.py", "item fields and URL items: create, materialize, V15"),
+        (
+            "test_dataset_items_json.py",
+            "dataset-create over JSON items: --fields-from-item, a field's from and reduce, --exclude",
+        ),
         ("test_lineage.py", "dataset versions: --from, V2, the catalog's links"),
         (
             "test_rounds.py",
@@ -1552,9 +1596,21 @@ def test_example_scorer_suites_pass() -> None:
         ("test_installed_commands.py", "every evh command in a project that pins the package"),
         ("test_judge_score.py", "judging pass"),
         ("test_judge_replies.py", "an empty or cut-off judge reply: withheld for V12, said why, hinted"),
+        (
+            "test_judge_dry_run_refusal.py",
+            "judge-score --dry-run says the real run refuses a verdict of another judge definition",
+        ),
         ("test_code_hashes.py", "scoring-code hashes"),
         ("test_codeid.py", "code identity: documentation never moves a hash"),
         ("test_providers.py", "hosted providers: one layer for arms and judges, keys by role"),
+        (
+            "test_key_file.py",
+            "a system's key_file: its own key in each request, key_file then shell then .env, refused unreadable, warned uncovered, in env-check and the dry run, outside the fingerprint, no value leaked",
+        ),
+        (
+            "test_providers_wire.py",
+            "hosted providers on the wire: the real SDKs against a fake of each API; request, record, 429/500, 401",
+        ),
         ("test_leaderboard_refs.py", "the leaderboard: one table per reference, never averaged across them"),
         (
             "test_reference_coverage.py",
@@ -1584,6 +1640,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_check_hf_source.py",
             "the /rows comparison: a 5xx or a dropped connection is retried, a 4xx is not, never a difference",
         ),
+        (
+            "test_release_smoke.py",
+            "the release smoke lists its checks, fails on a wrong version, and has its make target",
+        ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading"),
         ("check_report_claims.py", "report claims vs committed runs"),
@@ -1601,7 +1661,7 @@ def test_example_scorer_suites_pass() -> None:
     started = sorted(
         present, key=lambda s: LONGEST_FIRST.index(s) if s in LONGEST_FIRST else len(LONGEST_FIRST)
     )
-    with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
+    with ThreadPoolExecutor(max_workers=_share.jobs()) as pool:  # 4 on a shared machine (tests/_share.py)
         ran = dict(zip(started, pool.map(lambda script: run_own_tmp(at(script)), started)))
     for script, subject in suites:
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
@@ -4410,6 +4470,13 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             and "SILVER" not in board.stdout,
             board.stdout[-400:],
         )
+        check(
+            "installed judge-score: the leaderboard names the unvalidated scorer's validation command, and the "
+            "direction NOTE is said once",
+            "To validate judge-fake-v1: evh judge-validate --scorer judge-fake-v1 --dataset <" in board.stdout
+            and board.stdout.count("no goal or adapter says which way is better") <= 1,
+            board.stdout[-600:],
+        )
         again = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1", "--unvalidated")
         check(
             "installed judge-score: a rerun resumes from the stored verdicts (no new calls)",
@@ -4494,6 +4561,7 @@ def _cpu_now() -> float:
 
 
 def main() -> int:
+    _share.share()  # the X3 is shared: a lower priority, fewer workers (tests/_share.py)
     print("harness self-tests (no network, no keys)\n")
     for fn in (
         test_dotenv_does_not_override_exported,

@@ -169,11 +169,13 @@ class Source:
                 except _fetch.FetchError as exc:
                     raise ValueError(str(exc)) from exc
                 try:
-                    # One thread: with its thread pool, pyarrow 26 aborted the process at exit (examples/_shared/hf_rows.py).
+                    # The calling thread only: with its CPU pool (use_threads) or its I/O pool (pre_buffer), pyarrow 26 aborted the
+                    # process at exit (tests/test_parquet_reads.py).
                     _TABLES[tkey] = pq.read_table(
                         io.BytesIO(Path(path).read_bytes()),
                         columns=sorted(set(columns)) if columns else None,
                         use_threads=False,
+                        pre_buffer=False,
                     )
                 except Exception as exc:  # a column the split does not have, or not parquet
                     raise ValueError(f"{e['path']}: {exc}") from exc
@@ -269,6 +271,7 @@ class Source:
         back = pq.read_table(
             api.hf_hub_download(repo, "data/test.parquet", repo_type="dataset", revision=rev),
             use_threads=False,
+            pre_buffer=False,
         )
         for row in back.to_pylist():
             if hashlib.sha256(row["text"].encode("utf-8")).hexdigest() != row["source_sha256"]:

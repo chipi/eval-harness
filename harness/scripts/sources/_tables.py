@@ -36,9 +36,13 @@ def rows(data: bytes, kind: str, columns: list[str] | None = None) -> list[dict[
     if kind == "parquet":
         import pyarrow.parquet as pq  # noqa: PLC0415
 
-        # One thread: with its thread pool, pyarrow 26 aborted the process at exit (examples/_shared/hf_rows.py).
+        # The calling thread only: with its CPU pool (use_threads) or its I/O pool (pre_buffer), pyarrow 26 aborted the
+        # process at exit (tests/test_parquet_reads.py).
         table = pq.read_table(
-            io.BytesIO(data), columns=sorted(set(columns)) if columns else None, use_threads=False
+            io.BytesIO(data),
+            columns=sorted(set(columns)) if columns else None,
+            use_threads=False,
+            pre_buffer=False,
         )
         return table.to_pylist()
     text = data.decode("utf-8")

@@ -372,6 +372,11 @@ _P_MAX = 4096
 #: check-then-move raced another thread's eviction (a KeyError, test_stats_threads).
 _CACHES_LOCK = threading.Lock()
 _MISS = object()
+#: The exact interval (`cluster_ci`) by its units' differences and sizes: the same differences give the same interval.
+#: Bounded like the others; a dropped one is worked out again, so only speed changes.
+_CI: OrderedDict = OrderedDict()
+_CI_MAX = 1024
+_CI_LOCK = threading.Lock()
 
 
 def _cached(cache: OrderedDict, key: Any) -> Any:
@@ -605,6 +610,16 @@ def min_attainable_p_one_sided(
     return None if total < NONINF_MIN_UNITS else 1 / (NONINF_DRAWS + 1)
 
 
+def least_items(level: float, rule: str = "superiority", margin: float = 0.0) -> int | None:
+    """The fewest items whose best p (`min_attainable_p_one_sided`) reaches `level`: what a look at that level needs,
+    for the refusal that says how many are enough. None when no item count does (a level under the rule's floor)."""
+    for n in range(1, NONINF_MIN_UNITS + 1):
+        reach = min_attainable_p_one_sided(n=n, rule=rule, margin=margin)
+        if reach is not None and reach <= level:
+            return n
+    return None
+
+
 def exact_ci(deltas: list, alpha: float = ALPHA):
     """A 95% interval for the mean paired difference: `cluster_ci` with every item its own cluster.
 
@@ -657,22 +672,32 @@ def cluster_ci(totals: list, sizes: list, alpha: float = ALPHA):
         t = z + (z**3 + z) / (4 * (g - 1))  # Cornish-Fisher: t quantile without scipy
         half = t * math.sqrt(var)
         return [mean - half, mean + half]
-    ratios = [t / m for t, m in zip(totals, sizes, strict=True)]
-    span = (max(ratios) - min(ratios)) or abs(mean) or 1.0
+    key = (tuple(totals), tuple(sizes), alpha)
+    if (hit := _cached(_CI, key)) is not _MISS:
+        return list(hit)
+    # The bisection is ~60 exact p's, half a second at 15 units, and the server asks it for the same arms once per
+    # chart: a second thread asking while the first works waits for the answer instead of working it out again.
+    with _CI_LOCK:
+        if (hit := _cached(_CI, key)) is not _MISS:
+            return list(hit)
+        ratios = [t / m for t, m in zip(totals, sizes, strict=True)]
+        span = (max(ratios) - min(ratios)) or abs(mean) or 1.0
 
-    def rejected(d):
-        return exact_p([t - d * m for t, m in zip(totals, sizes, strict=True)]) <= alpha
+        def rejected(d):
+            return exact_p([t - d * m for t, m in zip(totals, sizes, strict=True)]) <= alpha
 
-    lo_start, hi_start = min(ratios) - span, max(ratios) + span
+        lo_start, hi_start = min(ratios) - span, max(ratios) + span
 
-    def bound(outer):
-        inner = mean  # never rejected: the shifted sum is 0
-        for _ in range(30):  # the interval to ~1e-9 of its span; it is shown to 3 decimals
-            mid = (inner + outer) / 2
-            inner, outer = (inner, mid) if rejected(mid) else (mid, outer)
-        return inner
+        def bound(outer):
+            inner = mean  # never rejected: the shifted sum is 0
+            for _ in range(30):  # the interval to ~1e-9 of its span; it is shown to 3 decimals
+                mid = (inner + outer) / 2
+                inner, outer = (inner, mid) if rejected(mid) else (mid, outer)
+            return inner
 
-    return [bound(lo_start), bound(hi_start)]
+        made = (bound(lo_start), bound(hi_start))
+        _cache(_CI, key, made, _CI_MAX)
+    return list(made)
 
 
 #: The one-sided level of a non-inferiority test, and the fewest items (or clusters) a continuous measure needs

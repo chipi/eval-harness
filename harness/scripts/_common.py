@@ -14,7 +14,6 @@ import functools
 import hashlib
 import json
 import os
-import re
 import socket
 import subprocess
 import sys
@@ -22,6 +21,8 @@ import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, NoReturn
+
+from evaluation_harness import _ids
 
 #: Where the harness CODE lives: this directory. Schemas and sibling scripts are found
 #: relative to it, so they travel with the code whether it runs from a checkout or from an
@@ -161,6 +162,51 @@ def dotenv_pairs(path: Path) -> list[tuple[str, str]]:
         if key and val:
             out.append((key, val))
     return out
+
+
+def env_origin(var: str) -> str:
+    """Where a set variable came from: the project's .env, the shell, or the shell over a .env value (an exported
+    variable wins, so the file's is not used: the 0.8.0 newcomer run could not tell which keys were its .env's)."""
+    if var in DOTENV_SET:
+        return ".env"
+    return "shell, over .env" if var in {k for k, _v in dotenv_pairs(project_root() / ".env")} else "shell"
+
+
+def key_file_path(value: str) -> Path:
+    """The file a system's `key_file` names: `~` expanded, a relative path from the project root (not from wherever
+    the command runs, so a system reads the same file from any folder)."""
+    return (project_root() / Path(value).expanduser()).resolve()
+
+
+def read_key_file(value: Any) -> tuple[dict[str, str] | None, str | None]:
+    """(the variables of the dotenv-format file a system's `key_file` names, None) or (None, why it cannot be read).
+    The why names the file as written and never a line of it."""
+    if not isinstance(value, str) or not value.strip():
+        return None, f"key_file must be a path, as a string; got {value!r}"
+    path = key_file_path(value)
+    if not path.exists():
+        return None, f"key_file {value} cannot be read: no such file ({path})"
+    if not path.is_file():
+        return None, f"key_file {value} cannot be read: it is not a file ({path})"
+    try:
+        return dict(dotenv_pairs(path)), None
+    except (OSError, UnicodeDecodeError) as exc:
+        return None, f"key_file {value} cannot be read: {type(exc).__name__} ({path})"
+
+
+def key_file_uncovered(value: str) -> bool:
+    """Whether a key file sits inside the project, in a git checkout, with nothing ignoring it: one `git add .`
+    from being committed. False for a file outside the project, or a project that is not a checkout."""
+    root, path = project_root(), key_file_path(value)
+    if not path.is_relative_to(root):
+        return False
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(root), "check-ignore", "-q", str(path)], capture_output=True, timeout=10
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 1  # 0: ignored; 128: not a checkout
 
 
 def _is_harness_command() -> bool:
@@ -626,25 +672,43 @@ def goal_policy() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
-#: A dataset id: a file name under data/, never a path (`../x` or `/etc/x` would read outside it).
-DATASET_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+#: A dataset id: a file name under data/, never a path (`../x` or `/etc/x` would read outside it). The rule is `_ids`'s,
+#: for every kind of id a person names.
+DATASET_ID = _ids.NAME
 
 
 def dataset_id_ok(dataset_id: str) -> str:
     """The id, or SystemExit when it is not a plain name (a path would leave data/)."""
-    if not DATASET_ID.fullmatch(dataset_id or "") or ".." in dataset_id:
-        die(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')", "bad-argument")
+    why = _ids.NAME.problem(dataset_id)
+    if why:
+        die(f"not a dataset id: {str(dataset_id)[:60]!r}: {why} ({_ids.NAME.says()})", "bad-argument")
+    return dataset_id
+
+
+def dataset_id_read_ok(dataset_id: str) -> str:
+    """The id of a dataset to READ, or SystemExit when it would leave data/. A dataset that exists is read under whatever
+    spelling it was written with (a project's data may hold accents or CJK that no command here writes); the format of an
+    id is checked where ids are made (`dataset_id_ok`), and a read only keeps a name from being a path."""
+    bad = (
+        not isinstance(dataset_id, str)
+        or not dataset_id
+        or dataset_id.startswith(".")
+        or ".." in dataset_id
+        or any(c in dataset_id for c in "/\\\0")
+    )
+    if bad:
+        die(f"not a dataset id: {str(dataset_id)[:60]!r} (a name, never a path)", "bad-argument")
     return dataset_id
 
 
 def plain_id_ok(value: str, option: str) -> str:
     """The id a writer is given for `option` (a run, a system, a reference's name), or SystemExit when it is not a plain
-    name: an id with a path, a space or a letter outside ASCII in it would be a folder of its own, and the arm ids that
-    join `<label>/<dataset>/<system>` could not be split back (RFC-041 F7)."""
-    if not DATASET_ID.fullmatch(value or "") or ".." in value:
+    name: an id with a path or a space in it would be a folder of its own, and the arm ids that join
+    `<label>/<dataset>/<system>` could not be split back (RFC-041 F7). Letters of any script pass (0.8.2)."""
+    why = _ids.NAME.problem(value)
+    if why:
         die(
-            f"{option} {str(value)[:60]!r}: an id is a plain name (ASCII letters, digits, '.', '_', '-'), "
-            "not a path, a space or unicode",
+            f"{option} {str(value)[:60]!r}: {why}. An id is a plain name ({_ids.NAME.says()}), not a path",
             "bad-argument",
         )
     return value
@@ -722,14 +786,76 @@ LABELS_PREFIX = "labels/"
 LABELS_TIER = "labels"
 
 
+def reference_roots() -> list[Path]:
+    """The extra folders a project keeps references in, from `references: {roots: [records/references]}` in its
+    config.yaml, each relative to the project root and holding `<tier>/<name>` as data/references does. Empty when the
+    project declares none: it has not said where its references are, so one the harness cannot find is only noted."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    cfg = _paths()["ROOT"] / "config.yaml"
+    if not _store.is_file(cfg):
+        return []
+    import yaml  # noqa: PLC0415
+
+    try:
+        doc = yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}
+    except yaml.YAMLError:
+        return []  # store() refuses a config that does not parse, where it matters
+    block = doc.get("references") if isinstance(doc, dict) else None
+    if block is None:
+        return []
+    roots = block.get("roots") if isinstance(block, dict) else None
+    if not isinstance(roots, list) or not roots or not all(isinstance(r, str) and r.strip() for r in roots):
+        die(
+            f"{cfg}: references.roots must be a list of folders (relative to the project), e.g. "
+            "references: {roots: [records/references]}",
+            "invalid-file",
+        )
+    return [_paths()["ROOT"] / r.strip() for r in roots]
+
+
+def reference_dir(reference_id: str) -> Path:
+    """A reference's folder ("<tier>/<name>"): under data/references, else under the first declared root that holds
+    it; data/references's when none does."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    here = _paths()["REFERENCES"] / reference_id
+    if _store.is_dir(here):
+        return here
+    return next((r / reference_id for r in reference_roots() if _store.is_dir(r / reference_id)), here)
+
+
 def scored_against_dir(reference_id: str | None) -> Path | None:
     """Where what a run is scored against lives: a label set ("labels/<dataset>/<set>", under data/labels) or a
-    reference ("<tier>/<name>", under data/references); None when it is scored against nothing."""
+    reference ("<tier>/<name>", under data/references or a root the project declares); None when it is scored against
+    nothing."""
     if not reference_id:
         return None
     if reference_id.startswith(LABELS_PREFIX):
         return _paths()["LABELS"] / reference_id[len(LABELS_PREFIX) :]
-    return _paths()["REFERENCES"] / reference_id
+    return reference_dir(reference_id)
+
+
+def refuse_unknown_reference(reference_id: str) -> None:
+    """A project that declares where its references are (`references.roots`) has said where to look: a reference id found
+    in none of them is refused, naming what was searched, and so is a label-set id (`labels/<dataset>/<set>`) that is not
+    among the project's label sets, where a project that declares nothing only gets V16's note."""
+    roots = reference_roots()
+    if not roots or reference_found(reference_id):
+        return
+    if reference_id.startswith(LABELS_PREFIX):
+        die(
+            f"--reference-id {reference_id}: not found in data/labels (no label set "
+            f"{reference_id[len(LABELS_PREFIX) :]}; the project declares references.roots in config.yaml, so an "
+            "unknown id is refused). Name a label set that is there (evh label-set-list), or make it first",
+            "not-found",
+        )
+    searched = ["data/references", *(data_rel(r) for r in roots)]
+    die(
+        f"--reference-id {reference_id}: not found in {', '.join(searched)} (the project's references.roots in "
+        "config.yaml). Name a reference that is there, or add the folder that holds it to references.roots",
+        "not-found",
+    )
 
 
 def reference_found(reference_id: str) -> bool:

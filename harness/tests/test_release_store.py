@@ -606,6 +606,15 @@ try:
             and "EVH_P_CACHE: /srv/evals/current/inspector/cache/evh-p.jsonl" in mcp
             and "EVAL_STORE" not in compose,
         )
+        deploy = (ROOT / ".github" / "workflows" / "deploy-prod.yml").read_text(encoding="utf-8")
+        check(
+            "compose.yml: the inspector imports the harness's dependencies from the MCP server's vendored wheels "
+            "(jsonschema: EVALS-INSPECTOR-3), and the deploy smokes the release in its image before the upload",
+            "PYTHONPATH: /srv/evals/current/inspector/vendor:/srv/evals/current/inspector/mcpvendor"
+            in inspector
+            and "python infra/deploy/smoke_release.py _release" in deploy
+            and deploy.index("smoke_release.py") < deploy.index("Upload the release"),
+        )
 finally:
     _outputs.reset()
     shutil.rmtree(tmp, ignore_errors=True)

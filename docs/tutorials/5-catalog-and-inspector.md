@@ -98,8 +98,9 @@ serves them, and the agent gets
 the same numbers you do: the command's own output, its JSON where it has one. In Claude Code, in
 this project, `claude mcp add evh -- evh mcp`; then ask it, say, *"which tickets summariser does
 the goal recommend, and is it significantly better than the baseline?"*, and it calls `goal-leaderboard` and `comparison-show`.
-No tool writes your project, spends or runs a model (the one file a call keeps is a cache of the
-goals' tests, in the ignored `.cache/`). Other clients, and a shared server for a team:
+Every tool only reads but two, which your own server offers (never a public one): `study-ask` and `study-tell` write a
+study, and `study-tell` runs its next trial; `evh mcp --no-agent-tools` leaves them out. A read keeps one file, a cache of the
+goals' tests, in the ignored `.cache/`. Other clients, and a shared server for a team:
 [INTEGRATION](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp).
 
 A goal's page, in the terminal:

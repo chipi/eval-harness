@@ -19,14 +19,20 @@ Items can carry fields a project declares (ADR-0003), and can live at a URL:
     --manifest items.csv                       one row per item: item_id, source_url (and
                                                source_sha256 to pin it; without it the bytes are
                                                fetched and pinned now); other columns are fields
+    --fields-from-item                         JSON items: each field's value is read from the item
+                                               itself (a field's `from` pointer, `reduce: count`)
     --update-fields --fields fields.csv        new values on an existing dataset whose items are
                                                unchanged: fields are not its identity, so no run
-                                               measured on it is invalidated
+                                               measured on it is invalidated; with --fields-from-item
+                                               instead of --fields, read again from the items' frozen bytes
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +59,7 @@ from evaluation_harness._common import (
     sha256,
     write_json,
 )
+from evaluation_harness.model import datasets as _datasets
 from evaluation_harness.ops import legacy
 
 
@@ -154,6 +161,72 @@ def _attach(items: list, fieldset: dict, path: Path) -> None:
         die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
 
 
+def _attach_from_items(items: list, fieldset: dict, read: Callable[[dict], bytes]) -> None:
+    """Put the values the items' own JSON holds on the items, typed as `_attach` types a file's rows. Every item file
+    is one JSON object (`read` gives an item's bytes); a field set field reads its key, or where its `from` pointer
+    lands. A field the item does not hold keeps the value the item had, as a --fields row without that column does."""
+    bad = []
+    for it in items:
+        try:
+            doc = json.loads(read(it).decode("utf-8"))
+        except ValueError as exc:  # a UnicodeDecodeError is one
+            bad.append(f"item {it['item_id']}: not JSON ({exc})")
+            continue
+        if not isinstance(doc, dict):
+            bad.append(f"item {it['item_id']}: is JSON {type(doc).__name__}, not an object")
+            continue
+        vals, errs = _fields.values_from_item(fieldset, doc)
+        bad += [f"item {it['item_id']}: {e}" for e in errs]
+        if vals:
+            it["fields"] = {**it.get("fields", {}), **vals}
+    if bad:
+        die(f"--fields-from-item: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
+
+
+def _frozen_reader(record: dict) -> Callable[[dict], bytes]:
+    """Each item's bytes as the dataset froze them: its materialized copy, else the folder its record names, the first
+    that still hashes to the item's `source_sha256` (a file changed since is not what the dataset measured)."""
+    roots = (_datasets.materialized_dir(record["dataset_id"]), _datasets.source_dir(record))
+
+    def read(it: dict) -> bytes:
+        rel = it.get("source_path") or it["item_id"]
+        seen = False
+        for root in roots:
+            if _store.is_file(root / rel):
+                seen = True
+                data = _store.read_bytes(root / rel)
+                if not it.get("source_sha256") or hashlib.sha256(data).hexdigest() == it["source_sha256"]:
+                    return data
+        die(
+            f"--fields-from-item: item {it['item_id']} is "
+            + ("changed since the dataset was frozen" if seen else "not found")
+            + f"; `evh dataset-materialize --dataset-id {record['dataset_id']}` says which items and why",
+            "not-materialized",
+        )
+
+    return read
+
+
+def _local_refusal(url: str, sha: str) -> str | None:
+    """Why a local `source_url` (a path in the project, not an http(s) address) cannot be an item, or None. The harness
+    fetches an address to hash it; a local file is not fetched, so the row must bring the hash that pins it, and a
+    file that is there must already have it. A file that is not there yet is allowed: validate notes it."""
+    why = _fetch.local_problem(url)
+    if why:
+        return f"{url}: {why}"
+    if not sha:
+        return (
+            f"{url} is a local path, so source_sha256 must pin it (the harness hashes an http(s) address by "
+            "fetching it, and does not read a local path to hash it)"
+        )
+    if len(sha) != 64 or any(c not in "0123456789abcdef" for c in sha):
+        return f"source_sha256 {sha!r} is not a sha256"
+    f = _fetch.local_file(url)
+    if _store.is_file(f) and sha256(f) != sha:
+        return f"{url} hashes to {sha256(f)[:12]}, not the pinned {sha[:12]}"
+    return None
+
+
 def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
     """Items from a manifest: each row an item_id and its source_url (pinned by source_sha256,
     or fetched and pinned now), or a source_path under --source-dir. Other columns are fields."""
@@ -173,7 +246,12 @@ def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
             # A pinned hash is taken as given: materialize fetches and checks it. Without one,
             # the bytes are fetched now and their hash becomes the item's identity.
             got = sha
-            if not got:
+            if not _fetch.is_web(url):
+                why = _local_refusal(url, sha)
+                if why:
+                    bad.append(f"row {n} ({iid}): {why}")
+                    continue
+            elif not got:
                 try:
                     _, got = _fetch.fetch(url, None)
                 except _fetch.FetchError as exc:
@@ -260,7 +338,12 @@ def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: b
             item.update(source_path=dest.relative_to(out).as_posix(), source_sha256=sha256(dest))
         elif it.get("source_url"):
             url, pin = str(it["source_url"]), str(it.get("source_sha256") or "")
-            if not pin:
+            if not _fetch.is_web(url):
+                why = _local_refusal(url, pin)
+                if why:
+                    bad.append(f"item {iid}: {why}")
+                    continue
+            elif not pin:
                 try:
                     _, pin = _fetch.fetch(url, None)
                 except _fetch.FetchError as exc:
@@ -510,6 +593,25 @@ def body(**inputs: Any) -> int:
             "field values need a field set: pass --fieldset <id> (data/fields/<id>.yaml declares them)",
             "bad-argument",
         )
+    if args.fields_from_item:
+        if args.fields:
+            die("--fields-from-item and --fields: two places the values come from; pass one", "bad-argument")
+        if not fieldset:
+            die(
+                "--fields-from-item needs --fieldset <id> (data/fields/<id>.yaml declares the fields to read)",
+                "bad-argument",
+            )
+        if args.manifest or args.source_name or args.lineage_only:
+            die(
+                "--fields-from-item reads the JSON files of --source-dir (with --update-fields, of the dataset's "
+                "own items): not with --manifest, --source or --lineage-only",
+                "bad-argument",
+            )
+    if args.exclude and (args.manifest or args.source_name or args.update_fields or args.lineage_only):
+        die(
+            "--exclude filters the files of --source-dir: not with --manifest, --source, --update-fields or --lineage-only",
+            "bad-argument",
+        )
 
     if args.lineage_only:
         return _lineage_only(args, out, previous, fieldset)
@@ -517,11 +619,14 @@ def body(**inputs: Any) -> int:
     if args.update_fields:
         if not previous:
             die(f"--update-fields: no dataset at {out} to update", "not-found")
-        if not args.fields:
-            die("--update-fields needs --fields FILE", "bad-argument")
+        if not (args.fields or args.fields_from_item):
+            die("--update-fields needs --fields FILE or --fields-from-item", "bad-argument")
         # Merged: a value in the file replaces that value; every other value is kept.
         items = [dict(it) for it in previous["items"]]
-        _attach(items, fieldset, args.fields)
+        if args.fields:
+            _attach(items, fieldset, args.fields)
+        else:
+            _attach_from_items(items, fieldset, _frozen_reader({**previous, "dataset_id": args.dataset_id}))
         _write(
             out,
             args.dataset_id,
@@ -670,7 +775,9 @@ def body(**inputs: Any) -> int:
     # through the store: a source folder under data/ is in the database in SQLite mode, where pathlib's glob found
     # nothing ("no items matched", the store matrix, 2026-11-08)
     walk = _store.rglob if args.recursive else _store.glob
-    files = sorted(p for p in walk(args.source_dir, args.glob) if is_item(p))
+    # an exclude is matched by the same walk, so it reads a path under --source-dir exactly as --glob does
+    excluded = {p for pattern in args.exclude for p in walk(args.source_dir, pattern)}
+    files = sorted(p for p in walk(args.source_dir, args.glob) if is_item(p) and p not in excluded)
     if args.limit:
         files = files[: args.limit]
     if not files:
@@ -692,6 +799,8 @@ def body(**inputs: Any) -> int:
     ]
     if args.fields:
         _attach(items, fieldset, args.fields)
+    if args.fields_from_item:
+        _attach_from_items(items, fieldset, lambda it: _store.read_bytes(args.source_dir / it["source_path"]))
 
     lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
     _write(

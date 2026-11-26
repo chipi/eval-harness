@@ -4,26 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Workbench</title>
+<script>(function(){var t;try{t=localStorage.getItem('theme');}catch(e){}if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;})();</script>
 <link rel="stylesheet" href="workbench.css">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 </head>
 <body>
   <a class="skip" href="#main">Skip to the screen</a>
-<header class="bar">
-  <a class="brand" href="#home"><i></i>evh <span>workbench</span></a>
-  <span class="grow"></span>
-  <button type="button" class="menubtn" id="menubtn" aria-expanded="false" aria-controls="nav">Menu</button>
-  <nav id="nav">
-    <a href="#home">Home</a>
-    <a href="#models" class="hide-sm">Models</a>
-    <a href="#jobs" class="hide-sm">Jobs</a>
-    <a href="#prompts" class="hide-sm">Prompts</a>
-    <a href="#settings" class="hide-sm">Settings</a>
-    <a href="#glossary" class="hide-sm">Words</a>
-    <a href="/" class="hide-sm">Catalog ↗</a>
+<!-- The bar of the publication the Workbench is part of, laid out as the site's, the catalog's and the docs': the logo,
+     the switcher (a deployment's parts, filled in by catalog_serve where the marker is), hints and the theme, the menu
+     button on a phone (hints and the theme behind it). The second row is the Workbench's screens, the one shown marked
+     (workbench.js). -->
+<header class="bar"><div class="wrap">
+  <a class="brand" href="#home"><img class="mark" src="icon.svg" alt="" width="28" height="28"><span>evh workbench</span></a>
+  <!--evh:sections-->
+  <div class="tools" id="tools">
     <label class="toggle"><input type="checkbox" id="hints" checked> hints</label>
-    <button type="button" class="round" id="theme" aria-label="Switch light or dark">◐</button>
-  </nav>
-</header>
+    <button type="button" class="menu-theme" data-theme-toggle>Light or dark</button>
+  </div>
+  <button type="button" class="hbtn theme" id="theme" aria-label="Toggle light and dark"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+  <button type="button" class="hbtn menubtn" id="menubtn" aria-expanded="false" aria-controls="tools" aria-label="Menu"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+</div><div class="onpage"><nav class="wrap" id="nav" aria-label="The Workbench's screens">
+  <a href="#home">Home</a>
+  <a href="#models">Models</a>
+  <a href="#jobs">Jobs</a>
+  <a href="#prompts">Prompts</a>
+  <a href="#settings">Settings</a>
+  <a href="#glossary">Words</a>
+  <a href="/" data-catalog>Catalog ↗</a>
+</nav></div></header>
 <div class="layout" id="layout">
   <aside class="rail" id="rail" aria-label="The goal's steps"></aside>
   <main id="main" tabindex="-1"></main>

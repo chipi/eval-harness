@@ -1,0 +1,29 @@
+{
+  "actor": {
+    "from": "environment",
+    "name": "fixture",
+    "type": "person"
+  },
+  "created_at": "2026-11-19T10:00:00Z",
+  "dataset_id": "tasks_small_v1",
+  "description": "3 item(s) from tasks_small_v1/",
+  "items": [
+    {
+      "item_id": "job_1",
+      "source_path": "job_1.txt",
+      "source_sha256": "766fa256fd2ada479e266c61d38428d8774cc849cda92682e34325a5e49ca614"
+    },
+    {
+      "item_id": "job_2",
+      "source_path": "job_2.txt",
+      "source_sha256": "d74eda6f56ce6074b6278001722feb38967f0c3b9a4ef898d95e3d1d2fde6f02"
+    },
+    {
+      "item_id": "job_3",
+      "source_path": "job_3.txt",
+      "source_sha256": "727911a88b116fbd4c3184e4e2ce00286e55ef3575a6667d00449f7008b2c8d6"
+    }
+  ],
+  "source_dir": "sources/tasks_small_v1",
+  "version": "1.0"
+}

@@ -2,8 +2,9 @@
 
     evh dataset-create --dataset-id D --source folder --query '{"path": "raw/tickets", "glob": "*.txt"}'
 
-Query: `path` (required), `glob` (default `*`), `recursive` (default false). A README and dotfiles are skipped, as
-`--source-dir` skips them. The files are copied into the dataset's items folder; the item id is the path without its
+Query: `path` (required), `glob` (default `*`), `recursive` (default false), `exclude` (a list of globs, default none:
+files they match are not items, each read against the path under the folder as `glob` is, as `--exclude` does for
+`--source-dir`). A README and dotfiles are skipped, as `--source-dir` skips them. The files are copied into the dataset's items folder; the item id is the path without its
 suffix.
 """
 
@@ -37,6 +38,13 @@ class Source:
         """Each file under the folder, in name order."""
         root = self._root(query)
         walk = root.rglob if query.get("recursive") else root.glob
+        patterns = query.get("exclude") or []
+        if not isinstance(patterns, list) or not all(isinstance(g, str) for g in patterns):
+            raise ValueError("the folder source's exclude is a list of globs")
+        # the same walk as the glob, so an exclude reads a path under the folder exactly as the glob does
+        excluded = {p for pattern in patterns for p in walk(pattern)}
         for p in sorted(walk(query.get("glob") or "*")):
+            if p in excluded:
+                continue
             if p.is_file() and not p.name.startswith(".") and p.name.lower() not in SKIPPED:
                 yield {"item_id": p.relative_to(root).as_posix().rsplit(".", 1)[0], "file": str(p)}

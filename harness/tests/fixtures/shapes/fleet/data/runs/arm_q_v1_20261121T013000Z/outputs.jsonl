@@ -1,0 +1,6 @@
+{"item_id": "t01_login", "text": "Customer reports they cannot log in since this morning.", "sha256": "abcd8a0a0459ac326abb366a4f722a6527ffb92c6e9b6c7be24a58a1cdb02206"}
+{"item_id": "t02_invoice", "text": "The customer was charged twice for the October invoice.", "sha256": "05442b1819f3774c8d5c27e0b7c0164ad6d85392b4352f52b6206c1d3fb8107c"}
+{"item_id": "t03_export", "text": "Exporting a report to CSV produces a file with garbled characters in every name containing accents or umlauts.", "sha256": "fb5b5befc154a5db69771510fc3f678f0e395054c8f90cefd5150596c65ea520"}
+{"item_id": "t04_sync", "text": "Since the release on Tuesday, calls to the orders endpoint return HTTP 429 after about 50 requests per minute, although the documentation states a limit of 300 per minute for their plan.", "sha256": "11663b985a5a75e6930458cedbf31fd9da715c72882e7ed826e46bf4ea9abb60"}
+{"item_id": "t05_delete", "text": "An administrator deleted a shared project by mistake while cleaning up old workspaces.", "sha256": "a86f16b7988f4161b290f227cfbb8e7166b2e9f226867c1cde2d0b4c49859fe0"}
+{"item_id": "t06_mobile", "text": "The mobile app crashes immediately on launch for one user after updating to version 5.", "sha256": "072d994510ed30c6f9a4f5b5598000f0fb0350b781e36de87e2eb3b54c961adf"}

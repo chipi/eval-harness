@@ -1,0 +1,18 @@
+{
+  "scores": {
+    "cost_usd": 0.0,
+    "failed": 0.0,
+    "latency_ms": 0.011667,
+    "output_words": 28.5,
+    "overlap_f1": 0.243426,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  },
+  "metric_kinds": {
+    "resumed": "descriptive",
+    "failed": "descriptive"
+  },
+  "metric_directions": {},
+  "primary_metric": "overlap_f1",
+  "reference_tier": "gold"
+}
