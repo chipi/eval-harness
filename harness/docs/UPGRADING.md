@@ -12,6 +12,17 @@ no number moves: the release fixes a public server's Workbench and aligns the he
 Workbench and the docs. A deployment that runs `evh catalog-serve --public` and wants the Workbench headed by its
 publication's switcher passes the same `--link` and `--brand` its `evh catalog` build takes.
 
+- **A manifest row may bring a local `source_url` pinned by its `source_sha256`** (`records/sources/x/p01.txt`, a path
+  inside the project). 0.8.0 and 0.8.1 wrote such a record and then failed it in `evh validate` (V1); the schema now accepts
+  it, `dataset-materialize` reads the file, and V4 fails a changed one and notes a missing one. A local `source_url` with
+  no hash is refused at create, naming its row. A record the old versions wrote this way becomes valid without a change.
+- **`references: {roots: [...]}` in `config.yaml` (optional) names the folders where the project keeps references besides
+  `data/references/`** (each holding `<tier>/<name>`). With it, `evh import-run --reference-id` accepts an id found in
+  `data/references/` or a root and refuses one found in none, naming the folders searched; `validate` (V16) and
+  `rescore --reference-id` read the roots too. Without the key nothing changes: an id the harness cannot find is recorded
+  with V16's note, as in 0.8.1.
+- **`evh validate` names the records that name no actor** (the first three, then "and N more"), where it said how many.
+
 ## From 0.8.0 to 0.8.1
 
 Change the pin to `@v0.8.1` and reinstall; `evh --version` prints `0.8.1` when the upgrade took. No format changes: you need

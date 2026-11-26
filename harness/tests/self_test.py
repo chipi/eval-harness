@@ -1523,6 +1523,10 @@ def test_example_scorer_suites_pass() -> None:
             "a local source_url pinned by a hash: create, V1, V4, materialize; the no-actor note names its records",
         ),
         (
+            "test_reference_roots.py",
+            "references.roots in config.yaml: import-run accepts or refuses an id, V16 and rescore read the roots",
+        ),
+        (
             "test_references.py",
             "reference manifests and V16: checksums committed, texts checked against them",
         ),

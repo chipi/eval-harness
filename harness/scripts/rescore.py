@@ -39,15 +39,17 @@ from evaluation_harness._common import (
     LABELS_PREFIX,
     LABELS_TIER,
     MATERIALIZED,
-    REFERENCES,
     ROOT,
     adapter_search_dirs,
+    data_rel,
     dataset_id_ok,
     die,
     how,
     labels_reference,
     now,
     read_json,
+    reference_dir,
+    reference_roots,
     scored_against_dir,
 )
 from evaluation_harness._fingerprint import references_digest, seal
@@ -605,8 +607,15 @@ def body(**inputs: Any) -> int:
         if not args.dataset_id:
             die("--labels needs --dataset-id", "bad-argument")
         args.reference_id = labels_reference(args.labels, args.dataset_id)
-    elif args.reference_id and not _store.is_dir(REFERENCES / args.reference_id):
-        die(f"no reference set at data/references/{args.reference_id}", "not-found")
+    elif args.reference_id and not _store.is_dir(reference_dir(args.reference_id)):
+        roots = reference_roots()
+        there = ", ".join(["data/references", *(data_rel(r) for r in roots)])
+        die(
+            f"no reference set {args.reference_id} in {there}"
+            if roots
+            else f"no reference set at data/references/{args.reference_id}",
+            "not-found",
+        )
     rnd = None
     if args.round_id:
         if not args.goal:
