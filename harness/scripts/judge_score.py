@@ -761,9 +761,10 @@ def message_for(
     return with_reason(msg, mode_of(manifest), len(arm_ids), task["source_label"], task["output_label"])
 
 
-def freeze(manifest: dict[str, Any], sets_dir: Path = SETS) -> Path:
-    """Write the manifest once; an existing one with the same id must match byte for byte."""
-    path = sets_dir / f"{manifest['judging_set_id']}.json"
+def freeze(manifest: dict[str, Any], sets_dir: Path | None = None) -> Path:
+    """Write the manifest once; an existing one with the same id must match byte for byte. The folder is SETS as it is
+    when called (a default bound at import kept a test that re-points SETS writing into this repository's data)."""
+    path = (sets_dir or SETS) / f"{manifest['judging_set_id']}.json"
     if _store.is_file(path):
         if read_json(path).get("judging_set_sha256") != manifest["judging_set_sha256"]:
             die(
@@ -1908,6 +1909,9 @@ def body(**inputs: Any) -> int:
             "a judge cannot be called (MISSING above): nothing was sent. `evh env-check` shows what each role reads.",
             "not-configured",
         )
+    # Refused before anything is written: a pass that would mix judge definitions leaves no judging set behind.
+    if stale := stale_judge_records(manifest, sc, vdir):
+        die(stale_judge_message(*stale[0]), "not-allowed")
     freeze(manifest)
     if call and cap is None:
         die("no cost cap: set cost_cap_usd in the scorer, or EVAL_JUDGE_MAX_COST_USD", "not-configured")

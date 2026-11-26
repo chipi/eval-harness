@@ -87,6 +87,7 @@ with tempfile.TemporaryDirectory() as tmp:
                 },
                 [{"item_id": "itemA", "coverage": 0.3}],
             )
+        repo_sets = sorted(p.name for p in (HERE / "data" / "judging-sets").glob("*.json"))
         saved = (js.DATA, js.MATERIALIZED, js.SCORERS, js.SETS, js.VERDICTS)
         js.DATA, js.MATERIALIZED = data, data / "materialized"
         js.SCORERS, js.SETS, js.VERDICTS = data / "scorers", data / "judging-sets", data / "judge-verdicts"
@@ -145,6 +146,12 @@ with tempfile.TemporaryDirectory() as tmp:
             except SystemExit as exc:
                 rc3 = exc.code
             check("the real run on the same record still refuses (exit 1)", rc3 not in (0, None), str(rc3))
+            check(
+                "the refused run writes no judging set: not the test project's, not this repository's",
+                not list((data / "judging-sets").glob("*.json"))
+                and sorted(p.name for p in (HERE / "data" / "judging-sets").glob("*.json")) == repo_sets,
+                [p.name for p in (data / "judging-sets").glob("*.json")],
+            )
         finally:
             js.DATA, js.MATERIALIZED, js.SCORERS, js.SETS, js.VERDICTS = saved
 
