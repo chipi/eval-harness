@@ -7,7 +7,7 @@ In a throwaway project ($0, offline), in whichever store the suite runs in: with
 --reference-id` records an id that names nothing and says so (V16's note), as 0.8.1 did. With a root declared, an id
 found in it is accepted without the note and validate's V16 checks that folder against its manifest (a drifted text
 fails); an id found nowhere is refused, naming the roots searched, and nothing is written; `rescore --reference-id`
-looks in the roots too; a `references:` key that is not a list of paths is refused.
+looks in the roots too; a label-set id (`labels/<dataset>/<set>`) is held to the same: found in the project's label sets it is accepted, found nowhere it is refused, naming data/labels; a `references:` key that is not a list of paths is refused.
 """
 
 import json
@@ -76,6 +76,13 @@ try:
     check(
         "no roots declared: an id that names nothing is recorded, with V16's note (as 0.8.1)",
         r.returncode == 0 and "V16" in r.stderr and len(runs()) == 1,
+        r.stdout + r.stderr,
+    )
+
+    r = imp("arm_labels_none", "labels/toy_v1/nowhere")
+    check(
+        "no roots declared: a label-set id that names nothing is recorded with the note too (as 0.8.1)",
+        r.returncode == 0 and "V16" in r.stderr and len(runs()) == 2,
         r.stdout + r.stderr,
     )
 
@@ -149,6 +156,25 @@ try:
     check(
         "rescore --reference-id names the roots it searched",
         r.returncode != 0 and "records/references" in r.stderr,
+        r.stdout + r.stderr,
+    )
+
+    _runstore.write_text(proj, "labels/toy_v1/mine/labels.json", "{}")
+    before = len(runs())
+    r = imp("arm_labels_found", "labels/toy_v1/mine")
+    check(
+        "a root declared and the label set found in the project's label sets: accepted, without the V16 note",
+        r.returncode == 0 and "V16" not in r.stderr and len(runs()) == before + 1,
+        r.stdout + r.stderr,
+    )
+    before = len(runs())
+    r = imp("arm_labels_nowhere", "labels/toy_v1/nowhere")
+    check(
+        "a root declared and the label set found nowhere: refused, naming data/labels, nothing written",
+        r.returncode != 0
+        and "data/labels" in r.stderr
+        and "labels/toy_v1/nowhere" in r.stderr
+        and len(runs()) == before,
         r.stdout + r.stderr,
     )
 

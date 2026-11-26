@@ -790,11 +790,18 @@ def scored_against_dir(reference_id: str | None) -> Path | None:
 
 def refuse_unknown_reference(reference_id: str) -> None:
     """A project that declares where its references are (`references.roots`) has said where to look: a reference id found
-    in none of them is refused, naming what was searched, where a project that declares nothing only gets V16's note. A
-    label set has no roots, and keeps the note."""
+    in none of them is refused, naming what was searched, and so is a label-set id (`labels/<dataset>/<set>`) that is not
+    among the project's label sets, where a project that declares nothing only gets V16's note."""
     roots = reference_roots()
-    if not roots or reference_id.startswith(LABELS_PREFIX) or reference_found(reference_id):
+    if not roots or reference_found(reference_id):
         return
+    if reference_id.startswith(LABELS_PREFIX):
+        die(
+            f"--reference-id {reference_id}: not found in data/labels (no label set "
+            f"{reference_id[len(LABELS_PREFIX) :]}; the project declares references.roots in config.yaml, so an "
+            "unknown id is refused). Name a label set that is there (evh label-set-list), or make it first",
+            "not-found",
+        )
     searched = ["data/references", *(data_rel(r) for r in roots)]
     die(
         f"--reference-id {reference_id}: not found in {', '.join(searched)} (the project's references.roots in "

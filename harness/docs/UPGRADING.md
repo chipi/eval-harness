@@ -24,7 +24,8 @@ publication's switcher passes the same `--link` and `--brand` its `evh catalog` 
   `data/references/`** (each holding `<tier>/<name>`). With it, `evh import-run --reference-id` accepts an id found in
   `data/references/` or a root and refuses one found in none, naming the folders searched; `validate` (V16) and
   `rescore --reference-id` read the roots too. Without the key nothing changes: an id the harness cannot find is recorded
-  with V16's note, as in 0.8.1.
+  with V16's note, as in 0.8.1. With the key, a label-set id (`labels/<dataset>/<set>`) is held to the same: accepted when it is
+  among the project's label sets, refused naming `data/labels` when it is not (0.8.1 recorded it with the note).
 - **`evh validate` names the records that name no actor** (the first three, then "and N more"), where it said how many.
 - **`evh dataset-create --fields-from-item` and `--exclude GLOB` (both optional) read JSON items.** The first takes each
   declared field's value from its item (a field's optional `from` JSON pointer and `reduce: count`, in the field set);

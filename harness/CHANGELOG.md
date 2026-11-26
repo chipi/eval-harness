@@ -25,18 +25,16 @@ now refuses an arm it cannot price.
 - **Fixed, a manifest row with a local `source_url`:** `dataset-create --manifest` wrote a record `validate` failed (V1)
   when `source_sha256` pinned a path in the project. The schema accepts it, materialize reads it, V4 checks its hash; no hash is refused at create.
 - **New, `references: {roots: [...]}` in `config.yaml`:** where a project keeps references besides `data/references`.
-  With it, `import-run --reference-id` refuses an id found in none; without it, as 0.8.1.
+  With it, `import-run --reference-id` refuses a reference or label-set id found in none; without it, as 0.8.1.
 - **New, `evh mcp --no-agent-tools`:** every read a local server serves, text included, neither `study-ask` nor `study-tell`. `evh mcp --help` now says a local server has those two; it said every tool reads.
 - **New, `dataset-create --fields-from-item` and `--exclude GLOB`:** JSON items give their own field values (a field's `from` JSON pointer, `reduce: count`), no `--fields` file to drift; `--exclude` drops what `--glob` matched (an export `manifest.json`).
 - **New, `evh docs`:** UPGRADING, RUNBOOK and INTEGRATION ship in the package; `evh docs NAME [--print]` prints the
   installed copy and its page. `evh --help` opens with "Start here".
-- **Changed, the dry run:** the "no reference" lines come after its header and say what `evh run` will score; the
-  estimate says it is the most (every reply at `max_tokens`) and adds a typical one from earlier runs; "MEASURED
-  none" says what to do, once per model in a sweep.
-- **Changed, messages:** `study-confirm` names the fewest test items that suffice; `jobs-start run` and a Workbench job warn of a job with no goal or reference; `judge-score --dry-run` says when the real run will refuse
-  (a changed judge); `arm-list` says a baseline a round retired is still the goal's; a judged leaderboard names the command that validates its judge, once;
-  `silver-calibrate` shows the arms each rho is over; `validate` names the records with no actor; `env-check`
-  says which files it read.
+- **Changed, the dry run:** the "no reference" lines follow its header and say what `evh run` will score; the
+  estimate is the most (every reply at `max_tokens`) plus a typical one from earlier runs; "MEASURED none" says what to do.
+- **Changed, messages:** `study-confirm` names the fewest test items that suffice; `jobs-start run` and a Workbench job warn of no goal or reference; `judge-score --dry-run` says when the real run will refuse
+  (a changed judge); `arm-list` says a baseline a round retired is still the goal's; a judged leaderboard names the command that validates its judge;
+  `silver-calibrate` shows the arms each rho is over; `validate` names the records with no actor; `env-check` the files it read.
 - **Fixed, the Workbench:** the eval screen's charts read at once (0.75 s, from 2.5 s); "Open the next round"
   says why an arm is not offered; a dismissed "Close" says the round stays open; "Make a system from a model" says why
   a model is missing; a page reaches `networkidle` (a response body was left unread) and a hidden tab asks nothing.
@@ -45,7 +43,7 @@ now refuses an arm it cannot price.
   spelling (accents, other scripts); writers refuse what they did.
 - **New, `evh catalog-serve --link` and `--brand`** head the Workbench with its publication's parts.
 - **Tests:** projects shaped like the beta ones' data (imported, unpriced, unicode, format 0), read by every reader
-  in three time zones; on a machine of more than 8 CPUs the test runners take 4 suites, niceness 10 and 2 stats workers
+  in three time zones; above 8 CPUs the runners take 4 suites, niceness 10 and 2 stats workers
   (`EVH_TEST_JOBS`, `EVH_TEST_NICE`, `EVH_WORKERS`).
 
 ## 0.8.1 — 2026-11-24
