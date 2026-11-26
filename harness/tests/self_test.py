@@ -1238,6 +1238,10 @@ def test_example_scorer_suites_pass() -> None:
             "arm-list on the goal's baseline that a round retired says both facts: retired in rN, still the goal's baseline",
         ),
         (
+            "test_round_actor_api.py",
+            "a round the Workbench opens, retires and closes names the person typed in its name field, never the EVH_ACTOR or EVH_FOR of the server it runs on",
+        ),
+        (
             "test_read_ids.py",
             "a dataset id is held to its format where ids are made, and a read of one that exists is refused only for being a path (a project's unicode ids)",
         ),
