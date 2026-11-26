@@ -524,7 +524,7 @@ Found by the 0.8.1 run; 0.8.2 changed them (check each still holds):
 
 Still open from the 0.8.1 run:
 
-- The Workbench never reaches `networkidle` (it polls): an automated screenshot waits on "load" and a pause.
+- The Workbench never reached `networkidle`: not a poll, an unread response body on its first read of /api/v1/goals; fixed in 0.8.2 (tests/test_workbench_idle_browser.py).
 
 From earlier runs:
 

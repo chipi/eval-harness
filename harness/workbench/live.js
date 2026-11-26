@@ -22,6 +22,11 @@
   // ("no valid token"). The page says what happened and what to do, wherever the answer is shown.
   const RESTARTED = "The server was restarted, so this page's sign-in no longer works: open the Workbench link evh catalog-serve printed (it carries the new token).";
   const realFetch = window.fetch.bind(window);
+  // The pause between two asks of a job being followed: a hidden tab asks nothing, and asks again when it shows.
+  const nap = async (ms) => {
+    await new Promise((ok) => setTimeout(ok, ms));
+    while (document.hidden) await new Promise((ok) => document.addEventListener("visibilitychange", ok, { once: true }));
+  };
   // A read a screen treats as optional (a chart, the rail) swallows its refusal, so the notice cannot depend on the read
   // that happened to be the screen's main one: the first 401 of any /api/v1 call puts it on the page, outside what a
   // screen redraws, once.
@@ -321,7 +326,7 @@
       const box = document.getElementById(`job-${dep}`);
       if (box) box.innerHTML = `<p class="muted">${jobLine(j)}</p>`;
       if (!["queued", "running", "running (unsupervised)"].includes(j.state)) break;
-      await new Promise((ok) => setTimeout(ok, 2000));
+      await nap(2000);
     }
     forget(`model:${model}`);
     forget("models");
@@ -518,13 +523,13 @@
       const r = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" }).catch(() => null);
       if (!r || r.status === 503) {
         if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: the project is being moved, waiting…</p>`;
-        await new Promise((ok) => setTimeout(ok, 1000 * Number((r && r.headers.get("Retry-After")) || 2)));
+        await nap(1000 * Number((r && r.headers.get("Retry-After")) || 2));
         continue;
       }
       const j = await r.json().catch(() => ({}));
       if (box) box.innerHTML = `<p class="muted" aria-live="polite">${esc(what)}: ${esc(j.state || "…")}</p>`;
       if (!["queued", "running", "running (unsupervised)"].includes(j.state)) return j;
-      await new Promise((ok) => setTimeout(ok, 1000));
+      await nap(1000);
     }
   }
   const jobRefusal = async (j) => {
@@ -1125,7 +1130,7 @@
             else again(null, out);
             break;
           }
-          await new Promise((ok) => setTimeout(ok, 1000));
+          await nap(1000);
         }
       } catch (e) { out.innerHTML = refusal(e); }
       ev.target.disabled = false;
@@ -2181,7 +2186,7 @@
           if (res && !RUNNING.includes(j.state) && sameLines(res.innerText, pre.textContent)) res.innerHTML = '<p class="muted">The same text as its log, below.</p>';
         }
         if (!RUNNING.includes(j.state)) return;
-        await new Promise((ok) => setTimeout(ok, 1000));
+        await nap(1000);
         const now = await fetch(`/api/v1/jobs/${enc(id)}`, { credentials: "same-origin" }).then((x) => x.json()).catch(() => ({}));
         if (!alive) return;  // the stop button read the job again already
         if (now.state && !RUNNING.includes(now.state)) { alive = false; forget(`job:${id}`); forget("jobs:"); WB.render(true); return; }
@@ -3049,6 +3054,8 @@
   if (!location.pathname.startsWith("/workbench")) noProject();
   else {
     fetch("/api/v1/goals", { credentials: "same-origin" }).then((r) => {
+      // only its status and headers are read: an unread body leaves the request open for Chromium, and the page never idles
+      if (r.body) r.body.cancel().catch(() => {});
       if (r.status === 404) noProject();
       else if (r.status !== 401) {
         if (r.headers.get("X-EVH-Viewer") === "1") LIVE.viewer = true; // before the first screen is drawn: the fetch above asks nothing a viewer may not
