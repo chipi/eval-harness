@@ -1070,6 +1070,11 @@ def _table(args: argparse.Namespace, A, group: dict, goal: dict | None) -> dict:
             "  A judge's score is only as good as its validation; an unvalidated one is a\n"
             "  trial run, not a measurement."
         )
+        for scorer in sorted({j.split(",")[0] for j in judged if j.endswith("unvalidated judge")}):
+            print(
+                f"  To validate {scorer}: evh judge-validate --scorer {scorer} --dataset <a dataset people rated> "
+                "(--dry-run costs it first; RUNBOOK §12)"
+            )
         _judging_summary(found, getattr(A, "data_dir", None))
     if any("silver" in r["tiers"] for r in rows):
         print(

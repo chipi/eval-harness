@@ -337,10 +337,15 @@ def assumed_note(metric: str, source: str) -> str | None:
     return f"{metric}: no goal or adapter says which way is better; read as higher-is-better (declare it)"
 
 
+#: The measures `note_assumed` has already said in this process: a reader that ranks several groups says it once.
+_NOTED: set[str] = set()
+
+
 def note_assumed(metric: str, **ask: Any) -> None:
     """Print `assumed_note` for `metric` as a reader's NOTE line when `direction(metric, **ask)` is the bare default.
     `ask` is what the reader asked `direction` with, so the line is true of the direction it used."""
-    if line := assumed_note(metric, direction_source(metric, **ask)[1]):
+    if metric not in _NOTED and (line := assumed_note(metric, direction_source(metric, **ask)[1])):
+        _NOTED.add(metric)
         print(f"  NOTE: {line}")
 
 

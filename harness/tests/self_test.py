@@ -1122,6 +1122,10 @@ def test_example_scorer_suites_pass() -> None:
             "a job names an operation and its typed inputs (P3): the record, locks, files, resume; cost-report and round-close through their routes, POST /jobs and jobs-start, refusals before a job exists, the OpenAPI document",
         ),
         (
+            "test_jobs_start_warns.py",
+            "evh jobs-start run warns as the job starts when its dataset has no reference set or it names no goal, and stays quiet when it has both",
+        ),
+        (
             "test_job_routes.py",
             "one POST of each shape of route (P3 steps 3 to 5): creating, acting on a part, no part, an upload, an artifact; each answers 202 with a job naming the operation, the merged inputs and its locks",
         ),
@@ -4421,6 +4425,13 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             "Scored by an LLM judge, not against references: judge-fake-v1, unvalidated judge" in board.stdout
             and "SILVER" not in board.stdout,
             board.stdout[-400:],
+        )
+        check(
+            "installed judge-score: the leaderboard names the unvalidated scorer's validation command, and the "
+            "direction NOTE is said once",
+            "To validate judge-fake-v1: evh judge-validate --scorer judge-fake-v1 --dataset <" in board.stdout
+            and board.stdout.count("no goal or adapter says which way is better") <= 1,
+            board.stdout[-600:],
         )
         again = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1", "--unvalidated")
         check(

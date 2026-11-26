@@ -248,6 +248,21 @@ def confirm_body(**inputs: Any) -> int:
     return _confirm(a, require_named)
 
 
+def cannot_show(n: int, reach: float | None, level: float, rule: str, margin: float) -> str:
+    """Why `n` test items cannot confirm at this look, and how many can: the refusal's reason, in numbers (0.8.1
+    scenario: 5 items of a 20-item dataset split 0.4 were refused and the message never said how many are enough)."""
+    from evaluation_harness import stats  # noqa: PLC0415
+
+    least = stats.least_items(level, rule, margin)
+    best = f"reach p {reach:.4g} at best" if reach is not None else "are too few for this rule"
+    need = (
+        f"this look needs at least {least} items ({level:.4%}); a later look has a lower level and needs more"
+        if least
+        else f"no number of items reaches {level:.4%}"
+    )
+    return f"{n} test items {best}; {need}."
+
+
 def _confirm(a: argparse.Namespace, require_named: Any) -> int:
     from evaluation_harness import _looks, stats  # noqa: PLC0415
     from evaluation_harness._common import load_dataset  # noqa: PLC0415
@@ -301,6 +316,8 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
     print(f"  look {number}{' (the same question: reused)' if reused else ''}, one-sided at {level:.4%}; these items "
           + (f"reach p {reach:.4g} at best" if reach is not None else "are too few for the test (under 100)")
           + ("" if can else ": they cannot show it"))  # fmt: skip
+    if not can:
+        print("  " + cannot_show(len(items), reach, level, a.rule, margin or 0.0))
     if a.dry_run:  # decides nothing: names nobody
         _jsonout.values(
             {"items": len(items), "look": number, "level": level, "can_reach": can, "dry_run": True}
@@ -309,7 +326,10 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
     who = require_named("study-confirm")
     if not can and not a.override_no_evidence:
         die(
-            "the test items could never show it: fresh items, or --override-no-evidence (the person; inconclusive)",
+            f"the test items could never show it. {cannot_show(len(items), reach, level, a.rule, margin or 0.0)}\n"
+            "  Either add fresh items (a split of a larger dataset), or pass --override-no-evidence: a person's call "
+            "(an agent is refused) that reads the test side anyway, spends this look, and ends 'inconclusive' whatever "
+            "it finds.",
             "not-enough",
         )
     ids_file = model_studies.confirm_items(goal, sid, t["k"], a.test)

@@ -1335,7 +1335,7 @@ lists them).
    before you retry. `--retry-unparsed` calls
    again for those blocks only. The pass prints what it spent: "spent this run $…, stored total
    $… (the provider's bill where it reports one, else the price table)", the same rule as an
-   arm's cost (§4). After the arm spend line: a NOTE when the provider billed more than 1.2× (either way) what the declared prices give, naming where to correct them (the scorer's judge params; the system).
+   arm's cost (§4). After the arm spend line: a NOTE when the provider billed more than 1.2× (either way) what the declared prices give, naming where to correct them (a new scorer version, since editing the judged scorer's prices makes its next pass refuse; the system).
 6. **Read the judging pass's checks before the ranking.** The judged leaderboard
    (`evh leaderboard … --label judged/<id>`) prints them under its table, from
    `data/judge-summaries/<scorer>@<judging set>.json`: how far the judges agree (item tau, and the Spearman of
