@@ -529,8 +529,6 @@ From earlier runs:
 - `rank-stability` counts `briefs_mistral_small_v1` and `_v2` as two arms: they are two systems, by design.
 - The inspector's Conditions header was reported to leave out `t5_small_v1`; a screenshot shows the header, with
   "baseline" on the next line in the plain text. Not reproduced.
-- The Workbench's evidence charts were reported to read "Reading the chart…" for over 2.5 s; measured at 0.15 to
-  0.47 s each. The 0.8.1 run saw it again 2.5 s after load on a study's round (r3) in headless Chromium, not measured further.
 - Checked in 0.8.2 and as designed: a round opened, retired and closed through the API as the Workbench does names the
   name typed in its field (`by: person:NAME`, `from: api`), never the `EVH_ACTOR` or `EVH_FOR` of the server's own
   environment (`tests/test_round_actor_api.py`; RFC-026 "Who acted"); "Review the outputs" shows its command before a
