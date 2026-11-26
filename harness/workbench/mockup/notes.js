@@ -8,7 +8,6 @@
   const NOTES = {
     "first-visit": (goals) => `this project really has ${goals} goals; the mockup starts empty to show the first visit.`,
     "goal-extra": () => "the CNN goal's own extra measure is rouge1; margin and tie-break defaults are the goal schema's.",
-    "source-paths": () => "round 1 mocks the Hugging Face path only; the others take the same four parts (where from, what's in it, its fields, name it).",
     "hf-answer-column": () => "the huggingface source takes the item's column and its id today; taking the answer column too is new (UXS-005).",
     "pretend-job": () => "a pretend job; the real one runs on the server and survives closing the page.",
     "profile-only-cnn": () => "round 1 reads only cnn_dailymail_200's profile and items; choose it in step 2 to see this part.",

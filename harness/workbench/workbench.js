@@ -275,7 +275,6 @@ success_criteria:
         <button class="btn" id="usepick" type="button" disabled>Use it</button></div>
       <div class="or">or make one from a source</div>
       <div class="cards">${SOURCES.map(([id, name, what]) => `<button type="button" class="card" data-source="${id}" aria-pressed="false"><b>${esc(name)}</b><span>${esc(what)}</span></button>`).join("")}</div>
-      <div id="srcnote" style="margin-top:14px"></div>
     </div>`;
   }
   function wireDataset() {
@@ -288,9 +287,7 @@ success_criteria:
       save(); location.hash = "#prepare";
     });
     main.querySelectorAll(".card").forEach((c) => c.addEventListener("click", () => {
-      location.hash = c.dataset.source === "huggingface" ? "#dataset-hf" : `#dataset-src-${c.dataset.source}`; return;
-      main.querySelectorAll(".card").forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
-      $("#srcnote").innerHTML = note("source-paths");
+      location.hash = c.dataset.source === "huggingface" ? "#dataset-hf" : `#dataset-src-${c.dataset.source}`;
     }));
   }
 
