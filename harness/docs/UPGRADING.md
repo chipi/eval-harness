@@ -12,6 +12,11 @@ no number moves: the release fixes a public server's Workbench and aligns the he
 Workbench and the docs. A deployment that runs `evh catalog-serve --public` and wants the Workbench headed by its
 publication's switcher passes the same `--link` and `--brand` its `evh catalog` build takes.
 
+- **`evh mcp --no-agent-tools`** serves everything a local server reads, the text of items and outputs included, and none of
+  the two tools that write (`study-ask`, `study-tell`, which runs a study's next trial): the flag for an always-on
+  `evh mcp --http` over a project that must not be written or spent by a call. `evh mcp --help` and the command list now say
+  that those two exist on a local server; they never did on `--public`.
+
 ## From 0.8.0 to 0.8.1
 
 Change the pin to `@v0.8.1` and reinstall; `evh --version` prints `0.8.1` when the upgrade took. No format changes: you need

@@ -55,7 +55,7 @@ COMMANDS = {
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
     "mcp": (
         "mcp_server.py",
-        "the project's read commands as MCP tools for an agent (stdio, or --http for a team; none writes the project or spends)",
+        "the project's read commands as MCP tools for an agent (stdio, or --http for a team); a local server also has study-ask and study-tell, which write a study and run its trial: --no-agent-tools leaves them out",
     ),
     "self-test": (
         "self_check.py",
