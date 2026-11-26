@@ -10,6 +10,7 @@
 #   make serve [STORE=sqlite]   the catalog and inspector on 127.0.0.1 (in SQLite, a copy of the data)
 #   make serve-dev / mcp-dev    the same, or the MCP server, reporting to the dev observability (environment=dev,
 #                               worktree=<branch>); read what the branch sent with the o11y-dev skill before a PR
+#   make release-smoke                   the built release for a newcomer and the deployment, offline, a few minutes (ARGS=--release adds the container checks)
 #   make browser-check                   the inspector and the public site in headless Chromium
 #   make guard-check                     the checks can fail: each checker catches its planted defects
 #   make quality                         lint, types, security, dead code, docstrings, spelling, shell, llms.txt
@@ -27,16 +28,22 @@ ARMS ?=
 SYSTEM ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check hooks-check guard-check commands-check catalog-render-check stores-check \
+.PHONY: help setup release-smoke verify list plan data reproduce compare site docs deploy-dry deploy deploy-check serve serve-dev mcp-dev obs-vendor llms llms-check browser-check browser-real-check budget-check hooks-check guard-check commands-check catalog-render-check stores-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
-	@sed -n '1,20p' Makefile | sed 's/^# \{0,1\}//'
+	@sed -n '1,21p' Makefile | sed 's/^# \{0,1\}//'
 
 $(PY):
 	$(MAKE) -C harness install
 
 setup: $(PY)
+
+# The release as built: the wheel in a fresh venv, a newcomer's project per store, the servers, the version in every
+# place (harness/tools/release_smoke.py; RELEASING.md, "Quick release smoke"). Offline and $0; ARGS=--release adds the
+# rendered release's container and header checks (docker, network).
+release-smoke: $(PY)
+	$(PY) harness/tools/release_smoke.py $(ARGS)
 
 verify: $(PY)
 	$(MAKE) -C harness ci
