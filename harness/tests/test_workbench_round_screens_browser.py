@@ -172,7 +172,12 @@ try:
             check("the second round is open", r.returncode == 0, (r.stdout + r.stderr)[-300:])
             page = fresh()
             asked: list = []
-            page.on("dialog", lambda d: (asked.append(d.message), d.dismiss()))
+
+            def dismiss(d):
+                asked.append(d.message)
+                d.dismiss()
+
+            page.on("dialog", dismiss)
             page.goto(f"{base}#eval/tickets_summary/r2")
             page.wait_for_selector("#rc-close", timeout=20000)
             page.fill("#rc-text", "The second sentence adds nothing here.")

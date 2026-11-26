@@ -990,7 +990,7 @@ def _typical_out(system_id: str) -> dict[str, Any] | None:
     latest = sorted(
         _model_runs.scored(system_id=system_id, label_is=""), key=lambda x: _model_runs.latest_key(x[1])
     )[-5:]
-    total = n = used = 0
+    total, n, used = 0.0, 0, 0
     for sd, _rec in latest:
         got = [
             float(r["tokens_out"])

@@ -139,7 +139,7 @@ try:
     health = ""
     for _ in range(100):
         try:
-            with urllib.request.urlopen(base + "/mcp/health", timeout=5) as r:  # noqa: S310 -- the test's own server
+            with urllib.request.urlopen(base + "/mcp/health", timeout=5) as r:  # noqa: S310  # nosec B310 -- the test's own server on 127.0.0.1
                 health = r.read().decode()
             break
         except OSError:

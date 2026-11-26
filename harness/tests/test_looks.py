@@ -66,12 +66,15 @@ check(
     and stats.min_attainable_p_one_sided(n=50, rule="noninferiority") is None,
 )
 # 0.8.1 scenario: 20 items split 0.4 left 5 test items, and the refusal never said how many are enough.
+p7, p6 = stats.min_attainable_p_one_sided(n=7), stats.min_attainable_p_one_sided(n=6)
 check(
     "least_items: the fewest items whose best p reaches a look's level (1.52% needs 7, 0.38% needs 9; none for a rule "
     "the items cannot answer)",
     stats.least_items(0.015198) == 7
     and stats.least_items(0.0038) == 9
-    and stats.min_attainable_p_one_sided(n=7) <= 0.015198 < stats.min_attainable_p_one_sided(n=6)
+    and p7 is not None
+    and p6 is not None
+    and p7 <= 0.015198 < p6
     and stats.least_items(0.015, rule="noninferiority") == stats.NONINF_MIN_UNITS,
     (stats.least_items(0.015198), stats.least_items(0.0038)),
 )
