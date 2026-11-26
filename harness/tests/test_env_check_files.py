@@ -37,6 +37,6 @@ check(
     "files read:" in out and str(proj / ".env") in out.split("files read:")[1].splitlines()[0],
     out[:400],
 )
-check("env-check says no other file is read", "no system names another key file" in out, out[:400])
+check("env-check says no other file is read", "no system names a key_file" in out, out[:400])
 check("env-check prints no key", SECRET not in out)
 sys.exit(summary())

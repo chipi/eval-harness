@@ -163,6 +163,51 @@ def dotenv_pairs(path: Path) -> list[tuple[str, str]]:
     return out
 
 
+def env_origin(var: str) -> str:
+    """Where a set variable came from: the project's .env, the shell, or the shell over a .env value (an exported
+    variable wins, so the file's is not used: the 0.8.0 newcomer run could not tell which keys were its .env's)."""
+    if var in DOTENV_SET:
+        return ".env"
+    return "shell, over .env" if var in {k for k, _v in dotenv_pairs(project_root() / ".env")} else "shell"
+
+
+def key_file_path(value: str) -> Path:
+    """The file a system's `key_file` names: `~` expanded, a relative path from the project root (not from wherever
+    the command runs, so a system reads the same file from any folder)."""
+    return (project_root() / Path(value).expanduser()).resolve()
+
+
+def read_key_file(value: Any) -> tuple[dict[str, str] | None, str | None]:
+    """(the variables of the dotenv-format file a system's `key_file` names, None) or (None, why it cannot be read).
+    The why names the file as written and never a line of it."""
+    if not isinstance(value, str) or not value.strip():
+        return None, f"key_file must be a path, as a string; got {value!r}"
+    path = key_file_path(value)
+    if not path.exists():
+        return None, f"key_file {value} cannot be read: no such file ({path})"
+    if not path.is_file():
+        return None, f"key_file {value} cannot be read: it is not a file ({path})"
+    try:
+        return dict(dotenv_pairs(path)), None
+    except (OSError, UnicodeDecodeError) as exc:
+        return None, f"key_file {value} cannot be read: {type(exc).__name__} ({path})"
+
+
+def key_file_uncovered(value: str) -> bool:
+    """Whether a key file sits inside the project, in a git checkout, with nothing ignoring it: one `git add .`
+    from being committed. False for a file outside the project, or a project that is not a checkout."""
+    root, path = project_root(), key_file_path(value)
+    if not path.is_relative_to(root):
+        return False
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(root), "check-ignore", "-q", str(path)], capture_output=True, timeout=10
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 1  # 0: ignored; 128: not a checkout
+
+
 def _is_harness_command() -> bool:
     """Whether this process is one of the harness's own commands: a script in this directory
     run directly (the Makefile) or through `evh` (which points argv[0] at the script before

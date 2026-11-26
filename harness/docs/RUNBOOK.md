@@ -2313,6 +2313,19 @@ project usually sets, with the reasoning. The harness's commands read
 notebook) reads no `.env`, and the project's paths are resolved on first use, so it can set
 `EVAL_HOME` after the import.
 
+**A system's own key file.** A system may name the file its keys come from, `key_file: PATH` in its `params` (a
+path from the project root, or absolute; `~` is expanded; dotenv format, `NAME=value` per line). For a call by that
+system, each variable its provider reads (`OPENAI_API_KEY`, `LITELLM_BASE_URL`, ...) is taken from that file
+first, then the exported environment, then the project's `.env`: the system's own choice beats the defaults. A
+variable the file does not hold falls through to the next. A `key_file` that is missing, is not a file or cannot
+be read is refused (`not-configured`) before any call, naming the file and the system; one inside the project and
+not gitignored is warned about, since a key file must not be committed (keep it outside the project, or ignore
+it). `evh env-check` lists the key files read and, per system and key, where it comes from (`key_file keys/a.env`,
+`shell`, `.env`); `evh run --dry-run` says the same for its system. A key's value is never printed or recorded; the
+path is recorded in the system's params and is not part of any fingerprint (where a key is kept is not what was
+measured). A project adapter that calls the bundled providers (`_providers.complete(prompt, params, role="arm",
+...)`) with the system's params gets the same; one that reads `os.environ` itself does not see `key_file`.
+
 | Variable | What it does |
 |---|---|
 | `EVAL_HOME` | the project root (default: the nearest directory up from where you run that has `data/`) |
@@ -2336,7 +2349,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVH_FREEZE_ROWS` | `1`: every row the kept-rows cache holds is frozen (RFC-033): a view or command that changes a row it shares with other readers raises `TypeError` where it does, and a copy (`copy.deepcopy`, `dict(row)`) is a plain dict. The harness's test suite runs under it; set it when writing code that reads rows |
 | `EVH_VIEW_CACHE` | `0`: the view cache keeps nothing (every view is read from the data again); for a test that compares a view with and without it |
 | `EVH_WORKERS` | how many child processes may draw a command's resampled tests at once (the same p's); default: the CPUs the process may use, capped by its container's CPU quota, so under one whole CPU none; `1` turns it off |
-| `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
+| `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable, its `key_file` a file to read it from |
 | `OPENROUTER_API_KEY` | `provider: openrouter` (OpenRouter's address by default; an arm's `base_url` or `api_key_env` overrides it), and judges routed straight to OpenRouter |
 | `ANTHROPIC_API_KEY` | `provider: anthropic` |
 | `LITELLM_BASE_URL` + `LITELLM_API_KEY` | `provider: litellm`, a LiteLLM proxy, and judges routed through it (a judge takes the proxy when both it and `OPENROUTER_API_KEY` are set) |

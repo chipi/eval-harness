@@ -32,7 +32,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _artifact, _common, _jsonout, _outputs, _progress, _spend, _store
+from evaluation_harness import _artifact, _common, _jsonout, _outputs, _progress, _providers, _spend, _store
 from evaluation_harness._adapter import (
     call_once,
     calls_per_item,
@@ -1066,6 +1066,10 @@ def _dry_run(
         x for x in (f"adapter {adapter_id}" if custom else "", provider, params.get("model")) if x
     )
     print(f"  system      {cfg['system_id']}  ({what})")
+    if params.get("provider") in _providers.SPECS:
+        # Where the key comes from, never what it is: no command prints a key's value.
+        where = ", ".join(f"{var}: {origin}" for var, _value, origin in _providers.key_sources(params, "arm"))
+        print(f"  key         {where}")
     print(f"  dataset     {ds['dataset_id']}  ({len(items)} items)")
     print(f"  repeats     {repeat}")
     if once:
@@ -1568,10 +1572,12 @@ def _run(args: argparse.Namespace) -> int:
     if secrets:
         die(
             f"{args.config}: params {', '.join(secrets)} look like a credential written into the system. "
-            "Put the key in the environment (.env) and name the variable with api_key_env, or let the "
-            "provider read its usual variable; a key in a system is copied into every run record.",
+            "Put the key in the environment (.env) and name the variable with api_key_env, or in a file and name it "
+            "with key_file, or let the provider read its usual variable; a key in a system is copied into every run "
+            "record.",
             "not-configured",
         )
+    _providers.check_key_file(dict(cfg.get("params") or {}), str(cfg["system_id"]))
 
     # A run names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
     # spent when the goal does not exist: a run filed under a typo answers nothing.
