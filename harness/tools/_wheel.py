@@ -35,6 +35,7 @@ INPUTS = (
     "project_kit",
     "workbench",
     "skills",
+    "docs",
 )
 _BUILT: dict = {}
 

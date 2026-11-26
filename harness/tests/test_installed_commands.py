@@ -197,6 +197,7 @@ def main() -> int:
             ("init", ["--help"], "ok"),
             ("skills-install", ["--target", "installed-skills"], "ok:evh-evaluate-a-system"),
             ("env-check", [], "ok"),
+            ("docs", ["runbook"], "ok:evaluation_harness/docs/RUNBOOK.md"),
             (
                 "dataset-create",
                 ["--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets"],
