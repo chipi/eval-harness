@@ -95,13 +95,13 @@ def append(goal: str, sid: str, ev: dict[str, Any]) -> dict[str, Any]:
 # ── the spec ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
 
-def problems(goal: str, sid: str, s: dict[str, Any]) -> list[str]:
-    """What is wrong with a spec, before anything runs."""
+def problems(goal: str, sid: str, s: dict[str, Any], read: bool = False) -> list[str]:
+    """What is wrong with a spec, before anything runs. `read`: the spec is on disk, so a study id 0.8.2 made is read."""
     from evaluation_harness import _looks  # noqa: PLC0415
 
     out = []
-    if not STUDY_ID.fullmatch(sid):
-        out.append(f"study id {sid!r}: {STUDY_ID.problem(sid)} ({STUDY_ID.says()})")
+    if not STUDY_ID.ok(sid, read):
+        out.append(f"study id {sid!r}: {STUDY_ID.problem(sid, read)} ({STUDY_ID.says()})")
     goals = _common.load_goals()
     if goal not in goals:
         out.append(f"goal {goal!r} does not exist (data/goals/)")
@@ -642,7 +642,7 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
     from evaluation_harness import _rounds  # noqa: PLC0415
 
     s = spec(goal, sid)
-    found = problems(goal, sid, s)
+    found = problems(goal, sid, s, read=True)
     if found:
         _common.die(f"study {goal}/{sid}: " + "; ".join(found), "invalid-file")
     system_of(s["baseline"]["system"])  # refused now when it does not exist

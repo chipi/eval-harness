@@ -228,6 +228,25 @@ try:
         all(i in out for i in (DS, SYS, GOAL)) and "ASCII" in out,
         out[-600:],
     )
+    study = (
+        f"dataset: {DS}\nbaseline: {{system: {SYS}}}\nmeasure: output_words\nsampler: grid\n"
+        "accept: {point: {min_gain: 0}}\nstop: {trials: 2}\n"
+        "space:\n  groups:\n    - {name: length, reason: how much to keep, params: {sentences: [2]}}\n"
+    )
+    _runstore.write_text(proj, f"studies/{GOAL}/étude_1.yaml", study)
+    r = evh("study-run", "--study", f"{GOAL}/étude_1", "--dry-run")
+    check(
+        "a study a 0.8.2 project holds under a non-ASCII id opens as it is (its dry run)",
+        "study id" not in r.stderr and "Traceback" not in r.stderr,
+        (r.stdout + r.stderr)[-400:],
+    )
+    (proj / "new_study.yaml").write_text(study, encoding="utf-8")
+    r = evh("study-run", "--study", f"{GOAL}/étude_2", "--spec", str(proj / "new_study.yaml"), "--dry-run")
+    check(
+        "a new study under a non-ASCII id is refused by name",
+        r.returncode != 0 and "study id" in r.stderr and "ASCII" in r.stderr and "Traceback" not in r.stderr,
+        (r.stdout + r.stderr)[-400:],
+    )
     r = evh(
         "import-run", "--dataset-id", "tickets_v1", "--system-id", "echo_v1", "--run-id", "run_1",
         "--scores", "scores.jsonl", "--primary-metric", "wer", "--asc", "--build-ref", "t", "--source", "test",
