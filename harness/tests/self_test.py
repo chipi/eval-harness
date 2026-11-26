@@ -57,6 +57,7 @@ from evaluation_harness._check import check, results  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore, _tmp
 import _runstore  # noqa: E402
+import _share  # noqa: E402
 import _tmp  # noqa: E402
 
 _tmp.use_root()  # before the first temporary folder: outside /tmp and outside any git repository
@@ -841,7 +842,6 @@ def test_example_scorer_suites_pass() -> None:
     files (the one shared write is the family-test cache, replaced atomically), and one after
     another they took 83 s, half of it check_report_claims alone.
     """
-    import os  # noqa: PLC0415
     from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415
 
     suites = (
@@ -1601,7 +1601,7 @@ def test_example_scorer_suites_pass() -> None:
     started = sorted(
         present, key=lambda s: LONGEST_FIRST.index(s) if s in LONGEST_FIRST else len(LONGEST_FIRST)
     )
-    with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
+    with ThreadPoolExecutor(max_workers=_share.jobs()) as pool:  # 4 on a shared machine (tests/_share.py)
         ran = dict(zip(started, pool.map(lambda script: run_own_tmp(at(script)), started)))
     for script, subject in suites:
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
@@ -4494,6 +4494,7 @@ def _cpu_now() -> float:
 
 
 def main() -> int:
+    _share.share()  # the X3 is shared: a lower priority, fewer workers (tests/_share.py)
     print("harness self-tests (no network, no keys)\n")
     for fn in (
         test_dotenv_does_not_override_exported,
