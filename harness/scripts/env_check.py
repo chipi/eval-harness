@@ -110,6 +110,7 @@ def main() -> int:
     named = _key_file_systems()
     files = [str(env_file)] if _store.is_file(env_file) else []
     files += [kf[0] for _s, p in named if (kf := _providers.key_file_of(p))]
+    files = list(dict.fromkeys(files))
     print(
         f"files read: {', '.join(map(str, files)) or '(none)'}"
         + ("" if named else "; no system names a key_file, so each key below is the shell's or this .env's")

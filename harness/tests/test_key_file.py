@@ -265,6 +265,9 @@ try:
     r, seen = smoke("sys_project")
     check("a project adapter calling _providers.complete with the system's params: the key_file applies",
           r.returncode == 0 and carried(seen, KEY_A), (said(r)[-400:], seen))  # fmt: skip
+    files_line = next((ln for ln in evh("env-check").stdout.splitlines() if ln.startswith("files read")), "")
+    check("env-check: a key file two systems name is listed once in `files read`",
+          files_line.count("keys/a.env") == 1, files_line)  # fmt: skip
 
     # ── identity: the file's path is outside every hash ──────────────────────
     with tempfile.TemporaryDirectory() as td:
