@@ -27,7 +27,7 @@ now refuses an arm it cannot price.
 - **New, `references: {roots: [...]}` in `config.yaml`:** where a project keeps references besides `data/references`.
   With it, `import-run --reference-id` refuses an id found in none; without it, as 0.8.1.
 - **New, `evh mcp --no-agent-tools`:** every read a local server serves, text included, neither `study-ask` nor `study-tell`. `evh mcp --help` now says a local server has those two; it said every tool reads.
-- **New, `dataset-create --fields-from-item` and `--exclude GLOB`:** JSON items give their own field values (a field's `from` JSON pointer, `reduce: count`), no `--fields` file to drift; `--exclude` drops what `--glob` matched (an export `manifest.json`); the folder source's query takes `exclude` too.
+- **New, `dataset-create --fields-from-item` and `--exclude GLOB`:** JSON items give their own field values (a field's `from` JSON pointer, `reduce: count`), no `--fields` file to drift (`--update-fields` reads the frozen items); `--exclude` drops what `--glob` matched (an export `manifest.json`); the folder source's query takes `exclude` too.
 - **New, `evh docs`:** UPGRADING, RUNBOOK and INTEGRATION ship in the package; `evh docs NAME [--print]` prints the
   installed copy and its page. `evh --help` opens with "Start here".
 - **Changed, the dry run:** the "no reference" lines come after its header and say what `evh run` will score; the

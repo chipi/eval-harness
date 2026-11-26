@@ -276,4 +276,115 @@ check(
 r = create("ex_v5", "--manifest", "m.csv", "--exclude", "x")
 check("exclude: with --manifest is refused", r.returncode != 0 and "--exclude" in out(r), out(r)[-300:])
 
+# ── --update-fields --fields-from-item: the frozen items' own bytes ─────────────────────────────────────────
+fieldset(
+    "up",
+    "  - {name: scene, type: text}\n  - {name: seed, type: integer}\n  - {name: speed, type: number}\n"
+    "  - {name: start_x, type: number, from: /start/x}\n  - {name: obstacles, type: integer, from: /obstacles, reduce: count}\n",
+)
+put(
+    "upfix.jsonl",
+    '{"item_id": "a-s1", "scene": "corridor_3", "seed": 7, "speed": 1.5, "start_x": 1.5, "obstacles": 2}\n'
+    '{"item_id": "a-s2", "scene": "atrium", "seed": 8, "start_x": 0, "obstacles": 0}\n',
+)
+bare = ("--glob", "*-s*.json", "--fieldset", "up")
+r = create("up_v1", *bare)
+check("update-fields: a dataset frozen without values", r.returncode == 0, out(r)[-300:])
+r = evh(
+    "dataset-create",
+    "--dataset-id",
+    "up_v1",
+    "--update-fields",
+    "--fieldset",
+    "up",
+    "--fields",
+    "upfix.jsonl",
+)
+via_file = record("up_v1") if r.returncode == 0 else b""
+check("update-fields: the --fields file's record taken", r.returncode == 0 and bool(via_file), out(r)[-300:])
+create("up_v1", *bare, "--force")
+r = evh(
+    "dataset-create", "--dataset-id", "up_v1", "--update-fields", "--fieldset", "up", "--fields-from-item"
+)
+check(
+    "update-fields --fields-from-item: byte-equal to the record the equivalent --fields file writes",
+    r.returncode == 0 and bool(via_file) and record("up_v1") == via_file,
+    out(r)[-300:],
+)
+refused_up = evh(
+    "dataset-create", "--dataset-id", "up_v1", "--update-fields", "--fieldset", "up", "--fields-from-item",
+    "--fields", "upfix.jsonl",
+)  # fmt: skip
+check(
+    "update-fields: --fields-from-item with --fields is refused, naming both",
+    refused_up.returncode != 0 and "--fields-from-item" in out(refused_up) and "--fields" in out(refused_up),
+    out(refused_up)[-300:],
+)
+r = evh("dataset-create", "--dataset-id", "up_v1", "--update-fields", "--fieldset", "up")
+check(
+    "update-fields: neither --fields nor --fields-from-item is refused, naming both",
+    r.returncode != 0 and "--fields-from-item" in out(r) and "--fields" in out(r),
+    out(r)[-300:],
+)
+r = evh(
+    "dataset-create", "--dataset-id", "nope_v1", "--update-fields", "--fieldset", "up", "--fields-from-item"
+)
+check(
+    "update-fields --fields-from-item: no dataset is refused",
+    r.returncode != 0 and "no dataset" in out(r),
+    out(r)[-300:],
+)
+r = evh(
+    "dataset-create", "--dataset-id", "up_v1", "--update-fields", "--fields-from-item", "--manifest", "m.csv"
+)
+check("update-fields --fields-from-item: with --manifest is refused", r.returncode != 0, out(r)[-300:])
+
+# a value kept: an item the item's JSON does not hold keeps what it had, as a --fields row without that column does
+before = json.loads(record("up_v1"))["items"]
+put("upkeep.jsonl", '{"item_id": "a-s2", "speed": 9.5}\n')
+evh(
+    "dataset-create",
+    "--dataset-id",
+    "up_v1",
+    "--update-fields",
+    "--fieldset",
+    "up",
+    "--fields",
+    "upkeep.jsonl",
+)
+r = evh(
+    "dataset-create", "--dataset-id", "up_v1", "--update-fields", "--fieldset", "up", "--fields-from-item"
+)
+kept = {i["item_id"]: i.get("fields") for i in json.loads(record("up_v1"))["items"]}
+check(
+    "update-fields --fields-from-item: a field the item does not hold keeps its value",
+    r.returncode == 0 and kept["a-s2"].get("speed") == 9.5 and kept["a-s2"]["scene"] == "atrium",
+    kept,
+)
+
+# the frozen bytes, not the folder: a source file changed since is refused; the materialized copy still answers
+put("avoid/a-s2.json", json.dumps({**ITEMS["a-s2"], "scene": "changed"}))
+r = evh(
+    "dataset-create", "--dataset-id", "up_v1", "--update-fields", "--fieldset", "up", "--fields-from-item"
+)
+check(
+    "update-fields --fields-from-item: an item changed since it was frozen is refused, naming it",
+    r.returncode != 0 and "a-s2" in out(r) and "dataset-materialize" in out(r),
+    out(r)[-300:],
+)
+put("avoid/a-s2.json", json.dumps(ITEMS["a-s2"]))
+r = evh("dataset-materialize", "--dataset-id", "up_v1")
+put("avoid/a-s2.json", json.dumps({**ITEMS["a-s2"], "scene": "changed"}))
+r2 = evh(
+    "dataset-create", "--dataset-id", "up_v1", "--update-fields", "--fieldset", "up", "--fields-from-item"
+)
+check(
+    "update-fields --fields-from-item: reads the materialized copy, hash-checked, whatever the folder holds now",
+    r.returncode == 0
+    and r2.returncode == 0
+    and {i["item_id"]: i["fields"]["scene"] for i in json.loads(record("up_v1"))["items"]}["a-s2"]
+    == "atrium",
+    out(r2)[-300:],
+)
+
 sys.exit(summary())
