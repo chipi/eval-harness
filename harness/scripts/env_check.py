@@ -77,6 +77,12 @@ def main() -> int:
     )
     if not _store.is_file(env_file):
         print("      create it with the keys your providers read, one NAME=value per line\n")
+    # A system's `provider:` reads its key from the environment alone; no system names a key file of its own, so a key
+    # kept in another file (a secrets manager's, a home-directory one) is not seen here or by a run until it is exported.
+    print(
+        f"files read: {env_file if _store.is_file(env_file) else '(none)'}; no system names another key file, "
+        "so each key below is the shell's or this .env's"
+    )
 
     print(
         "\nhosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
