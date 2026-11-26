@@ -528,10 +528,15 @@ From earlier runs:
 
 - `rank-stability` counts `briefs_mistral_small_v1` and `_v2` as two arms: they are two systems, by design.
 - The inspector's Conditions header was reported to leave out `t5_small_v1`; a screenshot shows the header, with
-  "baseline" on the next line in the plain text. Not reproduced.
+  "baseline" on the next line in the plain text. Not reproduced; 0.8.3 rebuilt it with three arms (baseline,
+  `t5_small_v1`, `flan_t5_small_v1`) at 1440 and 390 px: all three are in the header (at 390 px the table is stacked,
+  each cell carrying its arm's name).
 - Checked in 0.8.2 and as designed: a round opened, retired and closed through the API as the Workbench does names the
   name typed in its field (`by: person:NAME`, `from: api`), never the `EVH_ACTOR` or `EVH_FOR` of the server's own
   environment (`tests/test_round_actor_api.py`; RFC-026 "Who acted"); "Review the outputs" shows its command before a
   sheet exists (`tests/test_workbench_live_browser.py`).
-- Full-page screenshots repeat the sticky header mid-page.
+- Full-page screenshots repeat the sticky header mid-page when a tool scrolls and stitches; Playwright's own `full_page`
+  does not. `tests/_shots.py` (`full_page`, `static_sticky`) holds every sticky element static for a capture, and
+  `tests/test_screenshot_sticky_browser.py` counts the header per scroll slice with and without it. A run that
+  screenshots by another tool captures one viewport at a time, or sets `.bar { position: static }` first.
 - Not exercised by a run yet: the direct OpenAI, Anthropic and OpenRouter paths (every run went through a LiteLLM proxy).

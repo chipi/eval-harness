@@ -252,6 +252,46 @@ try:
     check("provider litellm: the key and the base URL are both read from the key_file",
           r.returncode == 0 and carried(seen, KEY_PROXY), (said(r)[-300:], seen))  # fmt: skip
 
+    # ── the address's source is said as the key's is ─────────────────────────
+    (proj / "keys" / "keyonly.env").write_text(f"LITELLM_API_KEY={KEY_PROXY}\n", encoding="utf-8")
+    for sid, kf, provider in (
+        ("sys_keyonly", "keys/keyonly.env", "litellm"),
+        ("sys_or", "keys/a.env", "openrouter"),
+    ):
+        _runstore.write_text(
+            proj,
+            f"systems/{sid}.yaml",
+            f"system_id: {sid}\nparams:\n  provider: {provider}\n  model: fake\n  key_file: {kf}\n"
+            "  usd_per_mtok_in: 0\n  usd_per_mtok_out: 0\n",
+        )
+    shell_base = {**env, "LITELLM_BASE_URL": BASE.removesuffix("/v1")}
+    for sid, where, with_env in (
+        ("sys_a", "base_url: system's base_url param", None),
+        ("sys_proxy", "LITELLM_BASE_URL: key_file keys/proxy.env", None),
+        ("sys_keyonly", "LITELLM_BASE_URL: shell; key_file keys/keyonly.env does not hold it", shell_base),
+        ("sys_keyonly", "LITELLM_BASE_URL: not set; key_file keys/keyonly.env does not hold it", None),
+        ("sys_or", "default", None),
+    ):
+        r = evh("run", "--system", sid, "--dataset", "tk_v1", "--dry-run", with_env=with_env)
+        line = next((ln for ln in r.stdout.splitlines() if ln.startswith("  key ")), "")
+        check(
+            f"the dry run of {sid} says where its address comes from: {where}",
+            where in line,
+            (line, r.stderr[-200:]),
+        )
+    out = evh("env-check", with_env=shell_base).stdout
+    row = next(
+        (ln for ln in out.splitlines() if ln.startswith("  sys_keyonly") and "LITELLM_BASE_URL" in ln), ""
+    )
+    check("env-check: the address of a system whose key is in a key_file says it is not",
+          "shell" in row and "keys/keyonly.env does not hold it" in row, row)  # fmt: skip
+    row = next((ln for ln in out.splitlines() if ln.startswith("  sys_a ") and "base_url" in ln), "")
+    check(
+        "env-check: a system's own base_url param is the address's source",
+        "system's base_url param" in row,
+        row,
+    )
+
     # ── a project adapter that calls the bundled providers gets the same ─────
     (proj / "mine_adapter.py").write_text(
         "from evaluation_harness import _providers\n"
@@ -297,7 +337,13 @@ try:
     spoken = "\n".join(printed)
     leaks = [k for k in ALL_KEYS if k in spoken]
     check("no key value in anything a command printed", not leaks, len(leaks))
-    key_files = {proj / ".env", proj / "keys" / "a.env", proj / "keys" / "proxy.env", outside / "b.env"}
+    key_files = {
+        proj / ".env",
+        proj / "keys" / "a.env",
+        proj / "keys" / "proxy.env",
+        proj / "keys" / "keyonly.env",
+        outside / "b.env",
+    }
     wrote = []
     for root, _dirs, names in os.walk(proj):
         for n in names:

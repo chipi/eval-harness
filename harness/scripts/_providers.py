@@ -26,7 +26,9 @@ taken from the file first, then the shell, then the project's .env: the system's
 file that cannot be read is refused (`check_key_file`, and `problems` for any caller) before a call is made. A
 project adapter that calls `complete` with the system's params gets the same.
 
-A 401 is the key's, not the item's: `complete` stops the run there (`_refused_key`), naming the variable.
+A 401 or a 403 is the key's, not the item's: `complete` stops the run there (`_refused_key`), naming the variable.
+The SDK clients retry nothing (`max_retries=0`): the core's loop (`_retry`, EVAL_MAX_RETRIES) is the only one, so a
+persistent 429 or 500 costs that many calls and not that many times the SDK's own tries.
 
 COST. What the provider billed when the response carries it (`usage.cost`), else the
 system's prices (`usd_per_mtok_in` / `usd_per_mtok_out`) times the tokens, else unknown
@@ -218,8 +220,10 @@ def env(name: str, role: str, key_file: KeyFile | None = None) -> tuple[str, str
 
 def key_sources(params: dict[str, Any], role: str) -> list[tuple[str, str | None, str]]:
     """The variables a call with `params` reads for its credential, as (variable, value, where it came from): the key
-    always, the address when a variable gives it. For env-check and the dry run, which say where and never show a value
-    (env-check shows its length and tail, as it has)."""
+    always, then the address, from the system's `base_url`, a variable or the provider's default. For env-check and the
+    dry run, which say where and never show a value (env-check shows its length and tail, as it has). An address that
+    does not come from the key's own `key_file` says so: a key file that brings the key and not the address is the
+    usual way a call goes to the wrong gateway."""
     provider = params.get("provider")
     if provider not in SPECS:
         return []
@@ -227,12 +231,19 @@ def key_sources(params: dict[str, Any], role: str) -> list[tuple[str, str | None
     r = route(params, role)
     if r.key == NO_KEY:
         return [("(none)", None, "a local server takes no key")]
-    out = [_lookup(str(params.get("api_key_env") or spec.key_env), role, kf)]
-    if spec.base_env and not params.get("base_url"):
+    key = _lookup(str(params.get("api_key_env") or spec.key_env), role, kf)
+    if params.get("base_url"):
+        return [key, ("base_url", str(params["base_url"]), "system's base_url param")]
+    if spec.base_env:
         address = _lookup(spec.base_env, role, kf)
-        if address[1]:
-            out.append(address)
-    return out
+        if not address[1]:
+            unset = "not set" if spec.base_required else "not set, the provider's default address"
+            address = (address[0], None, unset)
+    else:
+        address = ("base_url", spec.base_default, "default")
+    if kf and spec.base_env and key[2].startswith("key_file") and not address[2].startswith("key_file"):
+        address = (address[0], address[1], f"{address[2]}; key_file {kf[0]} does not hold it")
+    return [key, address]
 
 
 def _either(name: str, role: str) -> str:
@@ -395,10 +406,10 @@ def _cost(params: dict[str, Any], usage: Any, tin: int | None, tout: int | None)
 
 
 def _client_kw(params: dict[str, Any]) -> dict[str, Any]:
-    """The client's own options from the params: `call_timeout_s`, the arm's call limit (seconds), as the
-    SDK's `timeout`. Unset, the SDK's default stands (10 minutes for both)."""
+    """The client's own options: no SDK retries (the core's loop is the only one), and `call_timeout_s`, the arm's call
+    limit (seconds), as the SDK's `timeout`. Unset, the SDK's default stands (10 minutes for both)."""
     limit = params.get("call_timeout_s")
-    return {"timeout": float(limit)} if limit else {}
+    return {"max_retries": 0, **({"timeout": float(limit)} if limit else {})}
 
 
 def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
@@ -503,7 +514,7 @@ def complete(prompt: str, params: dict[str, Any], *, role: str, max_tokens: int)
     try:
         done = _SHAPES[SPECS[params["provider"]].shape](prompt, params, r)
     except Exception as exc:
-        if getattr(exc, "status_code", None) == 401:
+        if getattr(exc, "status_code", None) in (401, 403):
             _refused_key(r, exc)
         raise
     _spend.net(done.cost_usd)
@@ -511,8 +522,8 @@ def complete(prompt: str, params: dict[str, Any], *, role: str, max_tokens: int)
 
 
 def _refused_key(r: Route, exc: Exception) -> NoReturn:
-    """A 401 is the key, not the item: every call would fail the same way, so the run stops here (a failed item was
-    recorded, the run went on and exited 0), naming the variable that held the key. The server's own words are kept,
+    """A 401 or a 403 is the key, not the item: every call would fail the same way, so the run stops here (a failed
+    item was recorded, the run went on and exited 0), naming the variable that held the key. The server's own words are kept,
     without the key: a server may echo it back, and what is printed or recorded must never hold it."""
     from evaluation_harness._common import die  # noqa: PLC0415
 
@@ -520,7 +531,7 @@ def _refused_key(r: Route, exc: Exception) -> NoReturn:
     if r.key:
         said = said.replace(r.key, "(the key)")
     die(
-        f"provider {r.provider} refused the key with a 401: {r.key_var} is set, and not accepted "
-        f"(wrong, revoked, or for another account). The server said: {said[:300]}",
+        f"provider {r.provider} refused the key with a {getattr(exc, 'status_code', '')}: {r.key_var} is set, and not accepted "
+        f"(wrong, revoked, not permitted, or for another account). The server said: {said[:300]}",
         "not-configured",
     )

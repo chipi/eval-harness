@@ -9,7 +9,8 @@ speaks each provider's wire format (OpenAI chat completions, Anthropic messages 
 `anthropic-version`, OpenRouter's OpenAI-compatible API with its `usage.cost`, a LiteLLM proxy's /v1), reached through
 the provider's base-URL setting (the system's `base_url`, or the provider's own variable). Each run is asserted on the
 request (path, auth header, body) and on what the run records (output, tokens, cost and its basis, finish reason); a
-429 and a 500 are retried (the SDK's own retries, then the core's) and the item still lands; a 401 stops the item, is
+429 and a 500 are retried by the core alone (the SDKs retry nothing; a persistent one is EVAL_MAX_RETRIES requests) and the
+item still lands; a 401 or a 403 stops the item, is
 not retried, and names the key variable and never its value, even when the server echoes the key back.
 
 What this cannot show: the real endpoints' current fields. The fake answers the fields the code reads, as the
@@ -333,14 +334,14 @@ try:
             meta,
         )
 
-        # a 429 three times (the SDK's own tries), a 500 three times, then the answer: the core's retry carries it
+        # a 429, a 500, then the answer: the core's retry carries it, one request per attempt (the SDKs retry nothing)
         rate, boom = (RATE_A, BOOM_A) if prov == "anthropic" else (RATE, BOOM)
-        res, reqs, row = run(prov, ok, [rate] * 3 + [boom] * 3, **PRICES, **extra)
+        res, reqs, row = run(prov, ok, [rate, boom], **PRICES, **extra)
         said = (res.stdout or "") + (res.stderr or "")
         check(
-            f"{prov}: a 429 and a 500 are retried, and the item lands (7 requests)",
+            f"{prov}: a 429 and a 500 are retried, and the item lands (3 requests)",
             res.returncode == 0
-            and len(reqs) == 7
+            and len(reqs) == 3
             and text_of(f"run_{prov}{n_system}_v1") == "A fox jumps."
             and row.get("failed") == 0.0
             and "RateLimitError" in said
@@ -348,39 +349,54 @@ try:
             (res.returncode, len(reqs), said[-600:]),
         )
 
-        # a 401 that echoes the key back: not retried, the variable is named, the value is shown nowhere
-        denied: tuple[int, dict, dict] = (
-            401,
-            {"error": {"message": f"Incorrect API key provided: {key}", "type": "invalid_request_error"}},
-            {},
-        )
-        if prov == "anthropic":
-            denied = (
-                401,
-                {
-                    "type": "error",
-                    "error": {"type": "authentication_error", "message": f"invalid x-api-key {key}"},
-                },
+        # a 429 and a 500 that never stop: one request per attempt (EVAL_MAX_RETRIES), not the SDK's tries on top
+        for what, bad in (("429", rate), ("500", boom)):
+            res, reqs, row = run(prov, ok, [bad] * 40, **PRICES, **extra)
+            check(
+                f"{prov}: a persistent {what} is {env['EVAL_MAX_RETRIES']} requests, the core's attempts alone",
+                len(reqs) == int(env["EVAL_MAX_RETRIES"]),
+                (len(reqs), ((res.stdout or "") + (res.stderr or ""))[-300:]),
+            )
+
+        # a 401 or a 403 that echoes the key back: not retried, the variable is named, the value is shown nowhere
+        for code in (401, 403):
+            denied: tuple[int, dict, dict] = (
+                code,
+                {"error": {"message": f"Incorrect API key provided: {key}", "type": "invalid_request_error"}},
                 {},
             )
-        res, reqs, row = run(prov, ok, [denied] * 5, **PRICES, **extra)
-        said = (res.stdout or "") + (res.stderr or "")
-        check(
-            f"{prov}: a 401 is one request, not retried, and the run does not report a success",
-            len(reqs) == 1
-            and res.returncode != 0
-            and "ERROR (not-configured)" in said
-            and "transient" not in said,
-            (res.returncode, len(reqs), said[-500:]),
-        )
-        check(f"{prov}: a 401 names the key variable {KEYVAR[prov]}", KEYVAR[prov] in said, said[-600:])
-        check(
-            f"{prov}: a 401 shows the key's value nowhere in what the command printed",
-            key not in said,
-            said[-600:],
-        )
-        leaked = [str(p) for p in proj.rglob("*") if p.is_file() and key.encode() in p.read_bytes()]
-        check(f"{prov}: nor in anything the run wrote into the project", not leaked, leaked[:3])
+            if prov == "anthropic":
+                denied = (
+                    code,
+                    {
+                        "type": "error",
+                        "error": {
+                            "type": "authentication_error" if code == 401 else "permission_error",
+                            "message": f"invalid x-api-key {key}",
+                        },
+                    },
+                    {},
+                )
+            res, reqs, row = run(prov, ok, [denied] * 5, **PRICES, **extra)
+            said = (res.stdout or "") + (res.stderr or "")
+            check(
+                f"{prov}: a {code} is one request, not retried, and the run does not report a success",
+                len(reqs) == 1
+                and res.returncode != 0
+                and "ERROR (not-configured)" in said
+                and "transient" not in said,
+                (res.returncode, len(reqs), said[-500:]),
+            )
+            check(
+                f"{prov}: a {code} names the key variable {KEYVAR[prov]}", KEYVAR[prov] in said, said[-600:]
+            )
+            check(
+                f"{prov}: a {code} shows the key's value nowhere in what the command printed",
+                key not in said,
+                said[-600:],
+            )
+            leaked = [str(p) for p in proj.rglob("*") if p.is_file() and key.encode() in p.read_bytes()]
+            check(f"{prov}: nor in anything the run wrote into the project", not leaked, leaked[:3])
 
     # the provider's own address variable, instead of the system's base_url (openrouter has none: only base_url)
     for prov, var, tail in (

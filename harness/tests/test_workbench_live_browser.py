@@ -37,6 +37,7 @@ KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _signin
 import _serve  # noqa: E402
+import _shots  # noqa: E402
 import _signin  # noqa: E402
 import _slow  # noqa: E402
 import _wbreview  # noqa: E402
@@ -611,7 +612,7 @@ try:
                 (shown[:800], errors[:2]),
             )
             if shots := os.environ.get("EVH_WB_SHOTS"):
-                page.screenshot(path=f"{shots}/desk-model.png", full_page=True)
+                _shots.full_page(page, f"{shots}/desk-model.png")
             page.fill("#flag-here", "reasoning")
             page.fill("#why-here", "it reasons by default and this task is fine with it")
             page.fill("#by-here", "tester")
@@ -2464,7 +2465,7 @@ try:
                     "() => !document.querySelector('.chart-box [role=status]')", timeout=30000
                 )
                 if shots := os.environ.get("EVH_WB_SHOTS"):
-                    phone.screenshot(path=f"{shots}/phone-{screen.replace('/', '-')}.png", full_page=True)
+                    _shots.full_page(phone, f"{shots}/phone-{screen.replace('/', '-')}.png")
                 wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(
                 "at a phone's width the models' screens and steps 1 to 4, the eval, the review, production, the reference set, the judge, the settings, the jobs and the prompts do not scroll sideways",

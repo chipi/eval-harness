@@ -2324,7 +2324,9 @@ variable the file does not hold falls through to the next. A `key_file` that is 
 be read is refused (`not-configured`) before any call, naming the file and the system; one inside the project and
 not gitignored is warned about, since a key file must not be committed (keep it outside the project, or ignore
 it). `evh env-check` lists the key files read and, per system and key, where it comes from (`key_file keys/a.env`,
-`shell`, `.env`); `evh run --dry-run` says the same for its system. A key's value is never printed or recorded; the
+`shell`, `.env`); `evh run --dry-run` says the same for its system. The address is named the same way (the file,
+`shell`, `.env`, `system's base_url param`, or `default`), and when the key is in the file and the address is not, the
+line says the file does not hold it. A key's value is never printed or recorded; the
 path is recorded in the system's params and is not part of any fingerprint (where a key is kept is not what was
 measured). A project adapter that calls the bundled providers (`_providers.complete(prompt, params, role="arm",
 ...)`) with the system's params gets the same; one that reads `os.environ` itself does not see `key_file`.
@@ -2340,7 +2342,7 @@ measured). A project adapter that calls the bundled providers (`_providers.compl
 | (see env-check) | `evh env-check` says where each set variable came from ((.env), (shell), (shell, over .env)) |
 | `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
 | `EVAL_MAX_COST_USD` | the most one command spends, every pass of `--repeat` together; the run stops, keeps its results, resumes; 0 runs only a system known to be free (provider echo, a recorded arm, or both prices declared 0) |
-| `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call: 8 attempts, a 60 s backoff cap by default (`evh env-check` prints the values in force) |
+| `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call, the only layer that retries (the SDK clients do not): 8 attempts, a 60 s backoff cap by default (`evh env-check` prints the values in force) |
 | `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
 | `EVAL_HOST_LABEL` | a name for this machine, the runner (fingerprint v5's `runner.label`, outside its hash): latency of a model run in process, and the network part of a remote one, is comparable across runs only from the same runner |
 | `EVAL_FINGERPRINT_WEIGHTS` | `1`: read only by the examples' shared code (examples/_shared/hf_identity.py), not by the package — hash a local model's weight files into the fingerprint |

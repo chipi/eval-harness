@@ -1609,7 +1609,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_providers_wire.py",
-            "hosted providers on the wire: the real SDKs against a fake of each API; request, record, 429/500, 401",
+            "hosted providers on the wire: the real SDKs against a fake of each API; request, record, 429/500, 401, 403",
         ),
         ("test_leaderboard_refs.py", "the leaderboard: one table per reference, never averaged across them"),
         (
@@ -1643,6 +1643,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_release_smoke.py",
             "the release smoke lists its checks, fails on a wrong version, and has its make target",
+        ),
+        (
+            "test_upgrading_stops.py",
+            "each CHANGELOG bullet that can stop a run that worked has its line in that release's UPGRADING section",
         ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading"),
