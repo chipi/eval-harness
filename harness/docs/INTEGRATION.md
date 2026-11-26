@@ -493,7 +493,8 @@ a team sharing one project.
 operation, named as the operation, the command and the API's resource are (`goal-list`, `dataset-show`,
 `comparison-show`, `leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `validate`, `data-ls`,
 `search`, ...; `evh mcp --help` and the tool list name them all): 75 on your machine, 62 on a public server. On
-your machine the agent sampler also has `study-ask` and `study-tell`, the only tools that write the study and run a trial. A call is answered in the server's own process, from
+your machine the agent sampler also has `study-ask` and `study-tell`, the only tools that write the study (`study-tell` runs a
+study's next trial and spends); a public server never has them. A call is answered in the server's own process, from
 the same operation the command and the API are made from, so the agent sees the same numbers you do; its answer is
 the operation's result, structured (the `result` of the command's `--json`), and the tool's inputs are the
 operation's own, typed. No other tool writes project data, spends or runs a model: running arms, promoting a baseline and
@@ -538,9 +539,14 @@ the catalog shows.
 evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--public]
 ```
 
+**Read-only, with the text**: `evh mcp --no-agent-tools` (stdio or `--http`, an always-on server over a shared project)
+serves everything a local server reads, the text of items and outputs included (`--public` leaves those out), and leaves
+out `study-ask` and `study-tell`, the only tools that write or run a trial: `tools/list` then holds no tool that is not
+annotated read-only, and a call to either is refused as an unknown tool. On a `--public` server the flag changes nothing.
+
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
 rebinding); `--public` leaves out the tools that answer with an item's text, an output or a label, or read the project's files
-(`comparison-item`, `comparison-items`, `sheet-show`, `validate`, `data-ls`, `data-show` and the like: 61 tools of the 71), and the inputs that
+(`comparison-item`, `comparison-items`, `sheet-show`, `validate`, `data-ls`, `data-show` and the like: the 11 of the 73 reads), and the inputs that
 would (`group` of `comparison-crosstab`, `item` of `dataset-items`) and the ones that set how long a test runs (`permutations`, `draws`); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
