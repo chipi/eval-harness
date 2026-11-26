@@ -9,13 +9,12 @@ is scored against."""
 
 from __future__ import annotations
 
-import re
 import statistics
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _rounds
+from evaluation_harness import _common, _ids, _rounds
 from evaluation_harness._common import load_goals, read_json
 from evaluation_harness.model import compare as model_compare
 from evaluation_harness.model import datasets as model_datasets
@@ -33,7 +32,7 @@ ROUND = Entity(
     id_field="round_id",
     parent_field="goal",
     schema="round.schema.json",
-    id_pattern=re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*"),
+    id_pattern=_ids.NAME,
     editable=False,
 )
 

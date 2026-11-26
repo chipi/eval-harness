@@ -25,7 +25,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _store
+from evaluation_harness import _ids, _store
 
 try:
     import yaml
@@ -241,11 +241,10 @@ def split_accepted(
 def find(data_dir: Path, model_id: str) -> dict[str, Any] | None:
     """The model with this id, with its deployments, or None when there is none. An id is a model id
     (schemas/model.schema.json) or names none: a path (`/home/x/y`, `../y`) is never joined to the records' folder."""
-    import re  # noqa: PLC0415
 
     from evaluation_harness import _format  # noqa: PLC0415
 
-    if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", str(model_id)) or ".." in str(model_id):
+    if not _ids.LOWER.ok(model_id):
         return None
     f = records_dir(data_dir) / f"{model_id}.yaml"
     if yaml is None or not _store.is_file(f):

@@ -14,7 +14,7 @@ project's, and no run of one is made by this checkout's code):
   - podcast: every run imported (`goal` absent, `dirty: null`, free-text build refs, scorer `none`), no declared
              direction, goals whose measures and datasets are prose;
   - bakeoff: no run at all; zero-priced local models and one with no price; a custom adapter; datasets of 3 and 22 items;
-  - unicode: dataset, system, run, item and goal ids with accents, CJK and Cyrillic (written by hand: a command refuses them);
+  - unicode: dataset, system, run, item and goal ids with accents, CJK and Cyrillic (written by hand; the writers take such ids since 0.8.2, tests/test_unicode_ids.py);
   - old:     tests/fixtures/formats/0, a project in the very first format, taken through `evh migrate` first.
 
 Each is copied, moved into the sqlite store when EVAL_STORE says so, and read by the CLI, the API, the MCP reads, the
@@ -69,10 +69,7 @@ class Fixture(RA.Project):
             RA.copy_project(FIXTURES / "shapes" / shape, self.proj)
         if RA.STORE == "sqlite":
             self.evh_must("data-migrate", "--to", "sqlite")
-        if shape not in (
-            "unicode",
-            "old",
-        ):  # unicode: its profile is committed (a command refuses to write one for these ids)
+        if shape != "old":
             for ds in sorted(self.datasets()):
                 self.evh_must("dataset-profile", "--dataset-id", ds)
         RA.SPENT[self.name] = {"build": time.time() - t}

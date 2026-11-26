@@ -1247,7 +1247,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_read_ids.py",
-            "a dataset id is held to its format where ids are made, and a read of one that exists is refused only for being a path (a project's unicode ids)",
+            "a writer takes the letters and digits of any script and refuses a non-NFC, control or path-like id; a read of an id that exists is refused only for being a path",
+        ),
+        (
+            "test_unicode_ids.py",
+            "one rule for every id a person names, on a table of ids, the JSON schemas' patterns agreeing with it; a dataset, a system and a run with a unicode id made and read back (CLI, API by a percent-encoded id, catalog export) in the store the suite runs in",
         ),
         (
             "test_foreign_projects.py",

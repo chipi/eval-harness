@@ -20,11 +20,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _ids, _store
 from evaluation_harness._common import die, now, read_json, write_json
 from evaluation_harness.model import datasets as model_datasets
 
-SET_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,99}$")
+SET_ID = _ids.SET
 #: A sheet's tag columns: `failure_modes: <arm token>`; cells name modes separated by `|` (or `,`). `ok` says the output
 #: was read and has none; a blank cell was not read and is not recorded, so an unfinished sheet never reads as "fine".
 COLUMN = "failure_modes: "
@@ -45,8 +45,8 @@ def load_modes(modes_id: str) -> dict[str, Any]:
     """A failure-mode list by id; refused when it does not exist or names a mode twice."""
     import yaml  # noqa: PLC0415
 
-    if not SET_ID.match(modes_id or ""):
-        die(f"--modes {modes_id!r}: lowercase letters, digits, _ . - (at most 100)", "bad-argument")
+    if not SET_ID.ok(modes_id):
+        die(f"--modes {modes_id!r}: {SET_ID.problem(modes_id)} ({SET_ID.says()})", "bad-argument")
     f = model_datasets.FAILURE_MODES.path(modes_id)
     if not _store.is_file(f):
         die(
@@ -82,11 +82,8 @@ def parse_cell(cell: str) -> list[str] | None:
 
 def set_dir(dataset_id: str, name: str) -> Path:
     """Where one tag set lives; its name is checked first, so it can never leave data/tags/."""
-    if not SET_ID.match(name or ""):
-        die(
-            f"tag set {name!r}: lowercase letters, digits, _ . - (at most 100), starting with a letter or digit",
-            "bad-argument",
-        )
+    if not SET_ID.ok(name):
+        die(f"tag set {name!r}: {SET_ID.problem(name)} ({SET_ID.says()})", "bad-argument")
     return model_datasets.TAG_SET.path(f"{dataset_id}/{name}").parent
 
 

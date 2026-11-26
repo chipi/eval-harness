@@ -36,7 +36,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _outputs, _store, _tags
+from evaluation_harness import _ids, _outputs, _store, _tags
 from evaluation_harness._actor import stated
 from evaluation_harness._codeid import file_sha256
 from evaluation_harness._common import (
@@ -58,7 +58,7 @@ from evaluation_harness.label_sheet import run_dir
 from evaluation_harness.model import runs as _model_runs
 from evaluation_harness.ops import legacy
 
-NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
+NAME = _ids.SHEET_SCORER
 #: What describes the call that made an arm's output, not how it was judged: carried across, as judge-score carries
 #: them, so the judged runs have their cost and speed.
 CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd")
@@ -155,11 +155,8 @@ def body(**inputs: Any) -> int:
             )
     judged: dict[str, Any] | None = None
     if has_pick or has_scores:
-        if not NAME.match(args.scorer):
-            die(
-                f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit",
-                "bad-argument",
-            )
+        if not NAME.ok(args.scorer):
+            die(f"--scorer {args.scorer!r}: {NAME.problem(args.scorer)} ({NAME.says()})", "bad-argument")
         judged = _judgements(args, rows, has_pick)
 
     if has_label:

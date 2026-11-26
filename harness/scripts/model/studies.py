@@ -16,16 +16,15 @@ from __future__ import annotations
 
 import contextlib
 import json
-import re
 from pathlib import Path
 from typing import Any
 
 import yaml
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _ids, _store
 from evaluation_harness._common import jsonl_lines
 from evaluation_harness.model.entity import Entity, Problem
 
-_PARTS = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+_PARTS = _ids.NAME
 LOG = ".events.jsonl"
 #: The events a study's log holds.
 EVENTS = ("start", "ask", "trial", "group", "stop", "end", "confirm")

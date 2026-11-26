@@ -94,8 +94,6 @@ MUTATIONS: tuple[Mutation, ...] = (
         "unicode_ids",
         "a system, a dataset and run ids in other scripts",
         "unicode_ids",
-        names=rf"(?s){re.escape(MUT.UNICODE_DATASET)}[^\n]*\n.*FAIL V1 ",
-        verdict=(6, "V1"),
     ),
     Mutation(
         "underscore_r_not_a_set",

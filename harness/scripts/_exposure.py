@@ -16,15 +16,14 @@ import contextlib
 import contextvars
 import json
 import os
-import re
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _store
+from evaluation_harness import _ids, _store
 from evaluation_harness._common import die, jsonl_lines, now
 
-DATASET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,199}$")
+DATASET_ID = _ids.EXPOSURE
 # Both are the call's, not the process's: the MCP server answers calls at once, in threads of one process, and one
 # call's --include-exposed kept the exposed items in another's scores while it ran.
 #: Items left out of the scores this call computed, per dataset (the commands print it): `left()`.
@@ -59,7 +58,7 @@ def path(dataset_id: str, data: Path | None = None) -> Path:
     of it, whose register is its own); the id is checked first, so it can never leave data/exposure/."""
     from evaluation_harness import _common  # noqa: PLC0415
 
-    if not DATASET_ID.match(dataset_id or ""):
+    if not DATASET_ID.ok(dataset_id):
         die(f"not a dataset id: {dataset_id!r}", "bad-argument")
     return (_common.DATA if data is None else Path(data)) / "exposure" / f"{dataset_id}.jsonl"
 

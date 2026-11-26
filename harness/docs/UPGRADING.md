@@ -26,6 +26,13 @@ publication's switcher passes the same `--link` and `--brand` its `evh catalog` 
   `rescore --reference-id` read the roots too. Without the key nothing changes: an id the harness cannot find is recorded
   with V16's note, as in 0.8.1. With the key, a label-set id (`labels/<dataset>/<set>`) is held to the same: accepted when it is
   among the project's label sets, refused naming `data/labels` when it is not (0.8.1 recorded it with the note).
+- **An id you name may be spelled in any script.** A dataset, system, goal, scorer, field set, label set, reference, run, model
+  or deployment id (and `--run-id`, `--system-id`, `--name`) takes the letters and digits of any script, with the
+  punctuation it took before; one rule serves every command and every JSON schema. It must be in Unicode NFC (an
+  `e` + U+0301 is refused, naming `é`), hold no space, control or format character, no `..`, never start with `.`, `-` or `_`,
+  and be lowercase where it had to be. Combining marks (Devanagari vowel signs) are not letters, so a word that needs one
+  cannot be an id. An id a writer took is still taken (a field set can no longer start with `_`); a read of an id that exists (`dataset-items`) is never refused for
+  its spelling. The catalog's pages are named by the id's letters, not `x`.
 - **`evh validate` names the records that name no actor** (the first three, then "and N more"), where it said how many.
 - **`evh dataset-create --fields-from-item` and `--exclude GLOB` (both optional) read JSON items.** The first takes each
   declared field's value from its item (a field's optional `from` JSON pointer and `reduce: count`, in the field set);

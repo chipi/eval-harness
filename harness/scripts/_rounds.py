@@ -19,7 +19,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _ids, _store
 from evaluation_harness._common import die
 from evaluation_harness._runs import runs_on
 from evaluation_harness.model.entity import Problem
@@ -52,7 +52,7 @@ def load_rounds(goal: str | None = None, data: Path | None = None) -> list[dict[
         return []
     # A goal is a plain name: `..`, a path separator or a glob character would reach (or probe for)
     # files outside data/rounds, and an agent can pass any string as --goal.
-    if goal is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", goal):
+    if goal is not None and not _ids.NAME.ok(goal):
         return []
     ent = _entity(data)
     ids = [

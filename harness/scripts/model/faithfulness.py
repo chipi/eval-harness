@@ -13,11 +13,10 @@ in the model record: the newest record that replayed the version's commit says (
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _ids, _store
 from evaluation_harness._common import jsonl_lines
 from evaluation_harness.model.entity import Entity
 
@@ -30,7 +29,7 @@ FAITHFULNESS = Entity(
     parent_field="model_id",
     schema="faithfulness.schema.json",
     suffix=".json",
-    id_pattern=re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*"),
+    id_pattern=_ids.NAME,
     editable=False,
 )
 

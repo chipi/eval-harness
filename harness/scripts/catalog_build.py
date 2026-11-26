@@ -468,7 +468,7 @@ def e(s) -> str:
 
 def slug(s: str) -> str:
     """Convert a string to a URL-friendly slug."""
-    return re.sub(r"[^A-Za-z0-9._-]+", "-", s).strip("-") or "x"
+    return re.sub(r"[^\w.-]+", "-", s).strip("-") or "x"
 
 
 _BLOCK = re.compile(
