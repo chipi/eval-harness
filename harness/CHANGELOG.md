@@ -10,31 +10,43 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.8.2 — 2026-11-25
+## 0.8.2 — 2026-11-26
 
-The Workbench's reads on a public server, and one bar across the publication. **No result moves:** no data format,
-fingerprint, scorer or reader changed, and nothing is re-scored.
+The Workbench's public reads, one bar across the publication, and what the beta projects and the 0.8.1 newcomer run
+found. **No result moves:** no data format, fingerprint or scorer changed, nothing is re-scored; a round with a budget
+now refuses an arm it cannot price.
 
-- **Fixed, a public server's Workbench:** on the deployment, every read of the Workbench's public API answered 500
-  (`/api/v1/goals`, `/api/v1/models`): the inspector imported `jsonschema`, which its container did not carry
-  (EVALS-INSPECTOR-3). A local `evh catalog-serve` was never affected (the package depends on `jsonschema`).
-  The deploy now starts the release's inspector and MCP server in the box's image and asks them what a visitor asks
-  before it uploads (`infra/deploy/smoke_release.py`), and probes the public read API after it activates.
-- **Changed, the header:** the site, the catalog, the Workbench and the docs carry one bar: the logo, the switcher's
-  five pills (Harness · Catalog · Workbench · Docs · MCP) on every width, the menu at the bar's right end, and a second
-  row: the page's own sections (the catalog's pages too), the Workbench's screens in the Workbench. On a phone the bar is
-  the logo, the pills and the menu; search and the light/dark theme are in the menu, and the MCP pill no longer leaves
-  the bar. The Workbench keeps the theme as the other three do. `infra/deploy/headers_check.py` reads the four bars in
-  a browser at five widths.
-- **Fixed, a manifest row with a local `source_url`:** `dataset-create --manifest` wrote a record `validate` then failed
-  (V1) when a row had `source_sha256` and a path inside the project as `source_url`. The schema now accepts it,
-  materialize reads the file, V4 checks its hash, and a local path with no hash is refused at create.
-- **New, `references: {roots: [...]}` in `config.yaml`:** the folders a project keeps references in besides
-  `data/references`. With it, `import-run --reference-id` refuses an id found in none; without it, as 0.8.1.
-  `validate`'s "no actor" note now names the records.
-- **New, `evh catalog-serve --link` and `--brand` head the Workbench:** a server given its publication's parts shows
-  them as the Workbench's switcher, the Workbench marked, as `evh catalog --link` does for the catalog's pages. Without
-  `--link`, a project's own Workbench is as it was, its bar in the same geometry.
+- **Fixed, a public server's Workbench:** its public API answered 500 (`/api/v1/goals`, `/api/v1/models`): the
+  inspector's container lacked `jsonschema` (EVALS-INSPECTOR-3). The deploy now asks the release's servers what a
+  visitor asks before it uploads (`infra/deploy/smoke_release.py`).
+- **Changed, the header:** the site, the catalog, the Workbench and the docs carry one bar: the logo, five pills
+  (Harness · Catalog · Workbench · Docs · MCP) on every width, the menu at the right, and a second row of the page's
+  sections (the Workbench's screens). On a phone, search and the theme are in the menu.
+- **Changed, a round with a budget refuses an arm with no price** (0 is a price), naming it; `--allow-unpriced` on
+  `run`, `arm-smoke` and `sweep` lets it through, and the round records that its budget excludes it.
+- **Fixed, a manifest row with a local `source_url`:** `dataset-create --manifest` wrote a record `validate` failed (V1)
+  when `source_sha256` pinned a path in the project. The schema accepts it, materialize reads it, V4 checks its hash; a
+  local path with no hash is refused at create.
+- **New, `references: {roots: [...]}` in `config.yaml`:** where a project keeps references besides `data/references`.
+  With it, `import-run --reference-id` refuses an id found in none; without it, as 0.8.1.
+- **New, `evh mcp --no-agent-tools`:** every read a local server serves, text included, and neither `study-ask` nor
+  `study-tell`. `evh mcp --help` now says a local server has those two; it said every tool reads.
+- **New, `evh docs`:** UPGRADING, RUNBOOK and INTEGRATION ship in the package; `evh docs NAME [--print]` prints the
+  installed copy and its page. `evh --help` opens with "Start here".
+- **Changed, the dry run:** the "no reference" lines come after its header and say what `evh run` will score; the
+  estimate says it is the most (every reply at `max_tokens`) and adds a typical one from earlier runs; "MEASURED
+  none" says what to do, once per model in a sweep.
+- **Changed, messages:** `study-confirm` names the fewest test items that suffice; `jobs-start run` warns at start of
+  a job with no goal or reference; a judged leaderboard names the command that validates its judge, once;
+  `silver-calibrate` shows how many arms each rho is over; `validate` names the records with no actor; `env-check`
+  says which files it read.
+- **Fixed, the Workbench:** the eval screen's charts read at once (about 0.75 s, from 2.5 s); "Open the next round"
+  says why an arm is not offered; a dismissed "Close" says the round stays open; "Make a system from a model" says why
+  a model is missing. The mockup's notes left `workbench.js`.
+- **New, `evh catalog-serve --link` and `--brand`** head the Workbench with its publication's parts.
+- **Tests:** projects shaped like the beta projects' data (imported, unpriced, unicode, format 0), read by every reader
+  in three time zones; on a machine of more than 8 CPUs the test runners take 4 suites, niceness 10 and 2 stats workers
+  (`EVH_TEST_JOBS`, `EVH_TEST_NICE`, `EVH_WORKERS`).
 
 ## 0.8.1 — 2026-11-24
 
