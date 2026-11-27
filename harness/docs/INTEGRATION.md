@@ -61,6 +61,16 @@ def call_system(text: str, params: dict) -> Result:
 [Tutorial 9](../../docs/tutorials/9-custom-adapter.md) writes one end to end, offline, and runs the loop through it
 (`make guide-check` runs it).
 
+A call that failed (the provider could not be reached, a transport error) is reported by raising:
+let the exception out of `call_system`, or wrap it keeping its text: `raise RuntimeError(f"provider call failed: {exc}")
+from exc`. `Result` has no error field, and a returned output, `Result(output="call failed")` included, is scored as the
+model's answer, so `pair-test` and every mean would count a transport failure as a decision the model made. What the
+run does with a raised exception depends on its type name and message: one the harness reads as transient (a 429 or
+5xx status, a timeout, a connection error) is retried (`EVAL_MAX_RETRIES`), and if it still fails the run stops there,
+so `--resume` calls the item again later; any other makes a failed item, listed in `failed_items` and scored as an
+empty answer (or by the adapter's `score_failure`), and the run goes on, unless most of the items called have failed,
+which stops it as an adapter or configuration error.
+
 That is the integration. Everything else — freezing the dataset, hashing it,
 recording which build ran, timing the call, aggregating, refusing bad
 comparisons — is generic and already written. The harness times every call (`latency_ms`)

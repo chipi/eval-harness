@@ -1474,6 +1474,10 @@ def test_example_scorer_suites_pass() -> None:
             "validate: V2 capture link, V19/V21 schemas, V22 exposure and pick-list schemas, each bad record named",
         ),
         (
+            "test_validate_system_ids.py",
+            "validate: a system id that contains the dataset id of one of its own runs is a note (V8), three named then 'and N more', whole tokens only, the exit code unchanged",
+        ),
+        (
             "test_format.py",
             "the data's format: init stamps it, migrate --check refuses old and newer, steps stamp it, a SQLite backup, the deploy's gate, 0.7.2's frozen project keeps its numbers",
         ),
