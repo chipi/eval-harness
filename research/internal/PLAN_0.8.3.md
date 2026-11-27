@@ -115,6 +115,11 @@ installs them in a throwaway venv (an approval first: a new dependency in a shar
 Done when: a note in `research/internal/` with a table per question and the owner's decisions on what, if anything,
 goes into 0.9.0.
 
+**Done 2026-11-27, from the docs only (the owner's choice):** `research/internal/MLFLOW_TENSORBOARD.md`. The owner
+ruled out import and export; what evh can borrow became five views (V1-V5), put to the beta projects, with their
+answers in PLAN_0.9.0, section V. Several mlflow.org pages refused the fetch (403); the note marks what rests on search
+excerpts.
+
 ## Not in this plan
 
 - **Scenarios** (RFC-035, RFC-036, RFC-037): 0.9.0.
@@ -125,6 +130,13 @@ goes into 0.9.0.
 
 - **Waiting on others:** the robotics lab, fleet and eval sessions were sent the 0.8.2 upgrade notice (the release, the
   pin, S1's two changes, the LiteLLM address note). No reply had come back. A reply about a break is 0.8.3 work.
+  **Answered 2026-11-27:** all three are on 0.8.2 (pin `bf8d2eeb4`) and nothing broke. robotics-evals: `make validate`
+  PASS, R5's comparison reprints 0.8.1's numbers. podcast-scraper-eval-data: VALIDATION PASSED, 484 catalog pages
+  under 0.8.1 and 0.8.2, no measured value changed. fleet-eval-data (main `0f7ad9f`): VALIDATION PASSED, only the
+  0.8.1 reading changes moved (a repeat joined its arm, pooled means). None holds a non-ASCII id
+  (`git -c core.quotePath=false ls-files data | grep -cP '[^\x00-\x7F]'` = 0 in podcast and fleet). robotics-evals'
+  move onto rounds and models gave B1-B7. A fourth project, `agent-rules-eval` (0.8.0.dev0), was not asked: the
+  owner is to say whether it is a beta project and which session runs it.
 - **Waiting on the owner:**
   - EVALS-INSPECTOR-3 (`No module named 'jsonschema'`) is still unresolved in GlitchTip. It was last seen
     2026-11-26T15:57Z, before the deploy; the read tokens cannot resolve it.

@@ -60,11 +60,11 @@ metric can be added to a frozen run, and whether the catalog or inspector filter
 | Item | robotics | fleet | eval | Reading |
 | --- | --- | --- | --- | --- |
 | G3 selection only | maybe | maybe | yes | Wanted by all three, in one shape: the mark on the dataset (or split side), never on each run. The only item two projects would see change a view |
-| G1 progression | yes | maybe | no | Robotics' first ask; fleet needs it to draw arms never promoted and break at a dataset change; nothing to draw for one-run arms |
+| G1 progression | yes | maybe | no (withdrawn) | Robotics' first ask; fleet needs it to draw arms never promoted and break at a dataset change; nothing to draw for one-run arms |
 | G5 failure metrics | yes | no | maybe | Robotics and eval want per-item failure flags from their own scorer in the scores file; fleet already does it as 0/1 metrics. Likely docs plus a filter, if the checks below hold |
 | G2 guards | yes (second dataset) | no (same dataset) | maybe (same run, limits) | The common need is a harness-checked limit on another measure; same-dataset first, a second dataset only robotics |
-| G4 lineage | maybe | yes | no | Fleet's shape: "parent X, changed: prompt / model / stations / code" on the arm page, pair-test's default `--b` |
-| G6 deployments | no | yes | no | Fleet's case only: the provider and model a gateway reports per call, compared like a deployment field |
+| G4 lineage | maybe | yes | no (withdrawn) | Fleet's shape: "parent X, changed: prompt / model / stations / code" on the arm page, pair-test's default `--b` |
+| G6 deployments | no | yes | no (withdrawn) | Fleet's case only: the provider and model a gateway reports per call, compared like a deployment field |
 
 To check against 0.8.2 before the owner decides, read-only: whether goal `axes` limits already check a same-run guard
 (G2's common case, and eval's prose `guardrails:`); whether evidence views include runs on a `role: validation`
@@ -88,3 +88,39 @@ Defects in shipped behaviour went to PLAN_0.8.3 (B1-B7). What feeds the items he
 - G6: one system names one deployment; rules_v1 was measured at two lab commits. Asks for a deployment per dataset, or
   per run on import-run.
 - G4: lineage only in `hypothesis.against` and its statement, no view.
+
+**Eval withdrew its G1, G4 and G6 answers (2026-11-27).** Its "every arm has one run" came from its own importers
+putting the dataset and the reference into the system id (216 of 365 ids end in `__vs_<reference>`, 284 hold a dataset
+name), against INTEGRATION's rule that a dataset is the run's, not the system's. A draft re-mint maps the 365 runs to
+142 systems; it is not applied, because 26 groups (166 runs) would merge runs that differ only in what no stored file
+records (a vLLM server setting, which model the alias `autoresearch` served). It answers again after the re-mint.
+
+## V. Views borrowed from MLflow and TensorBoard (2026-11-27)
+
+From the assessment (PLAN_0.8.3, A; `research/internal/MLFLOW_TENSORBOARD.md`). The owner's frame: not import or
+export into either tool, but what evh can learn from how they let people see results, built on what evh records.
+Put to the three beta projects.
+
+| Item | View | robotics | fleet | eval | Reading |
+| --- | --- | --- | --- | --- | --- |
+| V3 | Items that flipped between a parent and a child, filterable by a per-item metric or field | yes (which items the walls model reaches that M2b did not; needs per-item metrics on imported runs) | yes (wrote its own scripts last week; needs each item's k-of-n over repeats and a way to leave out passes lost to the transport) | yes for summaries (pairs by item today), maybe for naming (per-voice outcome collapsed before import) | The one all three want |
+| V2 | "What each change bought": the chain along `hypothesis.against`, each step the paired difference from its parent | yes, close second (its changes live in the training run, so label by `hypothesis.statement`, the config diff only a cross-check; flag a step with more than one change) | yes (its systems differ in one or two keys, so the diff works; also a parent named on the command line, since 4 systems carry `against`) | maybe (its cells differ only in vLLM settings no file records, so the diff is empty) | Label by the statement, fall back to the diff, flag a step with more than one change |
+| V4 | A selection curve that is never evidence | maybe-yes (3 checkpoints per training; would import them only if kept out of leaderboards and paired tests) | maybe (candidates are discrete systems: a marked list, not a curve) | yes, it is G3 (182 prompt candidates; the iteration order lives in names, not a field) | The same as G3; a list unless an order is recorded |
+| V1 | A progression chart that carries a verdict | yes (x = arms in lineage order; the guard panel with its limit line, arms that break it marked) | maybe (as G1: only if unpromoted arms are drawn) | maybe (one system across its dataset ladder; depends on the re-mint) | Robotics' first ask; the others need lineage or unpromoted arms |
+| V5 | A judge's disagreements with people as a reading list | no (no judge) | no (gold labels and test oracles) | no (two model judges by the owner's decision, no people) | Dropped |
+
+## M. What changed a result and nothing recorded (2026-11-27)
+
+Two projects found the same hole from different sides: two runs look like one measurement when they are not.
+
+- fleet (G6): `triage_v1_dc3315d_v1` calls the alias `eval-fleet-triage-pro`; the provider OpenRouter routed to is not
+  recorded, so decisions in Chinese going from 0 of 1,040 to 10 of 382 cannot be put down to the provider or to its own
+  reply-cap change.
+- eval (V2, the re-mint): vLLM server settings (memory utilization, max sequences, max length, warmup) and which model an
+  alias served are in neither the system file nor the fingerprint.
+
+The question for 0.9.0 is what a deployment records and compares: what a gateway reports per call, and the serving
+settings that can move a score. It is wider than G6 as first written. A related note from fleet (V3): its adapter writes
+"triager call failed" as the decision after two failed calls, so `pair-test` counts transport failures as model
+decisions; an adapter that reports the call failed instead keeps them out. That is guidance for adapter authors
+(INTEGRATION), not a new feature.
