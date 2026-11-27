@@ -138,6 +138,20 @@ def by_alias(data_dir: Path) -> dict[str, dict[str, Any]]:
     return {a: r for r in load(data_dir) for a in r.get("aliases") or []}
 
 
+def systems_naming(data_dir: Path) -> dict[str, str]:
+    """{system id: the model record it names} for the systems in data_dir/systems that name one. An imported run records
+    no `model_record`, so the system's own file is where its model is found."""
+    base = data_dir / "systems"
+    if yaml is None or not _store.is_dir(base):
+        return {}
+    out = {}
+    for f in sorted(_store.glob(base, "*.yaml")):
+        doc = _read(f)
+        if doc and doc.get("model_record"):
+            out[f.stem] = str(doc["model_record"])
+    return out
+
+
 def lock_path(record: Path) -> Path:
     """The lock a record is written under: keyed by the record's own path, not the model's id, so two projects
     with a model of one name never wait on each other (ADR-0024)."""

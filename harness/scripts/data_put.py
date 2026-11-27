@@ -75,7 +75,10 @@ def _fields(args: Any) -> int:
         if _data_page.kind_of(norm) != "setting":
             raise _data_page.Refused(_data_page._not_edited(norm), "not-allowed")
         values = _settings_form.set_values(
-            _settings_form.values_of(norm) if exists else {}, list(args.set.items()), args.unset
+            _settings_form.values_of(norm) if exists else {},
+            list(args.set.items()),
+            args.unset,
+            _settings_form.schema_of(_settings_form.folder_of(norm)),
         )
         problems = _settings_form.problems(norm, values)
         for p in problems:

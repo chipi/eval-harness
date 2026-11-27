@@ -1132,18 +1132,21 @@ class HarnessAdapter:
     @_memo
     def models(self) -> list[dict]:
         """Each model record (data/models/) with the arms that use it: an arm uses a record when its
-        system names it (`model_record`, as its run recorded) or its run's params.model is one of the
-        record's aliases."""
+        system names it (`model_record`, as its run recorded, else as the system's file says: an imported run
+        records none) or its run's params.model is one of the record's aliases."""
         from evaluation_harness import _models  # noqa: PLC0415
         from evaluation_harness.model import faithfulness as model_faithfulness  # noqa: PLC0415
 
         recs = [model_faithfulness.with_summaries(r, self.data_dir) for r in _models.load(self.data_dir)]
         ids = {r.get("model_id") for r in recs}
         alias = {a: r.get("model_id") for r in recs for a in r.get("aliases") or []}
+        named = _models.systems_naming(self.data_dir)
         used: dict = {r.get("model_id"): [] for r in recs}
         for arm in self.arms():
             m = self._metrics(arm)
             rid = m.get("model_record")
+            if rid not in ids:
+                rid = named.get(str(m.get("system_id")))
             if rid not in ids:
                 rid = alias.get((m.get("params") or {}).get("model"))
             if rid in used:

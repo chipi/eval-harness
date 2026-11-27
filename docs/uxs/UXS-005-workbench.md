@@ -134,7 +134,7 @@ After saving, the goal's page is the hub of the journey: where it stands, and th
  [ The held-out test ] [ Studies ] [ Edit the goal ] [ Back to your goals ]
 ```
 
-- The next-step box and the table come from `goal-status`. With no round open, once the datasets are ready, the next step says where the goal stands, then the step: "baseline <system> (v1, since r2); to test a change, open a round with a question" ("since rN" only when a closed round's conclusion promoted that baseline), or "no baseline promoted yet; ...". A dataset reads "made, fetched", "made, not fetched" or
+- The next-step box and the table come from `goal-status`. With no round open, once the datasets are ready (a goal with a round is past fetching, a reference and a first run), the next step says where the goal stands, then the step: "baseline <system> (v1, since r2); to test a change, open a round with a question" ("since rN" only when a closed round's conclusion promoted that baseline), or "no baseline promoted yet; ...". A dataset reads "made, fetched", "made, not fetched" or
   "not made", and "does not decide" beside a role it does not decide on. Running jobs and rounds show only when there are some.
 - The trend chart is `evh chart trend --goal <id>`, its numbers folded under it; it is left out until there is something to draw. With fewer than two points it is one line ("One point so far: <line> (v<n>), <measure> <value>. A trend needs two."). The goal screen shows its commands (`goal-status` and `chart trend`) in one folded block, once.
 

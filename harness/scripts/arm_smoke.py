@@ -26,7 +26,7 @@ from typing import Any
 
 from evaluation_harness import _common, _jsonout, _models, _providers, _store
 from evaluation_harness._adapter import call_once, load_adapter, score_wants_source
-from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, load_dataset, now
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, die, load_dataset, now
 from evaluation_harness._record import non_number
 from evaluation_harness.ops import legacy
 
@@ -249,6 +249,9 @@ def _smoke(args: argparse.Namespace) -> int:
     _providers.check_key_file(dict(cfg.get("params") or {}), str(cfg["system_id"]))
     call_system, score, _aid, adapter_path, *_ = load_adapter(cfg.get("adapter"), args.config)
     ds = load_dataset(cfg["dataset_id"])
+    from evaluation_harness.run import _refuse_unmaterialized  # noqa: PLC0415
+
+    mat = _refuse_unmaterialized(ds["dataset_id"])
     from evaluation_harness import _seal  # noqa: PLC0415
 
     _seal.refuse_if_sealed(cfg["dataset_id"], "a smoke test", cfg.get("system_id"))
@@ -265,7 +268,6 @@ def _smoke(args: argparse.Namespace) -> int:
             bundled=_aid == _common.BUNDLED_ADAPTER_ID,
         )
         _spend.reserve(rnd, "arm-smoke")
-    mat = MATERIALIZED / ds["dataset_id"]
     # The prompts the system declares (RFC-028), given to the adapter as a run gives them: a smoke of a system that
     # points at a prompt version sends that text.
     from evaluation_harness import _prompts  # noqa: PLC0415

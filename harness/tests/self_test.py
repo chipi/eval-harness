@@ -1322,6 +1322,22 @@ def test_example_scorer_suites_pass() -> None:
             "models and deployments through the model: the command line and the API alike, a deployment's checks its history, accept with why, refusals",
         ),
         (
+            "test_model_actor.py",
+            "a model record names the actor that made or changed it (EVH_ACTOR, EVH_FOR, --by); validate notes none as naming no actor",
+        ),
+        (
+            "test_set_text.py",
+            "--set: a field the schema says is text takes the typed text (`notes=duck: 50 Hz`), any other field its YAML, in model, goal and data-put",
+        ),
+        (
+            "test_scorer_advice.py",
+            "arms scored by different scorers: imported runs are told to import again with one scorer, not to re-score",
+        ),
+        (
+            "test_goal_next.py",
+            "goal-status: a goal with a round is not sent back to fetch its dataset; an open round is read, a closed one is followed by a new round",
+        ),
+        (
             "test_model_systems.py",
             "systems and prompt versions through the model: a system's own file with no dataset, run on any dataset, refusals, the API alike",
         ),
@@ -1553,6 +1569,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_reference_roots.py",
             "references.roots in config.yaml: import-run accepts or refuses an id, V16 and rescore read the roots",
+        ),
+        (
+            "test_imported_system.py",
+            "a system whose runs are imported: model-onboard refuses the demo adapter, arm-smoke an unmaterialized dataset, model-show finds its arms",
         ),
         (
             "test_references.py",
