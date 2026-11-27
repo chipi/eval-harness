@@ -53,6 +53,15 @@ What exists in 0.8.2:
 | K3 | One address variable per provider. **Open:** accept `LITELLM_API_BASE` as a second name, or ask homelab to write `LITELLM_BASE_URL` into the key files it mints for the harness. The owner leans to not having two names | the chosen one documented in tutorial 2 and RUNBOOK; a key file from homelab works with no `base_url` | no |
 | K4 | **Open:** a `key_file` that lacks its provider's key falls through to the shell (0.8.2's default). Refuse instead? | the choice tested both ways in `test_key_file.py` | no |
 
+**Done on 083 (2026-11-27, `93fa94785`), the owner's choices:** K3 homelab writes `LITELLM_BASE_URL` into the key files it
+mints (agentic-ai-homelab `21ff8ba`; the release-check key carries it), the harness reads no second name; K4 refuse.
+K1 a judge sends its own `key_file`'s key and its fingerprint does not change (`test_judge_key_file.py`); K2
+`EVAL_JUDGE_<NAME>` warns once per run, removed in 0.9.0; ADR-0005 marked superseded in part. Gates on that commit:
+`make quality` EXIT=0, `make verify` EXIT=0, `make stores-check` STORE MATRIX: PASS; `test_judge_message_frozen.py`
+(CI's rerun job only) 2/2 locally after `reproduce.py data summarization --light`. For the 0.8.3 notes: K4 can stop a
+run that worked (a `key_file` without the key is refused); `EVAL_JUDGE_<NAME>` is deprecated; a judge's line now says
+where its key came from.
+
 ## S. What 0.8.2 left open
 
 **Done on 083 (2026-11-26, `5a49a8c13`):** S1 (the 0.8.2 section corrected; the "From 0.8.2 to 0.8.3" section and its CHANGELOG bullets are written when
