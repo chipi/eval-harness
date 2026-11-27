@@ -135,8 +135,15 @@ excerpts.
   under 0.8.1 and 0.8.2, no measured value changed. fleet-eval-data (main `0f7ad9f`): VALIDATION PASSED, only the
   0.8.1 reading changes moved (a repeat joined its arm, pooled means). None holds a non-ASCII id
   (`git -c core.quotePath=false ls-files data | grep -cP '[^\x00-\x7F]'` = 0 in podcast and fleet). robotics-evals'
-  move onto rounds and models gave B1-B7. A fourth project, `agent-rules-eval` (0.8.0.dev0), was not asked: the
-  owner is to say whether it is a beta project and which session runs it.
+  move onto rounds and models gave B1-B7.
+  **Two more beta projects, paused (the owner, 2026-11-27; they continue next week):** `harness-bakeoff`
+  (chipi/harness-bakeoff, the coding-agent bake-off, evh 0.8.0, on hold since 2026-11-21; its LiteLLM key
+  `harness-bakeoff`, $50 cap, still exists) and `agent-rules-eval` (local only, evh 0.8.0.dev0, last run 2026-11-21),
+  both built by homelab. Neither holds a non-ASCII id. They are left out of the 0.9.0 surveys for now; when they
+  resume, each crosses 0.8.1 and 0.8.2 with the same check the others ran.
+- **At the release:** homelab's evh-serve instances on the mini (`agentic-ai-homelab` `infra/evh-serve/instances/`:
+  bakeoff, fleet, podcast, robotics) serve each project's catalog with the harness its project pins; they move to
+  0.8.3 when each project moves its pin.
 - **Waiting on the owner:**
   - EVALS-INSPECTOR-3 (`No module named 'jsonschema'`) is still unresolved in GlitchTip. It was last seen
     2026-11-26T15:57Z, before the deploy; the read tokens cannot resolve it.
