@@ -28,6 +28,7 @@ Keys by system, judges included; ids ASCII again; and what robotics-evals hit mo
 - **Fixed, `--set` on a text field** keeps the text as typed (`notes="duck: 50 Hz"` was refused as YAML).
 - **Changed, advice:** arms on different scorers' code are told, for imported runs, to import again with one scorer, not to `rescore`; `goal-status` on a goal with rounds reads the open one, or leads past a closed one, instead of "fetch the dataset's items".
 - **New, a `validate` note:** system ids that hold the dataset id of one of their own runs (the first three, "and N more"); a system serves every dataset, and `--dataset` names it at `evh run`.
+- **Fixed, from the 0.8.3 newcomer run:** the round `study-run` opens names who acted (`validate` noted it as a record with no actor); a judge reply of unclosed JSON that ended on its own no longer says "the reply ran out"; the Workbench's held-out form names no operator's agent.
 - **Docs:** INTEGRATION says an adapter raises on a failed call: a returned "call failed" is scored as the model's answer. UPGRADING's 0.8.2 section names the two changes that could stop a run it left out.
 
 ## 0.8.2 — 2026-11-26

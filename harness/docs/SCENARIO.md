@@ -396,7 +396,9 @@ study ends; it does not count against the one-open-round rule, and that round be
 
 A study never promotes: the confirmation is one look at the test set's next level and suggests a promotion only
 when the outcome meets the rule. Whatever it finds is the answer; check it says so plainly. With no trial kept,
-`study-confirm` refuses and the test set is not read.
+`study-confirm` refuses and the test set is not read. That is the study's answer (nothing beat the baseline on the
+validation side): skip the confirmation and the commit's "confirmed", and go on to step 12. `--trial K` would confirm a
+dropped trial, spending a look of the test set on a candidate the validation side already turned down.
 
 ## 12 · A job
 
@@ -508,6 +510,21 @@ system id is refused as ambiguous (the message lists the arm ids).
 - `evh validate` passes at the end.
 
 ## Still open
+
+Found by the 0.8.3 run (2026-11-27, candidate `7774791ce`, $0.17 billed). The items below held where it checked them;
+it did not recheck a sweep's "MEASURED none" printed once per model, the inspector's "no model", a hidden tab asking
+nothing, or the inspector's Conditions header.
+
+- Fixed in 0.8.3: the round `study-run` opens names its actor (`validate` had noted it as a record with none); a judge
+  reply of unclosed JSON that ended on its own no longer says "the reply ran out"; the held-out screen's example reader is
+  `agent:NAME or person:NAME`; step 11 says what to do when no trial is kept.
+- Open: `run-compare` between two rounds' runs in an installed project reads `instrument differs: harness.commit` and "not
+  a controlled comparison" when only the project's own commit moved (`commit` is the project's tree; `version` and
+  `code_sha256` were equal).
+- As designed: `comparison-show`'s Conditions leave out what an arm varies (its prompt, its params), so a round that
+  changed only the prompt shows no condition differing on it; `run-compare` names the prompt under "settings differ".
+- Not exercised: retiring an arm from the Workbench's "Close" screen (the run closed r4 with none retired); a 403; the
+  retries on a persistent 429 or 5xx (both covered offline by `tests/test_providers_wire.py`).
 
 Found by the 0.8.1 run; 0.8.2 changed them (check each still holds):
 

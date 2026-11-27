@@ -124,3 +124,15 @@ settings that can move a score. It is wider than G6 as first written. A related 
 "triager call failed" as the decision after two failed calls, so `pair-test` counts transport failures as model
 decisions; an adapter that reports the call failed instead keeps them out. That is guidance for adapter authors
 (INTEGRATION), not a new feature.
+
+## C. What a comparison calls an instrument change (the 0.8.3 newcomer run, 2026-11-27)
+
+In an installed project, a run's `fingerprint.instrument.harness.commit` is the project's own git HEAD (`_fingerprint._harness_identity`:
+`commit` and `dirty` describe the project's tree; `version` and `code_sha256` are the harness's
+identity when it is a dependency). `evh run-compare` counts any instrument difference as a confound, so two rounds' runs
+in a project that committed between them (every round: round 2 adds a system file) read "instrument differs:
+harness.commit" and "not a controlled comparison", with `version` and `code_sha256` equal. The owner's choice (2026-11-27):
+recorded for 0.9.0, not fixed in 0.8.3. To decide: whether, with the harness installed, a moved project commit with the
+same `version` and `code_sha256` is shown as the project's change and left out of the confounds (display only, no hash
+changes), and what of the project a run depends on (its adapters, prompts) is already identified elsewhere in the
+fingerprint.

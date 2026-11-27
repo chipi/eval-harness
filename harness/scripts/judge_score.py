@@ -213,8 +213,8 @@ def unparsed_cause(
         body = output.strip().rstrip("`").rstrip()
         if output.strip().startswith(("{", "```")) and not body.endswith("}"):
             return (
-                f"cut off: JSON that stops before its closing brace (the reply ran out; finish_reason "
-                f"{finish_reason}), {n} chars"
+                f"cut off: JSON that stops before its closing brace, though the model ended its reply there "
+                f"(finish_reason {finish_reason}), {n} chars"
             )
         return f"not JSON, {n} chars"
     if mode == "grade" and dimensions:

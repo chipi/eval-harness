@@ -317,6 +317,12 @@ check(
     and f"{len(cut_json)} chars" in said,
     said,
 )
+# The 0.8.3 newcomer run: "(the reply ran out; finish_reason stop)" said two contrary things.
+check(
+    "a reply that ended on its own (finish_reason stop) is not said to have run out",
+    "ran out" not in said and "finish_reason stop" in said,
+    said,
+)
 check(
     "prose is still 'not JSON'",
     js.unparsed_cause("The summaries are fine.", "stop", "grade", ["faithfulness"]).startswith("not JSON"),

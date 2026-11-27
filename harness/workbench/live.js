@@ -2304,7 +2304,7 @@
         ${Object.keys(exs.what || {}).length ? tbl(["what was read", "reads"], Object.entries(exs.what).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${v}</td></tr>`)) : ""}
         <div data-form="read"><h3>Record a read</h3><div class="inline"><input type="text" id="rd-items" placeholder="the items read: t02, t05" autocapitalize="off" spellcheck="false">
           <input type="text" id="rd-what" placeholder="what was read: decision, reason" aria-label="what was read: the decision and its reason" style="min-width:16rem">
-          <input type="text" id="rd-who" placeholder="who: agent:homelab (default: you)" aria-label="who read it: agent:homelab (default: you)" autocapitalize="off" spellcheck="false"></div>
+          <input type="text" id="rd-who" placeholder="who: agent:NAME (default: you)" aria-label="who read it: agent:NAME or person:NAME (default: you)" autocapitalize="off" spellcheck="false"></div>
           <div class="actions" style="margin-top:0"><button class="btn" type="button" id="rd-go" data-send>Record it</button>${mark}</div><div id="rd-out" data-out></div></div>
         <h3>The leak check</h3><p class="muted">Searches the project's public repos (config.yaml's exposure) for these items' ids; a find not yet recorded can be recorded as a read. It cannot catch a paraphrase.</p>
         <div class="actions" style="margin-top:0"><button class="btn" type="button" id="lk-go">Check for leaks</button></div><div id="lk-out" data-out></div>`, `<span class="status ${exs.exposed ? "" : "ok"}">${exs.exposed} read</span>`)}
