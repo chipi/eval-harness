@@ -5,6 +5,46 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.8.2 to 0.8.3
+
+Change the pin to `@v0.8.3` and reinstall; `evh --version` prints `0.8.3` when the upgrade took. Nothing to migrate and
+no number moves, but four changes can stop a run that worked before (the first four items below). The 0.8.2 section
+below was corrected in this release: it now names the two changes of 0.8.2 that could stop a run, which it had left out
+(a budgeted round refuses an unpriced arm; a provider's 401 stops the run).
+
+- **Ids are ASCII again.** 0.8.2 let an id take the letters and digits of any script; 0.8.3 withdraws that. A dataset,
+  system, goal, scorer, field set, label set, reference, run, model, deployment or study id takes ASCII letters and
+  digits and the punctuation it took in 0.8.1, and a writer and a reader alike refuse one that does not, naming the
+  character and its place (`données_v1`: `'é' at 3 is not an ASCII letter or digit`). Before upgrading, rename any id
+  a 0.8.2 project made with another script; this lists the files that hold one:
+  `git -c core.quotePath=false ls-files data | grep -P '[^\x00-\x7F]'`.
+- **A system that names a `key_file` takes its key from that file only.** In 0.8.2 a `key_file` without the provider's
+  key fell through to the shell and `.env`. Now the run is refused before any call (`ERROR (not-configured)`, naming
+  the file and the variable). Put the key in the file, or drop `key_file` from the system. The address is
+  read as before: the system's `base_url`, else `LITELLM_BASE_URL` (or its provider's) from the file, the shell, then
+  `.env`.
+- **A provider's 403 stops the run, as a 401 does.** In 0.8.2 the item failed and the run went on. Now the run stops
+  with `ERROR (not-configured)` and exit 1, naming the variable that held the key and never its value.
+- **Only the harness retries.** The OpenAI and Anthropic SDKs' own retries are off; `EVAL_MAX_RETRIES` (default 8) is
+  the one layer. A provider that keeps answering 429 or 5xx is called up to 8 times per item, where 0.8.2 made up to 24
+  calls; if it is still failing the run stops so `--resume` continues it. Against a provider that rate-limits hard,
+  raise `EVAL_MAX_RETRIES`.
+- **`EVAL_JUDGE_<NAME>` is deprecated** and removed in 0.9.0. It is still read, with one warning per run. Give a judge
+  its own key with `key_file: PATH` in its params, or in the system it names (`system: <id>`); `evh env-check` and
+  `judge-score --dry-run` say where each judge key comes from. The judge fingerprint is the same wherever the key is
+  kept.
+- **One address variable per provider.** The LiteLLM gateway's is `LITELLM_BASE_URL`; the harness reads no second
+  name (`LITELLM_API_BASE` is not read). A key file that names only `LITELLM_API_BASE` needs `base_url` in the system,
+  or the line renamed. `evh env-check` and the dry run say where each address came from.
+- **`evh validate` notes system ids that hold the dataset id of one of their own runs.** A note, not a failure; the
+  exit code is unchanged. What a system is run for is the run's (`evh run --dataset`), so one system serves every
+  dataset.
+- **Fixes with no action needed:** `model-onboard` refuses a system whose calls would go to the bundled demo adapter (an
+  imported one); `arm-smoke` gives the `not-materialized` refusal; `model-show` and `model-list` find a model's arms
+  through the systems that name it, imported runs included; `model-new` and `model-set` record `EVH_ACTOR`; `--set`
+  keeps a text field's value as typed; the advice for imported arms on different scorers and for a goal whose rounds are
+  closed fits them.
+
 ## From 0.8.1 to 0.8.2
 
 Change the pin to `@v0.8.2` and reinstall; `evh --version` prints `0.8.2` when the upgrade took. Nothing to migrate and

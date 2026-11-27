@@ -10,6 +10,26 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.8.3 — 2026-11-27
+
+Keys by system, judges included; ids ASCII again; and what robotics-evals hit moving onto models and rounds. **No result moves:** no format, fingerprint or scorer changed, nothing is re-scored. Four changes can stop a run that worked on 0.8.2: a non-ASCII id, a provider's 403, a `key_file` without its key, and fewer calls on a persistent 429 or 5xx ([UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md)).
+
+- **Changed, ids are ASCII again:** 0.8.2's ids in any script are withdrawn; a writer and a reader refuse a non-ASCII id, naming the character and its place.
+- **Changed, a `key_file` is the only source of its system's key:** one that lacks the provider's key is refused (`not-configured`) before any call, naming the file and the variable; the address may still come from the shell or `.env`.
+- **New, a judge's own `key_file`:** a judge, inline or through the system it names, sends its `key_file`'s key; `judge-score` and its dry run say where it came from; the judge fingerprint is the same wherever the key is kept.
+- **Deprecated, `EVAL_JUDGE_<NAME>`:** still read, with one warning per run naming the `key_file` way; removed in 0.9.0. `env-check` lists the judges that name a `key_file`.
+- **Changed, one address variable per provider:** `LITELLM_BASE_URL` for the LiteLLM gateway (tutorial 2, RUNBOOK); `env-check` and the dry run say where the address came from, as for the key.
+- **Fixed, a provider's 403** stops the run as a 401 does, naming the key variable, never its value.
+- **Changed, one retry layer:** the provider SDKs' own retries are off; `EVAL_MAX_RETRIES` is the only one (a persistent 429 or 500 made up to 24 calls per item).
+- **Fixed, `model-onboard` on an imported system** printed ONBOARD PASS from the bundled demo adapter and wrote it into the deployment; it is refused.
+- **Fixed, `arm-smoke` on a dataset not materialized** ended in an uncaught error (exit 70); it gives the `not-materialized` refusal `run` gives.
+- **Fixed, a model's arms:** `model-show`, `model-list` and the model page find them through the systems that name the model, imported runs included (were "arms: none").
+- **Fixed, `model-new` and `model-set`** record the actor `EVH_ACTOR` names.
+- **Fixed, `--set` on a text field** keeps the text as typed (`notes="duck: 50 Hz"` was refused as YAML).
+- **Changed, advice:** arms on different scorers' code are told, for imported runs, to import again with one scorer, not to `rescore`; `goal-status` on a goal with rounds reads the open one, or leads past a closed one, instead of "fetch the dataset's items".
+- **New, a `validate` note:** system ids that hold the dataset id of one of their own runs (the first three, "and N more"); a system serves every dataset, and `--dataset` names it at `evh run`.
+- **Docs:** INTEGRATION says an adapter raises on a failed call: a returned "call failed" is scored as the model's answer. UPGRADING's 0.8.2 section names the two changes that could stop a run it left out.
+
 ## 0.8.2 — 2026-11-26
 
 The Workbench's public reads, one bar across the publication, and the beta projects' and 0.8.1 newcomer run's findings. **No result moves:** no format, fingerprint or scorer changed, nothing is re-scored.
