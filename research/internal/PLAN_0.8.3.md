@@ -82,6 +82,23 @@ choice of where).
 | S9 | The direct OpenAI, Anthropic and OpenRouter paths are covered offline only (`test_providers_wire.py`, real SDKs against fakes). The owner's machines reach models through the LiteLLM gateway only | **open:** whether a real direct call is ever wanted; if not, the scenario's "Not exercised" line says why | no |
 | S10 | The `o11y-prod` skill has no profile for eval-harness; 0.8.2's production check queried GlitchTip by hand (`evals-web`, `evals-inspector`, `evals-mcp`) | a profile in the skill (the operator's), or a `make prod-check` here that does the same read-only queries | no |
 
+## B. What robotics-evals hit on 0.8.2 (2026-11-27)
+
+Reported by the robotics lab after moving its experiment tracking onto models, deployments, systems and rounds
+(robotics-evals `aefbeae`), each with the command it ran. Not reproduced here yet: each gets a failing test first. The
+rest of its report (a trend with no promotion, a metric added to an imported run, a limit against the round's
+baseline, a deployment per dataset) is 0.9.0's G1, G5, G2 and G6.
+
+| Item | What | Done when | Moves a result |
+| --- | --- | --- | --- |
+| B1 | `evh model-onboard` on a system with no adapter of its own (an imported one) prints "ONBOARD PASS" from the bundled adapter and would write that check into the deployment | refused for a system whose runs are imported or that names no adapter, naming why | no |
+| B2 | `evh arm-smoke` on a dataset not materialized ends in an uncaught FileNotFoundError (exit 70) | the `not-materialized` refusal, as other readers give | no |
+| B3 | `evh model-show` says "arms: none" for a model whose systems name `model_record`: imported runs record deployment null, so the system's runs are not linked | a model's arms are found through the systems that name it, imported runs included | no |
+| B4 | `model-new` / `system-new` with `EVH_ACTOR` set: validate still notes the records name no actor | the writers record the actor `EVH_ACTOR` names | no |
+| B5 | `--set notes="... duck: 50 Hz ..."` refused "notes: must be text": the value is read as YAML | a text field takes the text as given, or the refusal names the cause (a value read as YAML) | no |
+| B6 | round-evidence and comparison-show tell imported runs scored by different scorer code to `evh rescore`, which cannot rescore an imported run | the advice fits the run: for imported runs it says re-import with one scorer, not rescore | no |
+| B7 | `goal-status` on a goal whose rounds are all closed says "next: fetch the dataset's items" | the next step fits a goal with every round closed | no |
+
 ## A. MLflow and TensorBoard, side by side (owner, 2026-11-26)
 
 Both are tools people reach for to track and compare model runs. The assessment reads their docs and, where it helps,

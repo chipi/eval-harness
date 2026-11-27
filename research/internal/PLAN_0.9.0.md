@@ -70,3 +70,21 @@ To check against 0.8.2 before the owner decides, read-only: whether goal `axes` 
 (G2's common case, and eval's prose `guardrails:`); whether evidence views include runs on a `role: validation`
 dataset (G3); whether a descriptive per-item metric can be added to a frozen run and whether the catalog or inspector
 filters items by a metric (G5).
+
+### What robotics-evals hit in practice (2026-11-27, after its move onto rounds, models and systems)
+
+Defects in shipped behaviour went to PLAN_0.8.3 (B1-B7). What feeds the items here:
+
+- G1: `evh chart trend --goal r5_avoidance_v2` refuses "0 baseline version(s) and 0 of 2 closed round(s) that promoted a
+  run": a round closed with nothing promoted is a result and no trend point.
+- G5: an imported run cannot gain a metric. `evh rescore` finds no adapter for an imported run; a second `import-run`
+  of the same system fails V8 (no `--purpose repeat`/`--of` on import-run). Asks for `import-run --of RUN` or a repeat
+  that attaches descriptive metrics. Its imported runs record `metric_kinds: {}`.
+- G2: `limit: baseline` needs a promoted baseline and is a paired p<0.05 test, so its pre-registered "collision count
+  not above the rules arm's" cannot be said; with nothing promoted goal-leaderboard applies no limit. Asks for a limit
+  that reads the round's `--baseline`, or a count-based limit against it.
+- Scorer equivalence: imported runs scored by one script at different commits read as "scored by different scorers";
+  asks to declare them equivalent.
+- G6: one system names one deployment; rules_v1 was measured at two lab commits. Asks for a deployment per dataset, or
+  per run on import-run.
+- G4: lineage only in `hypothesis.against` and its statement, no view.
