@@ -32,7 +32,7 @@ has two plain runs on one dataset. Neither was run.
 
 For 0.8.3 the mapping found no defect: every gap above is a missing feature, not a bug in something shipped.
 
-**Asked of every active beta project (2026-11-27), so no item is shaped on one project's feedback** (harness-bakeoff and agent-rules-eval are paused until next week and not asked):** fleet, eval
+**Asked of every active beta project (2026-11-27), so no item is shaped on one project's feedback** (harness-bakeoff and agent-rules-eval are paused until next week and not asked): fleet, eval
 (podcast-scraper-eval-data), robotics lab (ranking its own six) and homelab (asked whether it runs the provider
 bake-off). Each answers per item: no / maybe / yes, a concrete case from its own evals and what it does today, and how
 it should work if that differs. Their answers go in a table here before the owner decides what 0.9.0 builds.
