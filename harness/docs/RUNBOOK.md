@@ -1319,13 +1319,16 @@ lists them).
      (`prompts/judge.txt`). `sha256_at_16` is the hash of the file's text rendered for 16
      summaries; the gate recomputes it.
    - **Routing.** A judge's `provider:` in its `params` decides where its calls go. Each provider
-     reads environment variables: arms read `<VAR>`, judges read `EVAL_JUDGE_<VAR>` first (for
-     their own keys and budgets), then fall back to `<VAR>` to share the arms' credentials. A
+     reads environment variables: arms and judges read `<VAR>`. A judge is a system: with its own
+     `key_file: PATH` in its params (or in the system it names, `system: <id>`) its key is read from that
+     file alone, so judging can pay from its own key and budget. `EVAL_JUDGE_<VAR>`, read before `<VAR>`
+     when a judge names no `key_file`, is deprecated (a warning once per run; removed in 0.9.0). A
      judge's own `base_url` and `api_key_env` in params override the environment. See
      [tutorial 2](../../docs/tutorials/2-hosted-llm.md) for the providers and their variables.
      Billed cost is read from the response; the scorer's price table is the fallback. Before
      anything is called (and in `--dry-run`), each judge's line says where its calls go and
-     which key pays ("judging's own" or "shared with the arms"); a missing key or address is
+     which key pays and where it comes from (`key_file PATH`, `shell`, `.env`, or `shell; EVAL_JUDGE_ is
+     deprecated`); a missing key or address, or a `key_file` that lacks the key, is
      printed as `MISSING:` and the pass stops with nothing sent.
    - **`provider: fake`** judges call nothing and cost nothing. They exist to try a scorer
      end to end and to test one; the gate refuses them whatever the `validation` block says,
@@ -2317,16 +2320,23 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 `EVAL_HOME` after the import.
 
 **A system's own key file.** A system may name the file its keys come from, `key_file: PATH` in its `params` (a
-path from the project root, or absolute; `~` is expanded; dotenv format, `NAME=value` per line). For a call by that
-system, each variable its provider reads (`OPENAI_API_KEY`, `LITELLM_BASE_URL`, ...) is taken from that file
-first, then the exported environment, then the project's `.env`: the system's own choice beats the defaults. A
-variable the file does not hold falls through to the next. A `key_file` that is missing, is not a file or cannot
+path from the project root, or absolute; `~` is expanded; dotenv format, `NAME=value` per line). A judge names
+one the same way, in its `params` or in the system it names. For a call by that system, the provider's key
+(`OPENAI_API_KEY`, `LITELLM_API_KEY`, ...) is read from that file and from nowhere else: a file that lacks the
+key variable is refused (`not-configured`) before any call, naming the file, the variable and the system, and
+the shell's or `.env`'s key is never used in its place (**0.8.3; 0.8.2 fell through to the shell, so a run that
+worked then can stop now**: add the key to the file, or drop the `key_file`). The address (`LITELLM_BASE_URL`,
+`OPENAI_BASE_URL`, ...) is taken from the file, then the system's `base_url`, the exported environment and
+`.env`. A key file from the homelab carries `LITELLM_BASE_URL` beside `LITELLM_API_KEY`, and `LITELLM_BASE_URL`
+is the one address variable the harness reads for the `litellm` provider; a key file that lacks it needs the
+system's `base_url`. A `key_file` that is missing, is not a file or cannot
 be read is refused (`not-configured`) before any call, naming the file and the system; one inside the project and
 not gitignored is warned about, since a key file must not be committed (keep it outside the project, or ignore
 it). `evh env-check` lists the key files read and, per system and key, where it comes from (`key_file keys/a.env`,
-`shell`, `.env`); `evh run --dry-run` says the same for its system. The address is named the same way (the file,
-`shell`, `.env`, `system's base_url param`, or `default`), and a variable the file does not hold is followed by
-`(FILE: VAR is not in the file)`, in both. A key's value is never printed or recorded; the
+`shell`, `.env`) and, for a key the file lacks, `not in key_file keys/a.env`; it lists judges that name one
+the same way. `evh run --dry-run` and `evh judge-score` say the same for their system or judges. The address is
+named the same way (the file, `shell`, `.env`, `system's base_url param`, or `default`), and an address variable
+the file does not hold is followed by `(FILE: VAR is not in the file)`. A key's value is never printed or recorded; the
 path is recorded in the system's params and is not part of any fingerprint (where a key is kept is not what was
 measured). A project adapter that calls the bundled providers (`_providers.complete(prompt, params, role="arm",
 ...)`) with the system's params gets the same; one that reads `os.environ` itself does not see `key_file`.
@@ -2357,7 +2367,7 @@ measured). A project adapter that calls the bundled providers (`_providers.compl
 | `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable, its `key_file` a file to read it from |
 | `OPENROUTER_API_KEY` | `provider: openrouter` (OpenRouter's address by default; an arm's `base_url` or `api_key_env` overrides it), and judges routed straight to OpenRouter |
 | `ANTHROPIC_API_KEY` | `provider: anthropic` |
-| `LITELLM_BASE_URL` + `LITELLM_API_KEY` | `provider: litellm`, a LiteLLM proxy, and judges routed through it (a judge takes the proxy when both it and `OPENROUTER_API_KEY` are set) |
+| `LITELLM_BASE_URL` + `LITELLM_API_KEY` | `provider: litellm`, a LiteLLM proxy (`LITELLM_BASE_URL` is the one address variable; a homelab key file carries it; a key file without it needs the system's `base_url`), and judges routed through it (a judge takes the proxy when both it and `OPENROUTER_API_KEY` are set) |
 
 ---
 

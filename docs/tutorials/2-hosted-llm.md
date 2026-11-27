@@ -12,18 +12,35 @@ Nothing here is run by `make guide-check`: it calls a paid API.
 The adapter bundled with the harness (what an arm uses when the project has no `adapter.py`, and
 what tutorial 1's adapter reaches through `PROVIDERS`) knows these providers. The same providers
 are used by judges (in `judge-score` and the judge panel). Each provider reads the variables
-in its row, from the environment or from a `.env` file at the project root. Arms read `<NAME>`;
-judges read `EVAL_JUDGE_<NAME>` first (for their own keys or spending), then fall back to `<NAME>`
-when judging shares the arms' credentials.
+in its row, from the environment or from a `.env` file at the project root. Arms and judges read the
+same variables, so judging shares the arms' credentials unless a judge is given its own (below).
 
-| `provider:` | what it calls | arms read | judges read |
-|---|---|---|---|
-| `openai` | OpenAI, or **any OpenAI-compatible endpoint** | `OPENAI_API_KEY`; `OPENAI_BASE_URL` (optional, else the default endpoint) | `EVAL_JUDGE_OPENAI_API_KEY` or `OPENAI_API_KEY`; `EVAL_JUDGE_OPENAI_BASE_URL` or `OPENAI_BASE_URL` |
-| `openrouter` | OpenRouter (OpenAI-compatible), asking it for what it billed | `OPENROUTER_API_KEY` | `EVAL_JUDGE_OPENROUTER_API_KEY` or `OPENROUTER_API_KEY` |
-| `anthropic` | Anthropic | `ANTHROPIC_API_KEY`; `ANTHROPIC_BASE_URL` (optional) | `EVAL_JUDGE_ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY`; `EVAL_JUDGE_ANTHROPIC_BASE_URL` or `ANTHROPIC_BASE_URL` |
-| `litellm` | your own [LiteLLM](https://docs.litellm.ai/) proxy: one key, many providers, spend tracked centrally | `LITELLM_API_KEY`; `LITELLM_BASE_URL` (required; the proxy's address) | `EVAL_JUDGE_LITELLM_API_KEY` or `LITELLM_API_KEY`; `EVAL_JUDGE_LITELLM_BASE_URL` or `LITELLM_BASE_URL` |
-| `echo` (arms only) | nothing (offline, $0) | — | — |
-| `fake` (judges only) | a stand-in for testing (offline, $0) | — | — |
+| `provider:` | what it calls | reads |
+|---|---|---|
+| `openai` | OpenAI, or **any OpenAI-compatible endpoint** | `OPENAI_API_KEY`; `OPENAI_BASE_URL` (optional, else the default endpoint) |
+| `openrouter` | OpenRouter (OpenAI-compatible), asking it for what it billed | `OPENROUTER_API_KEY` |
+| `anthropic` | Anthropic | `ANTHROPIC_API_KEY`; `ANTHROPIC_BASE_URL` (optional) |
+| `litellm` | your own [LiteLLM](https://docs.litellm.ai/) proxy: one key, many providers, spend tracked centrally | `LITELLM_API_KEY`; `LITELLM_BASE_URL` (required; the proxy's address) |
+| `echo` (arms only) | nothing (offline, $0) | — |
+| `fake` (judges only) | a stand-in for testing (offline, $0) | — |
+
+**One address variable.** `LITELLM_BASE_URL` is the one variable the harness reads for a LiteLLM proxy's
+address; there is no second name for it. A key file minted by the homelab carries it beside the key, so a
+system that names that file as its `key_file` needs no `base_url`. A key file that lacks `LITELLM_BASE_URL`
+needs the address from elsewhere: `base_url:` in the system's params, or the variable in the shell or `.env`.
+
+**A key of its own: `key_file`.** A system, or a judge, may name `key_file: PATH` in its params: a file in
+dotenv format (`NAME=value` per line; a path from the project root, or absolute; `~` is expanded) that is the only
+place its provider's key is read from. A `key_file` that lacks the key variable is refused before any call,
+naming the file and the variable: the shell's or `.env`'s key is never used in its place (0.8.3; 0.8.2 fell
+through to it). That is how judging pays from its own key and budget: a judge is a system, so it names its own
+`key_file`, or names a system that does (`system: <system_id>` in the scorer). Name the system rather than
+writing `key_file` into a scorer that has judged scores: a scorer is hashed as written, and a changed scorer is
+a new scorer. Where a key is kept is in no fingerprint: the judge's is the same with its key in a file or in the
+environment.
+
+`EVAL_JUDGE_<NAME>` (a judge's own variable, read before `<NAME>`) is the old way and is **deprecated**: still
+read, with one warning per run that names the `key_file` way, and removed in 0.9.0.
 
 Every provider takes `model`, `temperature` (default 0), `max_tokens`, `base_url` (an address
 that overrides the environment's) and `api_key_env` (another variable to read the key from).
@@ -42,33 +59,33 @@ variable wins over the file. For example, with OpenRouter:
 ```text
 # .env
 OPENROUTER_API_KEY=sk-or-...
-EVAL_JUDGE_OPENROUTER_API_KEY=sk-or-...    # judges' own key (optional; omit to share the arms')
 EVAL_MAX_COST_USD=1.00
 ```
 
 `EVAL_MAX_COST_USD` is a ceiling on what one run may spend. A run that reaches it stops, keeps
 everything it has, and prints the `--resume` command, so nothing is paid for twice. Then check
-what the harness sees: for each provider and variable, whether arms can call it, which key
-judges use (their own EVAL_JUDGE_* key, the arms' key, or nothing):
+what the harness sees: for each provider and variable, whether arms can call it, whether judges
+can (with the arms' key, or the deprecated `EVAL_JUDGE_*` one), and, for each system or judge
+that names a `key_file`, where its key comes from:
 
 <!-- guide-check: skip -->
 ```bash
 evh env-check
 ```
 
-With only the `.env` above (and the judges' own OpenRouter key), its provider table reads:
+With only the `.env` above, its provider table reads:
 
 ```text
-.env: loaded 3 var(s)   (/path/to/your/project/.env)
+.env: loaded 2 var(s)   (/path/to/your/project/.env)
 
-hosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>
-first and the arms' <NAME> when that is not set
+hosted providers (a system's `provider:`): an arm reads <NAME>; a judge its own `key_file`, else
+EVAL_JUDGE_<NAME> (deprecated, removed in 0.9.0) first and the arms' <NAME> when that is not set
   provider    variable             arms                                           judges
   openai      OPENAI_API_KEY       not set                                        not set
               OPENAI_BASE_URL      not set (the default address)                  not set (the default address)
   anthropic   ANTHROPIC_API_KEY    not set                                        not set
               ANTHROPIC_BASE_URL   not set (the default address)                  not set (the default address)
-  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2) (.env)              own: set (73 chars, ends …c3d4) (.env)
+  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2) (.env)              the arms'
   litellm     LITELLM_API_KEY      not set                                        not set
               LITELLM_BASE_URL     not set                                        not set
   arms can call: openrouter

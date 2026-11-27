@@ -29,7 +29,9 @@ each has its own budget and spend log; the harness offered no way to do that sho
   judge declares one (the scorer schema requires it).
 - **Keys by role.** A judge reads every variable as `EVAL_JUDGE_<NAME>` first, then `<NAME>`;
   an arm reads `<NAME>`. With no `EVAL_JUDGE_` variable set, judging shares the arms'
-  keys, as before.
+  keys, as before. **Superseded in part (0.8.3, the owner, 2026-11-26):** a judge, like an arm, is a system that may
+  name its own `key_file`, which is then the only source of its key; `EVAL_JUDGE_<NAME>` is still read, with a
+  warning once per run, and is removed in 0.9.0. Credentials stay outside identity, as below.
 - **A credential is not identity.** `api_key_env` is left out of a run's fingerprint and a
   judge's: the same model asked the same way is the same measurement whichever key paid.
   `provider`, `model`, `base_url` and the request options stay in identity.

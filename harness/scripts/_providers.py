@@ -15,16 +15,19 @@ Every provider takes `model`, `base_url`, `api_key_env` (another variable to rea
 from), `key_file` (a file to read it from, below), `temperature` (default 0) and `max_tokens`; the OpenAI-shaped ones also pass
 `reasoning`, `reasoning_effort` and `provider_routing` in the request body.
 
-KEYS BY ROLE. A judge reads every variable as `EVAL_JUDGE_<NAME>` first and falls back to
-`<NAME>`, so judging can run on its own keys (its own budget and spend log) or share the
-arms' with no setting at all. A credential is where a call is billed, not what was
-measured: `api_key_env` and `key_file` are left out of every identity hash (`identity_params`).
+KEYS BY ROLE. A judge is a system with its own `key_file` (below): that is how judging runs on its own key, budget
+and spend log. Without one it reads every variable as `EVAL_JUDGE_<NAME>` first and falls back to `<NAME>`, so judging
+can also share the arms' with no setting at all. `EVAL_JUDGE_<NAME>` is deprecated (0.8.3): still read, with one
+warning per process, and removed in 0.9.0. A credential is where a call is billed, not what was measured:
+`api_key_env` and `key_file` are left out of every identity hash (`identity_params`).
 
-KEY FILE. A system may name `key_file`, a dotenv-format file (a path from the project root, or absolute; `~`
-expanded) its keys come from. For a call by that system every variable the provider reads (the key, the address) is
-taken from the file first, then the shell, then the project's .env: the system's own choice beats the defaults. A
-file that cannot be read is refused (`check_key_file`, and `problems` for any caller) before a call is made. A
-project adapter that calls `complete` with the system's params gets the same.
+KEY FILE. A system or a judge may name `key_file`, a dotenv-format file (a path from the project root, or absolute; `~`
+expanded) its credentials come from. For a call by that system the provider's key is read from that file and from
+nowhere else: a file that lacks the key variable is refused (`not-configured`, naming the file and the variable) and the
+shell's and .env's key is never used in its place (0.8.3; in 0.8.2 it was). The address (`LITELLM_BASE_URL`, ...) is
+taken from the file first, then the system's `base_url`, the shell and .env as for any system. A file that cannot be
+read is refused (`check_key_file`, and `problems` for any caller) before a call is made. A project adapter that calls
+`complete` with the system's params gets the same.
 
 A 401 or a 403 is the key's, not the item's: `complete` stops the run there (`_refused_key`), naming the variable.
 The SDK clients retry nothing (`max_retries=0`): the core's loop (`_retry`, EVAL_MAX_RETRIES) is the only one, so a
@@ -178,27 +181,68 @@ def key_file_problem(params: dict[str, Any]) -> str | None:
     return read_key_file(params["key_file"])[1]
 
 
-def check_key_file(params: dict[str, Any], system_id: str) -> None:
-    """Before a system's first call: a `key_file` that cannot be read is refused (`not-configured`), naming the file
-    and the system; one inside the project and not ignored by git is warned about, since a key file that is
-    committed is a key that is leaked."""
+def _not_in_file(path: str, var: str) -> str:
+    return (
+        f"key_file {path} has no {var}: a system that names a key_file uses only that file for its key, "
+        "never the shell's or .env's"
+    )
+
+
+def check_key_file(params: dict[str, Any], system_id: str, role: str = "arm") -> None:
+    """Before a system's first call: a `key_file` that cannot be read, or that lacks the provider's key, is refused
+    (`not-configured`), naming the file, the variable and the system; one inside the project and not ignored by git is
+    warned about, since a key file that is committed is a key that is leaked."""
     if params.get("key_file") is None:
         return
-    from evaluation_harness._common import die, key_file_uncovered  # noqa: PLC0415
+    from evaluation_harness._common import die  # noqa: PLC0415
 
     if why := key_file_problem(params):
         die(f"system {system_id}: {why}; nothing was called", "not-configured")
+    if params.get("provider") in SPECS and not route(params, role).key:
+        var = str(params.get("api_key_env") or SPECS[params["provider"]].key_env)
+        die(
+            f"system {system_id}: {_not_in_file(str(params['key_file']), var)}; nothing was called",
+            "not-configured",
+        )
+    warn_key_file_uncovered(params, f"system {system_id}")
+
+
+def warn_key_file_uncovered(params: dict[str, Any], who: str) -> None:
+    """A WARNING when the `key_file` `params` name is inside the project, in a git checkout and not ignored."""
+    if params.get("key_file") is None:
+        return
+    from evaluation_harness._common import key_file_uncovered  # noqa: PLC0415
+
     if key_file_uncovered(params["key_file"]):
         print(
-            f"  WARNING: system {system_id}: key_file {params['key_file']} is inside the project and git does not "
+            f"  WARNING: {who}: key_file {params['key_file']} is inside the project and git does not "
             "ignore it. A key file must not be committed: add it to .gitignore, or keep it outside the project."
         )
 
 
-def _lookup(name: str, role: str, key_file: KeyFile | None = None) -> tuple[str, str | None, str]:
+#: The first EVAL_JUDGE_ variable a process read: the deprecation is said once per process (a command, a server), not
+#: at each of the many lookups a run makes.
+_JUDGE_ENV_SAID: set[str] = set()
+
+
+def _say_judge_env_deprecated(var: str) -> None:
+    if _JUDGE_ENV_SAID:
+        return
+    _JUDGE_ENV_SAID.add(var)
+    print(
+        f"WARNING: {var} is deprecated and is removed in 0.9.0: give a judge its own key with `key_file: PATH` in its "
+        "params (or in the system it names, `system: <id>`); `evh env-check` shows where each judge key comes from.",
+        file=_sys.stderr,
+    )
+
+
+def _lookup(
+    name: str, role: str, key_file: KeyFile | None = None, *, is_key: bool = False
+) -> tuple[str, str | None, str]:
     """(the variable read, its value, where it came from). A system's key file first (its explicit choice), then the
     shell, then the project's .env (which `_common.load_dotenv` loads under the shell's); a judge reads
-    EVAL_JUDGE_<name> before <name> within each."""
+    EVAL_JUDGE_<name> before <name> within each. A key (`is_key`) is read from the key file alone when there is one:
+    the shell's and .env's are not a fallback for it."""
     from evaluation_harness._common import env_origin  # noqa: PLC0415
 
     names = [JUDGE_PREFIX + name, name] if role == "judge" else [name]
@@ -206,15 +250,23 @@ def _lookup(name: str, role: str, key_file: KeyFile | None = None) -> tuple[str,
         for n in names:
             if key_file[1].get(n):
                 return n, key_file[1][n], f"key_file {key_file[0]}"
+        if is_key:
+            return name, None, f"not in key_file {key_file[0]}"
     for n in names:
         if os.environ.get(n):
+            if n.startswith(JUDGE_PREFIX):
+                _say_judge_env_deprecated(n)
+                return n, os.environ[n], f"{env_origin(n)}; {JUDGE_PREFIX} is deprecated"
             return n, os.environ[n], env_origin(n)
     return name, None, "not set"
 
 
-def env(name: str, role: str, key_file: KeyFile | None = None) -> tuple[str, str | None]:
-    """(the variable read, its value). A judge reads EVAL_JUDGE_<name> first; a `key_file` outranks the environment."""
-    var, value, _origin = _lookup(name, role, key_file)
+def env(
+    name: str, role: str, key_file: KeyFile | None = None, *, is_key: bool = False
+) -> tuple[str, str | None]:
+    """(the variable read, its value). A judge reads EVAL_JUDGE_<name> first; a `key_file` outranks the environment,
+    and for a key (`is_key`) replaces it."""
+    var, value, _origin = _lookup(name, role, key_file, is_key=is_key)
     return var, value
 
 
@@ -229,7 +281,7 @@ def key_sources(params: dict[str, Any], role: str) -> list[tuple[str, str | None
     r = route(params, role)
     if r.key == NO_KEY:
         return [("(none)", None, "a local server takes no key")]
-    key = _lookup(str(params.get("api_key_env") or spec.key_env), role, kf)
+    key = _lookup(str(params.get("api_key_env") or spec.key_env), role, kf, is_key=True)
     if params.get("base_url"):
         return [key, ("base_url", str(params["base_url"]), "system's base_url param")]
     if spec.base_env:
@@ -248,7 +300,7 @@ def not_in_key_file(params: dict[str, Any], var: str, origin: str) -> str:
     kf = key_file_of(params)
     if (
         kf is None
-        or origin.startswith("key_file")
+        or origin.startswith(("key_file", "not in key_file"))
         or var in kf[1]
         or var.startswith("(")
         or var == "base_url"
@@ -287,7 +339,7 @@ def route(params: dict[str, Any], role: str) -> Route:
         raise ValueError(f"unknown provider {provider!r}; one of {', '.join(PROVIDERS)}")
     spec = SPECS[provider]
     kf = key_file_of(params)
-    key_var, key = env(str(params.get("api_key_env") or spec.key_env), role, kf)
+    key_var, key = env(str(params.get("api_key_env") or spec.key_env), role, kf, is_key=True)
     base_var: str | None
     base: str | None
     if params.get("base_url"):
@@ -319,7 +371,12 @@ def problems(params: dict[str, Any], role: str) -> list[str]:
         return [*out, f"provider {provider}: {why}"]  # a key the file would have held is not "not set"
     if not r.key:
         named = str(params.get("api_key_env") or spec.key_env)
-        out.append(f"provider {provider}: {_either(named, role)} is not set")
+        kf = key_file_of(params)
+        out.append(
+            f"provider {provider}: {_not_in_file(kf[0], named)}"
+            if kf
+            else f"provider {provider}: {_either(named, role)} is not set"
+        )
     if spec.base_required and not (r.base_url or "").startswith("http"):
         out.append(
             f"provider {provider}: {_either(spec.base_env or 'base_url', role)} is not set to the "

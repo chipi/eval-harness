@@ -64,15 +64,44 @@ def _key_file_systems() -> list[tuple[str, dict[str, Any]]]:
     return out
 
 
-def _report_key_files(systems: list[tuple[str, dict[str, Any]]]) -> None:
-    """Per system and key, where it comes from: its key_file, the shell or .env. Never a value."""
-    print("\nsystems that name a `key_file` (read first, then the shell, then .env)")
-    for sid, params in systems:
+def _key_file_judges() -> list[tuple[str, dict[str, Any]]]:
+    """(`scorer/judge`, params) of every judge of the project's scorers that names a `key_file`, itself or in the
+    system it names."""
+    from evaluation_harness.model.entity import Problem  # noqa: PLC0415
+    from evaluation_harness.model.scorers import SCORER, resolve_judges  # noqa: PLC0415
+
+    out = []
+    try:
+        ids = SCORER.ids(check_format=False)
+    except SystemExit:
+        return []
+    for scid in ids:
+        try:
+            sc = SCORER.get(scid)
+            resolve_judges(sc)
+        except Problem:
+            continue  # `evh validate` says what is wrong with a scorer
+        out += [
+            (f"{scid}/{j.get('id')}", dict(j["params"]))
+            for j in sc.get("judges") or []
+            if isinstance(j, dict) and (j.get("params") or {}).get("key_file") is not None
+        ]
+    return out
+
+
+def _report_key_files(entries: list[tuple[str, dict[str, Any]]], role: str) -> None:
+    """Per system or judge and key, where it comes from: its key_file (the only place its key is read from), else the
+    shell or .env (a judge: EVAL_JUDGE_<NAME>, deprecated, first). Never a value."""
+    what = "systems" if role == "arm" else "judges"
+    print(
+        f"\n{what} that name a `key_file` (its key is read from that file alone; the address from it, then the shell, .env)"
+    )
+    for sid, params in entries:
         kf = _providers.key_file_of(params)
         if kf is None:
             print(f"  {sid:20} {_providers.key_file_problem(params)}")
             continue
-        for var, value, origin in _providers.key_sources(params, "arm"):
+        for var, value, origin in _providers.key_sources(params, role):
             note = _providers.not_in_key_file(params, var, origin)
             shown = _state(value, var.endswith("KEY")) if value else "not set"
             print(f"  {sid:20} {var:20} {shown} ({origin}){'   ' + note if note else ''}")
@@ -106,17 +135,22 @@ def main() -> int:
     if not _store.is_file(env_file):
         print("      create it with the keys your providers read, one NAME=value per line\n")
     named = _key_file_systems()
+    named_judges = _key_file_judges()
     files = [str(env_file)] if _store.is_file(env_file) else []
-    files += [kf[0] for _s, p in named if (kf := _providers.key_file_of(p))]
+    files += [kf[0] for _s, p in [*named, *named_judges] if (kf := _providers.key_file_of(p))]
     files = list(dict.fromkeys(files))
     print(
         f"files read: {', '.join(map(str, files)) or '(none)'}"
-        + ("" if named else "; no system names a key_file, so each key below is the shell's or this .env's")
+        + (
+            ""
+            if named or named_judges
+            else "; no system names a key_file, so each key below is the shell's or this .env's"
+        )
     )
 
     print(
-        "\nhosted providers (a system's `provider:`): an arm reads <NAME>, a judge EVAL_JUDGE_<NAME>"
-        "\nfirst and the arms' <NAME> when that is not set"
+        "\nhosted providers (a system's `provider:`): an arm reads <NAME>; a judge its own `key_file`, else"
+        "\nEVAL_JUDGE_<NAME> (deprecated, removed in 0.9.0) first and the arms' <NAME> when that is not set"
     )
     print(f"  {'provider':11} {'variable':20} {'arms':46} judges")
     ready: dict[str, list[str]] = {"arm": [], "judge": []}
@@ -134,7 +168,7 @@ def main() -> int:
                 else ("not set" if secret or spec.base_required else "not set (the default address)")
             )
             judge_s = (
-                f"own: {_state(own, secret)} ({env_origin(_providers.JUDGE_PREFIX + var)})"
+                f"own: {_state(own, secret)} ({env_origin(_providers.JUDGE_PREFIX + var)}, deprecated)"
                 if own
                 else ("the arms'" if arm else ("not set" if secret else arm_s))
             )
@@ -151,7 +185,9 @@ def main() -> int:
     for role, label in (("arm", "arms"), ("judge", "judges")):
         print(f"  {label} can call: {', '.join(ready[role]) or 'none'}")
     if named:
-        _report_key_files(named)
+        _report_key_files(named, "arm")
+    if named_judges:
+        _report_key_files(named_judges, "judge")
     # A local server (or Ollama's port) is called with no key: it bills nothing, so it is no reason for a cap.
     local = {
         (role, name)

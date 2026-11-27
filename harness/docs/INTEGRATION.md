@@ -315,8 +315,8 @@ reads `os.environ` itself does not.
 **Which variable each provider reads, and what goes in the system's `params`:
 [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).** `evh env-check`
 reports which are set. Judges use the same providers: each judge's `provider:` in the scorer
-decides where its calls go. Judges read their own keys (`EVAL_JUDGE_<VAR>`) or share the arms'
-credentials (`<VAR>`), so you can run judges on separate budgets or the same one
+decides where its calls go. A judge with its own `key_file` uses that file's key, otherwise it shares the arms'
+credentials (`<VAR>`; `EVAL_JUDGE_<VAR>` is deprecated, removed in 0.9.0), so you can run judges on separate budgets or the same one
 ([RUNBOOK §12](RUNBOOK.md#12-re-measure-with-a-validated-judge)).
 
 ---

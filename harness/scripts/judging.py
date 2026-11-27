@@ -19,8 +19,9 @@ examples/_shared/gateway.py, which an installed package does not have. They live
   statistics   `spearman`, `kendall_tau_b` (tie-corrected: a judge ties constantly).
   the call     `call_judge`: the provider the judge names (`provider:` in its params: openai,
                anthropic, openrouter or litellm), through the same `_providers` an arm's call
-               uses. A judge reads its keys as EVAL_JUDGE_<NAME> first, then <NAME>, so judging
-               can run on its own keys or share the arms'.
+               uses. A judge with a `key_file` in its params reads its key from that file alone,
+               so judging can run on its own key; without one it reads <NAME> (EVAL_JUDGE_<NAME> first is
+               deprecated), sharing the arms'.
 
 `provider: fake` calls nothing and costs nothing: a deterministic stand-in for tests and for
 trying a scorer end to end. It can never be validated (judge_score's gate refuses it), so
@@ -505,7 +506,7 @@ def _fake_call(message: str, params: dict[str, Any]) -> JudgeResult:
 
 def call_judge(message: str, params: dict[str, Any]) -> JudgeResult:
     """One judge reply to one message, from the provider the judge names (`_providers`, as an
-    arm's call; its keys looked up as EVAL_JUDGE_<NAME> first). Retrying transient failures is
+    arm's call; its key from its `key_file`, else EVAL_JUDGE_<NAME> (deprecated) first). Retrying transient failures is
     the caller's job."""
     if params.get("provider") == FAKE:
         return _fake_call(message, params)
