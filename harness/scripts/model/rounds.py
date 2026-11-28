@@ -310,7 +310,7 @@ def _promote_hold(
         return f"{r['verdict']}, Δ {r['delta']:+.4f}, {p}{fam}"
 
     if scorers_differ:
-        return "measured by different scorers: re-score the arms before reading the test"
+        return "measured by different scorers: put the arms on one scorer before reading the test (the note above says how)"
     if vs_base is not None and vs_base["verdict"] != "significant: better":
         return f"not ahead of the baseline it started from ({said(vs_base)})"
     if prev_id and vs_prev is not None and vs_prev["verdict"] == "significant: worse":

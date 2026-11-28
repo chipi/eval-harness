@@ -127,9 +127,10 @@ def _pairs(items: list[str]) -> dict[str, Any]:
         if not sep or not key.strip():
             _common.die(f"{raw!r}: KEY=VALUE", "bad-argument")
         try:
-            out[key.strip()] = _settings_form.plain(yaml.safe_load(value)) if value.strip() else ""
+            read = _settings_form.plain(yaml.safe_load(value)) if value.strip() else ""
         except yaml.YAMLError:
-            out[key.strip()] = value
+            read = value
+        out[key.strip()] = _settings_form.Said(value, read)
     return out
 
 

@@ -213,8 +213,8 @@ def unparsed_cause(
         body = output.strip().rstrip("`").rstrip()
         if output.strip().startswith(("{", "```")) and not body.endswith("}"):
             return (
-                f"cut off: JSON that stops before its closing brace (the reply ran out; finish_reason "
-                f"{finish_reason}), {n} chars"
+                f"cut off: JSON that stops before its closing brace, though the model ended its reply there "
+                f"(finish_reason {finish_reason}), {n} chars"
             )
         return f"not JSON, {n} chars"
     if mode == "grade" and dimensions:
@@ -1721,7 +1721,8 @@ def effective_cap(sc: dict[str, Any]) -> float | None:
 
 def judge_access(sc: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
     """(judge id, where its calls go and which key pays, what is missing) for every judge,
-    resolved without a call: a judge reads EVAL_JUDGE_<NAME> first, then the arms' <NAME>."""
+    resolved without a call: its `key_file` alone when it names one, else EVAL_JUDGE_<NAME> (deprecated) first, then the
+    arms' <NAME>; it says which."""
     out: list[tuple[str, str, list[str]]] = []
     for j in sc["judges"]:
         p = j["params"]
@@ -1733,9 +1734,9 @@ def judge_access(sc: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
             out.append((j["id"], f"provider {p.get('provider')!r}", found))
             continue
         r = _providers.route(p, "judge")
-        whose = "judging's own" if r.key_var.startswith(_providers.JUDGE_PREFIX) else "shared with the arms"
+        key_var, _value, origin = _providers.key_sources(p, "judge")[0]
         at = f" at {r.base_url}" if r.base_url else ""
-        out.append((j["id"], f"{r.provider} {p.get('model')}{at}, key {r.key_var} ({whose})", found))
+        out.append((j["id"], f"{r.provider} {p.get('model')}{at}, key {key_var} ({origin})", found))
     return out
 
 
@@ -1862,6 +1863,8 @@ def body(**inputs: Any) -> int:
         f"noise items {len(manifest['noise_items'])}"
     )
     blocked = False
+    for j in sc["judges"]:
+        _providers.warn_key_file_uncovered(j["params"], f"judge {j['id']}")
     for jid, where, found in judge_access(sc):
         print(f"  judge {jid:8s} {where}")
         # --no-calls reads stored verdicts only: a key it never uses is not missing.

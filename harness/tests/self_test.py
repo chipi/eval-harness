@@ -1239,7 +1239,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_reader_agreement_shapes.py",
-            "every reader says the same of a fact on committed projects this checkout did not make (a fleet's, a podcast's, a bake-off's with no run, unicode ids, a format-0 project migrated), in UTC and in UTC+14 and UTC-11, and a zone changes no fact",
+            "every reader says the same of a fact on committed projects this checkout did not make (a fleet's, a podcast's, a bake-off's with no run, a format-0 project migrated), in UTC and in UTC+14 and UTC-11, and a zone changes no fact",
         ),
         (
             "test_arm_list_baseline_retired.py",
@@ -1250,12 +1250,8 @@ def test_example_scorer_suites_pass() -> None:
             "a round the Workbench opens, retires and closes names the person typed in its name field, never the EVH_ACTOR or EVH_FOR of the server it runs on",
         ),
         (
-            "test_read_ids.py",
-            "a writer takes the letters and digits of any script and refuses a non-NFC, control or path-like id; a read of an id that exists is refused only for being a path",
-        ),
-        (
-            "test_unicode_ids.py",
-            "one rule for every id a person names, on a table of ids, the JSON schemas' patterns agreeing with it; a dataset, a system and a run with a unicode id made and read back (CLI, API by a percent-encoded id, catalog export) in the store the suite runs in",
+            "test_ascii_ids.py",
+            "one rule for every id a person names (ASCII), on a table of ids, the JSON schemas' patterns agreeing with it; a writer refuses a non-ASCII id by name, and so do a read command and validate for one written by hand (no traceback), in the store the suite runs in",
         ),
         (
             "test_foreign_projects.py",
@@ -1263,11 +1259,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_data_mutations.py",
-            "real-looking data changed (no goal, cost 0 or none, dirty null, unicode ids, _r1 names, missing and extra fields, two baselines, far time zones, a public environment, a gone reference, an unrecorded measure) on the tutorial and the three look-alikes: no traceback, every reader agrees, validate names it",
+            "real-looking data changed (no goal, cost 0 or none, dirty null, _r1 names, missing and extra fields, two baselines, far time zones, a public environment, a gone reference, an unrecorded measure) on the tutorial and the three look-alikes: no traceback, every reader agrees, validate names it",
         ),
         (
             "test_writers_refuse.py",
-            "every writer records the fact or refuses by name (an id with a path or unicode, a repeat with no of, a reference not there, a goal the policy requires, a cost some items did not report), and validate names each broken link with its file",
+            "every writer records the fact or refuses by name (an id with a path or a letter outside ASCII, a repeat with no of, a reference not there, a goal the policy requires, a cost some items did not report), and validate names each broken link with its file",
         ),
         (
             "test_v30_links.py",
@@ -1324,6 +1320,22 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_model_ops.py",
             "models and deployments through the model: the command line and the API alike, a deployment's checks its history, accept with why, refusals",
+        ),
+        (
+            "test_model_actor.py",
+            "a model record names the actor that made or changed it (EVH_ACTOR, EVH_FOR, --by); validate notes none as naming no actor",
+        ),
+        (
+            "test_set_text.py",
+            "--set: a field the schema says is text takes the typed text (`notes=duck: 50 Hz`), any other field its YAML, in model, goal and data-put",
+        ),
+        (
+            "test_scorer_advice.py",
+            "arms scored by different scorers: imported runs are told to import again with one scorer, not to re-score",
+        ),
+        (
+            "test_goal_next.py",
+            "goal-status: a goal with a round is not sent back to fetch its dataset; an open round is read, a closed one is followed by a new round",
         ),
         (
             "test_model_systems.py",
@@ -1462,6 +1474,10 @@ def test_example_scorer_suites_pass() -> None:
             "validate: V2 capture link, V19/V21 schemas, V22 exposure and pick-list schemas, each bad record named",
         ),
         (
+            "test_validate_system_ids.py",
+            "validate: a system id that contains the dataset id of one of its own runs is a note (V8), three named then 'and N more', whole tokens only, the exit code unchanged",
+        ),
+        (
             "test_format.py",
             "the data's format: init stamps it, migrate --check refuses old and newer, steps stamp it, a SQLite backup, the deploy's gate, 0.7.2's frozen project keeps its numbers",
         ),
@@ -1559,6 +1575,10 @@ def test_example_scorer_suites_pass() -> None:
             "references.roots in config.yaml: import-run accepts or refuses an id, V16 and rescore read the roots",
         ),
         (
+            "test_imported_system.py",
+            "a system whose runs are imported: model-onboard refuses the demo adapter, arm-smoke an unmaterialized dataset, model-show finds its arms",
+        ),
+        (
             "test_references.py",
             "reference manifests and V16: checksums committed, texts checked against them",
         ),
@@ -1609,7 +1629,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_providers_wire.py",
-            "hosted providers on the wire: the real SDKs against a fake of each API; request, record, 429/500, 401",
+            "hosted providers on the wire: the real SDKs against a fake of each API; request, record, 429/500, 401, 403",
         ),
         ("test_leaderboard_refs.py", "the leaderboard: one table per reference, never averaged across them"),
         (

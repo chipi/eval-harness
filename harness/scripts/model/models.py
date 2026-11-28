@@ -21,7 +21,12 @@ def _deployment_links(record: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 MODEL = Entity(
-    name="model", plural="models", folder="models", id_field="model_id", schema="model.schema.json"
+    name="model",
+    plural="models",
+    folder="models",
+    id_field="model_id",
+    schema="model.schema.json",
+    stamps=True,
 )
 DEPLOYMENT = Entity(
     name="deployment",

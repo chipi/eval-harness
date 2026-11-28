@@ -682,9 +682,19 @@ def _conditions(arms: list, metric: str) -> dict | None:
     names = {d["name"] for d in differ}
     warnings = []
     if names & {"scorer.id", "scorer.sha256"}:
+        imported = [a for a in arms if "imported:" in str(got[a].get("scorer.id", ""))]
+        # `evh rescore` needs the harness's adapter, which an imported run does not have: it is imported again instead.
+        if len(imported) == len(arms):
+            how = "Import them again, scored by one scorer (evh import-run), before reading the test."
+        elif imported:
+            how = (
+                "Re-score the runs the harness scored with one adapter (evh rescore), and import the imported ones "
+                f"({', '.join(imported)}) again, scored by that scorer (evh import-run), before reading the test."
+            )
+        else:
+            how = "Re-score them with one adapter (evh rescore) before reading the test."
         warnings.append(
-            "Scored by different scorers (adapter code): these numbers are different measurements. "
-            "Re-score them with one adapter (evh rescore) before reading the test."
+            f"Scored by different scorers (adapter code): these numbers are different measurements. {how}"
         )
     if "reference.sha256" in names:
         warnings.append(

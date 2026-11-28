@@ -11,7 +11,7 @@
   "properties": {
     "system_id": {
       "type": "string",
-      "pattern": "^(?!.*\\.\\.)[^\\W_][\\w.-]*$",
+      "pattern": "^(?!.*\\.\\.)[A-Za-z0-9][A-Za-z0-9._-]*$",
       "description": "The system's identity, its file's name; a run records it and is named after it."
     },
     "params": {
@@ -165,7 +165,7 @@
     },
     "deployment": {
       "type": "string",
-      "pattern": "^(?!.*\\.\\.)(?!.*[A-Z])[^\\W_][\\w.-]*$",
+      "pattern": "^(?!.*\\.\\.)[a-z0-9][a-z0-9._-]*$",
       "description": "Which of the model's deployments this system runs (RFC-021, RFC-032; needs `model_record`): data/deployments/<model>/<id>.yaml. The run's fingerprint takes the deployment's weights, server and hardware from it, and an arm smoke is kept as its check."
     },
     "format": {
@@ -175,7 +175,7 @@
     },
     "expect_identical_to": {
       "type": "string",
-      "pattern": "^(?!.*\\.\\.)[^\\W_][\\w.-]*$",
+      "pattern": "^(?!.*\\.\\.)[A-Za-z0-9][A-Za-z0-9._-]*$",
       "description": "A regression guard (fleet feedback 28): the system whose runs this arm must reproduce item for item, output for output (the same code at another commit). validate V5 then reads the pair as expected, not as an inert knob, and fails it when they differ. Outside the fingerprint."
     },
     "hypothesis": {

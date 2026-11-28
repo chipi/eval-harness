@@ -145,11 +145,15 @@ check(
     and not seen["kw"].get("extra_body"),
     str(seen),
 )
-check("openai: no call limit set, the SDK's own default stands", seen.get("opts") == {}, str(seen))
+check(
+    "openai: no call limit set, the SDK's own timeout stands, and its own retries are off (the core's loop is the only one)",
+    seen.get("opts") == {"max_retries": 0},
+    str(seen),
+)
 adapter.call_system("text", {"provider": "openai", "model": "gpt-x", "call_timeout_s": 30})
 check(
     "openai: the arm's call_timeout_s is the client's timeout, never sent in the request",
-    seen.get("opts") == {"timeout": 30.0} and "call_timeout_s" not in str(seen["kw"]),
+    seen.get("opts") == {"max_retries": 0, "timeout": 30.0} and "call_timeout_s" not in str(seen["kw"]),
     str(seen),
 )
 os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test"
@@ -157,7 +161,7 @@ adapter.call_system("t", {"provider": "anthropic", "model": "claude-x", "call_ti
 os.environ.pop("ANTHROPIC_API_KEY")
 check(
     "anthropic: the arm's call_timeout_s is the client's timeout",
-    seen.get("opts") == {"timeout": 45.0},
+    seen.get("opts") == {"max_retries": 0, "timeout": 45.0},
     str(seen),
 )
 os.environ["OPENAI_BASE_URL"] = "http://127.0.0.1:8000/v1"

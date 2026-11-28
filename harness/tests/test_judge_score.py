@@ -1582,17 +1582,17 @@ try:
     os.environ.update(LITELLM_BASE_URL="http://proxy.invalid/", LITELLM_API_KEY="k-arms")
     _acc = js.judge_access(_sc_l)
     check(
-        "judge access: with the arms' proxy key and no judge key, the judge shares the arms'",
+        "judge access: with the arms' proxy key and no judge key, the judge shares the arms' (the shell's)",
         _acc[0][2] == []
-        and "key LITELLM_API_KEY (shared with the arms)" in _acc[0][1]
+        and "key LITELLM_API_KEY (shell)" in _acc[0][1]
         and "http://proxy.invalid/v1" in _acc[0][1],
         str(_acc),
     )
     os.environ["EVAL_JUDGE_LITELLM_API_KEY"] = "k-judging"
     _acc = js.judge_access(_sc_l)
     check(
-        "judge access: EVAL_JUDGE_LITELLM_API_KEY is the judge's own key, used first",
-        "key EVAL_JUDGE_LITELLM_API_KEY (judging's own)" in _acc[0][1],
+        "judge access: EVAL_JUDGE_LITELLM_API_KEY is used first, and said to be deprecated",
+        "key EVAL_JUDGE_LITELLM_API_KEY (shell; EVAL_JUDGE_ is deprecated)" in _acc[0][1],
         str(_acc),
     )
     check(

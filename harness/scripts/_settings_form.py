@@ -554,13 +554,48 @@ def _steps(key: str) -> list[Any]:
     return [int(s) if s.isdigit() else s for s in key.split(".") if s != ""]
 
 
-def set_values(values: dict[str, Any], sets: list[tuple[str, Any]], unsets: list[str]) -> dict[str, Any]:
-    """`values` with each dotted key set (a missing group or list item is made) and each unset key removed."""
+class Said(str):
+    """A `--set` value as it was typed, with what YAML makes of it (`read`): `set_values` keeps the text where the schema
+    says the field is text (`notes=duck: 50 Hz` is a sentence, not a mapping) and the YAML where it does not."""
+
+    read: Any
+
+    def __new__(cls, text: str, read: Any) -> Said:
+        self = super().__new__(cls, text)
+        self.read = read
+        return self
+
+
+def _is_text(schema: dict[str, Any] | None, steps: list[Any]) -> bool:
+    """Whether the schema says the field at `steps` is text."""
+    node: Any = schema
+    for s in steps:
+        if not isinstance(node, dict):
+            return False
+        node = node.get("items") if isinstance(s, int) else (node.get("properties") or {}).get(s)
+    return isinstance(node, dict) and node.get("type") == "string"
+
+
+def _given(value: Any, schema: dict[str, Any] | None, steps: list[Any]) -> Any:
+    if not isinstance(value, Said):
+        return value
+    return str(value) if _is_text(schema, steps) else value.read
+
+
+def set_values(
+    values: dict[str, Any],
+    sets: list[tuple[str, Any]],
+    unsets: list[str],
+    schema: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """`values` with each dotted key set (a missing group or list item is made) and each unset key removed. `schema`: a
+    typed `--set` value (`Said`) is kept as text where it says the field is text."""
     out = copy.deepcopy(values)
     for key, value in sets:
         steps = _steps(key)
         if not steps:
             raise _data_page.Refused(f"{key!r} names no field.", "bad-argument")
+        value = _given(value, schema, steps)
         node: Any = out
         for here, nxt in zip(steps, steps[1:]):
             if isinstance(node, list):

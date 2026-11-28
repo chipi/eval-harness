@@ -197,24 +197,31 @@ def _standing(
 def _next(
     goal_id: str, datasets: list[dict[str, Any]], rounds: list[dict[str, Any]], standing: str = ""
 ) -> dict[str, str]:
-    """The first step not taken, on the datasets that decide: made, materialized, a reference, runs, a baseline (not on a `validation` or `test` side); then
-    the open round to close, or, with none open, where the goal stands (`standing`) and a round to open."""
+    """The first step not taken, on the datasets that decide: made, then (until a round is opened) materialized, a reference,
+    runs; a baseline (not on a `validation` or `test` side); then the open round to close, or, with none open, where the
+    goal stands (`standing`) and a round to open."""
     for d in (x for x in datasets if x["decides"]):
         ds = d["dataset"]
         if not d["made"]:
             return {"what": f"make the dataset {ds}", "command": f"evh dataset-create --dataset-id {ds} ..."}
-        if not d["materialized"]:
-            return {"what": f"fetch {ds}'s items", "command": f"evh dataset-materialize --dataset-id {ds}"}
-        if not d["references"]:
-            return {
-                "what": f"promote a reference for {ds}",
-                "command": f"evh reference-promote --dataset-id {ds} ...",
-            }
-        if not d["runs"]:
-            return {
-                "what": f"run an arm on {ds}",
-                "command": f"evh run --system <a system> --dataset {ds} --goal {goal_id}",
-            }
+        # With a round opened the dataset's first steps are behind the goal: its arms ran, or were imported (their scores
+        # need no items fetched on this machine).
+        if not rounds:
+            if not d["materialized"]:
+                return {
+                    "what": f"fetch {ds}'s items",
+                    "command": f"evh dataset-materialize --dataset-id {ds}",
+                }
+            if not d["references"]:
+                return {
+                    "what": f"promote a reference for {ds}",
+                    "command": f"evh reference-promote --dataset-id {ds} ...",
+                }
+            if not d["runs"]:
+                return {
+                    "what": f"run an arm on {ds}",
+                    "command": f"evh run --system <a system> --dataset {ds} --goal {goal_id}",
+                }
         # A study never promotes (RFC-029): a validation or test side is read, never given a baseline.
         if not d["baseline"] and d["role"] not in ("validation", "test"):
             return {

@@ -89,6 +89,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from collections import defaultdict
@@ -1081,6 +1082,25 @@ def v8_no_duplicate_system_ids() -> None:
                 )
                 continue
             bad.append(f"{arm}: {len(names)} runs claim {cid!r} on {ds} — {', '.join(sorted(names))}")
+    # What a system is run for is the run's, not the system's (INTEGRATION, "What a system is run for is the
+    # run's"): an id carrying the dataset id of one of its own runs is a system made per dataset.
+    ran_on: dict[str, set[str]] = {}
+    for scores in by_arm.values():
+        for _sd, m in scores:
+            if m.get("system_id") and m.get("dataset_id"):
+                ran_on.setdefault(str(m["system_id"]), set()).add(str(m["dataset_id"]))
+    carrying = [
+        sid
+        for sid, dss in sorted(ran_on.items())
+        if any(re.search(rf"(?:^|[_.-]){re.escape(ds)}(?:$|[_.-])", sid) for ds in dss)
+    ]
+    if carrying:
+        shown = ", ".join(carrying[:3]) + (f", and {len(carrying) - 3} more" if len(carrying) > 3 else "")
+        notes.append(
+            f"V8 {len(carrying)} system id(s) contain the dataset id of one of their own runs: {shown}; "
+            "what a system is run for is the run's, not the system's (`--dataset` names it at `evh run`), "
+            "so one system serves every dataset"
+        )
     for x in bad[:6]:
         print(f"       {x}")
     if len(bad) > 6:

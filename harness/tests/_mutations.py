@@ -6,7 +6,7 @@ PLAN 0.8.1 R5).
 
 Each mutation edits what a hand, an older release or another tool would leave in a project's files, through the store the
 project is in (`_runstore`): a run's record, a score's rows, a goal's file, or a command of the harness where the harness
-itself writes the thing (a unicode system's run, a promoted baseline). It runs in a process of its own: `_runstore`
+itself writes the thing (a promoted baseline). It runs in a process of its own: `_runstore`
 aims the store at one project per process.
 """
 
@@ -35,9 +35,6 @@ from evaluation_harness.model import runs as model_runs  # noqa: E402
 #: The day boundary the time-zone mutations straddle: a run stamped a half minute before it, one a half minute after.
 BEFORE_MIDNIGHT = "2026-11-30T23:59:30Z"
 AFTER_MIDNIGHT = "2026-12-01T00:00:30Z"
-UNICODE_SYSTEM = "sÿstème_日本語_v1"
-UNICODE_DATASET = "données_日本語_v1"
-UNICODE_ITEMS = ("élément_1", "項目_2", "пункт_3")
 NO_SUCH_MEASURE = "measure_no_run_records"
 GHOST_REFERENCE = "gold/ghost_v1"
 #: Metrics a perturbation leaves alone: a count of failures, a cost and a time are not what a second pass changes.
@@ -192,45 +189,6 @@ def clone_run(
                 metrics.pop("reference_tier", None)
             scores.append({**meta, "metrics": metrics, "rows": _runstore.rows(sd)})
         _runstore.make_run(data / "runs", new_id, rec, outputs=texts, scores=scores)
-
-
-def unicode_ids(proj: Path) -> None:
-    """A system and a dataset whose ids are in other scripts, as a hand-edited or imported project holds them (the
-    writers take such ids since 0.8.2, and the schemas too, so validate says nothing of them; these are written as files): runs of the new system on an existing dataset, of
-    an existing system on the new dataset, and of both."""
-    first_id, first = ordered(proj)[0]
-    ds, system = first["dataset_id"], first["system_id"]
-    _runstore.write_text(
-        proj,
-        f"systems/{UNICODE_SYSTEM}.yaml",
-        f"system_id: {UNICODE_SYSTEM}\nparams:\n  provider: echo\n  sentences: 1\n",
-    )
-    record = _runstore.read_json(proj, f"datasets/{ds}.json")
-    put_json(proj, f"datasets/{UNICODE_DATASET}.json", {**record, "dataset_id": UNICODE_DATASET})
-    with _runstore._InProject(proj) as data:
-        if _store.is_dir(data / "materialized" / ds):
-            _store.copy_tree(data / "materialized" / ds, data / "materialized" / UNICODE_DATASET)
-
-    def named(system_id: str, dataset_id: str) -> Callable[[dict[str, Any]], None]:
-        """A change that makes a record the run of `system_id` on `dataset_id`, read against no reference on the new one."""
-
-        def change(rec: dict[str, Any]) -> None:
-            rec.update(system_id=system_id, dataset_id=dataset_id, created_at="2026-12-01T10:00:00Z")
-            rec.pop("goal", None)
-            fp = rec.get("fingerprint") or {}
-            if isinstance(fp.get("data"), dict):
-                fp["data"]["dataset_id"] = dataset_id
-                if dataset_id != ds:
-                    fp["data"].update(reference_id=None, reference_tier=None)
-            if isinstance(fp.get("arm"), dict):
-                fp["arm"]["config_id"] = system_id
-
-        return change
-
-    for i, (sid, dsid) in enumerate(
-        ((UNICODE_SYSTEM, ds), (system, UNICODE_DATASET), (UNICODE_SYSTEM, UNICODE_DATASET))
-    ):
-        clone_run(proj, first_id, f"{sid}_20261201T1{i}0000Z", named(sid, dsid), reference=dsid == ds)
 
 
 def underscore_r_not_a_set(proj: Path) -> None:
@@ -471,7 +429,6 @@ MUTATIONS: dict[str, Callable[[Path], None]] = {
     "no_goal": no_goal,
     "cost_zero_and_missing": cost_zero_and_missing,
     "dirty_null": dirty_null,
-    "unicode_ids": unicode_ids,
     "underscore_r_not_a_set": underscore_r_not_a_set,
     "missing_optional_fields": missing_optional_fields,
     "n_items_missing": n_items_missing,

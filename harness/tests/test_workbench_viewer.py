@@ -158,8 +158,10 @@ try:
         st, _b, _h = call(port, "GET", "/workbench")
         check("public: /workbench redirects to /workbench/", st in (301, 200), st)
         for name in ("workbench.js", "workbench.css", "live.js", "help.js"):
-            st, _b, _h = call(port, "GET", f"/workbench/{name}")
+            st, b, _h = call(port, "GET", f"/workbench/{name}")
             check(f"public: /workbench/{name} is served", st == 200, st)
+            # The 0.8.3 newcomer run: the held-out form's example reader was the operator's own agent.
+            check(f"public: /workbench/{name} names no operator's machine or agent", "homelab" not in b, name)
         for name in ("mock.js", "mockup.html", "../config.yaml", "%2e%2e/config.yaml", "workbench.py"):
             st, b, _h = call(port, "GET", f"/workbench/{name}")
             check(f"public: /workbench/{name} is not", st == 404 and "evh" not in b[:20], st)

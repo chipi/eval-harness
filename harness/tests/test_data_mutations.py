@@ -20,7 +20,7 @@ four projects unchanged, is read the same way. Of each copy it asks:
   - the facts the files say (`_mutations.oracle`): each arm's cost state, the UTC day of its latest run, each run's `dirty`;
   - `evh validate` names the mutation (a FAIL or a note that mentions it) where the data is wrong, and says nothing new where
     it is legal data (a run that names no goal): the same failing checks as the control, no traceback;
-  - what the mutation is about, by hand (`HAND`): the unicode arms are in every reader, three plain runs are one arm of
+  - what the mutation is about, by hand (`HAND`): three plain runs are one arm of
     three runs, two goals promote two baselines, a public environment shows no text of a hidden dataset.
 
 A disagreement or a traceback this finds is a bug: it is fixed where it is made (RFC-041), never listed here.
@@ -90,11 +90,6 @@ MUTATIONS: tuple[Mutation, ...] = (
         "cost_zero_and_missing",
     ),
     Mutation("dirty_null", "build.dirty is null on every run", "dirty_null"),
-    Mutation(
-        "unicode_ids",
-        "a system, a dataset and run ids in other scripts",
-        "unicode_ids",
-    ),
     Mutation(
         "underscore_r_not_a_set",
         "<id>_r1 and <id>_r2 made by hand, no repeat_index",
@@ -505,28 +500,6 @@ def oracle_checks(o: Outcome) -> list[tuple[str, bool, Any]]:
 
 
 # ── what each mutation is about, by hand ─────────────────────────────────────────────────────────────────────────────
-def hand_unicode(o: Outcome) -> list[tuple[str, bool, Any]]:
-    """The arms of the unicode dataset are given by the CLI and by the catalog's pages, and the unicode system's arm is on a real dataset."""
-    givers = {
-        r for r, d in o.facts.items() if any(k == "arms" and key == (MUT.UNICODE_DATASET,) for k, key in d)
-    }
-    cli_arms = [
-        a for (k, key), v in o.facts.get("cli:arm-show", {}).items() if k == "n_runs" for a in [key[0]]
-    ]
-    return [
-        (
-            "hand: the unicode dataset's arms are given by the CLI and by the export",
-            {"cli:arm-list", "catalog:arms index"} <= givers,
-            sorted(givers),
-        ),
-        (
-            "hand: the unicode system has an arm",
-            any(f"/{MUT.UNICODE_SYSTEM}" in a for a in cli_arms),
-            cli_arms[:4],
-        ),
-    ]
-
-
 def hand_underscore(o: Outcome) -> list[tuple[str, bool, Any]]:
     """The newest run and its two hand-named `_r1` and `_r2` copies are three runs of one arm: no repeat set."""
     ids = sorted(o.oracle["runs"])
@@ -637,7 +610,6 @@ def hand_cost(o: Outcome) -> list[tuple[str, bool, Any]]:
 
 
 HAND: dict[str, Callable[[Outcome], list[tuple[str, bool, Any]]]] = {
-    "unicode_ids": hand_unicode,
     "underscore_r_not_a_set": hand_underscore,
     "two_goals_two_baselines": hand_two_goals,
     "public_env": hand_public,
@@ -747,15 +719,6 @@ def judge(o: Outcome, control: Outcome | None) -> dict[str, str]:
     return {"cell": "ok" if not flags else ",".join(dict.fromkeys(flags))}
 
 
-def _fs_holds_unicode() -> bool:
-    """Whether this process can create a file named in other scripts (an ASCII filesystem encoding cannot: LC_ALL=C)."""
-    try:
-        "x\u00e9".encode(sys.getfilesystemencoding(), sys.getfilesystemencodeerrors())
-    except UnicodeEncodeError:
-        return False
-    return True
-
-
 def main() -> int:
     """Build the four projects once, read every mutation of each in parallel, check each; print the table."""
     t0 = time.time()
@@ -766,11 +729,6 @@ def main() -> int:
         print(f"no such mutation: {unknown}; the table has {[m.name for m in MUTATIONS]}")
         return 2
     table = [m for m in MUTATIONS if not wanted or m.name in wanted or m.name == "control"]
-    if not _fs_holds_unicode():
-        print(
-            f"  skip the unicode_ids mutation: the filesystem encoding is {sys.getfilesystemencoding()}, it cannot name its files"
-        )
-        table = [m for m in table if m.name != "unicode_ids"]
     check(
         "unit: a p-value of None (a pair whose differences do not vary) prints as n/a, the others as ever",
         (stats.fmt_p(None), stats.fmt_p(0.5), stats.fmt_p(0.00001)) == ("n/a", "0.5000", "<0.0001"),

@@ -18,7 +18,7 @@ Pin it into your project, and start the project's folders:
 
 ```bash
 cd /path/to/your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.2#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.3#subdirectory=harness"
 evh init --store files   # config.yaml, data/sources, data/systems, data/goals, data/fields, .gitignore, AGENTS.md, CLAUDE.md, data/project.yaml, prompts/judge_prompt_example.txt; --store sqlite is its equal
 ```
 
@@ -60,6 +60,16 @@ def call_system(text: str, params: dict) -> Result:
 
 [Tutorial 9](../../docs/tutorials/9-custom-adapter.md) writes one end to end, offline, and runs the loop through it
 (`make guide-check` runs it).
+
+A call that failed (the provider could not be reached, a transport error) is reported by raising:
+let the exception out of `call_system`, or wrap it keeping its text: `raise RuntimeError(f"provider call failed: {exc}")
+from exc`. `Result` has no error field, and a returned output, `Result(output="call failed")` included, is scored as the
+model's answer, so `pair-test` and every mean would count a transport failure as a decision the model made. What the
+run does with a raised exception depends on its type name and message: one the harness reads as transient (a 429 or
+5xx status, a timeout, a connection error) is retried (`EVAL_MAX_RETRIES`), and if it still fails the run stops there,
+so `--resume` calls the item again later; any other makes a failed item, listed in `failed_items` and scored as an
+empty answer (or by the adapter's `score_failure`), and the run goes on, unless most of the items called have failed,
+which stops it as an adapter or configuration error.
 
 That is the integration. Everything else — freezing the dataset, hashing it,
 recording which build ran, timing the call, aggregating, refusing bad
@@ -315,8 +325,8 @@ reads `os.environ` itself does not.
 **Which variable each provider reads, and what goes in the system's `params`:
 [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).** `evh env-check`
 reports which are set. Judges use the same providers: each judge's `provider:` in the scorer
-decides where its calls go. Judges read their own keys (`EVAL_JUDGE_<VAR>`) or share the arms'
-credentials (`<VAR>`), so you can run judges on separate budgets or the same one
+decides where its calls go. A judge with its own `key_file` uses that file's key, otherwise it shares the arms'
+credentials (`<VAR>`; `EVAL_JUDGE_<VAR>` is deprecated, removed in 0.9.0), so you can run judges on separate budgets or the same one
 ([RUNBOOK §12](RUNBOOK.md#12-re-measure-with-a-validated-judge)).
 
 ---
@@ -564,7 +574,7 @@ them answers in seconds after the first.
 
 ```bash
 cd your-project && python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.2#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.3#subdirectory=harness"
 evh init --store files                        # folders, config.yaml, .gitignore, AGENTS.md for an agent, an example judge prompt
 export EVAL_MAX_COST_USD=2                    # a run stops when it has spent this; with none, no cap
 

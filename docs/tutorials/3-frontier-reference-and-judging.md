@@ -374,9 +374,10 @@ to mix them` (its dry run does not stop, and prints an estimate at the new price
 a new scorer version: copy the file to `briefs-judge-v2.yaml` with a new `scorer_id`, and judge again (a second paid pass).
 
 Each judge's `provider:` names where its calls are routed ([tutorial 2](2-hosted-llm.md) lists
-the providers). A judge reads credentials by role: it reads `EVAL_JUDGE_<VAR>` first (so judges
-can have their own keys and budgets), then falls back to `<VAR>` (so judges can share the arms'
-credentials). A judge's own `base_url` or `api_key_env` in its params overrides the environment.
+the providers). A judge reads credentials by role: with a `key_file` in its params (or in the system it
+names) its key is read from that file alone, so judges can have their own keys and budgets; without
+one it reads `<VAR>`, sharing the arms' credentials (`EVAL_JUDGE_<VAR>`, read first, is deprecated and
+removed in 0.9.0). A judge's own `base_url` or `api_key_env` in its params overrides the environment.
 
 <!-- guide-check: skip -->
 ```bash

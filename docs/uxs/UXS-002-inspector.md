@@ -148,7 +148,8 @@ reference bytes):
 - otherwise "Conditions · k of n fields differ", the warnings, and a table of the differing
   fields, one column per arm, the cells that differ from the baseline marked. Warnings: different
   scorers ("these numbers are different measurements. Re-score them with one adapter (evh
-  rescore) before reading the test."), different reference bytes, different item bytes, and for a
+  rescore) before reading the test."; for imported runs, which `evh rescore` cannot re-score, "Import them again,
+  scored by one scorer (evh import-run)"), different reference bytes, different item bytes, and for a
   speed measure either "compared across deployments (where the model ran)" when a `deployment.*` field
   differs, or "measured from different runners" when only a `machine.*` field does. A runner that
   differs is never a warning on a quality measure: the runner is outside the fingerprint's hash.

@@ -184,6 +184,15 @@ try:
         == {"one_v1": "carried", "s1-t1": "ran", "s1-t2": "ran", "s1-t3": "ran"},
         rnd,
     )  # fmt: skip
+    arms = rnd.get("arms") or []
+    check(
+        "the study's round names who acted, as round-open and round-close do: its opening, the baseline carried in, "
+        "each retirement and its conclusion",
+        bool(rnd.get("actor")) and all(a["entered"].get("actor") for a in arms)
+        and all(a["retired"].get("actor") for a in arms if a.get("retired"))
+        and bool((rnd.get("conclusion") or {}).get("actor")),
+        rnd,
+    )  # fmt: skip
 
     # ── an agent study ────────────────────────────────────────────────────────────────────────────────────────────
     agent = spec("agent", "dataset: tk_val\nbaseline: {system: one_v1}\nmeasure: overlap_f1\nsampler: agent\n"

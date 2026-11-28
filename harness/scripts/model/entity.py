@@ -60,6 +60,8 @@ class Entity:
     frozen: Callable[[str], str] | None = None
     #: Another data directory than the project's (a deployment's copy of it, which the catalog reads): `under`.
     data: Path | None = None
+    #: True: a saved record names who saved it last (its `actor`, RFC-027), as `_models.update_record` stamps it.
+    stamps: bool = False
 
     def under(self, data: Path | None) -> Entity:
         """The entity read from another data directory (None, or the project's own: this one)."""
@@ -192,6 +194,7 @@ class Entity:
         who and when, with the record as it was. `new` refuses an id that is taken. Nothing is written when nothing
         changed."""
         from evaluation_harness import _jobs  # noqa: PLC0415
+        from evaluation_harness._actor import actor  # noqa: PLC0415
 
         _format.require()
         if not self.editable:
@@ -220,6 +223,8 @@ class Entity:
                     return {"id": rid, "changed": False, "record": record}
                 if exists and self.frozen and (why := self.frozen(rid)):
                     raise Problem(f"{self.name} {rid!r} is not changed: {why}", "not-allowed")
+                if self.stamps:
+                    record = {**record, "actor": actor()}
                 _store.mkdir(f.parent, parents=True, exist_ok=True)
                 _common.write_text_atomic(f, self.text(record, before))
                 self._remember(rid, old, by)
@@ -235,7 +240,7 @@ class Entity:
         from evaluation_harness import _data_page, _settings_form  # noqa: PLC0415
 
         try:
-            changed = _settings_form.set_values(self.get(rid), sets, unsets)
+            changed = _settings_form.set_values(self.get(rid), sets, unsets, self.schema_doc())
         except _data_page.Refused as exc:
             raise Problem(str(exc), "bad-argument") from None
         return self.save(rid, changed, by)
@@ -245,7 +250,7 @@ class Entity:
         from evaluation_harness import _data_page, _settings_form  # noqa: PLC0415
 
         try:
-            record = _settings_form.set_values(base, sets, [])
+            record = _settings_form.set_values(base, sets, [], self.schema_doc())
         except _data_page.Refused as exc:
             raise Problem(str(exc), "bad-argument") from None
         return self.save(rid, record, by, new=True)

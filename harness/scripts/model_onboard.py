@@ -161,6 +161,32 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
     return report, flags, caps
 
 
+def refuse_demo_adapter(system_id: str, dataset_id: str) -> None:
+    """Refuse (`not-configured`) a system whose calls would go to the bundled demo adapter with no provider to serve
+    them: its smoke would pass on the adapter's echo, and the pass would be written as the model's check. A system whose
+    runs are imported (`evh import-run`) names no adapter, so this is the one that reaches here."""
+    from evaluation_harness import _models  # noqa: PLC0415
+    from evaluation_harness._adapter import load_adapter  # noqa: PLC0415
+    from evaluation_harness._common import BUNDLED_ADAPTER_ID  # noqa: PLC0415
+    from evaluation_harness.model.systems import arm_of  # noqa: PLC0415
+
+    cfg, path = arm_of(system_id, dataset_id)
+    try:
+        cfg = _models.resolve(cfg, DATA)
+    except ValueError as exc:
+        die(f"{path}: {exc}", "invalid-file")
+    adapter_id = load_adapter(cfg.get("adapter"), path)[2]
+    if adapter_id == BUNDLED_ADAPTER_ID and (cfg.get("params") or {}).get("provider", "echo") == "echo":
+        die(
+            f"{system_id} names no adapter of its own, so its calls would go to the bundled demo adapter, which "
+            "echoes the item back with no model behind it: a pass would prove nothing about "
+            f"{cfg.get('model_record') or 'the model'} (a system whose runs are imported has no adapter to call). "
+            f"Give {system_id} an adapter that calls the model (adapter: <file> in {path.name}) or a provider "
+            "(params: provider: openai, anthropic, openrouter or litellm), then onboard it; the imported runs need no onboarding",
+            "not-configured",
+        )
+
+
 def body(**inputs: Any) -> int:
     """Onboard one deployment (or an arm's model); exit 0 on ONBOARD PASS, 6 (EXIT_PROBLEMS) on ONBOARD CHECK."""
     args = legacy.namespace(inputs, "model-onboard")
@@ -233,6 +259,7 @@ def body(**inputs: Any) -> int:
                 "(--system <id> --dataset <id>)",
                 "bad-argument",
             )
+        refuse_demo_adapter(args.system, args.dataset)
 
         cmd = [
             sys.executable,

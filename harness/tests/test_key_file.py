@@ -4,9 +4,10 @@
     python tests/test_key_file.py
 
 A throwaway project with systems on a fake OpenAI-shaped server that keeps each call's Authorization header: each system's
-request carries the key of its own file; the order is key_file, then the shell, then .env; a missing, unreadable or
-mistyped key_file is refused before any call, naming the file and the system; a key file inside a git checkout and not
-ignored is warned about; the dry run and env-check say where each key comes from; the file's path is outside every
+request carries the key of its own file; a system that names a key_file uses only that file for its key (0.8.3): one
+that lacks the key is refused before any call, naming the file and the variable, and nothing falls through to the shell or
+.env; the address may still come from the shell or .env; a missing, unreadable or mistyped key_file is refused before any
+call, naming the file and the system; a key file inside a git checkout and not ignored is warned about; the dry run and env-check say where each key comes from; the file's path is outside every
 identity hash; and no key's value is in anything the harness printed or wrote. Keys here are fake, low-entropy strings.
 """
 
@@ -129,7 +130,9 @@ try:
         r = r if r.returncode else evh(*step)
     check("setup: a dataset with its reference", r.returncode == 0, r.stderr[-300:])
 
-    (proj / ".env").write_text(f"OPENAI_API_KEY={KEY_DOTENV}\n", encoding="utf-8")
+    (proj / ".env").write_text(
+        f"OPENAI_API_KEY={KEY_DOTENV}\nLITELLM_API_KEY={KEY_PROXY}\n", encoding="utf-8"
+    )
     (proj / "keys").mkdir()
     (proj / "keys" / "a.env").write_text(f"# a's key\nOPENAI_API_KEY={KEY_A}\n", encoding="utf-8")
     (outside / "b.env").write_text(f'OPENAI_API_KEY="{KEY_B}"\n', encoding="utf-8")
@@ -155,7 +158,7 @@ try:
         (said(r)[-300:], seen),
     )
 
-    # ── the order: key_file, shell, .env ─────────────────────────────────────
+    # ── without a key_file: the shell, then .env ─────────────────────────────
     r, seen = smoke("sys_plain")
     check(
         "no key_file: the shell's key wins over .env's, as before",
@@ -170,9 +173,6 @@ try:
         carried(list(SEEN), KEY_DOTENV),
         (said(r)[-300:], list(SEEN)),
     )
-    r, seen = smoke("sys_nokey")
-    check("a key_file without the variable: the shell's key is used (key_file, then shell)",
-          carried(seen, KEY_SHELL), (said(r)[-300:], seen))  # fmt: skip
     SEEN.clear()
     r = evh("arm-smoke", "--system", "sys_a", "--dataset", "tk_v1", "--items", "1", with_env=no_shell)
     check("key_file also beats .env", carried(list(SEEN), KEY_A), (said(r)[-300:], list(SEEN)))
@@ -195,6 +195,46 @@ try:
                 and not SEEN,
                 (out[-400:], SEEN),
             )
+
+    # ── K4: a key_file is the only place its system's key is read from ───────
+    (proj / "keys" / "lacks.env").write_text(
+        f"LITELLM_BASE_URL={BASE.removesuffix('/v1')}\n", encoding="utf-8"
+    )
+    _runstore.write_text(
+        proj,
+        "systems/sys_lacks.yaml",
+        "system_id: sys_lacks\nparams:\n  provider: litellm\n  model: fake\n  key_file: keys/lacks.env\n"
+        "  usd_per_mtok_in: 0\n  usd_per_mtok_out: 0\n",
+    )
+    for cmd in (("arm-smoke", "--items", "1"), ("run",), ("run", "--dry-run")):
+        for label, have_env in (
+            ("the shell and .env have LITELLM_API_KEY", {**env, "LITELLM_API_KEY": KEY_SHELL}),
+            ("only .env has it", env),
+        ):
+            SEEN.clear()
+            r = evh(cmd[0], "--system", "sys_lacks", "--dataset", "tk_v1", *cmd[1:], with_env=have_env)
+            out = said(r)
+            check(
+                f"sys_lacks ({label}): `{' '.join(cmd)}` is refused (not-configured) naming the file and the missing "
+                "variable, no call made, no key value said",
+                r.returncode != 0
+                and "ERROR (not-configured)" in out
+                and "keys/lacks.env" in out
+                and "LITELLM_API_KEY" in out
+                and "sys_lacks" in out
+                and not SEEN
+                and not any(k in out for k in ALL_KEYS),
+                (out[-400:], SEEN),
+            )
+    r, seen = smoke("sys_a")
+    check(
+        "a key_file that holds the key: used",
+        r.returncode == 0 and carried(seen, KEY_A),
+        (said(r)[-300:], seen),
+    )
+    r, seen = smoke("sys_nokey")
+    check("a key_file without the key, for a local server that takes none: no key is sent, the shell's is not",
+          r.returncode == 0 and carried(seen, "not-needed"), (said(r)[-300:], seen))  # fmt: skip
 
     # ── the warning: a key file in the project, in a git checkout, not ignored ──
     git = subprocess.run(["git", "init", "-q", str(proj)], capture_output=True, text=True, encoding="utf-8")
@@ -233,10 +273,27 @@ try:
     files_line = next((ln for ln in out.splitlines() if ln.startswith("files read")), "")
     check("env-check: the `files read` line lists the key files and .env",
           "keys/a.env" in files_line and "~/b.env" in files_line and ".env" in files_line, files_line)  # fmt: skip
-    check("env-check: a system whose key_file lacks the variable is told so",
-          "sys_nokey" in out and "keys/other.env" in out and "not in the file" in out, out[-1800:])  # fmt: skip
+    row = next(
+        (ln for ln in out.splitlines() if ln.startswith("  sys_lacks") and "LITELLM_API_KEY" in ln), ""
+    )
+    check("env-check: a system whose key_file lacks the key says so, though the shell and .env have one",
+          "not set" in row and "not in key_file keys/lacks.env" in row, row)  # fmt: skip
     check("env-check: a missing key file is reported, not skipped",
           "sys_missing" in out and "keys/nope.env" in out and "cannot be read" in out, out[-1800:])  # fmt: skip
+    _runstore.write_text(
+        proj,
+        "scorers/judge-kf-v1.yaml",
+        "scorer_id: judge-kf-v1\nkind: judge\ndataset_id: tk_v1\njudges:\n"
+        "  - id: inline_j\n    params: {provider: openai, model: fake, family: a, key_file: keys/a.env}\n"
+        "  - id: system_j\n    system: sys_lacks\n",
+    )
+    out = evh("env-check", with_env={**env, "EVAL_JUDGE_OPENAI_API_KEY": KEY_B}).stdout
+    section = out.partition("judges that name a `key_file`")[2]
+    check("env-check: a judge's own key_file, inline or through the system it names, is reported as a system's is",
+          "judge-kf-v1/inline_j" in section and "key_file keys/a.env" in section
+          and "judge-kf-v1/system_j" in section and "not in key_file keys/lacks.env" in section, section[-800:])  # fmt: skip
+    check("env-check: the deprecated EVAL_JUDGE_ variable is named as such, and its value not said",
+          "deprecated" in out and KEY_B not in out, out[-1500:])  # fmt: skip
 
     # ── a LiteLLM system: the file also names its base URL ───────────────────
     (proj / "keys" / "proxy.env").write_text(
@@ -251,6 +308,48 @@ try:
     r, seen = smoke("sys_proxy")
     check("provider litellm: the key and the base URL are both read from the key_file",
           r.returncode == 0 and carried(seen, KEY_PROXY), (said(r)[-300:], seen))  # fmt: skip
+
+    # ── the address's source is said as the key's is ─────────────────────────
+    (proj / "keys" / "keyonly.env").write_text(f"LITELLM_API_KEY={KEY_PROXY}\n", encoding="utf-8")
+    (proj / "keys" / "or.env").write_text(f"OPENROUTER_API_KEY={KEY_A}\n", encoding="utf-8")
+    for sid, kf, provider in (
+        ("sys_keyonly", "keys/keyonly.env", "litellm"),
+        ("sys_or", "keys/or.env", "openrouter"),
+    ):
+        _runstore.write_text(
+            proj,
+            f"systems/{sid}.yaml",
+            f"system_id: {sid}\nparams:\n  provider: {provider}\n  model: fake\n  key_file: {kf}\n"
+            "  usd_per_mtok_in: 0\n  usd_per_mtok_out: 0\n",
+        )
+    NOT_HELD = "(keys/keyonly.env: LITELLM_BASE_URL is not in the file)"  # the same words in env-check and the dry run
+    shell_base = {**env, "LITELLM_BASE_URL": BASE.removesuffix("/v1")}
+    for sid, where, with_env in (
+        ("sys_a", "base_url: system's base_url param", None),
+        ("sys_proxy", "LITELLM_BASE_URL: key_file keys/proxy.env", None),
+        ("sys_keyonly", f"LITELLM_BASE_URL: shell {NOT_HELD}", shell_base),
+        ("sys_keyonly", f"LITELLM_BASE_URL: not set {NOT_HELD}", None),
+        ("sys_or", "default", None),
+    ):
+        r = evh("run", "--system", sid, "--dataset", "tk_v1", "--dry-run", with_env=with_env)
+        line = next((ln for ln in r.stdout.splitlines() if ln.startswith("  key")), "")
+        check(
+            f"the dry run of {sid} says where its address comes from: {where}",
+            where in line,
+            (line, r.stderr[-200:]),
+        )
+    out = evh("env-check", with_env=shell_base).stdout
+    row = next(
+        (ln for ln in out.splitlines() if ln.startswith("  sys_keyonly") and "LITELLM_BASE_URL" in ln), ""
+    )
+    check("env-check: the address of a system whose key is in a key_file says it is not",
+          "(shell)" in row and NOT_HELD in row, row)  # fmt: skip
+    row = next((ln for ln in out.splitlines() if ln.startswith("  sys_a ") and "base_url" in ln), "")
+    check(
+        "env-check: a system's own base_url param is the address's source",
+        "system's base_url param" in row,
+        row,
+    )
 
     # ── a project adapter that calls the bundled providers gets the same ─────
     (proj / "mine_adapter.py").write_text(
@@ -297,7 +396,15 @@ try:
     spoken = "\n".join(printed)
     leaks = [k for k in ALL_KEYS if k in spoken]
     check("no key value in anything a command printed", not leaks, len(leaks))
-    key_files = {proj / ".env", proj / "keys" / "a.env", proj / "keys" / "proxy.env", outside / "b.env"}
+    key_files = {
+        proj / ".env",
+        proj / "keys" / "a.env",
+        proj / "keys" / "proxy.env",
+        proj / "keys" / "keyonly.env",
+        proj / "keys" / "or.env",
+        proj / "keys" / "lacks.env",
+        outside / "b.env",
+    }
     wrote = []
     for root, _dirs, names in os.walk(proj):
         for n in names:

@@ -485,7 +485,9 @@ def check_release(tmp: Path, env: dict) -> None:
         return
     rel = tmp / "release"
     sha = sh(["git", "rev-parse", "--short=12", "HEAD"], REPO, env)[1].strip() or "0" * 12
-    renv = {**os.environ, "EVALS_STORE": "sqlite"}
+    # render.sh calls `python3` for the wheel, pip and mkdocs, as CI's runner provides them: here, this checkout's venv.
+    path = f"{Path(sys.executable).parent}{os.pathsep}{os.environ.get('PATH', '')}"
+    renv = {**os.environ, "EVALS_STORE": "sqlite", "PATH": path}
     ok, _ = step("5 render.sh", ["bash", REPO / "infra/deploy/render.sh", rel, sha], tmp, REPO, renv)
     if not ok:
         return

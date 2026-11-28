@@ -7,7 +7,7 @@
   "properties": {
     "kind": {"const": "tag-set"},
     "dataset_id": {"type": "string", "description": "Equals the folder above the set's."},
-    "set": {"type": "string", "pattern": "^(?!.*\\.\\.)(?!.*[A-Z])[^\\W_][\\w.-]{0,99}$", "description": "Equals its folder's name."},
+    "set": {"type": "string", "pattern": "^(?!.*\\.\\.)[a-z0-9][a-z0-9._-]{0,99}$", "description": "Equals its folder's name."},
     "failure_modes": {"type": "string", "description": "The failure-mode list the tags are named from (data/failure-modes/<id>.yaml)."},
     "source": {"type": "object"},
     "created_at": {"type": "string"},

@@ -10,6 +10,5 @@ three time zones.
 | `fleet` | runs with no goal; a `--repeat 2` set (`_r1`, `_r2`) and a repeat of one of them (`of`, an equal hash); two goals on one dataset family; stamps either side of a UTC midnight |
 | `podcast` | every run imported (no goal, `dirty: null`, free-text build refs, scorer `none`), no declared direction, goals whose measures and dataset entries are prose |
 | `bakeoff` | no run; three zero-priced local models and one with no price; a custom `adapter.py`; datasets of 3 and 22 items |
-| `unicode` | dataset, system, run, item and goal ids with accents, CJK and Cyrillic (a command refuses them: the ids were edited in by hand) |
 
 The very old format is `fixtures/formats/0`, taken through `evh migrate` by the test.

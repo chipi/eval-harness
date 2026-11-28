@@ -625,8 +625,11 @@ try:
         c4,
     )
     check(
-        "compare: a different scorer is named as making the numbers different measurements",
-        any("different scorers" in w for w in c4.get("warnings", [])),
+        "compare: a different scorer is named as making the numbers different measurements; the harness scored the runs, so it says evh rescore",
+        any(
+            "different scorers" in w and "evh rescore" in w and "import-run" not in w
+            for w in c4.get("warnings", [])
+        ),
         c4.get("warnings"),
     )
     cs.set_adapter(A)

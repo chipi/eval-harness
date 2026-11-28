@@ -650,9 +650,11 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
     if usd is not None:
         own = _common.env_float("EVAL_MAX_COST_USD")
         os.environ["EVAL_MAX_COST_USD"] = str(min(float(usd), own) if own is not None else float(usd))
+    from evaluation_harness._actor import actor  # noqa: PLC0415
     from evaluation_harness._runs import runs_on  # noqa: PLC0415
     from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
+    who = actor()
     rid = _rounds.next_id(goal)
     rnd: dict[str, Any] = {
         "round_id": rid,
@@ -667,6 +669,7 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
         "harness": _rounds.harness_now(),
         "status": "open",
         "opened_at": _common.now(),
+        "actor": who,
         "study": sid,
     }
     base = s["baseline"]["system"]
@@ -676,7 +679,7 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
         "",
         sorted(m["run_id"] for _d, m in runs_on(s["dataset"], label="", system_id=base)),
         None,
-        None,
+        who,
     )
     _rounds.save(rnd)
     return append(
@@ -722,16 +725,18 @@ def close_study(goal: str, sid: str, reason: str) -> dict[str, Any]:
     )
     rnd = _rounds.find(goal, st["round"]) if st["round"] else None
     if rnd is not None and rnd.get("status") != "closed":
+        from evaluation_harness._actor import actor  # noqa: PLC0415
         from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
+        who = actor()
         for t in st["trials"]:
             if t.get("outcome") != "kept":
                 model_rounds.retire(
-                    rnd, t["system_id"], str(t.get("reason") or t.get("outcome") or "dropped"), None
+                    rnd, t["system_id"], str(t.get("reason") or t.get("outcome") or "dropped"), who
                 )
         rnd["status"] = "closed"
         rnd["closed_at"] = _common.now()
-        rnd["conclusion"] = {"text": summary, "promoted_run": None}
+        rnd["conclusion"] = {"text": summary, "promoted_run": None, "actor": who}
         _rounds.save(rnd)
     return ev
 

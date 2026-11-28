@@ -50,7 +50,7 @@ everything: the hosted-model clients, the judges, the catalog. Nothing else to a
 ```bash
 mkdir my-evals && cd my-evals
 python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.2#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.8.3#subdirectory=harness"
 ```
 
 Then the project's folders and the tutorial kit, under version control from the start. `--store` is required and has no default: `files` keeps every run, label and score as a file under `data/`, in git; `sqlite` keeps the data in one database file, `data/project.sqlite`, out of git. They are equal choices (this guide uses `files`; `evh data-migrate` switches later).

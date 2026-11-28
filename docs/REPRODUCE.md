@@ -96,7 +96,8 @@ goes straight to OpenRouter. If you run a [LiteLLM](https://docs.litellm.ai/) pr
 
 Re-measuring with the committed judge scorers (`evh judge-score`, `harness/data/scorers/`) needs
 that proxy: their judges declare `provider: litellm`, and a judge goes where its provider says.
-A judge reads `EVAL_JUDGE_LITELLM_API_KEY` first, so judging can use its own key.
+A judge with a `key_file` in its params (or in the system it names) uses that file's key, so judging can use its own
+key; `EVAL_JUDGE_LITELLM_API_KEY` still works, deprecated, and is removed in 0.9.0.
 
 Each hosted arm is capped at twice what it was billed when measured
 (`EVAL_MAX_COST_USD`, enforced on actual spend); a run that hits the cap stops, keeps what
