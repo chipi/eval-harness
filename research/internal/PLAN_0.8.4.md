@@ -17,7 +17,8 @@ it is built. The owner decides scope and order; items marked **open** wait for t
 - The gates run on a committed tree, and nothing is committed while they run.
 - Real calls go through the homelab LiteLLM gateway: the release-check key (`~/.config/eval-harness/release-litellm.env`,
   `eval-gpt-mini` and `eval-claude-haiku`, $1 cap) for the real-call check; the scenario needs the project key
-  (`eval-harness`: `eval-mistral-small`, `eval-llama-scout`, `eval-opus-5`).
+  (`~/.config/eval-harness/scenario-litellm.env`, key `eval-harness`, $100 cap: `eval-mistral-small`, `eval-llama-scout`,
+  `eval-opus-5`), copied into the scenario project's git-ignored `.env`.
 - The release follows `harness/docs/RELEASING.md`. Learned on 0.8.3:
   - `make release-smoke ARGS=--release` refuses a working copy that holds fetched gold references (the release guard,
     as designed), while `make verify`'s rescore test needs them. Run the smoke on a clean checkout of the candidate
@@ -47,8 +48,15 @@ decides.
 
 ## Housekeeping
 
-- `/work/evh-scenario-083-notes/scratch/.env` holds a copy of the gateway key from the 0.8.3 scenario's scratch project
-  (local, in no repository). **Open:** delete it with the scenario folders.
+**Done 2026-11-28, the owner's go:** removed the 083, 080 (with `build/clean-wt`), 080-rfc038 and mbpp-code worktrees,
+`baseline-tmp/baseline-diff-080`, the 083 branch (local and remote) and the remote `0811-fix`; the scenario folders of
+0.8.0, 0.8.1 and 0.8.3 (with the scratch copy of the gateway key). The scenario key is kept once, in
+`~/.config/eval-harness/scenario-litellm.env` (mode 600). Local branches 080-rfc038 and mbpp-code are kept.
+
+- **Open:** `worktrees/044` (branch 044, no remote, last commit 2026-10-28) holds uncommitted work: 13 modified files and
+  6 untracked under `site/art/` (sketches, masters, `make_sketches.py`, `experiments/`). Not removed; the owner decides.
+- `/work/evh-scenario-040` and `040b` (0.4.0's scenario runs) still hold copies of the gateway key in their `.env`; not in
+  the approved list.
 
 ## Not in this plan
 
